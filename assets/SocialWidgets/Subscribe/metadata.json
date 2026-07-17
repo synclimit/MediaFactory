@@ -1,0 +1,19 @@
+{
+    "id": "subscribe",
+    "name": "Subscribe",
+    "category": "Social",
+    "type": "video",
+    "file": "subscribe.webm",
+    "thumbnail": "thumbnail.webp",
+    "duration": 3.2,
+    "loop": false,
+    "defaultScale": 1.0,
+    "defaultOpacity": 1.0,
+    "anchor": "center",
+    "renderer": "video",
+    "alphaMode": "chroma",
+    "keyColor": "#00FF00",
+    "similarity": 0.22,
+    "smoothness": 0.08,
+    "spill": 0.15
+}

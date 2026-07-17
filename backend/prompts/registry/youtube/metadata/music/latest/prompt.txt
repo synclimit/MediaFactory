@@ -1,0 +1,6 @@
+Generate YouTube metadata for a {content_type} video.
+Keyword: {keyword}
+Language: {language}
+Provider: {provider}
+
+Output the Title, Description, and Tags.

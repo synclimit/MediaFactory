@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pwd && ls -la /Users/dev/workspace-7cb447af)",
+      "Read(//Users/dev/**)"
+    ]
+  }
+}

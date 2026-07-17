@@ -1,0 +1,1 @@
+export { BeatSourceResolver } from './BeatSourceResolver';

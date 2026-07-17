@@ -1,0 +1,1302 @@
+[
+  {
+    "id": "Detik_1",
+    "url": "https://www.detik.com/signature-awards",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_2",
+    "url": "https://www.detik.com/webvoucher-game",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_3",
+    "url": "https://www.detik.com/webvoucher-paket-data",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_4",
+    "url": "https://www.detik.com/webvoucher-pulsa-prabayar",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_5",
+    "url": "https://www.detik.com/webvoucher-token-pln",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_6",
+    "url": "https://www.detik.com/webvoucher-ewallet",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_7",
+    "url": "https://www.detik.com/webvoucher-bpjs-kesehatan",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_8",
+    "url": "https://www.detik.com/webvoucher-pln-pascabayar",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_9",
+    "url": "https://www.detik.com/webvoucher-pdam",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_10",
+    "url": "https://www.detik.com/webvoucher-tv-internet",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_11",
+    "url": "https://www.detik.com/webvoucher-streaming",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_12",
+    "url": "https://news.detik.com/blak-blakan",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_13",
+    "url": "https://news.detik.com/pro-kontra",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_14",
+    "url": "https://news.detik.com/suara-pembaca",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_15",
+    "url": "https://news.detik.com/melindungi-tuah-marwah",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_16",
+    "url": "https://news.detik.com/bangun-indonesia",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_17",
+    "url": "https://news.detik.com/internasional/d-8567608/nggak-ada-takut-takutnya-iran-atas-ancaman-trump",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_18",
+    "url": "https://news.detik.com/berita/d-8567706/gerindra-hormati-sikap-pdip-jadi-partai-penyeimbang",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_19",
+    "url": "https://news.detik.com/berita/d-8567628/kpk-ott-bupati-sukoharjo-etik-suryani-terkait-kasus-peras-bawahan",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Detik_20",
+    "url": "https://news.detik.com/berita/d-8567604/kabar-duka-anggota-dpr-rachmat-gobel-meninggal-dunia",
+    "domain": "detik.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Detik",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_1",
+    "url": "https://www.kompas.com/topik-pilihan/list/7782/kalbe-health-corner",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_2",
+    "url": "https://tekno.kompas.com/apps-os",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_3",
+    "url": "https://otomotif.kompas.com/ev-leadership",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_4",
+    "url": "https://otomotif.kompas.com/new-energy-vehicles",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_5",
+    "url": "https://bola.kompas.com/timnas-indonesia",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_6",
+    "url": "https://bola.kompas.com/liga-indonesia",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_7",
+    "url": "https://bola.kompas.com/liga-inggris",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_8",
+    "url": "https://bola.kompas.com/liga-italia",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_9",
+    "url": "https://bola.kompas.com/liga-champions",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_10",
+    "url": "https://bola.kompas.com/liga-spanyol",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_11",
+    "url": "https://bola.kompas.com/liga-lain",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_12",
+    "url": "https://indeks.kompas.com/topik-pilihan/list/9076/bukan-dompet-biasa",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_13",
+    "url": "https://www.kompas.com/topik-pilihan/list/9635/jejak-umkm",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_14",
+    "url": "https://properti.kompas.com/listing-properti",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_15",
+    "url": "https://properti.kompas.com/tips-properti",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_16",
+    "url": "https://edukasi.kompas.com/perguruan-tinggi",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_17",
+    "url": "https://edukasi.kompas.com/pendidikan-khusus",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_18",
+    "url": "https://travel.kompas.com/travel-news",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_19",
+    "url": "https://travel.kompas.com/travel-ideas",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Kompas_20",
+    "url": "https://travel.kompas.com/hotel-story",
+    "domain": "kompas.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Kompas",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_1",
+    "url": "https://www.cnnindonesia.com/for-you",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_2",
+    "url": "https://www.cnnindonesia.com/nasional/hukum-kriminal",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_3",
+    "url": "https://www.cnnindonesia.com/nasional/info-politik",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_4",
+    "url": "https://www.cnnindonesia.com/internasional/asia-pasifik",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_5",
+    "url": "https://www.cnnindonesia.com/internasional/timur-tengah",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_6",
+    "url": "https://www.cnnindonesia.com/internasional/eropa-amerika",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_7",
+    "url": "https://www.cnnindonesia.com/ekonomi/corporate-action",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_8",
+    "url": "https://www.cnnindonesia.com/olahraga/moto-gp",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_9",
+    "url": "https://www.cnnindonesia.com/otomotif/e-vehicle",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_10",
+    "url": "https://www.cnnindonesia.com/otomotif/info-otomotif",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_11",
+    "url": "https://www.cnnindonesia.com/hiburan/seni-budaya",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_12",
+    "url": "https://www.cnnindonesia.com/gaya-hidup",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_13",
+    "url": "https://www.cnnindonesia.com/ekonomi/20260710202031-92-1379349/as-meksiko-tersingkir-harga-tiket-piala-dunia-anjlok-hingga-65-persen",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_14",
+    "url": "https://www.cnnindonesia.com/olahraga/20260710131424-142-1379137/romelu-lukaku-supersub-belgia-siap-ancam-spanyol-di-piala-dunia-2026",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_15",
+    "url": "https://www.cnnindonesia.com/internasional/20260710200639-120-1379332/netanyahu-jagokan-argentina-di-piala-dunia-2026-bukan-karena-messi",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_16",
+    "url": "https://www.cnnindonesia.com/olahraga/20260710184348-142-1379300/spanyol-vs-belgia-courtois-minta-bek-setan-merah-keroyok-yamal",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_17",
+    "url": "https://www.cnnindonesia.com/olahraga/20260710202919-142-1379354/reaksi-erick-thohir-soal-prabowo-resah-indonesia-belum-ke-piala-dunia",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_18",
+    "url": "https://www.cnnindonesia.com/olahraga/20260710182936-156-1379294/hasil-practice-moto3-jerman-paling-cepat-veda-ega-pratama-nomor-1",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_19",
+    "url": "https://www.cnnindonesia.com/nasional/20260710175124-20-1379280/didampingi-polisi-bos-petani-terbang-diangkut-drone-minta-maaf",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "CNN_20",
+    "url": "https://www.cnnindonesia.com/internasional/20260710193116-120-1379320/negara-mayoritas-muslim-syiah-ini-diam-diam-bantu-israel-perangi-iran",
+    "domain": "cnnindonesia.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "CNN",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_1",
+    "url": "https://www.tempo.co/info-tempo",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_2",
+    "url": "/olahraga/kuda-hitam-norwegia-piala-dunia-2026-2274918",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_3",
+    "url": "/olahraga/ketajaman-erling-haaland-mesin-gol-norwegia-2274873",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_4",
+    "url": "/ekonomi/pengadilan-khusus-pusat-finansial-internasional-indonesia-2274816",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_5",
+    "url": "/ekonomi/bebas-pajak-investasi-pusat-finansial-internasional-2274841",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_6",
+    "url": "/teroka/sejarah-benteng-van-den-bosch-ngawi-2274934",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_7",
+    "url": "/ekonomi/pertamina-tanggapi-sinyal-kelangkaan-solar-di-sumatera-2275010",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_8",
+    "url": "/politik/pemprov-dki-luncurkan-layanan-mobil-klinik-hewan-keliling-2275009",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_9",
+    "url": "/politik/prabowo-di-ntb-anda-mau-saya-bicara-sopan-atau-jujur--2275007",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_10",
+    "url": "/hukum/polisi-tahan-tersangka-ke-13-kasus-daycare-little-aresha-2275005",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_11",
+    "url": "/hukum/aduan-pelanggaran-ham-ke-komnas-ham-2274304",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_12",
+    "url": "/hukum/polemik-hak-angket-kabupaten-gowa-2274541",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_13",
+    "url": "/ekonomi/ekspor-listrik-lintas-negara-2274548",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_14",
+    "url": "/hukum/hasil-penggeledah-kortastipidkor-korupsi-batu-bara-2274646",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_15",
+    "url": "/ekonomi/tip-investasi-saham-pasar-modal-bergejolak-2274845",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_16",
+    "url": "/lingkungan/masyarakat-adat-gugat-uu-konservasi-2274916",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_17",
+    "url": "/lingkungan/uji-materiil-uu-konservasi-pegiat-lingkungan-2274881",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_18",
+    "url": "/internasional/inggris-prancis-selat-hormuz-jalur-minyak-2274877",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_19",
+    "url": "/hukum/kpk-duga-febrie-adriansyah-gunakan-nominee-untuk-rumah-sentul-2275004",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tempo_20",
+    "url": "/sepakbola/prediksi-norwegia-vs-inggris-di-piala-dunia-2026-2275003",
+    "domain": "tempo.co",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tempo",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_1",
+    "url": "https://www.tribunnews.com/live-streaming?utm_medium=tribun-header",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_2",
+    "url": "https://www.tiktok.com/@tribunnews?lang=id-ID",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_3",
+    "url": "https://www.tribunnews.com/contact-us",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_4",
+    "url": "https://www.tribunnews.com/privacy-policy",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_5",
+    "url": "https://www.tribunnews.com/lokal-asri?utm_medium=main-menu",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_6",
+    "url": "https://www.tribunnews.com/pendidikan-go?utm_medium=main-menu",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_7",
+    "url": "https://www.tribunnews.com/energi-untuk-rakyat",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_8",
+    "url": "https://www.tribunnews.com/new-economy",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_9",
+    "url": "https://www.tribunnews.com/index-news",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_10",
+    "url": "https://www.tribunnews.com/kilas-kementerian",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_11",
+    "url": "https://www.tribunnews.com/topic/Pasokan-Batubara-PLTU",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_12",
+    "url": "https://www.tribunnews.com/nasional/7852730/penampakan-tumpukan-uang-dan-emas-soal-kasus-dugaan-korupsi-asabri-hingga-krakatau-steel",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_13",
+    "url": "https://www.tribunnews.com/nasional/7852722/polri-pamerkan-tumpukan-uang-hingga-emas-batangan-dari-hasil-penggeledahan-tiga-kasus-korupsi-besar",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_14",
+    "url": "https://www.tribunnews.com/topic/Selebrasi-Lokal",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_15",
+    "url": "https://www.tribunnews.com/superskor/7852736/rahasia-ketajaman-haaland-di-piala-dunia-2026-konsumsi-6000-kalori-per-hari-dan-doyan-makan-jeroan",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_16",
+    "url": "https://www.tribunnews.com/superskor/7852733/raja-dan-ratu-menyambangi-belgia-punya-modal-mentereng-lawan-spanyol",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_17",
+    "url": "https://www.tribunnews.com/topic/OTT-KPK-di-Kuansing",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_18",
+    "url": "https://www.tribunnews.com/nasional/7852581/kpk-sita-12-ribu-sgd-diduga-bagian-amplop-untuk-menhut-raja-juli-dari-bupati-kuansing",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_19",
+    "url": "https://www.tribunnews.com/nasional/7852248/kpk-ungkap-cara-bupati-kuansing-pungut-uang-dari-914-anggota-kud-demi-izin-hutan",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  },
+  {
+    "id": "Tribun_20",
+    "url": "nasional/7852751/lowongan-kerja-lppi-untuk-lulusan-minimal-d3-batas-pendaftaran-12-juli-2026",
+    "domain": "tribunnews.com",
+    "expected": {
+      "title": null,
+      "category": null,
+      "source": "Tribun",
+      "publishDate": null,
+      "imageCount": 0,
+      "language": "id"
+    }
+  }
+]

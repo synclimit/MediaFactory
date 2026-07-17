@@ -1,0 +1,93 @@
+@reference "../../index.css";
+
+@layer components {
+  /* Glass Panels */
+  .m1-glass-panel {
+    @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)];
+  }
+
+  .m1-glass-card {
+    @apply bg-[#0c0d12]/80 backdrop-blur-md border border-[#2d3247]/60 shadow-lg;
+  }
+
+  /* Orange Tech Theme Accents */
+  .m1-border-orange {
+    @apply border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.2)];
+  }
+
+  .m1-border-orange-intense {
+    @apply border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.4)];
+  }
+  
+  .m1-text-orange-glow {
+    @apply text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)];
+  }
+
+  /* Futuristic Inputs */
+  .m1-input-glass {
+    @apply w-full bg-[#0a0c10]/60 backdrop-blur-sm border border-[#2d3247] rounded p-2 text-gray-300 font-mono text-[11px] focus:outline-none focus:border-orange-500/80 focus:shadow-[0_0_10px_rgba(249,115,22,0.2)] transition-all;
+  }
+  
+  .m1-btn-orange {
+    @apply relative overflow-hidden bg-orange-950/40 hover:bg-orange-900/60 text-orange-400 font-bold text-[10px] uppercase rounded border border-orange-500/50 hover:border-orange-400 transition-all shadow-[0_0_15px_rgba(249,115,22,0.15)] hover:shadow-[0_0_25px_rgba(249,115,22,0.3)];
+  }
+
+  /* State Colors */
+  .m1-border-emerald {
+    @apply border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)];
+  }
+
+  .m1-border-blue {
+    @apply border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)];
+  }
+
+  .m1-border-red {
+    @apply border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.2)];
+  }
+
+  /* HUD Overlays */
+  .m1-hud-label {
+    @apply text-[9px] font-bold uppercase tracking-wider text-gray-500;
+  }
+  
+  .m1-hud-value {
+    @apply font-mono text-[11px] font-semibold text-gray-200;
+  }
+}
+
+/* Animations */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInGlow {
+  from { opacity: 0; filter: blur(4px); }
+  to { opacity: 1; filter: blur(0); }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-glow {
+  animation: fadeInGlow 0.4s ease-out forwards;
+}
+
+/* Custom Scrollbar for Internal Scroll */
+.m1-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.m1-scroll::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.2);
+}
+.m1-scroll::-webkit-scrollbar-thumb {
+  background: rgba(249,115,22,0.3);
+  border-radius: 4px;
+}
+.m1-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(249,115,22,0.5);
+}
+
+/* Global Background (Circuit Pattern & Grid) is now handled by M1Background.jsx */

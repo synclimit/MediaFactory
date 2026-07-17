@@ -1,0 +1,20 @@
+{
+    "variables": {
+        "keyword": "lagu rock",
+        "language": "Indonesia",
+        "provider": "Gemini",
+        "content_type": "Music"
+    },
+    "expected": {
+        "contains": [
+            "lagu rock",
+            "Indonesia",
+            "Music"
+        ],
+        "not_contains": [
+            "{keyword}",
+            "{language}",
+            "{provider}"
+        ]
+    }
+}

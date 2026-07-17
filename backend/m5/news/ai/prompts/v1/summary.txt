@@ -1,0 +1,1 @@
+Analyze the following article and extract the required fields exactly matching the provided JSON schema. Ensure the headline is catchy, the summary is concise, and keywords are highly relevant (minimum 5).

@@ -1,0 +1,48 @@
+{
+  "successRate": 100,
+  "avgTime": 32.36,
+  "avgBody": 2330.6,
+  "avgImg": 1,
+  "avgMeta": 1,
+  "fieldsPct": {
+    "title": "100.00",
+    "body": "100.00",
+    "images": "100.00",
+    "metadata": "100.00",
+    "language": "100.00",
+    "publishDate": "40.00",
+    "author": "40.00"
+  },
+  "domainBreakdown": {
+    "detik": {
+      "success": 20,
+      "failed": 0,
+      "totalTime": 1409,
+      "count": 20
+    },
+    "kompas": {
+      "success": 20,
+      "failed": 0,
+      "totalTime": 14,
+      "count": 20
+    },
+    "cnnindonesia": {
+      "success": 20,
+      "failed": 0,
+      "totalTime": 819,
+      "count": 20
+    },
+    "tempo": {
+      "success": 20,
+      "failed": 0,
+      "totalTime": 20,
+      "count": 20
+    },
+    "tribuncom": {
+      "success": 20,
+      "failed": 0,
+      "totalTime": 974,
+      "count": 20
+    }
+  }
+}

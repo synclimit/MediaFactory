@@ -1,0 +1,16 @@
+{
+  "Status": "SUCCESS",
+  "Input": "test_bg.mp4",
+  "Output": "test_sprint4_case2.mp4",
+  "Segment": {
+    "start": 0,
+    "end": 5
+  },
+  "Playback": 0.5,
+  "Resolution": "480p",
+  "AudioDuration": 3,
+  "TargetDuration": 5,
+  "Watermark": true,
+  "Subscribe": true,
+  "RenderTimeSec": 0.878
+}

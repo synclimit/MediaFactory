@@ -1,0 +1,6 @@
+Output Resolution: 720p, 1080p, 1440p, 4K.
+Output Filename Template: misalnya {artist} - {title}, {date}_{title}, atau pola kustom.
+Intro & Outro: sebagai aset opsional yang bisa dimasukkan melalui template atau workspace.
+Render Performance Profile: Eco, Stable, High.
+Resource Monitor: CPU, RAM, GPU, VRAM, dan progres render yang lebih detail.
+Background gerak

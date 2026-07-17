@@ -1,0 +1,12 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="1280" height="720" fill="#0A0C10"/>
+<path d="M0 0H1280V720H0V0Z" fill="url(#paint0_linear)"/>
+<rect x="340" y="260" width="600" height="200" rx="20" fill="#1A1B23" stroke="#F97316" stroke-width="4"/>
+<text fill="#F97316" xml:space="preserve" style="white-space: pre" font-family="monospace" font-size="64" font-weight="bold" letter-spacing="0.2em"><tspan x="420" y="380">YOUTUBE_DATA</tspan></text>
+<defs>
+<linearGradient id="paint0_linear" x1="0" y1="0" x2="1280" y2="720" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F97316" stop-opacity="0.1"/>
+<stop offset="1" stop-color="#030406" stop-opacity="0.9"/>
+</linearGradient>
+</defs>
+</svg>

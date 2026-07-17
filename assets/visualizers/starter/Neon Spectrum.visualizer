@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "engineVersion": "1.0.0",
+  "presetVersion": 1,
+  "id": "neon-spectrum",
+  "name": "Neon Spectrum",
+  "version": 1,
+  "author": "MediaFactory",
+  "description": "High intensity glowing bars.",
+  "category": "Spectrum",
+  "tags": [
+    "starter",
+    "built-in"
+  ],
+  "renderer": "spectrum",
+  "geometry": {
+    "shape": "bar",
+    "mirror": true,
+    "rounded": true,
+    "center": false,
+    "thickness": 5,
+    "spacing": 3
+  },
+  "appearance": {
+    "color": "#ff00ff",
+    "gradient": "None",
+    "glow": 100,
+    "opacity": 100
+  },
+  "audio": {
+    "fftGain": 130,
+    "smoothing": 75,
+    "bassFocus": 100,
+    "midFocus": 80,
+    "trebleFocus": 60
+  },
+  "transform": {
+    "scale": 100,
+    "rotation": 0
+  },
+  "createdAt": "2026-06-21T06:15:52.158Z",
+  "updatedAt": "2026-06-21T06:15:52.158Z"
+}

@@ -1,0 +1,41 @@
+{
+  "appId": "com.mediafactory.studio",
+  "productName": "MediaFactory Studio",
+  "version": "1.0.0-rc.1",
+  "copyright": "Copyright © 2026 MediaFactory",
+  "directories": {
+    "output": "dist-electron",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "win": {
+    "target": [
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] }
+    ],
+    "icon": "build/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowElevation": true,
+    "allowToChangeInstallationDirectory": true,
+    "license": "build/license.txt",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
+  },
+  "portable": {
+    "artifactName": "${productName}-${version}-Portable.exe"
+  },
+  "extraResources": [
+    {
+      "from": ".mediafactory/cache",
+      "to": "cache",
+      "filter": ["**/*"]
+    }
+  ]
+}

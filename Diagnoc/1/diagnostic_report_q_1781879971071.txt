@@ -1,0 +1,143 @@
+=== M3 DIAGNOSTIC REPORT ===
+
+21.39.34.072
+
+START
+
+Writing Metadata & Thumbnail
+
+[Stage-01]
+Writing Metadata & Thumbnail
+
+21.39.34.115
+
+END
+
+Writing Metadata & Thumbnail
+
+Elapsed : 0.00 sec
+
+21.39.34.115
+
+START
+
+Compiling Audio
+
+[Stage-02]
+Compiling Audio
+
+
+FFMPEG COMMAND #1
+
+Compiling Audio
+
+ffmpeg -y -f concat -safe 0 -i "D:\MediaFactory\.mediafactory\cache\m3\concat_q_q_1781879971071.txt" -c:a libmp3lame -b:a 192k "D:\MediaFactory\.mediafactory\cache\m3\compiled_audio_q_1781879971071.mp3"
+
+ffmpeg version 2026-04-09-git-d3d0b7a5ee-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers
+  built with gcc 15.2.0 (Rev11, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-cairo --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enable-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvvenc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libaom --enable-libjxl --enable-libsvtjpegxs --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libshaderc --enable-vulkan --enable-libplacebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint --enable-whisper
+  libavutil      60. 29.100 / 60. 29.100
+  libavcodec     62. 29.101 / 62. 29.101
+  libavformat    62. 13.102 / 62. 13.102
+  libavdevice    62.  4.100 / 62.  4.100
+  libavfilter    11. 15.101 / 11. 15.101
+  libswscale      9.  7.100 /  9.  7.100
+  libswresample   6.  4.100 /  6.  4.100
+Input #0, concat, from 'D:\MediaFactory\.mediafactory\cache\m3\concat_q_q_1781879971071.txt':
+  Duration: N/A, start: -0.023021, bitrate: 132 kb/s
+  Stream #0:0: Audio: mp3 (mp3float), 48000 Hz, stereo, fltp, 132 kb/s, start -0.023021
+    Metadata:
+      encoder         : Lavc62.29
+Stream mapping:
+  Stream #0:0 -> #0:0 (mp3 (mp3float) -> mp3 (libmp3lame))
+Press [q] to stop, [?] for help
+Output #0, mp3, to 'D:\MediaFactory\.mediafactory\cache\m3\compiled_audio_q_1781879971071.mp3':
+  Metadata:
+    TSSE            : Lavf62.13.102
+  Stream #0:0: Audio: mp3, 48000 Hz, stereo, fltp, 192 kb/s
+    Metadata:
+      encoder         : Lavc62.29.101 libmp3lame
+size=     512KiB time=00:00:30.21 bitrate= 138.8kbits/s speed=59.8x elapsed=0:00:00.50    size=    1280KiB time=00:00:59.20 bitrate= 177.1kbits/s speed=57.9x elapsed=0:00:01.02    size=    2048KiB time=00:01:28.05 bitrate= 190.5kbits/s speed=57.2x elapsed=0:00:01.53    size=    2560KiB time=00:01:58.05 bitrate= 177.6kbits/s speed=57.5x elapsed=0:00:02.05    size=    3328KiB time=00:02:27.09 bitrate= 185.3kbits/s speed=57.2x elapsed=0:00:02.57    size=    4096KiB time=00:02:56.16 bitrate= 190.5kbits/s speed=  57x elapsed=0:00:03.08    size=    4608KiB time=00:03:25.44 bitrate= 183.7kbits/s speed=  57x elapsed=0:00:03.60    size=    5376KiB time=00:03:51.79 bitrate= 190.0kbits/s speed=56.2x elapsed=0:00:04.12    size=    6144KiB time=00:04:23.73 bitrate= 190.8kbits/s speed=56.9x elapsed=0:00:04.63    [21.39.39] CPU Unknown | RAM 10006 MB
+size=    6656KiB time=00:04:48.55 bitrate= 189.0kbits/s speed=  56x elapsed=0:00:05.15    size=    7424KiB time=00:05:18.07 bitrate= 191.2kbits/s speed=56.1x elapsed=0:00:05.67    size=    7936KiB time=00:05:40.84 bitrate= 190.7kbits/s speed=55.2x elapsed=0:00:06.17    size=    8448KiB time=00:06:09.52 bitrate= 187.3kbits/s speed=55.1x elapsed=0:00:06.70    size=    9216KiB time=00:06:37.10 bitrate= 190.1kbits/s speed=  55x elapsed=0:00:07.21    size=    9728KiB time=00:07:03.74 bitrate= 188.1kbits/s speed=54.8x elapsed=0:00:07.73    size=   10496KiB time=00:07:32.30 bitrate= 190.1kbits/s speed=54.8x elapsed=0:00:08.25    size=   11264KiB time=00:08:06.12 bitrate= 189.8kbits/s speed=55.4x elapsed=0:00:08.77    size=   12032KiB time=00:08:34.10 bitrate= 191.7kbits/s speed=55.4x elapsed=0:00:09.28    size=   12544KiB time=00:09:01.56 bitrate= 189.7kbits/s speed=55.2x elapsed=0:00:09.80    [21.39.44] CPU Unknown | RAM 9951 MB
+size=   13312KiB time=00:09:29.59 bitrate= 191.5kbits/s speed=55.2x elapsed=0:00:10.31    size=   13824KiB time=00:09:57.62 bitrate= 189.5kbits/s speed=55.2x elapsed=0:00:10.83    size=   14592KiB time=00:10:26.44 bitrate= 190.8kbits/s speed=55.2x elapsed=0:00:11.35    size=   15104KiB time=00:10:54.98 bitrate= 188.9kbits/s speed=55.2x elapsed=0:00:11.86    size=   15872KiB time=00:11:23.11 bitrate= 190.3kbits/s speed=55.2x elapsed=0:00:12.38    size=   16640KiB time=00:11:51.64 bitrate= 191.5kbits/s speed=55.2x elapsed=0:00:12.90    size=   17152KiB time=00:12:21.93 bitrate= 189.4kbits/s speed=55.3x elapsed=0:00:13.41    [out#0/mp3 @ 000001cd0b85cc80] video:0KiB audio:17538KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.003458%
+size=   17538KiB time=00:12:28.26 bitrate= 192.0kbits/s speed=55.4x elapsed=0:00:13.49    
+
+Exit Code : 0
+
+21.39.47.685
+
+END
+
+Compiling Audio
+
+Elapsed : 13.53 sec
+
+21.39.47.685
+
+START
+
+Rendering Video
+
+[Stage-03]
+Rendering Video
+
+
+FFMPEG COMMAND #2
+
+Rendering Video
+
+ffmpeg -y -loop 1 -framerate 30 -i "D:\MediaFactory\.mediafactory\cache\uploads\1781879951829_Gemini_Generated_Image_uh1y3quh1y3quh1y.png" -i "D:\MediaFactory\.mediafactory\cache\m3\compiled_audio_q_1781879971071.mp3" -c:v libx264 -tune stillimage -c:a copy -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2" -shortest -pix_fmt yuv420p "D:\MediaFactory\Output\Chill Lofi Playlist Mix\Chill Lofi Playlist Mix.mp4"
+
+ffmpeg version 2026-04-09-git-d3d0b7a5ee-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers
+  built with gcc 15.2.0 (Rev11, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-cairo --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enable-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvvenc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libaom --enable-libjxl --enable-libsvtjpegxs --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libshaderc --enable-vulkan --enable-libplacebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint --enable-whisper
+  libavutil      60. 29.100 / 60. 29.100
+  libavcodec     62. 29.101 / 62. 29.101
+  libavformat    62. 13.102 / 62. 13.102
+  libavdevice    62.  4.100 / 62.  4.100
+  libavfilter    11. 15.101 / 11. 15.101
+  libswscale      9.  7.100 /  9.  7.100
+  libswresample   6.  4.100 /  6.  4.100
+Input #0, png_pipe, from 'D:\MediaFactory\.mediafactory\cache\uploads\1781879951829_Gemini_Generated_Image_uh1y3quh1y3quh1y.png':
+  Duration: N/A, bitrate: N/A
+  Stream #0:0: Video: png, rgba(pc, gbr/unknown/unknown), 1024x1024, 30 fps, 30 tbr, 30 tbn
+Input #1, mp3, from 'D:\MediaFactory\.mediafactory\cache\m3\compiled_audio_q_1781879971071.mp3':
+  Metadata:
+    encoder         : Lavf62.13.102
+  Duration: 00:12:28.24, start: 0.023021, bitrate: 192 kb/s
+  Stream #1:0: Audio: mp3 (mp3float), 48000 Hz, stereo, fltp, 192 kb/s, start 0.023021
+    Metadata:
+      encoder         : Lavc62.29
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> h264 (libx264))
+  Stream #1:0 -> #0:1 (copy)
+Press [q] to stop, [?] for help
+[libx264 @ 000001b20bfc5940] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 000001b20bfc5940] profile High, level 4.0, 4:2:0, 8-bit
+[libx264 @ 000001b20bfc5940] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:-3:-3 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=2.00:0.70 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-4 threads=12 lookahead_threads=2 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.20
+Output #0, mp4, to 'D:\MediaFactory\Output\Chill Lofi Playlist Mix\Chill Lofi Playlist Mix.mp4':
+  Metadata:
+    encoder         : Lavf62.13.102
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1920x1080, q=2-31, 30 fps, 15360 tbn
+    Metadata:
+      encoder         : Lavc62.29.101 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+  Stream #0:1: Audio: mp3 (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 192 kb/s
+    Metadata:
+      encoder         : Lavc62.29
+frame=    5 fps=0.0 q=29.0 size=       0KiB time=00:00:00.28 bitrate=   1.3kbits/s speed=0.557x elapsed=0:00:00.51    frame=   64 fps= 61 q=29.0 size=       0KiB time=00:00:02.18 bitrate=   0.2kbits/s speed=2.07x elapsed=0:00:01.05    frame=  116 fps= 73 q=29.0 size=       0KiB time=00:00:03.91 bitrate=   0.1kbits/s speed=2.47x elapsed=0:00:01.58    frame=  165 fps= 78 q=29.0 size=       0KiB time=00:00:05.56 bitrate=   0.1kbits/s speed=2.65x elapsed=0:00:02.10    frame=  221 fps= 84 q=29.0 size=       0KiB time=00:00:07.44 bitrate=   0.1kbits/s speed=2.81x elapsed=0:00:02.64    frame=  274 fps= 86 q=29.0 size=     256KiB time=00:00:09.16 bitrate= 228.8kbits/s speed=2.88x elapsed=0:00:03.18    frame=  327 fps= 88 q=29.0 size=     256KiB time=00:00:10.96 bitrate= 191.2kbits/s speed=2.97x elapsed=0:00:03.69    frame=  383 fps= 91 q=29.0 size=     256KiB time=00:00:12.84 bitrate= 163.3kbits/s speed=3.04x elapsed=0:00:04.22    frame=  439 fps= 92 q=29.0 size=     256KiB time=00:00:14.71 bitrate= 142.6kbits/s speed= 3.1x elapsed=0:00:04.74    [21.39.52] CPU Unknown | RAM 10577 MB
+frame=  494 fps= 93 q=29.0 size=     512KiB time=00:00:16.51 bitrate= 254.0kbits/s speed=3.12x elapsed=0:00:05.28    frame=  545 fps= 94 q=29.0 size=     512KiB time=00:00:18.28 bitrate= 229.4kbits/s speed=3.15x elapsed=0:00:05.79    frame=  601 fps= 95 q=29.0 size=     512KiB time=00:00:20.11 bitrate= 208.6kbits/s speed=3.19x elapsed=0:00:06.31    frame=  657 fps= 96 q=29.0 size=     512KiB time=00:00:21.98 bitrate= 190.8kbits/s speed=3.22x elapsed=0:00:06.83    frame=  713 fps= 97 q=29.0 size=     768KiB time=00:00:23.85 bitrate= 263.7kbits/s speed=3.24x elapsed=0:00:07.36    frame=  767 fps= 97 q=29.0 size=     768KiB time=00:00:25.65 bitrate= 245.2kbits/s speed=3.25x elapsed=0:00:07.89    frame=  819 fps= 97 q=29.0 size=     768KiB time=00:00:27.38 bitrate= 229.8kbits/s speed=3.25x elapsed=0:00:08.41    frame=  875 fps= 98 q=29.0 size=     768KiB time=00:00:29.25 bitrate= 215.1kbits/s speed=3.27x elapsed=0:00:08.94    frame=  927 fps= 98 q=29.0 size=    1024KiB time=00:00:30.98 bitrate= 270.7kbits/s speed=3.27x elapsed=0:00:09.46    frame=  987 fps= 99 q=29.0 size=    1024KiB time=00:00:32.97 bitrate= 254.4kbits/s speed= 3.3x elapsed=0:00:09.99    [21.39.57] CPU Unknown | RAM 10556 MB
+frame= 1041 fps= 99 q=29.0 size=    1024KiB time=00:00:34.77 bitrate= 241.2kbits/s speed= 3.3x elapsed=0:00:10.54    frame= 1093 fps= 99 q=29.0 size=    1024KiB time=00:00:36.50 bitrate= 229.8kbits/s speed= 3.3x elapsed=0:00:11.06    frame= 1145 fps= 99 q=29.0 size=    1024KiB time=00:00:38.25 bitrate= 219.3kbits/s speed= 3.3x elapsed=0:00:11.58    frame= 1201 fps= 99 q=29.0 size=    1280KiB time=00:00:40.10 bitrate= 261.5kbits/s speed=3.31x elapsed=0:00:12.09    frame= 1244 fps= 99 q=29.0 size=    1280KiB time=00:00:41.52 bitrate= 252.6kbits/s speed=3.29x elapsed=0:00:12.60    frame= 1298 fps= 99 q=29.0 size=    1280KiB time=00:00:43.32 bitrate= 242.1kbits/s speed= 3.3x elapsed=0:00:13.11    frame= 1351 fps= 99 q=29.0 size=    1280KiB time=00:00:45.12 bitrate= 232.4kbits/s speed=3.31x elapsed=0:00:13.64    frame= 1411 fps=100 q=29.0 size=    1536KiB time=00:00:47.11 bitrate= 267.1kbits/s speed=3.32x elapsed=0:00:14.17    frame= 1467 fps=100 q=29.0 size=    1536KiB time=00:00:48.98 bitrate= 256.9kbits/s speed=3.33x elapsed=0:00:14.70    frame= 1513 fps= 99 q=29.0 size=    1536KiB time=00:00:50.54 bitrate= 249.0kbits/s speed=3.32x elapsed=0:00:15.21    [21.40.03] CPU Unknown | RAM 10570 MB
+frame= 1573 fps=100 q=29.0 size=    1536KiB time=00:00:52.51 bitrate= 239.6kbits/s speed=3.33x elapsed=0:00:15.74    frame= 1625 fps=100 q=29.0 size=    1792KiB time=00:00:54.24 bitrate= 270.7kbits/s speed=3.33x elapsed=0:00:16.27    frame= 1680 fps=100 q=29.0 size=    1792KiB time=00:00:56.04 bitrate= 262.0kbits/s speed=3.34x elapsed=0:00:16.80    frame= 1732 fps=100 q=29.0 size=    1792KiB time=00:00:57.76 bitrate= 254.1kbits/s speed=3.33x elapsed=0:00:17.32    frame= 1783 fps=100 q=29.0 size=    1792KiB time=00:00:59.54 bitrate= 246.5kbits/s speed=3.33x elapsed=0:00:17.86    frame= 1839 fps=100 q=29.0 size=    2048KiB time=00:01:01.36 bitrate= 273.4kbits/s speed=3.34x elapsed=0:00:18.38    frame= 1891 fps=100 q=29.0 size=    2048KiB time=00:01:03.12 bitrate= 265.8kbits/s speed=3.34x elapsed=0:00:18.90    frame= 1947 fps=100 q=29.0 size=    2048KiB time=00:01:04.96 bitrate= 258.2kbits/s speed=3.34x elapsed=0:00:19.42    frame= 1998 fps=100 q=29.0 size=    2048KiB time=00:01:06.64 bitrate= 251.7kbits/s speed=3.34x elapsed=0:00:19.93    frame= 2049 fps=100 q=29.0 size=    2048KiB time=00:01:08.37 bitrate= 245.4kbits/s speed=3.34x elapsed=0:00:20.47    [21.40.08] CPU Unknown | RAM 10587 MB
+frame= 2105 fps=100 q=29.0 size=    2304KiB time=00:01:10.24 bitrate= 268.7kbits/s speed=3.35x elapsed=0:00:20.99    frame= 2157 fps=100 q=29.0 size=    2304KiB time=00:01:11.97 bitrate= 262.2kbits/s speed=3.35x elapsed=0:00:21.50    frame= 2209 fps=100 q=29.0 size=    2304KiB time=00:01:13.68 bitrate= 256.2kbits/s speed=3.34x elapsed=0:00:22.02    frame= 2255 fps=100 q=29.0 size=    2304KiB time=00:01:15.24 bitrate= 250.9kbits/s speed=3.34x elapsed=0:00:22.55    frame= 2311 fps=100 q=29.0 size=    2560KiB time=00:01:17.11 bitrate= 272.0kbits/s speed=3.34x elapsed=0:00:23.08    frame= 2367 fps=100 q=29.0 size=    2560KiB time=00:01:18.98 bitrate= 265.5kbits/s speed=3.35x elapsed=0:00:23.60    frame= 2423 fps=100 q=29.0 size=    2560KiB time=00:01:20.85 bitrate= 259.4kbits/s speed=3.35x elapsed=0:00:24.12    frame= 2479 fps=101 q=29.0 size=    2560KiB time=00:01:22.75 bitrate= 253.4kbits/s speed=3.36x elapsed=0:00:24.65    frame= 2536 fps=101 q=29.0 size=    2816KiB time=00:01:24.57 bitrate= 272.8kbits/s speed=3.36x elapsed=0:00:25.19    [21.40.13] CPU Unknown | RAM 10584 MB
+frame= 2589 fps=101 q=29.0 size=    2816KiB time=00:01:26.37 bitrate= 267.1kbits/s speed=3.36x elapsed=0:00:25.73    frame= 2649 fps=101 q=29.0 size=    2816KiB time=00:01:28.36 bitrate= 261.1kbits/s speed=3.36x elapsed=0:00:26.29    frame= 2701 fps=101 q=29.0 size=    2816KiB time=00:01:30.12 bitrate= 256.0kbits/s speed=3.36x elapsed=0:00:26.83    frame= 2750 fps=101 q=29.0 size=    2816KiB time=00:01:31.70 bitrate= 251.6kbits/s speed=3.35x elapsed=0:00:27.34    frame= 2807 fps=101 q=29.0 size=    3072KiB time=00:01:33.64 bitrate= 268.7kbits/s speed=3.36x elapsed=0:00:27.88    frame= 2859 fps=101 q=29.0 size=    3072KiB time=00:01:35.37 bitrate= 263.9kbits/s speed=3.36x elapsed=0:00:28.39    frame= 2915 fps=101 q=29.0 size=    3072KiB time=00:01:37.24 bitrate= 258.8kbits/s speed=3.36x elapsed=0:00:28.91    frame= 2971 fps=101 q=29.0 size=    3072KiB time=00:01:39.12 bitrate= 253.9kbits/s speed=3.36x elapsed=0:00:29.46    frame= 3025 fps=101 q=29.0 size=    3328KiB time=00:01:40.92 bitrate= 270.1kbits/s speed=3.37x elapsed=0:00:29.97    [21.40.17] CPU Unknown | RAM 10573 MB
+frame= 3073 fps=101 q=29.0 size=    3328KiB time=00:01:42.55 bitrate= 265.8kbits/s speed=3.36x elapsed=0:00:30.49    frame= 3129 fps=101 q=29.0 size=    3328KiB time=00:01:44.37 bitrate= 261.2kbits/s speed=3.36x elapsed=0:00:31.02    frame= 3185 fps=101 q=29.0 size=    3328KiB time=00:01:46.24 bitrate= 256.6kbits/s speed=3.37x elapsed=0:00:31.55    frame= 3237 fps=101 q=29.0 size=    3328KiB time=00:01:47.97 bitrate= 252.5kbits/s speed=3.37x elapsed=0:00:32.07    frame= 3287 fps=101 q=29.0 size=    3584KiB time=00:01:49.65 bitrate= 267.7kbits/s speed=3.36x elapsed=0:00:32.60    frame= 3343 fps=101 q=29.0 size=    3584KiB time=00:01:51.50 bitrate= 263.3kbits/s speed=3.36x elapsed=0:00:33.14    frame= 3395 fps=101 q=29.0 size=    3584KiB time=00:01:53.25 bitrate= 259.2kbits/s speed=3.36x elapsed=0:00:33.66    frame= 3447 fps=101 q=29.0 size=    3584KiB time=00:01:54.98 bitrate= 255.3kbits/s speed=3.36x elapsed=0:00:34.18    frame= 3500 fps=101 q=29.0 size=    3840KiB time=00:01:56.71 bitrate= 269.5kbits/s speed=3.36x elapsed=0:00:34.69    [21.40.22] CPU Unknown | RAM 10581 MB
+frame= 3557 fps=101 q=29.0 size=    3840KiB time=00:01:58.65 bitrate= 265.1kbits/s speed=3.37x elapsed=0:00:35.22    frame= 3605 fps=101 q=29.0 size=    3840KiB time=00:02:00.28 bitrate= 261.5kbits/s speed=3.36x elapsed=0:00:35.75    frame= 3661 fps=101 q=29.0 size=    3840KiB time=00:02:02.11 bitrate= 257.6kbits/s speed=3.37x elapsed=0:00:36.26    frame= 3717 fps=101 q=29.0 size=    4096KiB time=00:02:03.98 bitrate= 270.6kbits/s speed=3.37x elapsed=0:00:36.79    frame= 3775 fps=101 q=29.0 size=    4096KiB time=00:02:05.90 bitrate= 266.5kbits/s speed=3.37x elapsed=0:00:37.33    frame= 3831 fps=101 q=29.0 size=    4096KiB time=00:02:07.77 bitrate= 262.6kbits/s speed=3.37x elapsed=0:00:37.87    frame= 3883 fps=101 q=29.0 size=    4096KiB time=00:02:09.50 bitrate= 259.1kbits/s speed=3.37x elapsed=0:00:38.40    frame= 3943 fps=101 q=29.0 size=    4352KiB time=00:02:11.52 bitrate= 271.1kbits/s speed=3.38x elapsed=0:00:38.93    frame= 3994 fps=101 q=29.0 size=    4352KiB time=00:02:13.17 bitrate= 267.7kbits/s speed=3.38x elapsed=0:00:39.45    frame= 4052 fps=101 q=29.0 size=    4352KiB time=00:02:15.12 bitrate= 263.9kbits/s speed=3.38x elapsed=0:00:39.97    [21.40.28] CPU Unknown | RAM 10614 MB
+frame= 4097 fps=101 q=29.0 size=    4352KiB time=00:02:16.68 bitrate= 260.8kbits/s speed=3.37x elapsed=0:00:40.53    frame= 4149 fps=101 q=29.0 size=    4352KiB time=00:02:18.38 bitrate= 257.6kbits/s speed=3.37x elapsed=0:00:41.07    frame= 4193 fps=101 q=29.0 size=    4608KiB time=00:02:19.84 bitrate= 269.9kbits/s speed=3.36x elapsed=0:00:41.59    frame= 4244 fps=101 q=29.0 size=    4608KiB time=00:02:21.50 bitrate= 266.8kbits/s speed=3.36x elapsed=0:00:42.13    frame= 4291 fps=101 q=29.0 size=    4608KiB time=00:02:23.13 bitrate= 263.7kbits/s speed=3.35x elapsed=0:00:42.66    frame= 4343 fps=101 q=29.0 size=    4608KiB time=00:02:24.84 bitrate= 260.6kbits/s speed=3.35x elapsed=0:00:43.19    frame= 4395 fps=101 q=29.0 size=    4608KiB time=00:02:26.56 bitrate= 257.6kbits/s speed=3.35x elapsed=0:00:43.70    frame= 4451 fps=101 q=29.0 size=    4864KiB time=00:02:28.36 bitrate= 268.6kbits/s speed=3.35x elapsed=0:00:44.22    frame= 4500 fps=101 q=29.0 size=    4864KiB time=00:02:30.04 bitrate= 265.6kbits/s speed=3.35x elapsed=0:00:44.75    frame= 4560 fps=101 q=29.0 size=    4864KiB time=00:02:32.04 bitrate= 262.1kbits/s speed=3.35x elapsed=0:00:45.35    [21.40.33] CPU Unknown | RAM 10603 MB
+frame= 4612 fps=101 q=29.0 size=    4864KiB time=00:02:33.76 bitrate= 259.1kbits/s speed=3.35x elapsed=0:00:45.87    frame= 4661 fps=100 q=29.0 size=    5120KiB time=00:02:35.44 bitrate= 269.8kbits/s speed=3.35x elapsed=0:00:46.39    frame= 4717 fps=101 q=29.0 size=    5120KiB time=00:02:37.32 bitrate= 266.6kbits/s speed=3.35x elapsed=0:00:46.91    frame= 4763 fps=100 q=29.0 size=    5120KiB time=00:02:38.85 bitrate= 264.0kbits/s speed=3.35x elapsed=0:00:47.45    frame= 4815 fps=100 q=29.0 size=    5120KiB time=00:02:40.58 bitrate= 261.2kbits/s speed=3.35x elapsed=0:00:47.96    frame= 4866 fps=100 q=29.0 size=    5376KiB time=00:02:42.24 bitrate= 271.5kbits/s speed=3.35x elapsed=0:00:48.49    frame= 4919 fps=100 q=29.0 size=    5376KiB time=00:02:44.04 bitrate= 268.5kbits/s speed=3.35x elapsed=0:00:49.03    frame= 4971 fps=100 q=29.0 size=    5376KiB time=00:02:45.81 bitrate= 265.6kbits/s speed=3.34x elapsed=0:00:49.57    frame= 5025 fps=100 q=29.0 size=    5376KiB time=00:02:47.56 bitrate= 262.8kbits/s speed=3.35x elapsed=0:00:50.09    [21.40.38] CPU Unknown | RAM 10590 MB
+frame= 5077 fps=100 q=29.0 size=    5376KiB time=00:02:49.32 bitrate= 260.1kbits/s speed=3.34x elapsed=0:00:50.62    frame= 5133 fps=100 q=29.0 size=    5632KiB time=00:02:51.16 bitrate= 269.5kbits/s speed=3.35x elapsed=0:00:51.13    frame= 5185 fps=100 q=29.0 size=    5632KiB time=00:02:52.92 bitrate= 266.8kbits/s speed=3.35x elapsed=0:00:51.65    frame= 5237 fps=100 q=29.0 size=    5632KiB time=00:02:54.64 bitrate= 264.2kbits/s speed=3.35x elapsed=0:00:52.17    frame= 5287 fps=100 q=29.0 size=    5632KiB time=00:02:56.35 bitrate= 261.6kbits/s speed=3.35x elapsed=0:00:52.71    frame= 5343 fps=100 q=29.0 size=    5888KiB time=00:02:58.17 bitrate= 270.7kbits/s speed=3.35x elapsed=0:00:53.23    frame= 5395 fps=100 q=29.0 size=    5888KiB time=00:02:59.90 bitrate= 268.1kbits/s speed=3.35x elapsed=0:00:53.77    frame= 5451 fps=100 q=29.0 size=    5888KiB time=00:03:01.77 bitrate= 265.4kbits/s speed=3.35x elapsed=0:00:54.30    frame= 5501 fps=100 q=29.0 size=    5888KiB time=00:03:03.45 bitrate= 262.9kbits/s speed=3.35x elapsed=0:00:54.81    frame= 5557 fps=100 q=29.0 size=    6144KiB time=00:03:05.30 bitrate= 271.6kbits/s speed=3.35x elapsed=0:00:55.34    [21.40.43] CPU Unknown | RAM 10585 MB
+frame= 5609 fps=100 q=29.0 size=    6144KiB time=00:03:07.05 bitrate= 269.1kbits/s speed=3.35x elapsed=0:00:55.86    frame= 5661 fps=100 q=29.0 size=    6144KiB time=00:03:08.85 bitrate= 266.5kbits/s speed=3.35x elapsed=0:00:56.38    frame= 5717 fps=100 q=29.0 size=    6144KiB time=00:03:10.65 bitrate= 264.0kbits/s speed=3.35x elapsed=0:00:56.90    frame= 5763 fps=100 q=29.0 size=    6400KiB time=00:03:12.16 bitrate= 272.8kbits/s speed=3.35x elapsed=0:00:57.41    frame= 5819 fps=100 q=29.0 size=    6400KiB time=00:03:14.08 bitrate= 270.1kbits/s speed=3.35x elapsed=0:00:57.95    frame= 5875 fps=100 q=29.0 size=    6400KiB time=00:03:15.91 bitrate= 267.6kbits/s speed=3.35x elapsed=0:00:58.48    frame= 5931 fps=100 q=29.0 size=    6400KiB time=00:03:17.80 bitrate= 265.0kbits/s speed=3.35x elapsed=0:00:59.03    frame= 5987 fps=101 q=29.0 size=    6400KiB time=00:03:19.68 bitrate= 262.6kbits/s speed=3.35x elapsed=0:00:59.56    frame= 6037 fps=100 q=29.0 size=    6656KiB time=00:03:21.31 bitrate= 270.9kbits/s speed=3.35x elapsed=0:01:00.08    [21.40.48] CPU Unknown | RAM 10597 MB
+frame= 6089 fps=100 q=29.0 size=    6656KiB time=00:03:23.11 bitrate= 268.5kbits/s speed=3.35x elapsed=0:01:00.60    frame= 6149 fps=101 q=29.0 size=    6656KiB time=00:03:25.05 bitrate= 265.9kbits/s speed=3.35x elapsed=0:01:01.14    frame= 6201 fps=101 q=29.0 size=    6656KiB time=00:03:26.73 bitrate= 263.7kbits/s speed=3.35x elapsed=0:01:01.68    frame= 6248 fps=100 q=29.0 size=    6656KiB time=00:03:28.32 bitrate= 261.7kbits/s speed=3.35x elapsed=0:01:02.21    frame= 6295 fps=100 q=29.0 size=    6912KiB time=00:03:29.90 bitrate= 269.8kbits/s speed=3.35x elapsed=0:01:02.72    frame= 6347 fps=100 q=29.0 size=    6912KiB time=00:03:31.65 bitrate= 267.5kbits/s speed=3.35x elapsed=0:01:03.25    frame= 6399 fps=100 q=29.0 size=    6912KiB time=00:03:33.40 bitrate= 265.3kbits/s speed=3.35x elapsed=0:01:03.77    frame= 6455 fps=100 q=29.0 size=    6912KiB time=00:03:35.25 bitrate= 263.1kbits/s speed=3.35x elapsed=0:01:04.31    frame= 6501 fps=100 q=29.0 size=    7168KiB time=00:03:36.76 bitrate= 270.9kbits/s speed=3.34x elapsed=0:01:04.82    [21.40.53] CPU Unknown | RAM 10604 MB
+frame= 6557 fps=100 q=29.0 size=    7168KiB time=00:03:38.64 bitrate= 268.6kbits/s speed=3.34x elapsed=0:01:05.37    frame= 6608 fps=100 q=29.0 size=    7168KiB time=00:03:40.32 bitrate= 266.5kbits/s speed=3.34x elapsed=0:01:05.89    frame= 6657 fps=100 q=29.0 size=    7168KiB time=00:03:41.97 bitrate= 264.5kbits/s speed=3.34x elapsed=0:01:06.41    frame= 6709 fps=100 q=29.0 size=    7168KiB time=00:03:43.70 bitrate= 262.5kbits/s speed=3.34x elapsed=0:01:06.94    frame= 6759 fps=100 q=29.0 size=    7424KiB time=00:03:45.38 bitrate= 269.8kbits/s speed=3.34x elapsed=0:01:07.49    frame= 6811 fps=100 q=29.0 size=    7424KiB time=00:03:47.11 bitrate= 267.8kbits/s speed=3.34x elapsed=0:01:08.02    frame= 6859 fps=100 q=29.0 size=    7424KiB time=00:03:48.74 bitrate= 265.9kbits/s speed=3.34x elapsed=0:01:08.54    frame= 6915 fps=100 q=29.0 size=    7424KiB time=00:03:50.56 bitrate= 263.8kbits/s speed=3.34x elapsed=0:01:09.09    frame= 6970 fps=100 q=29.0 size=    7680KiB time=00:03:52.36 bitrate= 270.8kbits/s speed=3.34x elapsed=0:01:09.61    frame= 7021 fps=100 q=29.0 size=    7680KiB time=00:03:54.12 bitrate= 268.7kbits/s speed=3.34x elapsed=0:01:10.17    [21.40.58] CPU Unknown | RAM 10636 MB
+frame= 7065 fps=100 q=29.0 size=    7680KiB time=00:03:55.58 bitrate= 267.1kbits/s speed=3.33x elapsed=0:01:10.70    frame= 7113 fps=100 q=29.0 size=    7680KiB time=00:03:57.16 bitrate= 265.3kbits/s speed=3.33x elapsed=0:01:11.22    

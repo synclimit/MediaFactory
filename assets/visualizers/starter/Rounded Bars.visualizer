@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "engineVersion": "1.0.0",
+  "presetVersion": 1,
+  "id": "rounded-bars",
+  "name": "Rounded Bars",
+  "version": 1,
+  "author": "MediaFactory",
+  "description": "Vertical audio spectrum with rounded corners.",
+  "category": "Spectrum",
+  "tags": [
+    "starter",
+    "built-in"
+  ],
+  "renderer": "spectrum",
+  "geometry": {
+    "shape": "bar",
+    "mirror": false,
+    "rounded": true,
+    "center": false,
+    "thickness": 8,
+    "spacing": 4
+  },
+  "appearance": {
+    "color": "#4facfe",
+    "gradient": "Linear",
+    "glow": 40,
+    "opacity": 100
+  },
+  "audio": {
+    "fftGain": 110,
+    "smoothing": 85,
+    "bassFocus": 100,
+    "midFocus": 60,
+    "trebleFocus": 40
+  },
+  "transform": {
+    "scale": 100,
+    "rotation": 0
+  },
+  "createdAt": "2026-06-21T06:15:52.154Z",
+  "updatedAt": "2026-06-21T06:15:52.154Z"
+}

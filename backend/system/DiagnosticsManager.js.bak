@@ -1,0 +1,185 @@
+const fs = require('fs/promises');
+const path = require('path');
+const os = require('os');
+const AdmZip = require('adm-zip');
+const { PipelineEmitter, PipelineEvents } = require('../m5/core/Events');
+const dbEngine = require('../m5/Database');
+
+class DiagnosticsManager {
+    constructor() {
+        this.logs = [];
+        this.maxLogs = 1000;
+        this.events = [];
+        this.pipelineState = {
+            stages: {},
+            lastUpdated: null,
+            currentJob: null,
+            currentRecipe: null,
+            snapshot: null
+        };
+        
+        this.diagnosticsDir = path.resolve('.mediafactory/diagnostics');
+        
+        this._initCrashHandlers();
+        this._initPipelineListeners();
+    }
+    
+    async init() {
+        await fs.mkdir(this.diagnosticsDir, { recursive: true });
+    }
+
+    // ---------- Event & State Interception ----------
+
+    pushLog(logObj) {
+        this.logs.unshift(logObj); // Prepend so newest is first
+        if (this.logs.length > this.maxLogs) {
+            this.logs.pop();
+        }
+    }
+    
+    _initPipelineListeners() {
+        // Track every event
+        Object.values(PipelineEvents).forEach(eventName => {
+            PipelineEmitter.on(eventName, (payload) => {
+                this.events.unshift({
+                    timestamp: Date.now(),
+                    event: eventName,
+                    payload
+                });
+                if (this.events.length > 500) this.events.pop();
+                
+                // Track state
+                this.pipelineState.lastUpdated = Date.now();
+                if (payload?.jobId) this.pipelineState.currentJob = payload.jobId;
+                
+                this.pipelineState.stages[eventName] = {
+                    status: eventName.includes('FAILED') ? 'Failed' : 'Success',
+                    timestamp: Date.now(),
+                    payload
+                };
+            });
+        });
+    }
+
+    _initCrashHandlers() {
+        process.on('uncaughtException', async (err) => {
+            console.error('[CRITICAL] Uncaught Exception caught by DiagnosticsManager:', err);
+            await this.generateCrashPackage('UncaughtException', err);
+        });
+
+        process.on('unhandledRejection', async (reason, promise) => {
+            console.error('[CRITICAL] Unhandled Rejection caught by DiagnosticsManager:', reason);
+            await this.generateCrashPackage('UnhandledRejection', reason);
+        });
+    }
+
+    // ---------- System Info & Masking ----------
+
+    async getSystemInfo() {
+        return {
+            os: `${os.type()} ${os.release()} (${os.arch()})`,
+            cpu: os.cpus()[0]?.model,
+            cores: os.cpus().length,
+            ramTotal: Math.round(os.totalmem() / 1024 / 1024 / 1024) + ' GB',
+            ramFree: Math.round(os.freemem() / 1024 / 1024 / 1024) + ' GB',
+            nodeVersion: process.version,
+            appVersion: 'MediaFactory M5 v1.0',
+            uptime: process.uptime()
+        };
+    }
+
+    maskSensitiveData(dataStr) {
+        if (!dataStr) return '';
+        // Basic mask for anything looking like an API key, Token, or Path with personal names
+        let masked = dataStr.replace(/([a-zA-Z0-9_-]{20,})/g, '***MASKED_TOKEN***');
+        // Mask Windows User Paths
+        masked = masked.replace(/(C:\\Users\\[^\\]+)/gi, 'C:\\Users\\***MASKED***');
+        return masked;
+    }
+
+    // ---------- Report Generation ----------
+
+    async buildMarkdownReport(errorContext = null) {
+        const sysInfo = await this.getSystemInfo();
+        let report = `# MediaFactory Diagnostics Report\n`;
+        report += `Generated at: ${new Date().toISOString()}\n\n`;
+
+        report += `## Application & System\n`;
+        report += `- OS: ${sysInfo.os}\n`;
+        report += `- CPU: ${sysInfo.cpu} (${sysInfo.cores} cores)\n`;
+        report += `- RAM: Free ${sysInfo.ramFree} / Total ${sysInfo.ramTotal}\n`;
+        report += `- Node: ${sysInfo.nodeVersion}\n`;
+        report += `- Pipeline: ${sysInfo.appVersion}\n\n`;
+
+        if (errorContext) {
+            report += `## Exception\n`;
+            report += `Type: ${errorContext.type}\n`;
+            report += `Message: ${errorContext.error?.message || errorContext.error}\n`;
+            report += `Stack:\n\`\`\`\n${errorContext.error?.stack || ''}\n\`\`\`\n\n`;
+        }
+
+        report += `## Pipeline State\n`;
+        report += `Current Job: ${this.pipelineState.currentJob || 'None'}\n`;
+        report += `Last Event: ${this.events[0]?.event || 'None'}\n\n`;
+
+        report += `## Recent Logs (Last 50)\n\`\`\`\n`;
+        const recentLogs = this.logs.slice(0, 50).map(l => `[${l.timestamp}] [${l.level}] [${l.engine}] ${l.message}`).join('\n');
+        report += this.maskSensitiveData(recentLogs) + '\n\`\`\`\n';
+
+        return report;
+    }
+
+    async buildZipPackage(errorContext = null) {
+        const zip = new AdmZip();
+        
+        // 1. CrashReport.md
+        const mdReport = await this.buildMarkdownReport(errorContext);
+        zip.addFile("CrashReport.md", Buffer.from(mdReport, "utf8"));
+        
+        // 2. Logs.txt
+        const allLogs = this.logs.map(l => `[${l.timestamp}] [${l.level}] [${l.engine}] ${l.message}`).join('\n');
+        zip.addFile("Logs.txt", Buffer.from(this.maskSensitiveData(allLogs), "utf8"));
+
+        // 3. System.json
+        const sysInfo = await this.getSystemInfo();
+        zip.addFile("System.json", Buffer.from(JSON.stringify(sysInfo, null, 2), "utf8"));
+
+        // 4. Pipeline.json & Events.json
+        zip.addFile("Pipeline.json", Buffer.from(JSON.stringify(this.pipelineState, null, 2), "utf8"));
+        zip.addFile("Events.json", Buffer.from(JSON.stringify(this.events, null, 2), "utf8"));
+        
+        return zip;
+    }
+
+    async generateCrashPackage(type, error) {
+        try {
+            await this.init();
+            const zip = await this.buildZipPackage({ type, error });
+            const filename = `CrashReport_${Date.now()}.zip`;
+            const dest = path.join(this.diagnosticsDir, filename);
+            zip.writeZip(dest);
+            console.log(`[DiagnosticsManager] Crash package saved to ${dest}`);
+            await this._cleanupOldReports();
+        } catch (e) {
+            console.error('[DiagnosticsManager] Failed to generate crash package!', e);
+        }
+    }
+
+    async _cleanupOldReports() {
+        try {
+            const files = await fs.readdir(this.diagnosticsDir);
+            const zips = files.filter(f => f.endsWith('.zip')).sort().reverse();
+            // Keep newest 100
+            if (zips.length > 100) {
+                const toDelete = zips.slice(100);
+                for (const f of toDelete) {
+                    await fs.unlink(path.join(this.diagnosticsDir, f));
+                }
+            }
+        } catch (e) {
+            console.error('[DiagnosticsManager] Cleanup failed:', e);
+        }
+    }
+}
+
+module.exports = new DiagnosticsManager();

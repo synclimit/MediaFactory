@@ -1,0 +1,17 @@
+{
+  "headline": "string",
+  "summary": "string",
+  "category": "string",
+  "keywords": [
+    "string",
+    "string",
+    "string",
+    "string",
+    "string"
+  ],
+  "mainEntity": "string",
+  "recommendedLayout": "string",
+  "confidence": "number",
+  "language": "string",
+  "tone": "string"
+}

@@ -1,0 +1,93 @@
+/* M5 AAA Sci-Fi Design Language CSS */
+
+/* Main Container Frame with 4-corner mechanical bevels */
+.m5-sci-fi-frame {
+  clip-path: polygon(
+    15px 0, 
+    100% 0, 
+    100% calc(100% - 15px), 
+    calc(100% - 15px) 100%, 
+    0 100%, 
+    0 15px
+  );
+  position: relative;
+}
+
+/* Orange Corner Accents (Pseudo elements for the glowing lines on the cut corners) */
+/* Top Left Accent */
+.m5-frame-accent-tl {
+  position: absolute;
+  top: 0; left: 0;
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #F97316 2px, transparent 2px);
+  clip-path: polygon(15px 0, 100% 0, 100% 100%, 0 100%, 0 15px);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Bottom Right Accent */
+.m5-frame-accent-br {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 40px; height: 40px;
+  background: linear-gradient(-45deg, #F97316 2px, transparent 2px);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Active Tab Bevel */
+.m5-tab-active {
+  clip-path: polygon(
+    10px 0, 
+    calc(100% - 10px) 0, 
+    100% 100%, 
+    0 100%
+  );
+}
+
+/* Active Formula Card Bevel */
+.m5-card-active {
+  clip-path: polygon(
+    8px 0, 
+    100% 0, 
+    100% calc(100% - 8px), 
+    calc(100% - 8px) 100%, 
+    0 100%, 
+    0 8px
+  );
+}
+
+/* Custom Scrollbar for M5 */
+.m5-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.m5-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+.m5-scroll::-webkit-scrollbar-thumb {
+  background: #333642;
+  border-radius: 4px;
+}
+.m5-scroll::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
+}
+
+/* Inner Glow Shadow Utilities */
+.m5-glow-orange {
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.4), inset 0 0 10px rgba(249, 115, 22, 0.2);
+}
+
+.m5-text-glow {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.m5-icon-glow {
+  filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.6));
+}
+
+.m5-inner-border {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}

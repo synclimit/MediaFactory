@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "engineVersion": "1.0.0",
+  "presetVersion": 1,
+  "id": "mirror-spectrum",
+  "name": "Mirror Spectrum",
+  "version": 1,
+  "author": "MediaFactory",
+  "description": "Reflected vertical bars.",
+  "category": "Spectrum",
+  "tags": [
+    "starter",
+    "built-in"
+  ],
+  "renderer": "spectrum",
+  "geometry": {
+    "shape": "bar",
+    "mirror": true,
+    "rounded": false,
+    "center": false,
+    "thickness": 4,
+    "spacing": 2
+  },
+  "appearance": {
+    "color": "#ff0844",
+    "gradient": "Linear",
+    "glow": 60,
+    "opacity": 100
+  },
+  "audio": {
+    "fftGain": 100,
+    "smoothing": 80,
+    "bassFocus": 100,
+    "midFocus": 50,
+    "trebleFocus": 30
+  },
+  "transform": {
+    "scale": 100,
+    "rotation": 0
+  },
+  "createdAt": "2026-06-21T06:15:52.155Z",
+  "updatedAt": "2026-06-21T06:15:52.155Z"
+}

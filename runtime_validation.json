@@ -1,0 +1,32 @@
+{
+  "Beat Engine": {
+    "beatCount": 1,
+    "beatDetected": true,
+    "kickScore": 0.82,
+    "snareScore": 0.1,
+    "bassEnergy": 0.7
+  },
+  "AudioDrivenRuntime": {
+    "kick.justTriggered": true,
+    "kick.trigger": true,
+    "kick.intensity": 0.9,
+    "kick.velocity": 56.25
+  },
+  "ZoomEffect": {
+    "state": "ATTACK",
+    "scale": 1.18,
+    "velocity": 56.25,
+    "attackProgress": 1,
+    "releaseProgress": 0
+  },
+  "VisualRuntime": {
+    "executionCount": 1,
+    "visualComposition.scale": 1.18,
+    "transform.scale": 1.18
+  },
+  "Renderer": {
+    "appliedScale": 1.18,
+    "frameNumber": 120,
+    "renderSuccess": true
+  }
+}

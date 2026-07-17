@@ -1,0 +1,29 @@
+{
+  "name": "Sports",
+  "version": "1.0",
+  "elements": [
+    {
+      "type": "image",
+      "bind": "selectedImage",
+      "mode": "fitMode"
+    },
+    {
+      "type": "text",
+      "bind": "headline",
+      "role": "title"
+    },
+    {
+      "type": "text",
+      "bind": "summary",
+      "role": "body"
+    },
+    {
+      "type": "badge",
+      "bind": "category"
+    }
+  ],
+  "layoutConfig": {
+    "direction": "row",
+    "alignment": "center"
+  }
+}

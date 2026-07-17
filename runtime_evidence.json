@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "kickStateAfterUpdate": {
+    "trigger": true,
+    "justTriggered": true,
+    "intensity": 0.9,
+    "velocity": 56.25,
+    "progress": 1,
+    "decay": false
+  }
+}

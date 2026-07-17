@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "name": "QA Project Phase 10",
+  "assets": {
+    "audio": "./qa_assets/test_audio.mp3",
+    "subtitle": "./qa_assets/test_subtitle.srt",
+    "background": "./qa_assets/test_bg.jpg",
+    "fonts": "./qa_assets/test_font.ttf"
+  },
+  "settings": {
+    "resolution": "1080p",
+    "fps": 60,
+    "mode": "deterministic"
+  }
+}

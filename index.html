@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mediafactory</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.addEventListener('error', function(event) {
+        var errorDiv = document.createElement('div');
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '0';
+        errorDiv.style.left = '0';
+        errorDiv.style.width = '100%';
+        errorDiv.style.backgroundColor = 'red';
+        errorDiv.style.color = 'white';
+        errorDiv.style.padding = '20px';
+        errorDiv.style.zIndex = '999999';
+        errorDiv.style.fontFamily = 'monospace';
+        errorDiv.innerHTML = '<h2>CRITICAL ERROR</h2><p>' + event.message + '</p><pre>' + (event.error ? event.error.stack : '') + '</pre>';
+        document.body.appendChild(errorDiv);
+      });
+      window.addEventListener('unhandledrejection', function(event) {
+        var errorDiv = document.createElement('div');
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '0';
+        errorDiv.style.left = '0';
+        errorDiv.style.width = '100%';
+        errorDiv.style.backgroundColor = 'red';
+        errorDiv.style.color = 'white';
+        errorDiv.style.padding = '20px';
+        errorDiv.style.zIndex = '999999';
+        errorDiv.style.fontFamily = 'monospace';
+        errorDiv.innerHTML = '<h2>UNHANDLED PROMISE REJECTION</h2><p>' + event.reason + '</p>';
+        document.body.appendChild(errorDiv);
+      });
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

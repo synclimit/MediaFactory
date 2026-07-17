@@ -1,0 +1,152 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>M5 Benchmark Report</title>
+        <style>
+            body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }
+            .card { background: #1e293b; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #334155; }
+            h1, h2, h3 { color: #38bdf8; }
+            .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+            .stat { font-size: 2rem; font-weight: bold; color: #10b981; }
+            table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+            th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #334155; }
+            th { color: #94a3b8; font-size: 0.875rem; text-transform: uppercase; }
+            a { color: #38bdf8; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            .bar-bg { background: #334155; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 5px; }
+            .bar-fg { background: #38bdf8; height: 100%; }
+        </style>
+    </head>
+    <body>
+        <h1>M5 News Creator - Sprint 1.1 Benchmark</h1>
+        <p>Generated: 2026-07-10T14:06:01.901Z</p>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Success Rate</h3>
+                <div class="stat" style="color: #10b981">100.0%</div>
+                <p>100 / 100 Articles</p>
+            </div>
+            <div class="card">
+                <h3>Avg Extraction Time</h3>
+                <div class="stat">32.4 ms</div>
+            </div>
+            <div class="card">
+                <h3>Avg Body Length</h3>
+                <div class="stat">2331 chars</div>
+            </div>
+            <div class="card">
+                <h3>Avg Images</h3>
+                <div class="stat">1.0</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Field Validation Metrics</h2>
+            <table>
+                <tr><th>Field</th><th>Valid %</th><th>Visual</th></tr>
+                
+                <tr>
+                    <td>TITLE</td>
+                    <td>100.00%</td>
+                    <td><div class="bar-bg"><div class="bar-fg" style="width: 100.00%"></div></div></td>
+                </tr>
+                
+                <tr>
+                    <td>BODY</td>
+                    <td>100.00%</td>
+                    <td><div class="bar-bg"><div class="bar-fg" style="width: 100.00%"></div></div></td>
+                </tr>
+                
+                <tr>
+                    <td>IMAGES</td>
+                    <td>100.00%</td>
+                    <td><div class="bar-bg"><div class="bar-fg" style="width: 100.00%"></div></div></td>
+                </tr>
+                
+                <tr>
+                    <td>METADATA</td>
+                    <td>100.00%</td>
+                    <td><div class="bar-bg"><div class="bar-fg" style="width: 100.00%"></div></div></td>
+                </tr>
+                
+                <tr>
+                    <td>LANGUAGE</td>
+                    <td>100.00%</td>
+                    <td><div class="bar-bg"><div class="bar-fg" style="width: 100.00%"></div></div></td>
+                </tr>
+                
+                <tr>
+                    <td>PUBLISHDATE</td>
+                    <td>40.00%</td>
+                    <td><div class="bar-bg"><div class="bar-fg" style="width: 40.00%"></div></div></td>
+                </tr>
+                
+                <tr>
+                    <td>AUTHOR</td>
+                    <td>40.00%</td>
+                    <td><div class="bar-bg"><div class="bar-fg" style="width: 40.00%"></div></div></td>
+                </tr>
+                
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Domain Statistics</h2>
+            <table>
+                <tr><th>Domain</th><th>Processed</th><th>Success</th><th>Failed</th><th>Avg Time</th></tr>
+                
+                <tr>
+                    <td>DETIK</td>
+                    <td>20</td>
+                    <td style="color: #10b981">20</td>
+                    <td style="color: #ef4444">0</td>
+                    <td>70.5 ms</td>
+                </tr>
+                
+                <tr>
+                    <td>KOMPAS</td>
+                    <td>20</td>
+                    <td style="color: #10b981">20</td>
+                    <td style="color: #ef4444">0</td>
+                    <td>0.7 ms</td>
+                </tr>
+                
+                <tr>
+                    <td>CNNINDONESIA</td>
+                    <td>20</td>
+                    <td style="color: #10b981">20</td>
+                    <td style="color: #ef4444">0</td>
+                    <td>41.0 ms</td>
+                </tr>
+                
+                <tr>
+                    <td>TEMPO</td>
+                    <td>20</td>
+                    <td style="color: #10b981">20</td>
+                    <td style="color: #ef4444">0</td>
+                    <td>1.0 ms</td>
+                </tr>
+                
+                <tr>
+                    <td>TRIBUNCOM</td>
+                    <td>20</td>
+                    <td style="color: #10b981">20</td>
+                    <td style="color: #ef4444">0</td>
+                    <td>48.7 ms</td>
+                </tr>
+                
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Sample Output Files</h2>
+            <ul>
+                <li><a href="output/detik/e2306b6c.json" target="_blank">output/detik/e2306b6c.json</a></li><li><a href="output/kompas/fa48af86.json" target="_blank">output/kompas/fa48af86.json</a></li><li><a href="output/cnnindonesia/fa73f28f.json" target="_blank">output/cnnindonesia/fa73f28f.json</a></li><li><a href="output/tempo/08766f0d.json" target="_blank">output/tempo/08766f0d.json</a></li><li><a href="output/tribuncom/967db346.json" target="_blank">output/tribuncom/967db346.json</a></li><li><a href="output/detik/e2306b6c.json" target="_blank">output/detik/e2306b6c.json</a></li><li><a href="output/kompas/fa48af86.json" target="_blank">output/kompas/fa48af86.json</a></li><li><a href="output/cnnindonesia/fa73f28f.json" target="_blank">output/cnnindonesia/fa73f28f.json</a></li><li><a href="output/tempo/08766f0d.json" target="_blank">output/tempo/08766f0d.json</a></li><li><a href="output/tribuncom/967db346.json" target="_blank">output/tribuncom/967db346.json</a></li>
+                <li><i>...and more</i></li>
+            </ul>
+        </div>
+    </body>
+    </html>
+    

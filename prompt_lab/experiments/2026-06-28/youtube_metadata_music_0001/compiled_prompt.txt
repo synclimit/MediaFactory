@@ -1,0 +1,6 @@
+Generate YouTube metadata for a Music video.
+Keyword: lagu rock
+Language: Indonesia
+Provider: Gemini
+
+Output the Title, Description, and Tags.

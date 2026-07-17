@@ -1,0 +1,79 @@
+[Runtime-001]
+API Request
+Timestamp: 21.09.10.709
+Thread: 17384
+Queue ID: q_1781878145731
+Details: POST /api/m3/render | Status: 200 | Time: 1ms | Payload: 3338 bytes
+
+[Runtime-002]
+Queue Lifecycle: RENDERING
+Timestamp: 21.09.10.712
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-003]
+checkFFmpeg TRY
+Timestamp: 21.09.10.713
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-004]
+checkFFmpeg SUCCESS
+Timestamp: 21.09.10.767
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-005]
+fs.mkdir TRY (Cache & Output)
+Timestamp: 21.09.10.767
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-006]
+fs.mkdir SUCCESS
+Timestamp: 21.09.10.768
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-007]
+buildPlaylistAudio STARTED
+Timestamp: 21.09.10.847
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-008]
+fs.stat TRY (Resolving Playlist)
+Timestamp: 21.09.10.847
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-009]
+fs.stat SUCCESS
+Timestamp: 21.09.10.847
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-010]
+fs.writeFile TRY (concat.txt)
+Timestamp: 21.09.10.848
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-011]
+fs.writeFile SUCCESS
+Timestamp: 21.09.10.848
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-012]
+buildPlaylistAudio END
+Timestamp: 21.09.24.824
+Thread: 17384
+Queue ID: q_1781878145731
+
+[Runtime-013]
+buildImageVideo STARTED
+Timestamp: 21.09.24.865
+Thread: 17384
+Queue ID: q_1781878145731
+

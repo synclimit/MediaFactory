@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "engineVersion": "1.0.0",
+  "presetVersion": 1,
+  "id": "wave-spectrum",
+  "name": "Wave Spectrum",
+  "version": 1,
+  "author": "MediaFactory",
+  "description": "Continuous smooth wave line.",
+  "category": "Spectrum",
+  "tags": [
+    "starter",
+    "built-in"
+  ],
+  "renderer": "spectrum",
+  "geometry": {
+    "shape": "line",
+    "mirror": false,
+    "rounded": true,
+    "center": false,
+    "thickness": 3,
+    "spacing": 0
+  },
+  "appearance": {
+    "color": "#84fab0",
+    "gradient": "None",
+    "glow": 50,
+    "opacity": 100
+  },
+  "audio": {
+    "fftGain": 100,
+    "smoothing": 95,
+    "bassFocus": 100,
+    "midFocus": 50,
+    "trebleFocus": 30
+  },
+  "transform": {
+    "scale": 100,
+    "rotation": 0
+  },
+  "createdAt": "2026-06-21T06:15:52.157Z",
+  "updatedAt": "2026-06-21T06:15:52.157Z"
+}
