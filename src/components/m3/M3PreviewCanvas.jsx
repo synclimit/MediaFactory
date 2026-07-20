@@ -23,6 +23,14 @@ import MediaFactoryRenderer from '../../services/pipeline/renderer/MediaFactoryR
 
 import { emitRuntimeEvent } from '../../services/RuntimeClient';
 import { bootstrapPipeline } from '../../services/pipeline/PipelineBootstrap';
+
+// New FX Engines
+import FilmFXEngine from './engines/FilmFXEngine';
+import AtmosphereEngine from './engines/AtmosphereEngine';
+import LightPulseEngine from './engines/LightPulseEngine';
+import StageLightEngine from './engines/StageLightEngine';
+import LaserEngine from './engines/LaserEngine';
+
 const RealtimeVisualizer = ({ config }) => {
   const canvasRef = useRef(null);
 
@@ -302,6 +310,13 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
     beatEngine.setSource(analyser);
     return () => beatEngine.setSource(null);
   }, [analyser]);
+
+  // Extract FX Engine Configs
+  const getEngineConfig = (type) => m3Objects.find(o => o.type === type)?.config || { enabled: false };
+  const cg = getEngineConfig('engine-colorgrading');
+  const colorGradingStyle = cg.enabled ? {
+    filter: `brightness(${cg.brightness || 100}%) contrast(${cg.contrast || 100}%) saturate(${cg.saturation || 100}%) hue-rotate(${cg.hueRotate || 0}deg) sepia(${cg.sepia || 0}%)`
+  } : {};
 
     const latestObjectsRef = useRef(m3Objects);
     useEffect(() => {
@@ -594,11 +609,11 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
         <PreviewRoot>
           {/* Real Background Source */}
           {m3BgPool && m3BgPool.length > 0 && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center bg-black">
+            <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center bg-black" style={colorGradingStyle}>
               {m3BgPool[0].type === 'image' ? (
-                <img src={m3BgPool[0].preview} alt="bg" className="w-full h-full object-contain opacity-60" />
+                <img src={m3BgPool[0].preview} alt="bg" className="w-full h-full object-cover opacity-60" />
               ) : m3BgPool[0].type === 'video' ? (
-                <video src={m3BgPool[0].preview} autoPlay loop muted className="w-full h-full object-contain opacity-60" />
+                <video src={m3BgPool[0].preview} autoPlay loop muted className="w-full h-full object-cover opacity-60" />
               ) : null}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 mix-blend-overlay"></div>
               <span className="absolute bottom-2 left-2 text-white/20 text-[10px] font-mono font-bold tracking-wider z-0 drop-shadow-md">
@@ -606,6 +621,13 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
               </span>
             </div>
           )}
+
+          {/* New Visual FX Engines */}
+          <AtmosphereEngine config={getEngineConfig('engine-atmosphere')} />
+          <LightPulseEngine config={getEngineConfig('engine-lightpulse')} />
+          <StageLightEngine config={getEngineConfig('engine-stagelight')} />
+          <LaserEngine config={getEngineConfig('engine-laser')} />
+          <FilmFXEngine config={getEngineConfig('engine-filmfx')} />
 
           {/* Unified Render Pipeline */}
           <MediaFactoryRenderer 
