@@ -3,7 +3,6 @@ import { beatEngine } from '../../services/audio/BeatEngine';
 import { motionEngine } from '../../services/audio/MotionEngine';
 import Surface from '../ui/Surface';
 import { BackgroundVariants } from '../ui/BackgroundVariants';
-import M3PlaybackBar from './M3PlaybackBar.jsx';
 import M3Statistics from './M3Statistics.jsx';
 import RealtimeEffectRenderer from './renderers/RealtimeEffectRenderer';
 import PreviewRoot from './renderers/PreviewRoot';
@@ -296,11 +295,12 @@ const RealtimeVisualizer = ({ config }) => {
   );
 };
 
-export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Objects, setM3Objects, m3SelectedObjectId, setM3SelectedObjectId, canvasMode = 'composer', m3CurrentTimeSec = 0, m3TotalDurationSec = 1, setM3CurrentTimeSec, m3EstRenderTimeSec, m3EstStorageMb }) {
-  const [dragState, setDragState] = useState({ isDragging: false, action: 'drag', handle: '', id: null, startX: 0, startY: 0, origX: 0, origY: 0, origW: 0, origH: 0 });
+export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3CurrentTrackIndex = 0, m3Objects, setM3Objects, m3SelectedObjectId, setM3SelectedObjectId, canvasMode = 'composer', m3CurrentTimeSec = 0, m3TotalDurationSec = 1, setM3CurrentTimeSec, m3EstRenderTimeSec, m3EstStorageMb, analyser }) {
   const containerRef = useRef(null);
   const [canvasStyle, setCanvasStyle] = useState({ width: 800, height: 450 });
-  const [analyser, setAnalyser] = useState(null);
+  const [dragState, setDragState] = useState({ isDragging: false, action: 'drag', handle: '', id: null, startX: 0, startY: 0, origX: 0, origY: 0, origW: 0, origH: 0, subTarget: null });
+  const bgMediaRef = useRef(null);
+  const latestBgPoolRef = useRef(m3BgPool);
 
   useEffect(() => {
     fontLibrary.initialize();
@@ -324,9 +324,28 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
     }, [m3Objects]);
 
     useEffect(() => {
+        latestBgPoolRef.current = m3BgPool;
+    }, [m3BgPool]);
+
+    const currentTimeSecRef = useRef(m3CurrentTimeSec);
+    useEffect(() => { currentTimeSecRef.current = m3CurrentTimeSec; }, [m3CurrentTimeSec]);
+
+    const totalDurationSecRef = useRef(m3TotalDurationSec);
+    useEffect(() => { totalDurationSecRef.current = m3TotalDurationSec; }, [m3TotalDurationSec]);
+
+    const audioTracksRef = useRef(m3AudioTracks);
+    useEffect(() => { audioTracksRef.current = m3AudioTracks; }, [m3AudioTracks]);
+
+    const currentTrackIndexRef = useRef(m3CurrentTrackIndex);
+    useEffect(() => { currentTrackIndexRef.current = m3CurrentTrackIndex; }, [m3CurrentTrackIndex]);
+
+    useEffect(() => {
         window.m3Diagnostics = window.m3Diagnostics || {};
         let animId;
         let lastTime = performance.now();
+        let smoothedMotion = { zoom: 0, swayX: 0, swayY: 0, rotate: 0 };
+        let shakeTimeX = Math.random() * 1000;
+        let shakeTimeY = Math.random() * 1000;
         
         // --- Pipeline Bootstrap ---
         const { pipeline, timeline, frameInput } = bootstrapPipeline();
@@ -347,8 +366,10 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
             // --- Render Pipeline Runtime ---
             frameInput.setInputs(latestObjectsRef.current || [], { 
                 canvasMode, 
-                currentTimeSec: m3CurrentTimeSec, 
-                totalDurationSec: m3TotalDurationSec 
+                currentTimeSec: currentTimeSecRef.current, 
+                totalDurationSec: totalDurationSecRef.current,
+                m3AudioTracks: audioTracksRef.current,
+                m3CurrentTrackIndex: currentTrackIndexRef.current
             });
 
             if (window.m3IsPlaying && !timeline.clock.isPlaying) timeline.play();
@@ -358,6 +379,95 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
 
             pipeline.update();
             const frame = pipeline.getFrame();
+            
+            // --- BG Dance (Hardware Accelerated) ---
+            if (bgMediaRef.current && latestBgPoolRef.current && latestBgPoolRef.current.length > 0) {
+                const bg = latestBgPoolRef.current[0];
+                const s = bg.settings || {};
+                const danceMode = s.danceMode || 'Off';
+                const intensity = (s.danceIntensity !== undefined ? s.danceIntensity : 100) / 100;
+                
+                let baseScale = 1 + ((s.backgroundZoom || 0) / 100);
+                let currentHPos = s.horizontalPosition || 0;
+                let currentVPos = s.verticalPosition || 0;
+                let currentRotation = 0;
+
+                if (danceMode !== 'Off') {
+                    const bs = beatEngine.getState();
+                    const reactsTo = s.danceReactsTo || 'Whole song';
+                    
+                    let danceStyle = s.danceStyle || 'Calm Pulse';
+                    if (danceStyle === 'Subtle Sway') danceStyle = 'Calm Pulse';
+                    if (danceStyle === 'Pulse') danceStyle = 'Deep Kick';
+                    if (danceStyle === 'Heartbeat') danceStyle = 'Rhythmic Float';
+                    if (danceStyle === 'Shake') danceStyle = 'Adrenaline';
+                    
+                    const reactLevel = s.danceReactLevel !== undefined ? s.danceReactLevel : 45;
+                    const smoothing = s.danceSmoothing !== undefined ? s.danceSmoothing : 0.70;
+                    
+                    let rawVal = bs.energy;
+                    if (reactsTo === 'Bass (Low)') rawVal = bs.bass;
+                    else if (reactsTo === 'Mid') rawVal = bs.mid;
+                    else if (reactsTo === 'Treble (High)') rawVal = bs.treble;
+                    
+                    const sensitivity = reactLevel / 50; 
+                    let power = rawVal * sensitivity * intensity;
+                    
+                    // Parse Presets or Custom
+                    let cfg = { zoom: 0, swayX: 0, swayY: 0, rotate: 0, shake: 0 };
+                    
+                    if (danceStyle === 'Custom (Advanced)') {
+                        if (s.motionEnZoom !== false) cfg.zoom = s.motionValZoom !== undefined ? s.motionValZoom : 12;
+                        if (s.motionEnSwayX) cfg.swayX = s.motionValSwayX !== undefined ? s.motionValSwayX : 2.0;
+                        if (s.motionEnSwayY) cfg.swayY = s.motionValSwayY !== undefined ? s.motionValSwayY : 1.2;
+                        if (s.motionEnRotate) cfg.rotate = s.motionValRotate !== undefined ? s.motionValRotate : 1.5;
+                        if (s.motionEnShake) cfg.shake = s.motionValShake !== undefined ? s.motionValShake : 4;
+                    } else if (danceStyle === 'Deep Kick') {
+                        cfg.zoom = 10;
+                    } else if (danceStyle === 'Rhythmic Float') {
+                        cfg.swayX = 4; cfg.swayY = 3; cfg.rotate = 2; cfg.zoom = 1;
+                    } else if (danceStyle === 'Adrenaline') {
+                        cfg.swayX = 3; cfg.swayY = 3; cfg.rotate = 3; cfg.zoom = 8; cfg.shake = 6;
+                    } else {
+                        // Default Calm Pulse
+                        cfg.swayX = 2; cfg.swayY = 1; cfg.zoom = 2; cfg.rotate = 0.5;
+                    }
+                    
+                    // Edge Compensation (Pre-scale so edges don't show)
+                    const maxPan = Math.max(cfg.swayX, cfg.swayY) + cfg.shake;
+                    if (maxPan > 0 || cfg.rotate > 0) {
+                        const panScale = 1 + (maxPan * 2.5 / 100);
+                        const rotScale = 1 + (cfg.rotate * 0.015);
+                        baseScale *= (panScale * rotScale);
+                    }
+                    
+                    const lerpFactor = 1.0 - (smoothing * 0.95);
+                    const time = performance.now() / 1000;
+                    
+                    // Calculate target targets
+                    const targetZoom = power * cfg.zoom * 0.01;
+                    const targetSwayX = Math.sin(time * 1.2) * cfg.swayX * power;
+                    const targetSwayY = Math.cos(time * 0.9) * cfg.swayY * power;
+                    const targetRotate = Math.sin(time * 0.8) * cfg.rotate * power;
+                    
+                    // Shake uses slow pseudo-random wave
+                    const targetShakeX = (Math.sin(time * 3.1) * 0.5 + Math.cos(time * 2.3) * 0.5) * cfg.shake * power;
+                    const targetShakeY = (Math.cos(time * 2.7) * 0.5 + Math.sin(time * 3.4) * 0.5) * cfg.shake * power;
+                    
+                    // Apply lerp
+                    smoothedMotion.zoom += (targetZoom - smoothedMotion.zoom) * lerpFactor;
+                    smoothedMotion.swayX += (targetSwayX - smoothedMotion.swayX) * lerpFactor;
+                    smoothedMotion.swayY += (targetSwayY - smoothedMotion.swayY) * lerpFactor;
+                    smoothedMotion.rotate += (targetRotate - smoothedMotion.rotate) * lerpFactor;
+                    
+                    baseScale += smoothedMotion.zoom;
+                    currentHPos += smoothedMotion.swayX + targetShakeX;
+                    currentVPos += smoothedMotion.swayY + targetShakeY;
+                    currentRotation += smoothedMotion.rotate;
+                }
+                
+                bgMediaRef.current.style.transform = `scale(${baseScale}) translate(${currentHPos}%, ${currentVPos}%) rotate(${currentRotation}deg)`;
+            }
             // -----------------------------
 
             window.m3Diagnostics.frameTime = timeline.deltaTime * 1000;
@@ -383,6 +493,7 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
 
   const handlePointerDown = (e, id, subTarget = null) => {
     e.stopPropagation();
+    e.target.setPointerCapture(e.pointerId);
     setM3SelectedObjectId(id);
     const obj = m3Objects.find(o => o.id === id);
     if (obj && !obj.locked) {
@@ -400,6 +511,14 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
         origY = transform.y;
       }
       
+      if (typeof origX === 'string' && origX.includes('%')) origX = (parseFloat(origX) / 100) * 1920;
+      if (typeof origY === 'string' && origY.includes('%')) origY = (parseFloat(origY) / 100) * 1080;
+      
+      let origW = obj.width || 100;
+      let origH = obj.height || 100;
+      if (typeof origW === 'string' && origW.includes('%')) origW = (parseFloat(origW) / 100) * 1920;
+      if (typeof origH === 'string' && origH.includes('%')) origH = (parseFloat(origH) / 100) * 1080;
+
       setDragState({ 
           isDragging: true, 
           action: 'drag', 
@@ -410,29 +529,53 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
           startY, 
           origX, 
           origY, 
-          origW: obj.width || 100, 
-          origH: obj.height || 100 
+          origW, 
+          origH 
       });
     }
   };
 
   const handleHandleDown = (e, id, handle) => {
     e.stopPropagation();
+    e.target.setPointerCapture(e.pointerId);
     setM3SelectedObjectId(id);
     const obj = m3Objects.find(o => o.id === id);
     if (obj && !obj.locked) {
-      setDragState({ isDragging: true, action: 'resize', handle, id, startX: e.clientX, startY: e.clientY, origX: obj.x, origY: obj.y, origW: obj.width || 100, origH: obj.height || 100 });
+      let trueW = obj.width;
+      let trueH = obj.height;
+      if (typeof trueW === 'string' && trueW.includes('%')) trueW = (parseFloat(trueW) / 100) * 1920;
+      if (typeof trueH === 'string' && trueH.includes('%')) trueH = (parseFloat(trueH) / 100) * 1080;
+
+      if (obj.type === 'text' || obj.type === 'playlist') {
+        const domNode = document.getElementById(`canvas-obj-${id}`);
+        if (domNode) {
+            const rect = domNode.getBoundingClientRect();
+            const scale = canvasStyle.width / 1920;
+            trueW = rect.width / scale;
+            trueH = rect.height / scale;
+        }
+      }
+      let origX = obj.x;
+      let origY = obj.y;
+      if (typeof origX === 'string' && origX.includes('%')) origX = (parseFloat(origX) / 100) * 1920;
+      if (typeof origY === 'string' && origY.includes('%')) origY = (parseFloat(origY) / 100) * 1080;
+
+      setDragState({ isDragging: true, action: 'resize', handle, id, startX: e.clientX, startY: e.clientY, origX, origY, origW: trueW || 100, origH: trueH || 100, origFontSize: obj.fontSize || 64, origScale: obj.scale || 1, origPlaylistWidth: trueW || 800 });
     }
   };
 
   const handlePointerMove = (e) => {
     if (!dragState.isDragging || !dragState.id) return;
-    const dx = e.clientX - dragState.startX;
-    const dy = e.clientY - dragState.startY;
+    const scale = canvasStyle.width / 1920;
+    const dx = (e.clientX - dragState.startX) / scale;
+    const dy = (e.clientY - dragState.startY) / scale;
     
     setM3Objects(prev => prev.map(o => {
       if (o.id !== dragState.id) return o;
       if (dragState.action === 'drag') {
+        const pOrigX = parseFloat(dragState.origX) || 0;
+        const pOrigY = parseFloat(dragState.origY) || 0;
+        
         if (dragState.subTarget && dragState.subTarget.startsWith('col_')) {
             const colIndex = parseInt(dragState.subTarget.split('_')[1], 10);
             const transformProp = colIndex === 0 ? 'leftTransform' : 'rightTransform';
@@ -442,31 +585,78 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
                 ...o, 
                 [transformProp]: {
                     ...currentTransform,
-                    x: dragState.origX + dx,
-                    y: dragState.origY + dy
+                    x: pOrigX + dx,
+                    y: pOrigY + dy
                 }
             };
         } else {
-            return { ...o, x: dragState.origX + dx, y: dragState.origY + dy };
+            return { ...o, x: pOrigX + dx, y: pOrigY + dy };
         }
       } else if (dragState.action === 'resize') {
         let { origX, origY, origW, origH, handle } = dragState;
+        origX = parseFloat(origX) || 0;
+        origY = parseFloat(origY) || 0;
+        origW = parseFloat(origW) || 100;
+        origH = parseFloat(origH) || 100;
+        
         let nx = origX, ny = origY, nw = origW, nh = origH;
         
-        if (handle.includes('e')) nw = origW + dx;
-        if (handle.includes('w')) { nw = origW - dx; nx = origX + dx; }
-        if (handle.includes('s')) nh = origH + dy;
-        if (handle.includes('n')) { nh = origH - dy; ny = origY + dy; }
+        // Top-left anchored math (assuming x, y are center coordinates)
+        if (handle.includes('e')) {
+            nw = Math.max(10, origW + dx);
+        }
+        if (handle.includes('w')) {
+            nw = Math.max(10, origW - dx);
+        }
+        if (handle.includes('s')) {
+            nh = Math.max(10, origH + dy);
+        }
+        if (handle.includes('n')) {
+            nh = Math.max(10, origH - dy);
+        }
         
-        if (nw < 10) nw = 10;
-        if (nh < 10) nh = 10;
-        return { ...o, x: nx, y: ny, width: nw, height: nh };
+        // Enforce aspect ratio for corner handles using professional vector projection
+        if (handle.length === 2 && origW > 0 && origH > 0) {
+            // Project mouse position onto the aspect ratio diagonal
+            const scale = (nw * origW + nh * origH) / (origW * origW + origH * origH);
+            nw = Math.max(10, origW * scale);
+            nh = Math.max(10, origH * scale);
+        }
+
+        // Adjust center coordinates (x,y) to anchor the opposite edge
+        if (handle.includes('e')) {
+            nx = origX + (nw - origW) / 2;
+        } else if (handle.includes('w')) {
+            nx = origX - (nw - origW) / 2;
+        }
+        
+        if (handle.includes('s')) {
+            ny = origY + (nh - origH) / 2;
+        } else if (handle.includes('n')) {
+            ny = origY - (nh - origH) / 2;
+        }
+        
+        const scaleRatio = origW > 0 ? nw / origW : 1;
+        let newProps = { ...o, x: nx, y: ny, width: nw, height: nh };
+        
+        // Only scale contents if dragged from a corner handle
+        if (handle.length === 2 && (o.type === 'text' || o.type === 'playlist')) {
+            newProps.fontSize = Math.max(8, Math.round(dragState.origFontSize * scaleRatio));
+            if (o.type === 'playlist') {
+                newProps.width = Math.max(100, Math.round(dragState.origPlaylistWidth * scaleRatio));
+            }
+        }
+        
+        return newProps;
       }
       return o;
     }));
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e) => {
+    if (e.target.hasPointerCapture && e.target.hasPointerCapture(e.pointerId)) {
+        e.target.releasePointerCapture(e.pointerId);
+    }
     if (dragState.isDragging && dragState.id) {
         emitRuntimeEvent(`Canvas.Object${dragState.action === 'resize' ? 'Resized' : 'Moved'}`, { id: dragState.id });
     }
@@ -556,38 +746,41 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
   return (
     <Surface 
       variant={BackgroundVariants.Preview}
-      className="flex-1 min-w-0 min-h-0 flex items-start justify-center overflow-hidden select-none" 
+      className="flex-1 min-w-0 min-h-0 flex items-center justify-center overflow-hidden select-none" 
       ref={containerRef}
       onPointerDown={() => setM3SelectedObjectId(null)}
-      onMouseMove={handlePointerMove}
-      onMouseUp={handlePointerUp}
-      onMouseLeave={handlePointerUp}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
-      <div 
-        id={canvasMode === 'thumbnail' ? 'm3-thumbnail-canvas' : 'm3-composer-canvas'}
-        className="bg-[#12131a] relative border border-[#2d3247] shadow-2xl overflow-hidden ring-1 ring-black"
-        style={{
-          width: canvasStyle.width + 'px',
-          height: canvasStyle.height + 'px',
-          backgroundImage: m3BgPool && m3BgPool.length > 0 ? 'linear-gradient(45deg, #1e2230 25%, transparent 25%), linear-gradient(-45deg, #1e2230 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1e2230 75%), linear-gradient(-45deg, transparent 75%, #1e2230 75%)' : 'none',
-          backgroundSize: '20px 20px',
-          backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
-        }}
-      >
-        {/* Guides */}
-        {showGuides && canvasMode === 'composer' && (
-          <>
-            <div className="absolute inset-x-0 top-[10%] bottom-[10%] border-y border-red-500/30 pointer-events-none z-50 flex items-center justify-center">
-              <span className="absolute bottom-1 right-2 text-[8px] text-red-500/50 uppercase font-bold">Letterbox Area</span>
-            </div>
-            <div className="absolute inset-[5%] border border-emerald-500/30 pointer-events-none z-50">
-              <span className="absolute bottom-1 right-2 text-[8px] text-emerald-500/50 uppercase font-bold">Safe Area</span>
-            </div>
-            <div className="absolute inset-[10%] border border-blue-500/30 pointer-events-none z-50">
-              <span className="absolute bottom-1 right-2 text-[8px] text-blue-500/50 uppercase font-bold">Safe Title</span>
-            </div>
-          </>
-        )}
+      <div style={{ width: canvasStyle.width + 'px', height: canvasStyle.height + 'px', position: 'relative' }}>
+        <div 
+          id={canvasMode === 'thumbnail' ? 'm3-thumbnail-canvas' : 'm3-composer-canvas'}
+          className="bg-[#12131a] absolute top-0 left-0 border border-[#2d3247] shadow-2xl overflow-hidden ring-1 ring-black"
+          style={{
+            width: '1920px',
+            height: '1080px',
+            transform: `scale(${canvasStyle.width / 1920})`,
+            transformOrigin: 'top left',
+            backgroundImage: m3BgPool && m3BgPool.length > 0 ? 'linear-gradient(45deg, #1e2230 25%, transparent 25%), linear-gradient(-45deg, #1e2230 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1e2230 75%), linear-gradient(-45deg, transparent 75%, #1e2230 75%)' : 'none',
+            backgroundSize: '20px 20px',
+            backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+          }}
+        >
+          {/* Guides */}
+          {showGuides && canvasMode === 'composer' && (
+            <>
+              <div className="absolute inset-x-0 top-[10%] bottom-[10%] border-y border-red-500/30 pointer-events-none z-50 flex items-center justify-center">
+                <span className="absolute bottom-1 right-2 text-[8px] text-red-500/50 uppercase font-bold">Letterbox Area</span>
+              </div>
+              <div className="absolute inset-[5%] border border-emerald-500/30 pointer-events-none z-50">
+                <span className="absolute bottom-1 right-2 text-[8px] text-emerald-500/50 uppercase font-bold">Safe Area</span>
+              </div>
+              <div className="absolute inset-[10%] border border-blue-500/30 pointer-events-none z-50">
+                <span className="absolute bottom-1 right-2 text-[8px] text-blue-500/50 uppercase font-bold">Safe Title</span>
+              </div>
+            </>
+          )}
 
         <ProductionQAToolkit />
 
@@ -608,19 +801,44 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
 
         <PreviewRoot>
           {/* Real Background Source */}
-          {m3BgPool && m3BgPool.length > 0 && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center bg-black" style={colorGradingStyle}>
-              {m3BgPool[0].type === 'image' ? (
-                <img src={m3BgPool[0].preview} alt="bg" className="w-full h-full object-cover opacity-60" />
-              ) : m3BgPool[0].type === 'video' ? (
-                <video src={m3BgPool[0].preview} autoPlay loop muted className="w-full h-full object-cover opacity-60" />
-              ) : null}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 mix-blend-overlay"></div>
-              <span className="absolute bottom-2 left-2 text-white/20 text-[10px] font-mono font-bold tracking-wider z-0 drop-shadow-md">
-                [SRC] {m3BgPool[0].filename}
-              </span>
-            </div>
-          )}
+          {m3BgPool && m3BgPool.length > 0 && (() => {
+            const bg = m3BgPool[0];
+            const s = bg.settings || {};
+            
+            // Transform settings
+            const zoom = s.backgroundZoom || 0;
+            const scale = 1 + (zoom / 100);
+            const hPos = s.horizontalPosition || 0;
+            const vPos = s.verticalPosition || 0;
+            const blur = s.blurAmount || 0;
+            const darkness = s.overlayDarkness !== undefined ? s.overlayDarkness : 30;
+            
+            let objectFitClass = "object-cover";
+            if (s.scaleMode === 'Contain (Fit)') objectFitClass = "object-contain";
+            if (s.scaleMode === 'Stretch') objectFitClass = "object-fill";
+            
+            const mediaStyle = {
+                transform: `scale(${scale}) translate(${hPos}%, ${vPos}%)`,
+                filter: `blur(${blur}px)`,
+                // Removed CSS transition for transform so the manual JS updates are instant/fluid (no jello effect)
+                transition: 'filter 0.1s ease-out' 
+            };
+
+            return (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center bg-black" style={colorGradingStyle}>
+                {bg.type === 'image' ? (
+                  <img ref={bgMediaRef} src={bg.preview || bg.url} alt="bg" className={`w-full h-full ${objectFitClass} will-change-transform`} style={mediaStyle} />
+                ) : bg.type === 'video' ? (
+                  <video ref={bgMediaRef} src={bg.preview || bg.url} autoPlay loop muted className={`w-full h-full ${objectFitClass} will-change-transform`} style={mediaStyle} />
+                ) : null}
+                <div className="absolute inset-0 mix-blend-overlay" style={{ backgroundColor: `rgba(0,0,0,${darkness / 100})` }}></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 mix-blend-overlay opacity-50"></div>
+                <span className="absolute bottom-2 left-2 text-white/20 text-[10px] font-mono font-bold tracking-wider z-0 drop-shadow-md">
+                  [SRC] {bg.filename}
+                </span>
+              </div>
+            );
+          })()}
 
           {/* New Visual FX Engines */}
           <AtmosphereEngine config={getEngineConfig('engine-atmosphere')} />
@@ -645,16 +863,7 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Object
             {formatTime(m3CurrentTimeSec)} / {formatTime(m3TotalDurationSec)}
           </div>
         )}
-
-        {/* Playback & Tools Bar (Floating at bottom inside preview) */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-11/12 max-w-4xl z-50">
-          <M3PlaybackBar
-            m3AudioTracks={m3AudioTracks}
-            currentTimeSec={m3CurrentTimeSec}
-            setCurrentTimeSec={setM3CurrentTimeSec}
-            onAnalyserReady={setAnalyser}
-          />
-        </div>
+      </div>
       </div>
     </Surface>
   );

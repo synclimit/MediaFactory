@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { foundation, getBootstrapData } from '../../foundation/index.js';
-import { SOURCE_TYPE, SOURCE_STATUS, METADATA_STATUS } from '../../entities/m2/SourceEntity.js';
+import { SOURCE_TYPE, SOURCE_STATUS, METADATA_STATUS, sumTotalDuration } from '../../entities/m2/SourceEntity.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -96,7 +97,7 @@ function ThumbnailPreview({ url, title, expanded = false }) {
   );
 }
 
-// ─── YouTube Source Card (expanded view) ──────────────────────────────────────
+// ─── YouTube Source Row (Compact List) ────────────────────────────────────────
 
 function YouTubeSourceCard({ source, onRemove, onToggleSelect, onFetchMetadata, onUpdateCleanTitle, isFetching }) {
   const hasMetadata = source.metadataStatus === METADATA_STATUS.READY;
@@ -107,197 +108,171 @@ function YouTubeSourceCard({ source, onRemove, onToggleSelect, onFetchMetadata, 
     source.status !== SOURCE_STATUS.INVALID;
 
   const [cleanTitle, setCleanTitle] = useState(source.cleanTitle || source.title || '');
+  const [isEditing, setIsEditing] = useState(false);
   useEffect(() => { setCleanTitle(source.cleanTitle || source.title || ''); }, [source.cleanTitle, source.title]);
 
   const handleBlur = () => {
+    setIsEditing(false);
     if (cleanTitle.trim() !== (source.cleanTitle || source.title || '').trim()) {
       onUpdateCleanTitle(source.id, cleanTitle);
     }
   };
 
-  return (
-    <div className={`
-      rounded border transition-all duration-150 overflow-hidden
-      ${source.selected ? 'border-[#2563eb]/60 bg-[#0f1420]' : 'border-[#21232d] bg-[#0a0b0f] hover:border-[#3d4157]'}
-    `}>
-      {/* Card Header */}
-      <div className="flex items-start gap-2 p-1.5">
-        <input
-          type="checkbox"
-          checked={source.selected}
-          onChange={() => onToggleSelect(source.id)}
-          className="mt-1 accent-[#2563eb] cursor-pointer shrink-0"
-        />
-        <ThumbnailPreview url={source.thumbnailUrl} title={source.title} />
-
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-start gap-1.5 flex-wrap">
-            <span className="text-[10px] text-gray-500 leading-tight line-clamp-1 flex-1 min-w-0" title={source.rawVideoTitle || source.rawTitle || source.title}>
-              {source.cleanTitle || source.title || (source.youtubeId ? `YouTube: ${source.youtubeId}` : 'Untitled Source')}
-            </span>
-            <TypeBadge type={source.sourceType} />
-          </div>
-          
-          <div>
-            <input 
-              value={cleanTitle}
-              onChange={e => setCleanTitle(e.target.value)}
-              onBlur={handleBlur}
-              placeholder="Clean Title..."
-              className="w-full bg-[#080910] border border-[#2d3247] hover:border-[#3d425c] focus:border-[#2563eb] rounded px-1.5 py-0.5 text-[11px] font-semibold text-gray-200 focus:outline-none transition-colors"
-            />
-          </div>
-
-          {hasMetadata && (
-            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] mt-1">
-              <div className="truncate"><span className="text-gray-600">Channel:</span> <span className="text-gray-300 font-medium">{source.channelName || '—'}</span></div>
-              <div><span className="text-gray-600">Duration:</span> <span className="text-emerald-400 font-mono font-medium">{source.duration || '—'}</span></div>
-            </div>
-          )}
-
-          {isFetchingThis && (
-            <div className="text-[8px] text-blue-400/80 font-mono mt-1">
-              Fetching Metadata<br/>
-              <span className="opacity-70 truncate block max-w-[260px]">{source.youtubeUrl}</span>
-            </div>
-          )}
-
-          {!hasMetadata && !isFetchingThis && source.youtubeUrl && (
-            <div className="text-[8px] text-gray-600 font-mono truncate max-w-[260px]">
-              {source.youtubeUrl}
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 flex-wrap mt-1">
-            <MetadataPill source={source} />
-            {!hasMetadata && !source.validationErrors?.length && (
-              <StatusBadge status={source.status} />
-            )}
-          </div>
-        </div>
-
-        <button
-          onClick={() => onRemove(source.id)}
-          className="text-gray-600 hover:text-red-400 transition-colors text-xs shrink-0 mt-0.5 ml-1"
-          title="Remove source"
-        >
-          🗑
-        </button>
-      </div>
-
-      {/* Fetch Metadata Footer */}
-      {canFetch && !hasMetadata && (
-        <div className="border-t border-[#1a1e2e] px-2 py-1 flex items-center justify-between bg-[#080910]">
-          <span className="text-[8px] text-gray-600 italic">
-            {isFetchingThis ? 'Fetching metadata…' : 'Metadata not yet fetched.'}
-          </span>
-          <button
-            id={`m2-fetch-btn-${source.id}`}
-            onClick={() => onFetchMetadata(source.id)}
-            disabled={isFetchingThis}
-            className={`
-              flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold rounded transition-all
-              ${isFetchingThis
-                ? 'bg-blue-900/30 text-blue-500 cursor-not-allowed'
-                : 'bg-[#1a2a3a] hover:bg-[#1d3a5c] border border-blue-700/30 hover:border-blue-600/60 text-blue-300'}
-            `}
-          >
-            {isFetchingThis ? '⟳ Fetching…' : '⬇ Fetch Metadata'}
-          </button>
-        </div>
-      )}
-      
-      {/* Retry after fail */}
-      {hasFailed && (
-        <div className="border-t border-red-900/20 px-2 py-1 flex items-center justify-between bg-[#0a0508]">
-          <span className="text-[8px] text-red-600 italic">Metadata fetch failed.</span>
-          <button
-            onClick={() => onFetchMetadata(source.id)}
-            disabled={isFetchingThis}
-            className="px-2 py-0.5 text-[9px] font-bold rounded bg-red-900/30 hover:bg-red-800/40 border border-red-700/30 text-red-300 transition-all disabled:opacity-40"
-          >
-            ↺ Retry
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Audio Source Card (compact) ──────────────────────────────────────────────
-
-function AudioSourceCard({ source, onRemove, onToggleSelect, onUpdateCleanTitle, onRelink }) {
-  const hasErrors = source.validationErrors?.length > 0;
-  const [cleanTitle, setCleanTitle] = useState(source.cleanTitle || source.title || '');
-  useEffect(() => { setCleanTitle(source.cleanTitle || source.title || ''); }, [source.cleanTitle, source.title]);
-
-  const handleBlur = () => {
-    if (cleanTitle.trim() !== (source.cleanTitle || source.title || '').trim()) {
-      onUpdateCleanTitle(source.id, cleanTitle);
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') e.target.blur();
+    else if (e.key === 'Escape') {
+      setCleanTitle(source.cleanTitle || source.title || '');
+      setIsEditing(false);
     }
   };
 
   return (
     <div className={`
-      flex items-start gap-2 p-1.5 rounded border transition-all duration-150
+      flex items-center gap-3 px-3 py-1.5 transition-all duration-150 group border-b border-[#21232d] last:border-0
       ${source.selected
-        ? 'bg-[#1a1e2e] border-[#2563eb]/60'
-        : hasErrors
-          ? 'bg-[#1a0e0e] border-red-900/40 hover:border-red-700/50'
-          : 'bg-[#0f1018] border-[#21232d] hover:border-[#3d4157]'}
+        ? 'bg-[#f97316]/10 border-l-2 border-l-[#f97316]'
+        : 'bg-[#161822] hover:bg-[#1a1d27] border-l-2 border-l-transparent'}
     `}>
       <input
         type="checkbox"
         checked={source.selected}
         onChange={() => onToggleSelect(source.id)}
-        className="mt-0.5 accent-[#2563eb] cursor-pointer shrink-0"
+        className="accent-[#f97316] cursor-pointer shrink-0"
       />
-      <span className="text-sm shrink-0 mt-0.5">
-        {source.sourceType === SOURCE_TYPE.FOLDER_AUDIO ? '📁' : '🎵'}
-      </span>
-      <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] text-gray-500 truncate max-w-[220px]" title={source.rawVideoTitle || source.rawTitle || source.title}>
-            {source.cleanTitle || source.title || 'Untitled Source'}
-          </span>
-          <TypeBadge type={source.sourceType} />
+      
+      {isFetchingThis ? (
+        <div className="w-8 h-5 rounded bg-[#1e2230] animate-pulse border border-[#2d3247] shrink-0" />
+      ) : (
+        <div className="w-8 h-5 overflow-hidden rounded shrink-0 border border-[#2d3247]">
+          {source.thumbnailUrl ? <img src={source.thumbnailUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-[#1a1e2e]" />}
         </div>
-        <div>
-          <input 
-            value={cleanTitle}
-            onChange={e => setCleanTitle(e.target.value)}
-            onBlur={handleBlur}
-            placeholder="Clean Title..."
-            className="w-full bg-[#080910] border border-[#2d3247] hover:border-[#3d425c] focus:border-[#2563eb] rounded px-1.5 py-0.5 text-[11px] font-semibold text-gray-200 focus:outline-none transition-colors"
-          />
-        </div>
-        <div className="flex items-center gap-3 flex-wrap mt-1">
-          {source.isUnlinked ? (
-            <span className="text-[9px] font-bold text-amber-500 border border-amber-600/50 bg-amber-900/30 px-1.5 py-0.5 rounded">⚠ UNLINKED</span>
+      )}
+
+      <div className="flex-1 min-w-0 flex items-center gap-3">
+        {/* Title Editor */}
+        <div className="w-[40%] min-w-[150px] shrink-0">
+          {isEditing ? (
+            <input 
+              autoFocus value={cleanTitle} onChange={e => setCleanTitle(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown}
+              className="w-full bg-[#0a0b0f] border border-[#f97316] rounded px-2 py-0.5 text-[10px] font-semibold text-white focus:outline-none"
+            />
           ) : (
-            <StatusBadge status={source.status} />
+            <div onClick={() => setIsEditing(true)} className="w-full px-1 text-[10px] font-semibold text-gray-200 cursor-text hover:bg-[#1e2230] rounded truncate border border-transparent hover:border-[#424867]">
+              {cleanTitle || (source.youtubeId ? `YT: ${source.youtubeId}` : 'Untitled')}
+            </div>
           )}
-          {source.duration && (
-            <span className="text-[9px] text-gray-500 font-mono">{source.duration}</span>
+        </div>
+
+        {/* Info Badges */}
+        <div className="flex-1 flex items-center gap-2 overflow-hidden">
+          <TypeBadge type={source.sourceType} />
+          {hasMetadata ? (
+            <>
+              <span className="text-[9px] text-gray-500 truncate max-w-[100px]">{source.channelName}</span>
+              <span className="text-[9px] text-emerald-400 font-mono">{source.duration}</span>
+            </>
+          ) : (
+            <MetadataPill source={source} />
           )}
         </div>
       </div>
-      <div className="flex flex-col gap-1 mt-0.5 shrink-0 items-end">
-        <button
-          onClick={() => onRemove(source.id)}
-          className="text-gray-600 hover:text-red-400 transition-colors text-xs"
-          title="Remove source"
-        >
-          🗑
-        </button>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        {canFetch && !hasMetadata && (
+          <button onClick={() => onFetchMetadata(source.id)} disabled={isFetchingThis} className="px-2 py-0.5 text-[8px] font-bold rounded bg-blue-900/40 hover:bg-blue-800 border border-blue-700/50 text-blue-300 transition-colors">
+            {isFetchingThis ? 'Fetching...' : 'Fetch Meta'}
+          </button>
+        )}
+        {hasFailed && (
+          <button onClick={() => onFetchMetadata(source.id)} disabled={isFetchingThis} className="px-2 py-0.5 text-[8px] font-bold rounded bg-red-900/40 hover:bg-red-800 border border-red-700/50 text-red-300 transition-colors">
+            Retry
+          </button>
+        )}
+        <button onClick={() => onRemove(source.id)} className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-[10px]" title="Remove">✕</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Audio Source Row (Compact List) ──────────────────────────────────────────
+
+function AudioSourceCard({ source, onRemove, onToggleSelect, onUpdateCleanTitle, onRelink }) {
+  const hasErrors = source.validationErrors?.length > 0;
+  const [cleanTitle, setCleanTitle] = useState(source.cleanTitle || source.title || '');
+  const [isEditing, setIsEditing] = useState(false);
+  useEffect(() => { setCleanTitle(source.cleanTitle || source.title || ''); }, [source.cleanTitle, source.title]);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (cleanTitle.trim() !== (source.cleanTitle || source.title || '').trim()) {
+      onUpdateCleanTitle(source.id, cleanTitle);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') e.target.blur();
+    else if (e.key === 'Escape') {
+      setCleanTitle(source.cleanTitle || source.title || '');
+      setIsEditing(false);
+    }
+  };
+
+  return (
+    <div className={`
+      flex items-center gap-3 px-3 py-1.5 transition-all duration-150 group border-b border-[#21232d] last:border-0
+      ${source.selected
+        ? 'bg-[#f97316]/10 border-l-2 border-l-[#f97316]'
+        : hasErrors
+          ? 'bg-red-900/10 border-l-2 border-l-red-500'
+          : 'bg-[#161822] hover:bg-[#1a1d27] border-l-2 border-l-transparent'}
+    `}>
+      <input
+        type="checkbox"
+        checked={source.selected}
+        onChange={() => onToggleSelect(source.id)}
+        className="accent-[#f97316] cursor-pointer shrink-0"
+      />
+      
+      <div className="w-8 h-5 flex items-center justify-center bg-[#1a1e2e] rounded border border-[#2d3247] shrink-0 text-[10px]">
+        {source.sourceType === SOURCE_TYPE.FOLDER_AUDIO ? '📁' : '🎵'}
+      </div>
+
+      <div className="flex-1 min-w-0 flex items-center gap-3">
+        {/* Title Editor */}
+        <div className="w-[40%] min-w-[150px] shrink-0">
+          {isEditing ? (
+            <input 
+              autoFocus value={cleanTitle} onChange={e => setCleanTitle(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown}
+              className="w-full bg-[#0a0b0f] border border-[#f97316] rounded px-2 py-0.5 text-[10px] font-semibold text-white focus:outline-none"
+            />
+          ) : (
+            <div onClick={() => setIsEditing(true)} className="w-full px-1 text-[10px] font-semibold text-gray-200 cursor-text hover:bg-[#1e2230] rounded truncate border border-transparent hover:border-[#424867]">
+              {cleanTitle || source.title || 'Untitled'}
+            </div>
+          )}
+        </div>
+
+        {/* Info Badges */}
+        <div className="flex-1 flex items-center gap-2 overflow-hidden">
+          <TypeBadge type={source.sourceType} />
+          {source.isUnlinked ? (
+            <span className="text-[8px] font-bold text-amber-500 border border-amber-600/50 bg-amber-900/30 px-1 rounded">UNLINKED</span>
+          ) : (
+            <StatusBadge status={source.status} />
+          )}
+          {source.duration && <span className="text-[9px] text-gray-500 font-mono">{source.duration}</span>}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
         {source.isUnlinked && (
-          <button
-            onClick={() => onRelink(source.id)}
-            className="px-2 py-0.5 text-[9px] font-bold rounded bg-amber-900/40 hover:bg-amber-800 border border-amber-700/50 text-amber-300 transition-colors"
-          >
+          <button onClick={() => onRelink(source.id)} className="px-2 py-0.5 text-[8px] font-bold rounded bg-amber-900/40 hover:bg-amber-800 border border-amber-700/50 text-amber-300 transition-colors">
             Relink File
           </button>
         )}
+        <button onClick={() => onRemove(source.id)} className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-[10px]" title="Remove">✕</button>
       </div>
     </div>
   );
@@ -416,7 +391,7 @@ function SelectedSourceEditor({ source, onUpdateCleanTitle, onFetchMetadata, isF
 // ─── Import Modals ────────────────────────────────────────────────────────────
 
 function ModalShell({ title, children, onClose }) {
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-[#0f111a] border border-[#2d3247] rounded-lg p-4 w-full max-w-sm shadow-2xl">
         <div className="text-[11px] font-bold text-gray-300 mb-3">{title}</div>
@@ -429,6 +404,8 @@ function ModalShell({ title, children, onClose }) {
       </div>
     </div>
   );
+  
+  return createPortal(modalContent, document.body);
 }
 
 
@@ -438,10 +415,7 @@ function AddYouTubeModal({ onAdd, onClose }) {
   useEffect(() => inputRef.current?.focus(), []);
   return (
     <ModalShell title="▶ Add YouTube URL" onClose={onClose}>
-      <div className="text-[8px] text-gray-500 bg-[#181922] border border-[#21232d] rounded px-2 py-1 mb-2 leading-relaxed">
-        URL stored immediately. Click <span className="text-blue-400 font-bold">Fetch Metadata</span> on the card to pull title, channel, and duration.
-      </div>
-      <label className="block text-[9px] text-gray-500 mb-1">YouTube URL</label>
+      <label className="block text-[9px] text-gray-500 mb-1 mt-2">YouTube URL</label>
       <input
         ref={inputRef}
         type="url"
@@ -466,7 +440,7 @@ function AddYouTubeModal({ onAdd, onClose }) {
 
 // ─── Source Pool Panel ────────────────────────────────────────────────────────
 
-export default function SourcePoolPanel({ isDevMode = false, addLog, addNotification, onSourcesChanged }) {
+export default function SourcePoolPanel({ isDevMode = false, addLog, addNotification, onSourcesChanged, onAddToQueue }) {
   const [sources, setSources] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fetchingIds, setFetchingIds] = useState(new Set());
@@ -475,12 +449,17 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
   const [modal, setModal] = useState(null);
   const [stats, setStats] = useState(null);
   const [bulkProgress, setBulkProgress] = useState(null);
+  const [portalTarget, setPortalTarget] = useState(null);
+
+  useEffect(() => {
+    setPortalTarget(document.getElementById('m2-add-to-queue-portal-target'));
+  }, []);
 
   const loadSources = useCallback(async () => {
     try {
-      const all = await foundation.sourceService.getAll();
+      const all = await foundation.sourceService.getAll(getContext());
       setSources(all);
-      const s = await foundation.sourceService.getStats();
+      const s = await foundation.sourceService.getStats(getContext());
       setStats(s);
 
       console.log(`LOAD_SOURCES_RESULT\ncount=${all.length}`);
@@ -551,20 +530,6 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
 
   const handleFileButtonClick = async () => {
     try {
-      if (window.showOpenFilePicker) {
-        try {
-          const [fileHandle] = await window.showOpenFilePicker({
-            types: [{ description: 'Audio Files', accept: {'audio/*': ['.mp3', '.wav', '.flac', '.m4a']} }]
-          });
-          const file = await fileHandle.getFile();
-          const path = file.path || file.name;
-          handleImportFile(path);
-          return;
-        } catch(e) {
-          if (e.name === 'AbortError') return;
-        }
-      }
-      
       const res = await fetch('/api/m2/dialog/file', { method: 'POST' });
       if (res.ok) {
         const { path } = await res.json();
@@ -577,17 +542,6 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
 
   const handleFolderButtonClick = async () => {
     try {
-      if (window.showDirectoryPicker) {
-        try {
-          const dirHandle = await window.showDirectoryPicker();
-          const folderPath = dirHandle.name;
-          handleImportFolder(folderPath);
-          return;
-        } catch(e) {
-          if (e.name === 'AbortError') return;
-        }
-      }
-      
       const res = await fetch('/api/m2/dialog/folder', { method: 'POST' });
       if (res.ok) {
         const { path } = await res.json();
@@ -607,10 +561,14 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
       if (skipped) {
         showFeedback('info', `Skipped: ${reason}`);
       } else {
-        showFeedback('success', `✓ Added YouTube source (metadata not yet fetched).`);
+        showFeedback('success', `✓ Added YouTube source. Fetching metadata...`);
         addNotification?.('Source Added', `Pool: ${sources.length} -> ${sources.length + 1}`);
         addLog?.('[M2] Source Added');
         onSourcesChanged?.();
+        // Auto-trigger fetch
+        if (source && source.id) {
+          setTimeout(() => handleFetchMetadata(source.id), 500);
+        }
       }
       await loadSources();
     } catch (err) { showFeedback('error', `Add URL failed: ${err.message}`); }
@@ -632,23 +590,6 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
 
   const handleRelink = async (id) => {
     try {
-      if (window.showOpenFilePicker) {
-        try {
-          const [fileHandle] = await window.showOpenFilePicker({
-            types: [{ description: 'Audio Files', accept: {'audio/*': ['.mp3', '.wav', '.flac', '.m4a']} }]
-          });
-          const file = await fileHandle.getFile();
-          const path = file.path || file.name;
-          await foundation.sourceService.relinkSource(id, path, getContext());
-          addNotification?.('Source Relinked');
-          addLog?.('[M2] Source Relinked');
-          await loadSources();
-          onSourcesChanged?.();
-          return;
-        } catch(e) {
-          if (e.name === 'AbortError') return;
-        }
-      }
       const res = await fetch('/api/m2/dialog/file', { method: 'POST' });
       if (res.ok) {
         const { path } = await res.json();
@@ -784,56 +725,41 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
 
   const selectedCount = sources.filter(s => s.selected).length;
   const allSelected = sources.length > 0 && sources.every(s => s.selected);
-  const selectedYTUnfetched = sources.filter(s =>
-    s.selected && s.sourceType === SOURCE_TYPE.YOUTUBE_URL &&
-    s.metadataStatus !== METADATA_STATUS.READY &&
-    s.status !== SOURCE_STATUS.INVALID
-  ).length;
 
-  const showDetailsPanel = selectedCount === 1;
-  const selectedSource = showDetailsPanel ? sources.find(s => s.selected) : null;
-
-  // Filter out INVALID sources from the UI
   const filteredSources = sources.filter(s => s.status !== SOURCE_STATUS.INVALID);
-
-  console.log('--- Step 5 ---');
-  console.log('Before render: Log any filtering operation.');
-  console.log('Exact code path: const filteredSources = sources.filter(s => s.status !== SOURCE_STATUS.INVALID);');
-  console.log('original counts: ' + sources.length);
-  console.log('resulting counts: ' + filteredSources.length);
 
   return (
     <>
       {modal === 'youtube' && <AddYouTubeModal onAdd={handleAddYouTube}  onClose={() => setModal(null)} />}
 
-      <div className={`flex flex-col xl:flex-row gap-2 h-full transition-all duration-300`}>
+      <div className={`flex flex-col xl:flex-row gap-4 h-full transition-all duration-300`}>
         {/* Main Source List Pane */}
-        <div className="flex-1 bg-[#0b0c10] border border-[#21232d] rounded-lg overflow-hidden flex flex-col min-w-0">
-          <div className="flex items-center justify-between px-3 py-2 bg-[#0f111a] border-b border-[#21232d]">
+        <div className="flex-1 bg-transparent overflow-hidden flex flex-col min-w-0">
+          <div className="flex items-center justify-between px-4 py-3 bg-black/20 border-b border-[#2a2c33] shrink-0 relative z-10">
             <div>
-              <div className="flex items-center">
-                <span className="text-[14px] text-purple-400 mr-2 leading-none">①</span>
-                <span className="text-[11px] font-bold text-gray-200 uppercase tracking-wide">
-                  IMPORT SOURCES {sources.length > 0 && <span className="text-gray-400 ml-1.5">✓</span>}
-                </span>
+              <div className="flex items-center gap-2">
+                <h3 className="text-[12px] font-bold text-white tracking-wide uppercase flex items-center gap-2 m5-white-glow">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_#f97316]"></span>
+                  IMPORT SOURCES {sources.length > 0 && <span className="text-orange-400 ml-1.5">✓</span>}
+                </h3>
                 {stats && (
-                  <span className="text-[9px] bg-[#21232d] text-gray-400 px-1.5 py-0.5 rounded font-mono ml-2">
+                  <span className="text-[9px] bg-black/40 text-gray-400 px-1.5 py-0.5 rounded font-mono ml-2 border border-[#2a2c33]">
                     {stats.total} source{stats.total !== 1 ? 's' : ''}
                   </span>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button id="m2-add-file-btn" onClick={handleFileButtonClick} disabled={loading}
-                className="flex items-center gap-1 px-2 py-1 text-[9px] bg-[#1e2a3d] hover:bg-[#1d3a5c] border border-[#2563eb]/30 hover:border-[#2563eb]/60 text-blue-300 rounded transition-all disabled:opacity-40">
+                className="px-3 py-1 text-[10px] bg-[#161822] hover:bg-orange-500/10 text-orange-400 font-bold rounded-full transition-colors disabled:opacity-40 flex items-center gap-1.5 border border-transparent hover:border-orange-500/30">
                 🎵 File
               </button>
               <button id="m2-add-folder-btn" onClick={handleFolderButtonClick} disabled={loading}
-                className="flex items-center gap-1 px-2 py-1 text-[9px] bg-[#1e1d3d] hover:bg-[#2d1f5e] border border-violet-700/30 hover:border-violet-600/60 text-violet-300 rounded transition-all disabled:opacity-40">
+                className="px-3 py-1 text-[10px] bg-[#161822] hover:bg-orange-500/10 text-orange-400 font-bold rounded-full transition-colors disabled:opacity-40 flex items-center gap-1.5 border border-transparent hover:border-orange-500/30">
                 📁 Folder
               </button>
               <button id="m2-add-youtube-btn" onClick={() => setModal('youtube')} disabled={loading}
-                className="flex items-center gap-1 px-2 py-1 text-[9px] bg-[#2a1010] hover:bg-[#3d1515] border border-red-800/30 hover:border-red-700/60 text-red-300 rounded transition-all disabled:opacity-40">
+                className="px-3 py-1 text-[10px] bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-full shadow-[0_0_10px_rgba(249,115,22,0.3)] transition-colors disabled:opacity-40 flex items-center gap-1.5">
                 ▶ YouTube
               </button>
             </div>
@@ -864,7 +790,7 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
           )}
 
           {sources.length > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0c0d12] border-b border-[#21232d] flex-wrap">
+            <div className="flex items-center gap-2 px-4 py-2 bg-black/20 border-b border-[#2a2c33] flex-wrap shadow-inner relative z-10">
               <button
                 id="m2-select-all-btn"
                 onClick={allSelected ? handleDeselectAll : handleSelectAll}
@@ -872,29 +798,22 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
               >
                 {allSelected ? '☑ Deselect All' : '☐ Select All'}
               </button>
-              {selectedCount > 0 && (
-                <>
-                  <span className="text-[9px] text-gray-700">|</span>
-                  <span className="text-[9px] text-blue-400 font-mono">{selectedCount} selected</span>
-                  {selectedYTUnfetched > 0 && (
-                    <button
-                      id="m2-fetch-selected-btn"
-                      onClick={handleFetchSelectedMetadata}
-                      disabled={bulkFetching}
-                      className="text-[9px] text-blue-300 hover:text-blue-200 hover:bg-blue-950/30 px-2 py-0.5 rounded transition-colors disabled:opacity-40"
-                    >
-                      ⬇ Fetch {selectedYTUnfetched} Metadata
-                    </button>
-                  )}
-                  <button
-                    id="m2-remove-selected-btn"
-                    onClick={handleRemoveSelected}
-                    className="text-[9px] text-red-400 hover:text-red-300 hover:bg-red-950/30 px-2 py-0.5 rounded transition-colors"
-                  >
-                    🗑 Remove Selected
-                  </button>
-                </>
-              )}
+
+              <span className="text-[9px] text-gray-700">|</span>
+              
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded border transition-colors ${selectedCount > 0 ? 'text-orange-400 bg-orange-950/30 border-orange-500/20' : 'text-gray-600 bg-gray-900/50 border-gray-800'}`}>
+                {selectedCount} selected
+              </span>
+
+              <button
+                id="m2-remove-selected-btn"
+                onClick={handleRemoveSelected}
+                disabled={selectedCount === 0}
+                className="text-[9px] text-red-400 hover:text-red-300 hover:bg-red-950/30 px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                🗑 Remove Selected
+              </button>
+
               <div className="flex-1" />
               <button
                 onClick={handleClearAll}
@@ -917,7 +836,7 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
                 </div>
               </div>
             ) : (
-              <div className={showDetailsPanel ? "p-1.5 space-y-1.5 grid grid-cols-1" : "p-1.5 grid grid-cols-1 md:grid-cols-2 gap-1.5"}>
+              <div className="flex flex-col border-b border-[#21232d]">
                 {filteredSources.map(source =>
                   source.sourceType === SOURCE_TYPE.YOUTUBE_URL ? (
                     <YouTubeSourceCard
@@ -944,18 +863,6 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
             )}
           </div>
         </div>
-
-        {/* Selected Source Editor Pane */}
-        {showDetailsPanel && selectedSource && (
-          <div className="w-full xl:w-1/3 xl:min-w-[320px] bg-[#0b0c10] border border-[#21232d] rounded-lg overflow-hidden flex flex-col shrink-0 animate-in fade-in slide-in-from-right-4 duration-200">
-            <SelectedSourceEditor 
-              source={selectedSource}
-              onUpdateCleanTitle={handleUpdateCleanTitle}
-              onFetchMetadata={handleFetchMetadata}
-              isFetching={fetchingIds.has(selectedSource.id)}
-            />
-          </div>
-        )}
       </div>
 
       {/* ── Summary Footer ─────────────────────────────────────────────── */}
@@ -1033,6 +940,48 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
             </>
           )}
         </div>
+      )}
+      {/* ── Giant Add To Queue Button (Portal) ─────────────────────────── */}
+      {portalTarget && createPortal(
+        <button
+          id="m2-add-queue-giant-btn"
+          onClick={() => {
+            if (selectedCount > 0 && onAddToQueue) {
+               const selectedItems = sources.filter(s => s.selected);
+               if (selectedItems.length > 0) {
+                 onAddToQueue([{
+                   renderId: 'direct-' + Date.now(),
+                   renderName: selectedItems.length > 1 
+                     ? `M2 Compilation (${selectedItems.length} Tracks)` 
+                     : (selectedItems[0].cleanTitle || selectedItems[0].title || 'M2 Compilation'),
+                   selected: true,
+                   trackCount: selectedItems.length,
+                   totalDurationSec: sumTotalDuration(selectedItems),
+                   trackList: selectedItems
+                 }]);
+                 handleDeselectAll();
+               }
+            }
+          }}
+          disabled={selectedCount === 0}
+          className={`w-[110px] h-full rounded-xl border transition-all duration-200 flex flex-col items-center justify-center gap-1 group relative overflow-hidden ${
+            selectedCount > 0 
+              ? 'bg-gradient-to-br from-orange-600 to-orange-800 hover:from-orange-500 hover:to-orange-700 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.4),inset_0_1px_1px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-95 cursor-pointer' 
+              : 'bg-[#161822] border-[#2d3247] opacity-50 cursor-not-allowed'
+          }`}
+        >
+          {selectedCount > 0 && (
+             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out pointer-events-none"></div>
+          )}
+          <div className="flex items-center gap-1.5">
+            <span className={`text-lg drop-shadow-md transition-transform duration-300 ${selectedCount > 0 ? 'group-hover:-translate-y-1' : ''} ${selectedCount > 0 ? 'grayscale-0' : 'grayscale'}`}>🚀</span>
+            <span className={`text-[10px] font-bold uppercase tracking-wider drop-shadow-md leading-tight text-center ${selectedCount > 0 ? 'text-white' : 'text-gray-500'}`}>Add to<br/>Queue</span>
+          </div>
+          <span className={`text-[8px] font-mono ${selectedCount > 0 ? 'text-orange-200 bg-orange-950/50 px-2 py-0.5 rounded' : 'text-gray-600'}`}>
+            {selectedCount} selected
+          </span>
+        </button>,
+        portalTarget
       )}
     </>
   );

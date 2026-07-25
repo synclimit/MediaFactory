@@ -142,9 +142,30 @@ export class SourceService extends EventTarget {
    * @returns {Promise<{added: Array, skipped: number}>}
    */
   async importFolder(folderPath, context = {}) {
-    const filePaths = simulateFolderScan(folderPath);
+    let filePaths = [];
+    const res = await fetch('/api/m2/folder/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderPath: folderPath.trim() })
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      if (data.files) filePaths = data.files;
+    } else {
+      throw new Error("Backend API /api/m2/folder/scan failed. Please restart your backend server!");
+    }
+
     const added = [];
     let skipped = 0;
+
+    const getAudioDuration = (filePath) => new Promise(resolve => {
+        const fileUrl = `file:///${filePath.replace(/\\/g, '/')}`;
+        const audio = new Audio(fileUrl);
+        audio.addEventListener('loadedmetadata', () => resolve(audio.duration));
+        audio.addEventListener('error', () => resolve(0));
+        setTimeout(() => resolve(0), 1000);
+    });
 
     for (const filePath of filePaths) {
       // Duplicate check per file
@@ -152,7 +173,8 @@ export class SourceService extends EventTarget {
         skipped++;
         continue;
       }
-      const source = createFolderAudioSource(filePath, folderPath);
+      const durationSec = await getAudioDuration(filePath);
+      const source = createFolderAudioSource(filePath, folderPath, durationSec);
       const saved = await this.repo.insert(source);
       added.push(saved);
     }

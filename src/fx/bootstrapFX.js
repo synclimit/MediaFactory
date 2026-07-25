@@ -1,0 +1,44 @@
+import { registerAdvancedFX } from './categories/advanced/index.js';
+import { registerAtmosphericFX } from './categories/atmospheric/index.js';
+import { registerAudioReactiveFX } from './categories/audio_reactive/index.js';
+import { registerBeatFX } from './categories/beat/index.js';
+import { registerBlurFX } from './categories/blur/index.js';
+import { registerCameraFX } from './categories/camera/index.js';
+import { registerColorFX } from './categories/color/index.js';
+import { registerDistortionFX } from './categories/distortion/index.js';
+import { registerEnvironmentalFX } from './categories/environmental/index.js';
+import { registerExperimentalFX } from './categories/experimental/index.js';
+import { registerFilmFX } from './categories/film/index.js';
+import { registerGeometryFX } from './categories/geometry/index.js';
+import { registerGlitchFX } from './categories/glitch/index.js';
+import { registerLensFX } from './categories/lens/index.js';
+import { registerMotionFX } from './categories/motion/index.js';
+import { registerParticleFX } from './categories/particle/index.js';
+import { registerPostFX } from './categories/post/index.js';
+import { registerRetroFX } from './categories/retro/index.js';
+import { registerStylizeFX } from './categories/stylize/index.js';
+import { registerTransitionFX } from './categories/transition/index.js';
+
+export function bootstrapFX() {
+    registerAdvancedFX();
+    registerAtmosphericFX();
+    registerAudioReactiveFX();
+    registerBeatFX();
+    registerBlurFX();
+    registerCameraFX();
+    registerColorFX();
+    registerDistortionFX();
+    registerEnvironmentalFX();
+    registerExperimentalFX();
+    registerFilmFX();
+    registerGeometryFX();
+    registerGlitchFX();
+    registerLensFX();
+    registerMotionFX();
+    registerParticleFX();
+    registerPostFX();
+    registerRetroFX();
+    registerStylizeFX();
+    registerTransitionFX();
+    console.log('[FX] FX Engine Bootstrapped');
+}

@@ -8,6 +8,7 @@ import M3DynamicContentPanel from './M3DynamicContentPanel.jsx';
 import M3PreviewCanvas from './M3PreviewCanvas.jsx';
 import M3ObjectInspector from './M3ObjectInspector.jsx';
 import M3ThumbnailEditor from './M3ThumbnailEditor.jsx';
+import M3PlaybackBar from './M3PlaybackBar.jsx';
 import M3Statistics from './M3Statistics.jsx';
 import BeatDebugOverlay from './debug/BeatDebugOverlay.jsx';
 import M3SubtitleTimelinePanel from './M3SubtitleTimelinePanel.jsx';
@@ -38,6 +39,7 @@ export default function M3StudioPanel({
   const [m3CurrentTimeSec, setM3CurrentTimeSec] = useState(0);
   const [m3CurrentTrackIndex, setM3CurrentTrackIndex] = useState(0);
   const [activeContextCategory, setActiveContextCategory] = useState('Background');
+  const [analyser, setAnalyser] = useState(null);
 
   // Simple Undo/Redo for m3Objects
   const [history, setHistory] = useState([]);
@@ -119,6 +121,23 @@ export default function M3StudioPanel({
     }
   };
 
+  const handleSetM3SelectedObjectId = (id) => {
+    setM3SelectedObjectId(id);
+    if (id) {
+      const obj = m3Objects.find(o => o.id === id);
+      if (obj) {
+        if (obj.type === 'text') setActiveContextCategory('Text Objects');
+        else if (obj.type === 'visualizer') setActiveContextCategory('Visualizer');
+        else if (obj.type === 'image' || obj.type === 'video' || obj.type === 'gif') setActiveContextCategory('Overlay');
+        else if (obj.type === 'social-widget') setActiveContextCategory('Branding');
+        else if (obj.type === 'background') setActiveContextCategory('Background');
+        else if (obj.type === 'playlist' || obj.type === 'track_list_column') setActiveContextCategory('Text Objects');
+        else if (obj.type === 'effect') setActiveContextCategory('Overlay');
+        else if (obj.type === 'particle') setActiveContextCategory('Particle');
+      }
+    }
+  };
+
   return (
     <>
       <Surface variant={BackgroundVariants.Default} className="flex flex-col flex-1 min-h-0 border border-[#21232d] rounded overflow-hidden shadow-2xl mb-2">
@@ -154,7 +173,10 @@ export default function M3StudioPanel({
           {/* Navigation Rail */}
           <M3NavigationRail 
             activeCategory={activeContextCategory} 
-            setActiveCategory={setActiveContextCategory} 
+            setActiveCategory={(cat) => {
+              setActiveContextCategory(cat);
+              setM3SelectedObjectId(null);
+            }} 
           />
           
           {/* Dynamic Content Panel */}
@@ -163,7 +185,7 @@ export default function M3StudioPanel({
             m3AudioTracks={m3AudioTracks} setM3AudioTracks={setM3AudioTracks}
             m3CurrentTrackIndex={m3CurrentTrackIndex}
             m3Objects={m3Objects} setM3Objects={setM3Objects}
-            setM3SelectedObjectId={setM3SelectedObjectId}
+            setM3SelectedObjectId={handleSetM3SelectedObjectId}
             canvasMode={editorMode === 'Composer' ? 'thumbnail' : 'thumbnail'} // actually, let's keep original code
             activeContextCategory={activeContextCategory}
           />
@@ -173,6 +195,8 @@ export default function M3StudioPanel({
             <M3ObjectInspector 
               m3Objects={m3Objects}
               setM3Objects={setM3Objects}
+              m3BgPool={m3BgPool}
+              setM3BgPool={setM3BgPool}
               m3SelectedObjectId={m3SelectedObjectId}
               activeCategory={activeContextCategory}
               renderSettings={m3RenderSettings}
@@ -189,7 +213,7 @@ export default function M3StudioPanel({
                 m3Objects={m3Objects} 
                 setM3Objects={setM3Objects}
                 m3SelectedObjectId={m3SelectedObjectId}
-                setM3SelectedObjectId={setM3SelectedObjectId}
+                setM3SelectedObjectId={handleSetM3SelectedObjectId}
                 m3CurrentTimeSec={m3CurrentTimeSec}
                 m3TotalDurationSec={m3TotalDurationSec}
                 setM3CurrentTimeSec={setM3CurrentTimeSec}
@@ -197,6 +221,7 @@ export default function M3StudioPanel({
                 setM3CurrentTrackIndex={setM3CurrentTrackIndex}
                 m3EstRenderTimeSec={m3EstRenderTimeSec}
                 m3EstStorageMb={m3EstStorageMb}
+                analyser={analyser}
               />
             ) : (
               <M3ThumbnailEditor 
@@ -211,6 +236,21 @@ export default function M3StudioPanel({
                 setM3SelectedObjectId={setM3SelectedObjectId}
               />
             )}
+            
+            {/* Playback Controls (Outside Canvas) */}
+            {editorMode === 'Composer' && (
+              <div className="flex-shrink-0 w-full bg-[#0a0a0a] border-t border-[#1a1b26]">
+                <M3PlaybackBar
+                  m3AudioTracks={m3AudioTracks}
+                  currentTimeSec={m3CurrentTimeSec}
+                  setCurrentTimeSec={setM3CurrentTimeSec}
+                  currentTrackIndex={m3CurrentTrackIndex}
+                  setCurrentTrackIndex={setM3CurrentTrackIndex}
+                  onAnalyserReady={setAnalyser}
+                />
+              </div>
+            )}
+
             {editorMode === 'Composer' && (
               <M3Statistics 
                 m3TotalDurationSec={m3TotalDurationSec}

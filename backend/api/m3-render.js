@@ -174,12 +174,24 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
           console.log(`[M3] Downloading YouTube audio: ${sp}`);
           await new Promise((resolve, reject) => {
             const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', sp];
-            const ytProc = spawn('yt-dlp', ytArgs);
+            const ytProc = spawn('yt-dlp', ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+            ytProc.stdout.on('data', () => {});
+            ytProc.stderr.on('data', () => {});
+            
+            const timeoutId = setTimeout(() => {
+                ytProc.kill();
+                reject(new Error('yt-dlp timeout after 120s'));
+            }, 120000);
+
             ytProc.on('close', (code) => {
+              clearTimeout(timeoutId);
               if (code === 0) resolve();
               else reject(new Error(`yt-dlp exited with code ${code}`));
             });
-            ytProc.on('error', reject);
+            ytProc.on('error', (err) => {
+                clearTimeout(timeoutId);
+                reject(err);
+            });
           });
           resolvedPaths.push(ytOut);
         }

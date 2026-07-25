@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Surface from '../ui/Surface';
-import { BackgroundVariants } from '../ui/BackgroundVariants';
+import { Play, Pause, Square, Rewind, FastForward, Volume2 } from 'lucide-react';
 import { emitRuntimeEvent } from '../../services/RuntimeClient';
 
 export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, setCurrentTimeSec, currentTrackIndex = 0, setCurrentTrackIndex, onAnalyserReady }) {
@@ -271,80 +270,84 @@ export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, 
   };
 
   return (
-    <Surface variant={BackgroundVariants.Queue} className="flex flex-col border-t border-b border-[#21232d] p-2 space-y-2 shrink-0">
+    <div className="flex flex-col w-full bg-[#0a0a0a] relative group">
       
-      {/* Top Row: Playback Controls & Info */}
-      <div className="flex justify-between items-center">
-        {/* Playback Controls */}
-        <div className="flex bg-[#12131a] border border-[#2d3247] rounded overflow-hidden shadow-md items-center">
-          <button onClick={onPreviewPrev} className="px-3 py-1.5 hover:bg-[#2d3247] transition-colors text-[11px] text-gray-400 font-bold border-r border-[#2d3247]">⏮</button>
-          <button onClick={onPreviewPlay} className={`px-4 py-1.5 hover:bg-[#2d3247] transition-colors text-[11px] font-bold border-r border-[#2d3247] ${isPlaying ? 'bg-[#2d3247] text-emerald-300' : 'text-emerald-400'}`}>▶ Play</button>
-          <button onClick={onPreviewPause} className="px-4 py-1.5 hover:bg-[#2d3247] transition-colors text-[11px] text-amber-400 font-bold border-r border-[#2d3247]">⏸ Pause</button>
-          <button onClick={onPreviewStop} className="px-4 py-1.5 hover:bg-[#2d3247] transition-colors text-[11px] text-red-400 font-bold border-r border-[#2d3247]">⏹ Stop</button>
-          <button onClick={onPreviewNext} className="px-3 py-1.5 hover:bg-[#2d3247] transition-colors text-[11px] text-gray-400 font-bold border-r border-[#2d3247]">⏭</button>
-          
-          <div className="flex items-center gap-2 border-r border-[#2d3247] px-3 h-full">
-            <span className="text-[9px] text-gray-500 font-bold">SPEED</span>
-            <select 
-              value={playbackSpeed} 
-              onChange={(e) => {
-                const speed = parseFloat(e.target.value);
-                setPlaybackSpeed(speed);
-                if (audioRef.current) audioRef.current.playbackRate = speed;
-              }} 
-              className="bg-[#1e2230] border border-[#2d3247] text-gray-300 text-[10px] rounded px-1.5 py-0.5 outline-none cursor-pointer"
-            >
-              <option value="0.5">0.5x</option>
-              <option value="0.75">0.75x</option>
-              <option value="1">1.0x</option>
-              <option value="1.25">1.25x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2">2.0x</option>
-            </select>
-          </div>
-          
-          <div className="flex items-center gap-2 px-3">
-            <span className="text-[9px] text-gray-500 font-bold">VOL</span>
-            <input 
-              type="range" min="0" max="1" step="0.05" defaultValue="0.5"
-              onChange={(e) => { if (audioRef.current) audioRef.current.volume = Math.min(1, Math.max(0, parseFloat(e.target.value) || 0)); }}
-              className="w-16 accent-[#2563eb]" 
-            />
-          </div>
-        </div>
-
-        {/* Time Display */}
-        <div className="text-[14px] font-mono font-bold text-gray-300 bg-[#12131a] border border-[#2d3247] px-3 py-1 rounded shadow-inner">
-          <span className="text-emerald-400">{formatTime(currentTimeSec)}</span> <span className="text-gray-500">/</span> {formatTime(totalDurationSec)}
-        </div>
-      </div>
-
-      {/* Bottom Row: Preview Seek Bar */}
+      {/* Top Edge Seek Bar */}
       <div 
         ref={timelineRef}
         onMouseDown={handleTimelineMouseDown}
-        className="h-4 bg-[#181922] border border-[#2d3247] rounded cursor-pointer relative overflow-hidden group"
+        className="absolute top-0 left-0 right-0 h-[2px] bg-[#1a1b26] cursor-pointer hover:h-1 transition-all z-10"
       >
         <div 
-          className="absolute top-0 bottom-0 bg-blue-600/30 group-hover:bg-blue-600/50 transition-colors pointer-events-none"
+          className="absolute top-0 bottom-0 bg-blue-600/30 pointer-events-none"
           style={{ width: `${(currentTimeSec / totalDurationSec) * 100}%` }}
         ></div>
         <div 
-          className="absolute top-0 bottom-0 w-1 bg-emerald-400 shadow-[0_0_8px_#34d399] pointer-events-none -ml-0.5"
+          className="absolute top-0 bottom-0 w-1 bg-[#f97316] shadow-[0_0_8px_#f97316] pointer-events-none -ml-0.5 transition-all"
           style={{ left: `${(currentTimeSec / totalDurationSec) * 100}%` }}
         ></div>
+      </div>
+
+      <div className="flex items-center justify-between px-4 py-1 mt-1">
+        
+        {/* Left: Time Display */}
+        <div className="text-[11px] font-mono font-medium text-gray-500 w-32 flex items-center gap-1">
+          <span className="text-gray-300">{formatTime(currentTimeSec)}</span> <span className="opacity-40">/</span> <span>{formatTime(totalDurationSec)}</span>
+        </div>
+
+        {/* Center: Playback Controls */}
+        <div className="flex items-center gap-2">
+          <button onClick={onPreviewPrev} className="p-1.5 rounded hover:bg-white/5 text-gray-500 hover:text-gray-300 transition-all"><Rewind size={14} fill="currentColor" /></button>
+          
+          {isPlaying ? (
+            <button onClick={onPreviewPause} className="p-1.5 rounded bg-[#f97316]/10 hover:bg-[#f97316]/20 text-[#f97316] transition-all"><Pause size={16} fill="currentColor" /></button>
+          ) : (
+            <button onClick={onPreviewPlay} className="p-1.5 rounded hover:bg-white/10 text-gray-300 hover:text-white transition-all"><Play size={16} fill="currentColor" className="ml-0.5" /></button>
+          )}
+          
+          <button onClick={onPreviewStop} className="p-1.5 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-400 transition-all"><Square size={12} fill="currentColor" /></button>
+          <button onClick={onPreviewNext} className="p-1.5 rounded hover:bg-white/5 text-gray-500 hover:text-gray-300 transition-all"><FastForward size={14} fill="currentColor" /></button>
+        </div>
+
+        {/* Right: Settings */}
+        <div className="flex items-center gap-4 w-32 justify-end">
+          {/* Speed */}
+          <select 
+            value={playbackSpeed} 
+            onChange={(e) => {
+              const speed = parseFloat(e.target.value);
+              setPlaybackSpeed(speed);
+              if (audioRef.current) audioRef.current.playbackRate = speed;
+            }} 
+            className="bg-transparent text-gray-500 hover:text-gray-300 text-[10px] font-bold outline-none cursor-pointer appearance-none"
+          >
+            <option value="0.5">0.5x</option>
+            <option value="1">1.0x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2.0x</option>
+          </select>
+          
+          {/* Vol */}
+          <div className="flex items-center gap-1.5 group/vol">
+            <Volume2 size={12} className="text-gray-500 group-hover/vol:text-gray-300 transition-colors" />
+            <input 
+              type="range" min="0" max="1" step="0.05" defaultValue="0.5"
+              onChange={(e) => { if (audioRef.current) audioRef.current.volume = Math.min(1, Math.max(0, parseFloat(e.target.value) || 0)); }}
+              className="w-12 h-[2px] accent-[#f97316] opacity-30 group-hover/vol:opacity-100 transition-opacity cursor-pointer bg-gray-800" 
+            />
+          </div>
+        </div>
       </div>
 
       <audio ref={audioRef} crossOrigin="anonymous" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} className="hidden" />
 
       {/* Error Toast */}
       {toastError && (
-        <div className="absolute bottom-16 right-4 bg-red-900 border border-red-500 text-white px-4 py-2 rounded shadow-lg z-50">
-          <div className="font-bold text-[11px] mb-1">Cannot Preview Audio</div>
-          <div className="text-[10px] font-mono">Reason: {toastError}</div>
-          <button onClick={() => setToastError(null)} className="absolute top-1 right-2 text-red-300 hover:text-white">✕</button>
+        <div className="absolute bottom-full mb-2 right-4 bg-red-900/90 backdrop-blur-md border border-red-500 text-white px-3 py-1.5 rounded shadow flex items-center gap-2">
+          <div className="text-[10px]">Cannot Preview Audio: <span className="font-mono opacity-70">{toastError}</span></div>
+          <button onClick={() => setToastError(null)} className="text-red-300 hover:text-white ml-2 text-[10px]">✕</button>
         </div>
       )}
-    </Surface>
+    </div>
   );
 }

@@ -19,12 +19,9 @@ export default function TextPanel({ addObject }) {
             {error && <div className="bg-red-900/40 border border-red-500 text-red-400 p-2 rounded text-[10px]">{error.message}</div>}
 
             <div className="space-y-3">
-                <ThumbnailCard color="yellow" title="Playlist Title" icon="T" onClick={() => handleSelect('Playlist Title', { type: 'text', name: 'My Playlist Title', x: 560, y: 200, width: 800, height: 100, fontSize: 64, fontWeight: 'bold' })} />
-                <ThumbnailCard color="green" title="Track List Layout" icon="📋" onClick={() => handleSelect('Playlist Layout', { type: 'playlist', name: 'Playlist Generator', dataSource: 'linked', columns: 1, columnTransforms: [{ x: 0, y: 0 }], fontFamily: 'Inter', fontSize: 18, color: '#ffffff', numberFormat: '{number}. {title}' })} />
-                <ThumbnailCard color="yellow" title="Current Playing" icon="🎵" onClick={() => handleSelect('Current Playing', { type: 'text', name: 'Now Playing', x: 660, y: 300, width: 600, height: 50, fontSize: 32 })} />
-                <ThumbnailCard color="yellow" title="Artist / Album" icon="👤" onClick={() => handleSelect('Artist Album', { type: 'text', name: 'Artist Name', x: 660, y: 380, width: 600, height: 40, fontSize: 24 })} />
-                <ThumbnailCard color="yellow" title="Lyrics" icon="🎤" onClick={() => handleSelect('Lyrics', { type: 'text', name: 'Lyrics appear here...', x: 500, y: 800, width: 920, height: 60, fontSize: 28, color: '#aaaaaa' })} />
-                <ThumbnailCard color="yellow" title="Custom Text" icon="✍️" onClick={() => handleSelect('Custom', { type: 'text', name: 'Custom Text', x: 760, y: 490, width: 400, height: 100, fontSize: 48 })} />
+                <ThumbnailCard color="green" title="Track List Layout" icon="📋" onClick={() => handleSelect('Playlist Layout', { type: 'playlist', name: 'Playlist Generator', dataSource: 'linked', columns: 1, x: '50%', y: '50%', width: '80%', height: '80%', fontFamily: 'Inter', fontSize: 18, color: '#ffffff', numberFormat: '{number}. {title}' })} />
+                <ThumbnailCard color="yellow" title="Current Playing" icon="🎵" onClick={() => handleSelect('Current Playing', { type: 'text', name: '{current_track}', x: '50%', y: '85%', width: '80%', height: '15%', fontSize: 32 })} />
+                <ThumbnailCard color="yellow" title="Custom Text" icon="✍️" onClick={() => handleSelect('Custom', { type: 'text', name: 'Custom Text', x: '50%', y: '50%', width: '50%', height: '20%', fontSize: 48 })} />
             </div>
         </div>
     );

@@ -93,20 +93,28 @@ class M4RenderEngine {
             }
 
             if (audioCount > 0) {
-                let filterStr = '';
-                let mixInputs = '';
-                
-                audioInputs.forEach((a, i) => {
-                    filterStr += `[${a.index}:a]volume=${a.volume.toFixed(2)}[a${i}];`;
-                    mixInputs += `[a${i}]`;
-                });
-                
-                filterStr += `${mixInputs}amix=inputs=${audioCount}:duration=first:dropout_transition=2[aout]`;
-                filterComplex = filterStr;
-                
-                args.push('-filter_complex', filterComplex);
-                args.push('-map', '0:v');
-                args.push('-map', '[aout]');
+                if (audioCount === 1) {
+                    const a = audioInputs[0];
+                    filterComplex = `[${a.index}:a]volume=${a.volume.toFixed(2)}[aout]`;
+                    args.push('-filter_complex', filterComplex);
+                    args.push('-map', '0:v');
+                    args.push('-map', '[aout]');
+                } else {
+                    let filterStr = '';
+                    let mixInputs = '';
+                    
+                    audioInputs.forEach((a, i) => {
+                        filterStr += `[${a.index}:a]volume=${a.volume.toFixed(2)}[a${i}];`;
+                        mixInputs += `[a${i}]`;
+                    });
+                    
+                    filterStr += `${mixInputs}amix=inputs=${audioCount}:duration=first:dropout_transition=2[aout]`;
+                    filterComplex = filterStr;
+                    
+                    args.push('-filter_complex', filterComplex);
+                    args.push('-map', '0:v');
+                    args.push('-map', '[aout]');
+                }
             } else {
                 args.push('-map', '0:v');
                 args.push('-an'); // No audio
@@ -131,8 +139,7 @@ class M4RenderEngine {
 
             ffmpeg.stderr.on('data', (data) => {
                 const text = data.toString();
-                // Parse time=HH:MM:SS.ms
-                const timeMatch = text.match(/time=(\d{2}):(\d{2}):(\d{2})\.\d{2}/);
+                const timeMatch = text.match(/time=(\d{2}):(\d{2}):(\d{2})/);
                 if (timeMatch) {
                     const h = parseInt(timeMatch[1], 10);
                     const m = parseInt(timeMatch[2], 10);
@@ -144,7 +151,7 @@ class M4RenderEngine {
                     if (progress < 0) progress = 0;
                     
                     const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                    onProgress(progress.toFixed(2), timeString);
+                    onProgress(Number(progress.toFixed(2)), timeString);
                 }
             });
 

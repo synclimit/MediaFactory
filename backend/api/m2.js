@@ -53,6 +53,41 @@ router.post('/api/m2/dialog/folder', (req, res) => {
     }
 });
 
+// REAL FOLDER SCAN
+async function scanFolderRecursive(dirPath, audioExtensions) {
+    let results = [];
+    try {
+        const list = await fs.readdir(dirPath, { withFileTypes: true });
+        for (const dirent of list) {
+            const fullPath = path.join(dirPath, dirent.name);
+            if (dirent.isDirectory()) {
+                results = results.concat(await scanFolderRecursive(fullPath, audioExtensions));
+            } else {
+                const ext = path.extname(dirent.name).toLowerCase().slice(1);
+                if (audioExtensions.includes(ext)) {
+                    results.push(fullPath);
+                }
+            }
+        }
+    } catch(err) {
+        // Ignore permission errors for subdirectories
+    }
+    return results;
+}
+
+router.post('/api/m2/folder/scan', async (req, res) => {
+    const folderPath = req.body.folderPath;
+    if (!folderPath) return res.status(400).json({ error: 'folderPath required' });
+    
+    try {
+        const AUDIO_EXTENSIONS = ['mp3', 'wav', 'flac', 'm4a', 'aac', 'ogg', 'wma', 'opus', 'aiff', 'aif'];
+        const files = await scanFolderRecursive(folderPath, AUDIO_EXTENSIONS);
+        res.json({ files: files.map(f => f.replace(/\\/g, '/')) });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.post('/api/m2/yt-metadata', async (req, res) => {
     let url = req.body.url;
     if (!url) return res.status(400).json({ error: 'URL required' });
@@ -276,12 +311,22 @@ router.get('/api/m2/prepare-stream', async (req, res) => {
                     res.write(`data: {"status": "extracting"}\n\n`);
                 }
             });
+            ytProc.stderr.on('data', () => {}); // Consume stderr
+            
+            const timeoutId = setTimeout(() => {
+                ytProc.kill();
+                res.write(`data: {"status": "error"}\n\n`);
+                res.end();
+            }, 300000); // 5 minutes timeout for long videos
+            
             ytProc.on('close', code => {
+                clearTimeout(timeoutId);
                 if (code === 0) res.write(`data: {"status": "ready"}\n\n`);
                 else res.write(`data: {"status": "error"}\n\n`);
                 res.end();
             });
             ytProc.on('error', () => {
+                clearTimeout(timeoutId);
                 res.write(`data: {"status": "error"}\n\n`);
                 res.end();
             });
@@ -351,9 +396,23 @@ router.get('/api/m2/stream', async (req, res) => {
                 const ytOut = path.join(cacheDir, hashUri(uri) + '.%(ext)s');
                 const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', uri];
                 await new Promise((resolve, reject) => {
-                    const ytProc = spawn('yt-dlp', ytArgs);
-                    ytProc.on('close', code => code === 0 ? resolve() : reject(new Error('Failed')));
-                    ytProc.on('error', reject);
+                    const ytProc = spawn('yt-dlp', ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+                    ytProc.stdout.on('data', () => {});
+                    ytProc.stderr.on('data', () => {});
+                    
+                    const timeoutId = setTimeout(() => {
+                        ytProc.kill();
+                        reject(new Error('Timeout'));
+                    }, 300000);
+                    
+                    ytProc.on('close', code => {
+                        clearTimeout(timeoutId);
+                        code === 0 ? resolve() : reject(new Error('Failed'))
+                    });
+                    ytProc.on('error', (err) => {
+                        clearTimeout(timeoutId);
+                        reject(err);
+                    });
                 });
                 streamFile(cachePath);
             } catch (err) {

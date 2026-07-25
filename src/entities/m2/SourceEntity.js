@@ -208,13 +208,15 @@ export function createAudioFileSource(path) {
  * @param {string} folderPath - The original folder path
  * @returns {SourceEntity}
  */
-export function createFolderAudioSource(filePath, folderPath) {
+export function createFolderAudioSource(filePath, folderPath, durationSec = 0) {
   return createSource({
     sourceType: SOURCE_TYPE.FOLDER_AUDIO,
     title: titleFromPath(filePath),
     localPath: filePath,
     folderPath: folderPath || null,
     status: SOURCE_STATUS.READY,
+    videoDuration: durationSec,
+    duration: durationSec > 0 ? formatDuration(durationSec) : null,
     validationErrors: [],
   });
 }

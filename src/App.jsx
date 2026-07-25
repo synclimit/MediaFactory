@@ -11,7 +11,6 @@ import SourcePoolPanel from './components/m2/SourcePoolPanel.jsx';
 // M2 Task 05: Audio Preview Engine
 import AudioPreviewPanel from './components/m2/AudioPreviewPanel.jsx';
 // M2 Task 06: Compilation Workspace
-import CompilationWorkspacePanel from './components/m2/CompilationWorkspacePanel.jsx';
 // M2 Task 07: Render Plan
 import RenderPlanPanel from './components/m2/RenderPlanPanel.jsx';
 
@@ -24,10 +23,12 @@ import { audioProcessingProfileRepo } from './repositories/m2/AudioProcessingPro
 import { CompilationEngine } from './services/m2/CompilationEngine.js';
 import { createRenderHistoryRecord } from './entities/m2/RenderHistoryEntity.js';
 import { m2RenderHistory } from './services/m2/RenderHistoryService.js';
+import { m2WorkspaceContext } from './services/m2/WorkspaceContext.js';
 
 import { pipelineHistoryEngine } from './services/PipelineHistoryEngine.js';
 
 import M1StudioPanel from './components/m1/M1StudioPanel.jsx';
+import M2StudioPanel from './components/m2/M2StudioPanel.jsx';
 import M3StudioPanel from './components/m3/M3StudioPanel.jsx';
 import html2canvas from 'html2canvas';
 import M4StudioPanel from './components/m4/M4StudioPanel.jsx';
@@ -90,6 +91,13 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('pipelineDrawerCollapsed', pipelineDrawerCollapsed);
   }, [pipelineDrawerCollapsed]);
+
+  // Sync active workspace to context for panels that rely on it (like BrandingPanel)
+  useEffect(() => {
+    if (activeWorkspace) {
+      m2WorkspaceContext.setWorkspaceId(activeWorkspace);
+    }
+  }, [activeWorkspace]);
 
   // Removed isProfileDrawerOpen
   const [activeMode, setActiveMode] = useState('Mode 3'); // Set default Mode 3 to test enhancements
@@ -293,11 +301,6 @@ export default function App() {
   // --- MODE 2 INPUTS ---
   const [m2AudioPool, setM2AudioPool] = useState(['drum_loop_80bpm.mp3', 'acoustic_guitar_chords.mp3', 'synth_pad_c_minor.mp3', 'lofi_ambience_crackle.mp3']);
   const [m2Randomize, setM2Randomize] = useState(true);
-  const [m2DurationTarget, setM2DurationTarget] = useState(15);
-  const [m2OutputCount, setM2OutputCount] = useState(3);
-  const [m2NamingPattern, setM2NamingPattern] = useState('Title A x Title B');
-  const [m2CustomPattern, setM2CustomPattern] = useState('My_Compilation_Mix');
-  const [m2Mixes, setM2Mixes] = useState([]);        // Current CompilationEngine results
   const [m2Plans, setM2Plans] = useState([]);        // Generated RenderPlans
   const [m2Sources, setM2Sources] = useState([]);    // Latest source state for live UI updates
   const [m2IsStale, setM2IsStale] = useState(false); // Global Mode 2 Stale state
@@ -403,8 +406,6 @@ export default function App() {
 
   const handleLoadTemplate = (template) => {
     if (template.compilationSettings) {
-      setM2DurationTarget(template.compilationSettings.durationTarget);
-      setM2OutputCount(template.compilationSettings.outputCount);
       setM2Randomize(template.compilationSettings.randomize);
     }
     if (template.audioProfile) {
@@ -412,14 +413,6 @@ export default function App() {
     }
     if (template.masteringSettings) {
       setM2MasteringSettings(template.masteringSettings);
-    }
-    if (template.namingPattern) {
-      if (template.namingPattern !== 'Title A x Title B' && template.namingPattern !== 'Source Title' && template.namingPattern !== 'Channel Name - Title') {
-        setM2NamingPattern('Custom');
-        setM2CustomPattern(template.namingPattern);
-      } else {
-        setM2NamingPattern(template.namingPattern);
-      }
     }
     if (template.schedulerSettings) {
       m2SchedulerService.saveConfig(template.schedulerSettings);
@@ -437,64 +430,12 @@ export default function App() {
 
   // Handle upstream config changes
   useEffect(() => {
-    if (m2Mixes.length > 0) {
-      setM2IsStale(true);
-    }
-  }, [m2DurationTarget, m2OutputCount, m2NamingPattern, m2CustomPattern, m2AudioPool]);
+    setM2IsStale(true);
+  }, [m2AudioPool]);
 
 
 
-  const m2EstOutputs = Math.ceil(m2AudioPool.length / 2) || 0;
-  const m2EstDuration = m2EstOutputs * m2DurationTarget;
 
-  // Auto-generate Render Plans when new mixes or latest source edits are detected
-  useEffect(() => {
-    async function generatePlans() {
-      if (m2Sources && m2Sources.some(s => s.isUnlinked)) {
-        setM2Plans([]);
-        return;
-      }
-      if (m2Mixes.length === 0) {
-        setM2Plans([]);
-        return;
-      }
-      const p = await audioProcessingProfileRepo.getGlobalProfile();
-      const profileName = p?.presetName || 'Neutral';
-      
-      const newPlans = m2Mixes.map((mix, idx) => {
-        // Cross-reference with latest sources to ensure live cleanTitle sync
-        const updatedTrackOrder = mix.preview.trackOrder.map(t => {
-          const latest = m2Sources.find(s => s.id === t.id);
-          if (latest) {
-            return {
-              ...t,
-              cleanTitle: latest.cleanTitle,
-              title: latest.cleanTitle || latest.title || t.title
-            };
-          }
-          return t;
-        });
-
-        const renderName = deriveRenderName(updatedTrackOrder, m2NamingPattern, m2CustomPattern);
-        console.log('GENERATED_TITLE=' + renderName);
-        return {
-          ...createRenderPlan({
-            renderName,
-            outputFolder: 'D:\\MediaFactory\\Output',
-            trackCount: mix.trackCount,
-            totalDurationSec: mix.totalDurationSec,
-            totalDurationFormatted: mix.totalDurationFormatted,
-            audioProfile: profileName,
-            namingPattern: m2NamingPattern,
-            trackList: updatedTrackOrder,
-          }),
-          selected: true, // default checked
-        };
-      });
-      setM2Plans(newPlans);
-    }
-    generatePlans();
-  }, [m2Mixes, m2Sources, m2NamingPattern, m2CustomPattern]); // Re-run on source edit or pattern change
 
   // Sync m2Sources directly from database events to bypass polling delays
   useEffect(() => {
@@ -524,27 +465,55 @@ export default function App() {
 
   // --- MODE 3 INPUTS ---
   const [m3ProfileId, setM3ProfileId] = useState('p1');
-  const [m3BgPool, setM3BgPool] = useState([
-    { id: 'bg1', type: 'image', filename: 'bg_image_1.webp', preview: 'bg_image_1.webp' }
-  ]);
+  const [m3BgPool, setM3BgPool] = useState(() => {
+    try {
+      const saved = localStorage.getItem('m3_profile_bg');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return [
+      { id: 'bg1', type: 'image', filename: 'bg_image_1.webp', preview: 'bg_image_1.webp' }
+    ];
+  });
+  
   const [m3ThumbnailSaved, setM3ThumbnailSaved] = useState(false);
-  const [m3AudioTracks, setM3AudioTracks] = useState([
-    { id: 'trk1', title: 'lofi_track_a', artist: 'Unknown', duration: '03:45', thumbnail: 'thumb.jpg', sourceType: 'file', sourcePath: 'lofi_track_a.mp3' },
-    { id: 'trk2', title: 'lofi_track_b', artist: 'Unknown', duration: '02:30', thumbnail: 'thumb.jpg', sourceType: 'file', sourcePath: 'lofi_track_b.mp3' },
-    { id: 'trk3', title: 'lofi_track_c', artist: 'Unknown', duration: '04:15', thumbnail: 'thumb.jpg', sourceType: 'file', sourcePath: 'lofi_track_c.mp3' }
-  ]);
-  const [m3Objects, setM3Objects] = useState([
-    { id: 'bg-1', canvasMode: 'composer', type: 'background', name: 'Background', x: 0, y: 0, width: 1920, height: 1080, rotation: 0, opacity: 100, visible: true, locked: true, layer: 0 },
-    { id: 'txt-1', canvasMode: 'composer', type: 'text', name: 'Playlist Title', x: 100, y: 100, width: 800, height: 100, rotation: 0, opacity: 100, visible: true, locked: false, layer: 1 },
-    { id: 'txt-2', canvasMode: 'composer', type: 'text', name: 'Current Playing', x: 100, y: 250, width: 600, height: 50, rotation: 0, opacity: 100, visible: true, locked: false, layer: 2 },
-    { id: 'img-1', canvasMode: 'composer', type: 'image', name: 'Watermark', x: 1700, y: 50, width: 150, height: 150, rotation: 0, opacity: 50, visible: true, locked: false, layer: 3 },
-    { id: 'viz-1', canvasMode: 'composer', type: 'visualizer', name: 'Spectrum', x: 0, y: 900, width: 1920, height: 180, rotation: 0, opacity: 100, visible: true, locked: false, layer: 4 },
-    { id: 'ply-1', canvasMode: 'composer', type: 'playlist', name: 'Playlist Overlay', x: 1400, y: 300, width: 400, height: 600, rotation: 0, opacity: 90, visible: true, locked: false, layer: 5 },
-    { id: 't-bg-1', canvasMode: 'thumbnail', type: 'background', name: 'Thumbnail Background', x: 0, y: 0, width: 1920, height: 1080, rotation: 0, opacity: 100, visible: true, locked: true, layer: 0 },
-    { id: 't-txt-1', canvasMode: 'thumbnail', type: 'text', name: 'Thumb Title', x: 150, y: 200, width: 1000, height: 200, rotation: 0, opacity: 100, visible: true, locked: false, layer: 1 },
-    { id: 't-txt-2', canvasMode: 'thumbnail', type: 'text', name: 'Thumb Subtitle', x: 160, y: 450, width: 800, height: 100, rotation: 0, opacity: 100, visible: true, locked: false, layer: 2 }
-  ]);
+  
+  const [m3AudioTracks, setM3AudioTracks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('m3_profile_audio');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return [
+      { id: 'trk1', title: 'lofi_track_a', artist: 'Unknown', duration: '03:45', thumbnail: 'thumb.jpg', sourceType: 'file', sourcePath: 'lofi_track_a.mp3' },
+      { id: 'trk2', title: 'lofi_track_b', artist: 'Unknown', duration: '02:30', thumbnail: 'thumb.jpg', sourceType: 'file', sourcePath: 'lofi_track_b.mp3' },
+      { id: 'trk3', title: 'lofi_track_c', artist: 'Unknown', duration: '04:15', thumbnail: 'thumb.jpg', sourceType: 'file', sourcePath: 'lofi_track_c.mp3' }
+    ];
+  });
+  
+  const [m3Objects, setM3Objects] = useState(() => {
+    try {
+      const saved = localStorage.getItem('m3_profile_objects');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return [
+      { id: 'bg-1', canvasMode: 'composer', type: 'background', name: 'Background', x: 0, y: 0, width: 1920, height: 1080, rotation: 0, opacity: 100, visible: true, locked: true, layer: 0 },
+      { id: 'txt-1', canvasMode: 'composer', type: 'text', name: 'Playlist Title', x: 100, y: 100, width: 800, height: 100, rotation: 0, opacity: 100, visible: true, locked: false, layer: 1 },
+      { id: 'txt-2', canvasMode: 'composer', type: 'text', name: 'Current Playing', x: 100, y: 250, width: 600, height: 50, rotation: 0, opacity: 100, visible: true, locked: false, layer: 2 },
+      { id: 'img-1', canvasMode: 'composer', type: 'image', name: 'Watermark', x: 1700, y: 50, width: 150, height: 150, rotation: 0, opacity: 50, visible: true, locked: false, layer: 3 },
+      { id: 'viz-1', canvasMode: 'composer', type: 'visualizer', name: 'Spectrum', x: 0, y: 900, width: 1920, height: 180, rotation: 0, opacity: 100, visible: true, locked: false, layer: 4 },
+      { id: 'ply-1', canvasMode: 'composer', type: 'playlist', name: 'Playlist Overlay', x: 1400, y: 300, width: 400, height: 600, rotation: 0, opacity: 90, visible: true, locked: false, layer: 5 },
+      { id: 't-bg-1', canvasMode: 'thumbnail', type: 'background', name: 'Thumbnail Background', x: 0, y: 0, width: 1920, height: 1080, rotation: 0, opacity: 100, visible: true, locked: true, layer: 0 },
+      { id: 't-txt-1', canvasMode: 'thumbnail', type: 'text', name: 'Thumb Title', x: 150, y: 200, width: 1000, height: 200, rotation: 0, opacity: 100, visible: true, locked: false, layer: 1 },
+      { id: 't-txt-2', canvasMode: 'thumbnail', type: 'text', name: 'Thumb Subtitle', x: 160, y: 450, width: 800, height: 100, rotation: 0, opacity: 100, visible: true, locked: false, layer: 2 }
+    ];
+  });
   const [m3SelectedObjectId, setM3SelectedObjectId] = useState(null);
+
+  // M3 AutoSave Effect
+  useEffect(() => {
+    localStorage.setItem('m3_profile_bg', JSON.stringify(m3BgPool));
+    localStorage.setItem('m3_profile_audio', JSON.stringify(m3AudioTracks));
+    localStorage.setItem('m3_profile_objects', JSON.stringify(m3Objects));
+  }, [m3BgPool, m3AudioTracks, m3Objects]);
   const [m3MotionPreset, setM3MotionPreset] = useState('Standard');
   const [m3RenderSettings, setM3RenderSettings] = useState({
     outputName: 'Chill_Lofi_Playlist_Mix.mp4',
@@ -954,7 +923,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [
     activeMode, m1VideoFile, m1TargetSegment, m1Slots, m1Watermark, m1Subscribe, m1Quality,
-    m2AudioPool, m2Randomize, m2DurationTarget, m2NamingPattern, m2CustomPattern, m2Mixes,
+    m2AudioPool, m2Randomize,
     m3ProfileId, m3BgPool, m3AudioTracks, m3MotionPreset, m3OutputFilename,
     m3OverlayWatermark, m3OverlaySub, m3OverlayPlaylist, m3OverlayCurrent, m3OverlayCounter, m3OverlayNotify, m3OverlaySpectrumStyle
   ]);
@@ -1612,10 +1581,6 @@ export default function App() {
       addLog('Mode 1 Reset. Profile kept.');
     } else if (mode === 'Mode 2') {
       setM2AudioPool([]);
-      setM2DurationTarget(15);
-      setM2Outputs([]);
-      setM2EstOutputs(0);
-      setM2EstDuration(0);
       setM2SuccessMsg(false);
       addLog('Mode 2 Reset. Profile kept.');
     } else if (mode === 'Mode 3') {
@@ -1795,7 +1760,7 @@ export default function App() {
                const data = await res.json();
                addLog(`[M2] RENDER ACCEPTED`);
                console.log('STEP_4_RENDER_ACCEPTED');
-               setQueue(q => q.map(x => x.id === job.id ? { ...x, backendJobId: data.jobId || data.id || job.id } : x));
+               setQueue(q => q.map(x => x.id === job.id ? { ...x, backendJobId: data.queueId || data.jobId || data.id || job.id } : x));
              })
              .catch((err) => {
                console.error(err);
@@ -2178,75 +2143,19 @@ export default function App() {
           )}
 
           {activeMode === 'Mode 2' && (
-            <div className="space-y-3">
-              {m2SuccessMsg && (
-                <div className="bg-emerald-950/80 border border-emerald-700/50 p-2 rounded flex justify-between items-center">
-                  <span className="text-emerald-400 font-semibold">Configuration added successfully.</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleResetModeForm('Mode 2')}
-                      className="px-2 py-0.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-[10px]"
-                    >
-                      Create New Configuration
-                    </button>
-                    <button
-                      onClick={() => setM2SuccessMsg(false)}
-                      className="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-[10px]"
-                    >
-                      Continue Editing
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── ROW 1: SOURCE POOL & METADATA ──────────────────────────── */}
-              <div>
-                <SourcePoolPanel 
-                  isDevMode={isDevMode} 
-                  addLog={addLog} 
-                  addNotification={addNotification} 
-                  onSourcesChanged={() => setM2IsStale(true)}
-                />
-              </div>
-
-              {/* ─── ROW 2: AUDIO PREVIEW & SETTINGS (merged) ────────────── */}
-              <AudioPreviewPanel isDevMode={isDevMode} addLog={addLog} addNotification={addNotification} />
-
-              {/* ─── ROW 3: COMPILATION WORKSPACE & RENDER PLANS ───────────── */}
-              <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.4fr] gap-4 h-[600px] mb-4">
-                <div className="h-full overflow-hidden flex flex-col">
-                  <CompilationWorkspacePanel
-                    m2DurationTarget={m2DurationTarget}
-                    setM2DurationTarget={setM2DurationTarget}
-                    m2OutputCount={m2OutputCount}
-                    setM2OutputCount={setM2OutputCount}
-                    m2NamingPattern={m2NamingPattern}
-                    setM2NamingPattern={setM2NamingPattern}
-                    m2CustomPattern={m2CustomPattern}
-                    setM2CustomPattern={setM2CustomPattern}
-                    onMixesChange={setM2Mixes}
-                    isDevMode={isDevMode}
-                    addLog={addLog}
-                    addNotification={addNotification}
-                    m2IsStale={m2IsStale}
-                    setM2IsStale={setM2IsStale}
-                  />
-                </div>
-                
-                <div className="h-full overflow-hidden flex flex-col">
-                  <RenderPlanPanel
-                    plans={m2Plans}
-                    setPlans={setM2Plans}
-                    onReviewSelected={handleOpenReviewDialog}
-                    isDevMode={isDevMode}
-                    addLog={addLog}
-                    addNotification={addNotification}
-                    m2IsStale={m2IsStale}
-                    onAddToPipeline={handleAddSelectedToPipeline}
-                  />
-                </div>
-              </div>
-            </div>
+            <M2StudioPanel
+              isDevMode={isDevMode}
+              addLog={addLog}
+              addNotification={addNotification}
+              m2Plans={m2Plans}
+              setM2Plans={setM2Plans}
+              handleOpenReviewDialog={handleOpenReviewDialog}
+              handleAddSelectedToPipeline={handleAddSelectedToPipeline}
+              m2IsStale={m2IsStale}
+              setM2IsStale={setM2IsStale}
+              m2SuccessMsg={m2SuccessMsg}
+              setM2SuccessMsg={setM2SuccessMsg}
+            />
           )}
 
           {activeMode === 'Mode 3' && (

@@ -1,0 +1,151 @@
+export class PlaylistSplitterEngine {
+  
+  static async fetchMetadata(url) {
+    const res = await fetch('/api/m2/splitter/metadata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to fetch metadata');
+    }
+    
+    return await res.json();
+  }
+
+  static parseSongs(metadata) {
+    let songs = [];
+
+    // Priority 1: Chapters (from yt-dlp)
+    if (metadata.chapters && metadata.chapters.length > 0) {
+      songs = metadata.chapters.map(ch => ({
+        title: ch.title,
+        startTime: ch.start_time,
+        endTime: ch.end_time
+      }));
+      return { success: true, source: 'chapters', songs };
+    }
+
+    // Priority 2: Description Timestamps
+    if (metadata.description) {
+      songs = this.extractTimestampsFromText(metadata.description, metadata.videoDuration);
+      if (songs.length > 0) {
+        return { success: true, source: 'description', songs };
+      }
+    }
+
+    // Priority 3: Plain title lines from description (e.g. "Bertahan - Rama")
+    if (metadata.description) {
+      const titles = this.extractTitlesFromDescription(metadata.description);
+      if (titles.length >= 2) {
+        return { 
+          success: true, 
+          source: 'description_titles',
+          songs: [],
+          titles: titles
+        };
+      }
+    }
+
+    // Fallback to Silence Detection if no information available
+    return { 
+      success: true, 
+      source: 'silence_detection',
+      songs: []
+    };
+  }
+
+  static extractTimestampsFromText(text, totalDuration) {
+    const songs = [];
+    // Matches formats like 00:00, 01:23:45, [00:00], etc.
+    const regex = /(?:\[|\b)?((\d{1,2}:)?\d{1,2}:\d{2})(?:\]|\b)?\s+([^\n]+)/g;
+    
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const timeStr = match[1];
+      const title = match[3].trim().replace(/^[-:]\s*/, '').trim(); // Remove leading dashes or colons
+      
+      const parts = timeStr.split(':').reverse();
+      let startTime = 0;
+      for (let i = 0; i < parts.length; i++) {
+        startTime += parseInt(parts[i], 10) * Math.pow(60, i);
+      }
+      
+      songs.push({ title, startTime, endTime: null });
+    }
+
+    // Sort by start time just in case description is messy
+    songs.sort((a, b) => a.startTime - b.startTime);
+
+    // Calculate end times
+    for (let i = 0; i < songs.length; i++) {
+      if (i < songs.length - 1) {
+        songs[i].endTime = songs[i + 1].startTime;
+      } else {
+        songs[i].endTime = totalDuration || (songs[i].startTime + 300); // fallback 5 mins if unknown
+      }
+    }
+
+    // Filter out invalid or zero-duration songs
+    return songs.filter(s => s.endTime > s.startTime);
+  }
+
+  /**
+   * Extract plain song titles from a YouTube description.
+   * Looks for lines matching "Title - Artist" or similar patterns.
+   * Does NOT use AI - purely deterministic regex parsing.
+   */
+  static extractTitlesFromDescription(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    
+    // Filter criteria for valid song title lines
+    const titleLines = [];
+    for (const line of lines) {
+      // Skip lines that are clearly NOT song titles
+      if (line.startsWith('#')) continue;           // hashtags
+      if (line.startsWith('http')) continue;         // URLs
+      if (line.length < 3) continue;                 // too short
+      if (line.length > 120) continue;               // too long (probably a paragraph)
+      if (/^\p{Emoji}/u.test(line) && !line.match(/\w{2,}/)) continue; // emoji-only lines
+      if (/^[\p{Emoji}\s]+$/u.test(line)) continue;  // pure emoji lines
+      if (/subscribe|like|comment|share|follow|playlist|cocok|video|kalau|tulis|bagikan|komentar/i.test(line)) continue; // CTA lines
+      
+      // A song title line typically has "Title - Artist" or "Artist - Title" format
+      // with a dash/en-dash/em-dash separator
+      if (/\s[-–—]\s/.test(line)) {
+        // Remove leading numbering like "1.", "01.", "1)", etc.
+        const cleaned = line.replace(/^\d+[\.\)\]\-]\s*/, '').trim();
+        if (cleaned.length >= 3) {
+          titleLines.push(cleaned);
+        }
+      }
+    }
+    
+    return titleLines;
+  }
+
+  static async startProcessJob(url, outputFolder, songs, videoId, videoTitle, aiTitles = [], videoDuration = 0) {
+    const res = await fetch('/api/m2/splitter/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, outputFolder, songs, videoId, videoTitle, aiTitles, videoDuration })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to start processing');
+    }
+    
+    return await res.json();
+  }
+
+  static async pollJobStatus(jobId) {
+    const res = await fetch(`/api/m2/splitter/job/${jobId}`);
+    if (!res.ok) {
+      throw new Error('Failed to fetch job status');
+    }
+    return await res.json();
+  }
+}

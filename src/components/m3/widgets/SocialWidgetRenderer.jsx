@@ -88,7 +88,7 @@ function hexToRgb(hex) {
     ] : [0, 1, 0];
 }
 
-export default function SocialWidgetRenderer({ config }) {
+export default function SocialWidgetRenderer({ config, currentTime }) {
     const canvasRef = useRef(null);
     const videoRef = useRef(null);
     const glRef = useRef(null);
@@ -196,6 +196,7 @@ export default function SocialWidgetRenderer({ config }) {
         if (!gl || !program || !video) return;
 
         const render = () => {
+            if (!canvasRef.current) return;
             if (video.readyState >= 2) {
                 // Resize canvas to match video natively
                 if (canvasRef.current.width !== video.videoWidth || canvasRef.current.height !== video.videoHeight) {
@@ -231,13 +232,72 @@ export default function SocialWidgetRenderer({ config }) {
     useEffect(() => {
         const v = videoRef.current;
         if (v) {
-            v.loop = config.loop !== false;
+            const intervalMinutes = config.intervalMinutes !== undefined ? config.intervalMinutes : 5;
+            // Ensure loop is false if interval is used
+            v.loop = config.loop !== false && intervalMinutes === 0; 
             v.muted = config.muted !== false; // Always mute widgets by default usually, but obey config
             if (v.playbackRate !== (config.playbackRate || 1)) {
                 v.playbackRate = config.playbackRate || 1;
             }
         }
-    }, [config.loop, config.muted, config.playbackRate]);
+    }, [config.loop, config.muted, config.playbackRate, config.intervalMinutes]);
+
+    const timeRef = useRef(0);
+    useEffect(() => {
+        timeRef.current = currentTime || 0;
+    }, [currentTime]);
+
+    // Handle Interval Logic based on global currentTime
+    useEffect(() => {
+        let animId;
+        let wasActive = null;
+
+        const checkInterval = () => {
+            animId = requestAnimationFrame(checkInterval);
+            const intervalMinutes = config.intervalMinutes !== undefined ? config.intervalMinutes : 5;
+            
+            if (intervalMinutes === 0) {
+                if (canvasRef.current && wasActive !== true) {
+                    canvasRef.current.style.opacity = '1';
+                    canvasRef.current.style.transition = 'none';
+                    wasActive = true;
+                }
+                return;
+            }
+
+            const video = videoRef.current;
+            if (!video || !video.duration) return;
+
+            const duration = video.duration;
+            const cycle = duration + (intervalMinutes * 60);
+            const localTime = timeRef.current % cycle;
+            
+            const isActive = localTime < duration;
+            
+            if (isActive) {
+                if (canvasRef.current && wasActive !== true) {
+                    canvasRef.current.style.opacity = '1';
+                    canvasRef.current.style.transition = 'none'; // Snap to visible
+                    wasActive = true;
+                }
+                // Sync video time if it drifts too much (e.g. from seeking the timeline)
+                if (Math.abs(video.currentTime - localTime) > 0.5) {
+                    video.currentTime = localTime;
+                }
+                if (video.paused) video.play().catch(e=>e);
+            } else {
+                if (canvasRef.current && wasActive !== false) {
+                    canvasRef.current.style.opacity = '0';
+                    canvasRef.current.style.transition = 'opacity 0.5s ease'; // Fade out smoothly
+                    wasActive = false;
+                }
+                if (!video.paused) video.pause();
+            }
+        };
+
+        animId = requestAnimationFrame(checkInterval);
+        return () => cancelAnimationFrame(animId);
+    }, [config.intervalMinutes]);
 
     return (
         <div className="w-full h-full relative pointer-events-none">

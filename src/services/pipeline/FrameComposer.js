@@ -22,6 +22,7 @@ export class FrameComposer {
             visual: states.visual || null,
             beat: states.beat || null,
             BeatEngine: states.BeatEngine || null,
+            PlaylistEngine: states.PlaylistEngine || null,
             objects: objects || []
         };
         

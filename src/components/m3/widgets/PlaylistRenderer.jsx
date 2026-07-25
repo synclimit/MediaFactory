@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { renderFrameStore } from '../../../services/pipeline/runtime/RenderFrameStore';
 
 // Pure presentation: reads layout from the RenderPipeline frame
-export default function PlaylistRenderer({ config, activeAudioTracks, onPointerDown, id }) {
+export default function PlaylistRenderer({ config, activeAudioTracks, id }) {
     const [frame, setFrame] = useState(() => renderFrameStore.getFrame());
 
     useEffect(() => {
@@ -24,88 +24,86 @@ export default function PlaylistRenderer({ config, activeAudioTracks, onPointerD
     }
 
     const renderTrack = (item) => {
+        const trackColor = item.isActive ? (config.activeColor || '#a855f7') : (config.inactiveColor || '#a0a0a0');
+
         if (item.displayRight) {
             return (
-                <div className="flex w-full items-baseline" style={{ textAlign: item.align }}>
-                    <span>{item.displayTitle}</span>
+                <div className="flex w-full items-baseline" style={{ textAlign: item.align, color: trackColor }}>
+                    <span className="flex-shrink whitespace-nowrap" style={{ minWidth: 0 }}>{item.displayTitle}</span>
                     <span className="flex-grow border-b-2 border-dotted border-current opacity-30 mx-2 relative -top-[6px]"></span>
-                    <span>{item.displayRight}</span>
+                    <span className="flex-shrink-0 whitespace-nowrap">{item.displayRight}</span>
                 </div>
             );
         }
         return (
-            <div style={{ textAlign: item.align, width: '100%' }}>
+            <div className="whitespace-nowrap" style={{ textAlign: item.align, width: '100%', color: trackColor }}>
                 {item.displayTitle}
             </div>
         );
     };
 
+    const backdropStyle = config.showBackdrop ? {
+        backgroundColor: config.backdropColor || '#000000',
+        opacity: config.backdropOpacity !== undefined ? config.backdropOpacity : 0.4,
+        borderRadius: (config.backdropRadius || 8) + 'px',
+        padding: (config.backdropPadding || 20) + 'px',
+    } : {};
+
+    const columnsCount = config.columns || 1;
+    const columnGap = config.columnGap || 100;
+
+    const columnStyle = {
+        fontFamily: typographyData.fontFamily,
+        fontSize: typographyData.fontSize + 'px',
+        fontWeight: {'Light': 300, 'Normal': 400, 'Semi-Bold': 600, 'Bold': 700, 'Extra-Bold': 800, 'Black': 900}[typographyData.fontWeight] || typographyData.fontWeight || 'bold',
+        fontStyle: typographyData.fontStyle,
+        color: typographyData.color,
+        lineHeight: typographyData.lineHeight,
+        letterSpacing: typographyData.letterSpacing + 'px',
+        gap: (config.gap || 0) + 'px',
+    };
+
+    // Render columns inline using flex layout
+    const leftCol = layoutData.leftColumn;
+    const rightCol = layoutData.rightColumn;
+
     return (
-        <div className="w-full h-full relative" style={{ pointerEvents: 'none' }}>
-            {/* Title Render */}
-            {config.showTitle && config.title && (
+        <div style={{ display: 'flex', gap: columnGap + 'px', ...backdropStyle, backgroundColor: 'transparent' }}>
+            {/* Left / Single Column */}
+            {leftCol && leftCol.tracks && leftCol.tracks.length > 0 && (
                 <div 
-                    className="absolute"
+                    className="flex flex-col"
                     style={{
-                        left: config.titleTransform?.x || 0,
-                        top: config.titleTransform?.y || -50,
-                        transform: `translate(-50%, -50%) scale(${config.titleTransform?.scale || 1}) rotate(${config.titleTransform?.rotation || 0}deg)`,
-                        transformOrigin: 'center',
-                        fontFamily: typographyData.fontFamily,
-                        fontWeight: 'bold',
-                        fontStyle: typographyData.fontStyle,
-                        fontSize: typographyData.fontSize * 1.5 + 'px',
-                        color: typographyData.color,
-                        letterSpacing: typographyData.letterSpacing + 'px',
-                        opacity: typographyData.opacity / 100
+                        ...columnStyle,
+                        flex: 1,
+                        minWidth: 'max-content'
                     }}
                 >
-                    {config.title}
+                    {leftCol.tracks.map((item, i) => (
+                        <div key={i} className="w-full">
+                            {renderTrack(item)}
+                        </div>
+                    ))}
                 </div>
             )}
 
-            {/* Columns Render */}
-            {[
-                { obj: layoutData.leftColumn, transform: transformData.leftColumnTransform },
-                { obj: layoutData.rightColumn, transform: transformData.rightColumnTransform }
-            ].map(({ obj: colObject, transform }, colIndex) => {
-                if (!colObject || !colObject.tracks || colObject.tracks.length === 0 || transform.visible === false) return null;
-                
-                return (
-                    <div 
-                        key={colIndex}
-                        onPointerDown={(e) => {
-                            if (onPointerDown) onPointerDown(e, id, `col_${colIndex}`);
-                        }}
-                        className="absolute flex flex-col cursor-move hover:ring-1 hover:ring-white/50 transition-shadow"
-                        style={{
-                            pointerEvents: 'auto',
-                            left: transform.x,
-                            top: transform.y,
-                            opacity: transform.opacity !== undefined ? transform.opacity / 100 : 1,
-                            width: layoutData.metrics.columnWidth + 'px',
-                            transform: `translate(-50%, -50%) scale(${transform.scale}) rotate(${transform.rotation}deg)`,
-                            transformOrigin: 'center',
-                            fontFamily: typographyData.fontFamily,
-                            fontSize: typographyData.fontSize + 'px',
-                            fontWeight: typographyData.fontWeight,
-                            fontStyle: typographyData.fontStyle,
-                            color: typographyData.color,
-                            lineHeight: typographyData.lineHeight,
-                            letterSpacing: typographyData.letterSpacing + 'px',
-                            gap: (config.gap || 0) + 'px'
-                        }}
-                    >
-                        {colObject.tracks.map((item, i) => {
-                            return (
-                                <div key={i} className="whitespace-nowrap w-full">
-                                    {renderTrack(item)}
-                                </div>
-                            );
-                        })}
-                    </div>
-                );
-            })}
+            {/* Right Column (only if multi-column) */}
+            {columnsCount > 1 && rightCol && rightCol.tracks && rightCol.tracks.length > 0 && (
+                <div 
+                    className="flex flex-col"
+                    style={{
+                        ...columnStyle,
+                        flex: 1,
+                        minWidth: 'max-content'
+                    }}
+                >
+                    {rightCol.tracks.map((item, i) => (
+                        <div key={i} className="w-full">
+                            {renderTrack(item)}
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
