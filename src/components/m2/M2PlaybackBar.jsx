@@ -12,10 +12,10 @@ function getContext() {
 }
 
 function formatTime(seconds) {
-  if (!seconds || isNaN(seconds)) return '00:00';
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+	if (!seconds || isNaN(seconds) || !isFinite(seconds)) return "00:00";
+	const m = Math.floor(seconds / 60);
+	const s = Math.floor(seconds % 60);
+	return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 // ─── Animated Waveform ────────────────────────────────────────────────────────
@@ -137,17 +137,28 @@ class PlaybackEngine {
     return buffer;
   }
 
+  unlockAudio() {
+    if (this.audioElement && (!this.audioElement.src || this.audioElement.src === window.location.href)) {
+        this.audioElement.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+        this.audioElement.play().catch(() => {});
+    }
+  }
+
   async loadTrack(uri, setStatus) {
     if (this.currentUri === uri) {
       if (setStatus) setStatus('ready');
       return;
     }
     
-    this._ensureContext();
+    if (!this.audioElement) {
+      this._ensureContext();
+    }
+    this.unlockAudio();
+    
     if (setStatus) setStatus('loading');
     
     try {
-      const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be');
+      const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be') || uri.startsWith('ytsearch:') || !(/^[a-zA-Z]:\\|\//.test(uri));
       if (isYouTube) {
         await new Promise((resolve, reject) => {
           const es = new EventSource(`/api/m2/prepare-stream?uri=${encodeURIComponent(uri)}`);
@@ -156,6 +167,8 @@ class PlaybackEngine {
               const data = JSON.parse(e.data);
               if (data.status === 'downloading') {
                 if (setStatus) setStatus(`downloading ${data.progress || 0}%`);
+              } else if (data.status === 'extracting') {
+                if (setStatus) setStatus(`extracting...`);
               } else if (data.status === 'ready' || data.status === 'ready_cached') {
                 es.close();
                 resolve();
@@ -191,8 +204,26 @@ class PlaybackEngine {
     }
   }
 
+  _stopOscillators() {
+    if (this.flutterOsc) {
+        try { this.flutterOsc.stop(); } catch(e) {}
+        this.flutterOsc = null;
+    }
+    if (this.noiseSource) {
+        try { this.noiseSource.stop(); } catch(e) {}
+        this.noiseSource = null;
+    }
+  }
+
   _buildDSPGraph() {
     const ctx = this.audioCtx;
+    
+    // Disconnect previous graph to prevent memory/CPU leaks
+    if (this.mediaSourceNode) {
+        this.mediaSourceNode.disconnect();
+    }
+    this._stopOscillators();
+
     let current = this.mediaSourceNode;
 
     // 1. Bitcrusher (WaveShaper)
@@ -389,31 +420,20 @@ class PlaybackEngine {
     this.isPlaying = true;
   }
 
-  _stopSource() {
-    if (this.sourceNode) {
-      try { this.sourceNode.onended = null; this.sourceNode.stop(); this.sourceNode.disconnect(); } catch {}
-      this.sourceNode = null;
-    }
-    if (this.flutterOsc) { try { this.flutterOsc.stop(); this.flutterOsc.disconnect(); } catch {} this.flutterOsc = null; }
-    if (this.noiseSource) { try { this.noiseSource.stop(); this.noiseSource.disconnect(); } catch {} this.noiseSource = null; }
-    if (this.masterGain) { try { this.masterGain.disconnect(); } catch {} }
-    // GC will clean up disconnected intermediate nodes
-  }
-
   stop() {
     if (!this.isPlaying) return;
-    const elapsed = this.audioCtx.currentTime - this.startTime;
-    this.pauseOffset = elapsed;
+    if (this.audioElement) {
+        this.pauseOffset = this.audioElement.currentTime;
+    }
     this._stopSource();
     this.isPlaying = false;
   }
 
   currentPosition() {
-    if (!this.audioCtx) return 0;
-    if (this.isPlaying) {
-      return Math.min(this.audioCtx.currentTime - this.startTime, this.duration);
+    if (this.audioElement) {
+        return this.audioElement.currentTime;
     }
-    return this.pauseOffset;
+    return 0;
   }
 
   destroy() {
@@ -446,9 +466,13 @@ export default function M2PlaybackBar({ masteringSettings, addLog, addNotificati
         const all = await foundation.sourceService.getAll(getContext());
         const valid = all.filter(s => s.status !== 'invalid');
         setSources(prev => {
-          // Only update if lengths differ to prevent unnecessary re-renders
-          if (prev.length !== valid.length) return valid;
-          return prev;
+          const isDifferent = prev.length !== valid.length || prev.some((p, i) => 
+              p.id !== valid[i].id || 
+              p.metadataStatus !== valid[i].metadataStatus ||
+              p.title !== valid[i].title ||
+              p.status !== valid[i].status
+          );
+          return isDifferent ? valid : prev;
         });
         if (valid.length > 0 && !selectedSourceId) {
           setSelectedSourceId(valid[0].id);
@@ -468,11 +492,11 @@ export default function M2PlaybackBar({ masteringSettings, addLog, addNotificati
   }, []);
 
   // Animation frame
-  const tick = useCallback(() => {
+  const tick = useCallback(function tickFn() {
     if (engineRef.current?.isPlaying && !isSeeking) {
       setPosition(engineRef.current.currentPosition());
     }
-    rafRef.current = requestAnimationFrame(tick);
+    rafRef.current = requestAnimationFrame(tickFn);
   }, [isSeeking]);
 
   useEffect(() => {
@@ -499,26 +523,60 @@ export default function M2PlaybackBar({ masteringSettings, addLog, addNotificati
     setPosition(0);
     const src = sources.find(s => s.id === id);
     const uri = src?.localPath || src?.youtubeUrl || src?.title;
+    
+    // Always set a fallback duration first so UI isn't stuck at 00:00
+    let fallbackDuration = 0;
+    if (src?.videoDuration) {
+      const parsed = parseFloat(src.videoDuration);
+      if (!isNaN(parsed)) fallbackDuration = parsed;
+    }
+    if (!fallbackDuration && src?.duration && typeof src.duration === 'string') {
+      const match = src.duration.match(/(?:(\d+)h\s*)?(?:(\d+)m\s*)?(?:(\d+)s)?/);
+      if (match) {
+        const h = parseInt(match[1] || '0') * 3600;
+        const m = parseInt(match[2] || '0') * 60;
+        const s = parseInt(match[3] || '0');
+        fallbackDuration = h + m + s;
+      }
+    }
+    setDuration(fallbackDuration);
+
     if (uri) {
-      try {
-        await engineRef.current.loadTrack(uri, setStatus);
-        setDuration(engineRef.current.duration || src?.videoDuration || 0);
-      } catch { setStatus('error'); }
+        try {
+          await engineRef.current.loadTrack(uri, setStatus);
+          const loadedDur = engineRef.current.duration;
+          setDuration((loadedDur && loadedDur > 1) ? loadedDur : (fallbackDuration || 0));
+        } catch (err) { 
+        console.error('loadTrack error:', err);
+        setStatus('error'); 
+      }
     }
   };
 
   const handlePlay = async () => {
     if (!selectedSourceId) return;
-    if (status !== 'ready') {
-      const src = selectedSource;
-      const uri = src?.localPath || src?.youtubeUrl || src?.title;
+    
+    // If not loaded yet, wait for it
+    const src = selectedSource;
+    const uri = src?.localPath || src?.youtubeUrl || src?.title;
+    if (engineRef.current.currentUri !== uri) {
+      setStatus('loading');
       if (uri) {
         try {
           await engineRef.current.loadTrack(uri, setStatus);
-          setDuration(engineRef.current.duration || src?.videoDuration || 0);
-        } catch (err) { 
+          let finalDur = engineRef.current.duration;
+          if (!finalDur || finalDur < 1) {
+              let parsed = parseFloat(src?.videoDuration);
+              if (!isNaN(parsed) && parsed > 0) finalDur = parsed;
+              else if (src?.duration && typeof src.duration === 'string') {
+                  const match = src.duration.match(/(?:(\d+)h\s*)?(?:(\d+)m\s*)?(?:(\d+)s)?/);
+                  if (match) finalDur = (parseInt(match[1]||0)*3600) + (parseInt(match[2]||0)*60) + parseInt(match[3]||0);
+              }
+          }
+          setDuration(finalDur || 0);
+        } catch (err) {
           console.error('[handlePlay] Caught error from loadTrack:', err);
-          return; 
+          return;
         }
       }
     }
@@ -665,9 +723,15 @@ export default function M2PlaybackBar({ masteringSettings, addLog, addNotificati
           </button>
 
           <div className="flex-1 flex items-center gap-3 px-1">
-            <span className={`text-[10px] font-mono font-bold w-9 text-right ${isPlaying ? 'text-orange-400 drop-shadow-[0_0_5px_rgba(249,115,22,0.8)]' : 'text-gray-500'}`}>
-              {formatTime(position)}
-            </span>
+            {status.startsWith('downloading') || status === 'loading' || status === 'extracting' || status === 'error' ? (
+              <span className={`text-[10px] font-mono font-bold w-9 text-right ${status === 'error' ? 'text-red-500 animate-none' : 'text-orange-400 drop-shadow-[0_0_5px_rgba(249,115,22,0.8)] animate-pulse'}`}>
+                {status.startsWith('downloading') ? status.split(' ')[1] : (status === 'loading' ? 'BUF' : status === 'error' ? 'ERR' : 'EXT')}
+              </span>
+            ) : (
+              <span className={`text-[10px] font-mono font-bold w-9 text-right ${isPlaying ? 'text-orange-400 drop-shadow-[0_0_5px_rgba(249,115,22,0.8)]' : 'text-gray-500'}`}>
+                {formatTime(position)}
+              </span>
+            )}
             
             <div className="flex-1 relative h-4 flex items-center group cursor-pointer">
               <div className="absolute inset-x-0 h-[4px] bg-[#1a1c26] rounded-full border border-[#2d3247] shadow-inner" />

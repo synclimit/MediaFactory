@@ -32,8 +32,8 @@ const ChromaKeyImage = ({ src, keyColor = '#00ff00', tolerance = 10, className, 
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
             
-            // Auto-detect background color from the top-left pixel
-            const targetColor = { r: data[0], g: data[1], b: data[2] };
+            // Use keyColor if provided, otherwise fallback to top-left pixel
+            const targetColor = keyColor && keyColor !== 'auto' ? hexToRgb(keyColor) : { r: data[0], g: data[1], b: data[2] };
             
             // Normalize tolerance from 0-100 to 0-255
             const tol = (tolerance / 100) * 255;

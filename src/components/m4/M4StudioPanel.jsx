@@ -7,13 +7,52 @@ export default function M4StudioPanel({
   m4BgVideo, setM4BgVideo,
   m4AmbientAudio, setM4AmbientAudio,
   m4RelaxMusic, setM4RelaxMusic,
+  m4Objects, setM4Objects,
   addNotification,
-  onAddToQueue
+  onAddToQueue,
+  queue
 }) {
   const [activeStep, setActiveStep] = useState(1);
   const [m4LoopMode, setM4LoopMode] = useState('Crossfade Blend');
+  const [durationMode, setDurationMode] = useState('2x Loop');
+  const [targetDuration, setTargetDuration] = useState(60);
   const [m4PreviewVideo, setM4PreviewVideo] = useState(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+
+  const handleM4QueueRequest = () => {
+    if (!m4BgVideo) {
+      alert("Background Video is required!");
+      return;
+    }
+    
+    let totalSec = targetDuration * 60; // Default if Custom Duration
+    if (durationMode === '1x Loop' && m4BgVideo) totalSec = m4BgVideo.durationSec;
+    else if (durationMode === '2x Loop' && m4BgVideo) totalSec = m4BgVideo.durationSec * 2;
+    else if (durationMode === '3x Loop' && m4BgVideo) totalSec = m4BgVideo.durationSec * 3;
+    
+    const uuid = crypto.randomUUID().slice(0,6).toUpperCase();
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    const safeTitle = m4BgVideo.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, '_').trim();
+    const outFolder = `Output/M4/${dateStr}_${uuid}_${safeTitle}/`;
+
+    const jobPayload = {
+      renderName: `Ambient_${safeTitle}_${uuid}`,
+      totalDurationSec: totalSec,
+      outputFolder: outFolder,
+      m4Payload: {
+        bgVideo: m4BgVideo,
+        ambientAudio: m4AmbientAudio,
+        relaxMusic: m4RelaxMusic,
+        objects: m4Objects,
+        loopMode: m4LoopMode,
+        durationMode: durationMode
+      },
+      outputFiles: [`M4_Ambient_${uuid}.mp4`]
+    };
+
+    if (onAddToQueue) onAddToQueue(jobPayload);
+  };
 
   return (
     <div className="flex flex-1 min-h-0 bg-gradient-to-br from-[#1b1d22] via-[#14151a] to-[#0d0e12] border border-[#2a2c33] rounded-xl overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05),inset_0_-1px_2px_rgba(0,0,0,0.5)] mb-2 relative group">
@@ -41,7 +80,8 @@ export default function M4StudioPanel({
         m4PreviewVideo={m4PreviewVideo} setM4PreviewVideo={setM4PreviewVideo}
         isGeneratingPreview={isGeneratingPreview} setIsGeneratingPreview={setIsGeneratingPreview}
         activeStep={activeStep} setActiveStep={setActiveStep}
-        onAddToQueue={onAddToQueue}
+        onAddToQueue={handleM4QueueRequest}
+        m4Objects={m4Objects} setM4Objects={setM4Objects}
       />
       
       {/* RIGHT: Live Preview & Summary */}
@@ -51,12 +91,20 @@ export default function M4StudioPanel({
           m4AmbientAudio={m4AmbientAudio}
           m4RelaxMusic={m4RelaxMusic}
           isGeneratingPreview={isGeneratingPreview}
+          m4Objects={m4Objects}
+          durationMode={durationMode}
+          setDurationMode={setDurationMode}
+          targetDuration={targetDuration}
+          setTargetDuration={setTargetDuration}
         />
         <M4ProjectSummary 
           m4BgVideo={m4BgVideo}
           m4AmbientAudio={m4AmbientAudio}
           m4RelaxMusic={m4RelaxMusic}
           m4LoopMode={m4LoopMode}
+          durationMode={durationMode}
+          targetDuration={targetDuration}
+          queue={queue}
         />
       </div>
 

@@ -30,33 +30,21 @@ class ReactiveObjectProcessor {
         this.diagnostics = new Map();
     }
 
-    update(m3Objects, dt, isPlaying = true) {
+    update(m3Objects, dt, isPlaying = false) {
         // dt is expected in seconds
         if (!m3Objects) return;
         
         for (const obj of m3Objects) {
-            if (obj.type !== 'reactive') continue;
-            if (!obj.enabled) {
+            if (obj.type !== 'reactive' && obj.type !== 'effect') continue;
+            if (obj.enabled === false) {
                 this.values.set(obj.id, 0);
                 this.diagnostics.delete(obj.id);
                 continue;
             }
 
-            if (isPlaying === false) {
-                let currentState = this.states.get(obj.id) || 0;
-                currentState *= Math.pow(0.001, dt);
-                this.states.set(obj.id, currentState);
-                
-                // Apply Curve
-                const curveFn = curves[obj.curve] || curves.linear;
-                let curvedValue = curveFn(currentState);
-
-                // Apply Operation & Amplitude
-                const amplitude = obj.amplitude !== undefined ? obj.amplitude / 100 : 1.0;
-                const opFn = operations[obj.operation] || operations.multiply;
-                let finalValue = opFn(curvedValue, amplitude);
-
-                this.values.set(obj.id, finalValue);
+            if (isPlaying !== true) {
+                this.states.set(obj.id, 0);
+                this.values.set(obj.id, 0);
                 continue;
             }
 
@@ -76,8 +64,15 @@ class ReactiveObjectProcessor {
 
             // Envelope follower state
             let currentState = this.states.get(obj.id) || 0;
-            const attack = Math.max((obj.attack !== undefined ? obj.attack : 10) / 1000, 0.001);
-            const release = Math.max((obj.release !== undefined ? obj.release : 100) / 1000, 0.001);
+            
+            // Force snappy defaults for Visual FX to ensure they hit hard on the beat
+            const isVisualFX = obj.type === 'effect';
+            const effAttack = isVisualFX ? 2 : obj.attack;
+            const effRelease = isVisualFX ? 80 : obj.release;
+            const effSmoothness = isVisualFX ? 0 : obj.smoothness;
+
+            const attack = Math.max((effAttack !== undefined ? effAttack : 10) / 1000, 0.001);
+            const release = Math.max((effRelease !== undefined ? effRelease : 100) / 1000, 0.001);
             
             // Smoothing based on dt
             const attRate = dt / attack;
@@ -91,8 +86,8 @@ class ReactiveObjectProcessor {
 
             // Optional extra smoothness (low pass filter)
             let smoothed = currentState;
-            if (obj.smoothness > 0) {
-                const smoothFactor = 1 - (obj.smoothness / 100);
+            if (effSmoothness > 0) {
+                const smoothFactor = 1 - (effSmoothness / 100);
                 const prevSmoothed = this.states.get(obj.id) || 0;
                 smoothed = prevSmoothed + (currentState - prevSmoothed) * Math.max(smoothFactor, 0.01);
             }

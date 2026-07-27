@@ -295,7 +295,7 @@ const RealtimeVisualizer = ({ config }) => {
   );
 };
 
-export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3CurrentTrackIndex = 0, m3Objects, setM3Objects, m3SelectedObjectId, setM3SelectedObjectId, canvasMode = 'composer', m3CurrentTimeSec = 0, m3TotalDurationSec = 1, setM3CurrentTimeSec, m3EstRenderTimeSec, m3EstStorageMb, analyser }) {
+export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3CurrentTrackIndex = 0, m3Objects, setM3Objects, m3SelectedObjectId, setM3SelectedObjectId, canvasMode = 'composer', m3CurrentTimeSec = 0, m3TotalDurationSec = 1, setM3CurrentTimeSec, m3EstRenderTimeSec, m3EstStorageMb, analyser, children }) {
   const containerRef = useRef(null);
   const [canvasStyle, setCanvasStyle] = useState({ width: 800, height: 450 });
   const [dragState, setDragState] = useState({ isDragging: false, action: 'drag', handle: '', id: null, startX: 0, startY: 0, origX: 0, origY: 0, origW: 0, origH: 0, subTarget: null });
@@ -865,6 +865,13 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
         )}
       </div>
       </div>
+      
+      {/* Playback Bar & Export Settings positioned directly under the canvas */}
+      {children && (
+        <div style={{ width: canvasStyle.width + 'px' }} className="flex-shrink-0">
+          {children}
+        </div>
+      )}
     </Surface>
   );
 }

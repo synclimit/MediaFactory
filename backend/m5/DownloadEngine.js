@@ -3,10 +3,11 @@ const path = require('path');
 const fs = require('fs/promises');
 const LibraryEngine = require('./LibraryEngine');
 const crypto = require('crypto');
+const AppPaths = require('../system/AppPaths');
 
 class DownloadEngine {
     constructor() {
-        this.downloadCachePath = path.resolve('.mediafactory/cache/m5/downloads');
+        this.downloadCachePath = path.join(AppPaths.getCacheBase(), 'm5', 'downloads');
     }
 
     async init() {

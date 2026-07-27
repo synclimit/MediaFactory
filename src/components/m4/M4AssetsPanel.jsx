@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SoundPicker from './SoundPicker.jsx';
 
 function Accordion({ title, children, defaultOpen = false }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -29,8 +30,22 @@ export default function M4AssetsPanel({
   canvasMode
 }) {
   
+  const [isSoundPickerOpen, setIsSoundPickerOpen] = useState(false);
+  const handleSoundSelect = (sound) => {
+    const newAmbient = {
+      id: sound.id,
+      name: sound.titleUi,
+      filename: sound.titleUi,
+      path: `/api/sounds/${sound.id}/stream`,
+      volume: 100,
+      mute: false,
+      solo: false,
+      loop: true
+    };
+    setM4AmbientAudio(prev => [...(prev || []), newAmbient]);
+  };
+
   const updateBgVideo = (key, val) => setM4BgVideo(prev => ({ ...prev, [key]: val }));
-  const updateAmbient = (key, val) => setM4AmbientAudio(prev => ({ ...prev, [key]: val }));
 
   const addObject = (type, name, additionalProps = {}) => {
     const id = `${type}-${Date.now()}`;
@@ -105,40 +120,54 @@ export default function M4AssetsPanel({
         <Accordion title="2. Ambient Audio">
           <div className="space-y-3">
             <div className="flex gap-2">
-              <button className="flex-1 bg-[#1e2230] border border-[#2d3247] hover:bg-[#2a2e3d] text-gray-300 rounded p-1.5 text-[10px] text-center">Import File</button>
-              <button className="flex-1 bg-[#1e2230] border border-[#2d3247] hover:bg-[#2a2e3d] text-gray-300 rounded p-1.5 text-[10px] text-center">Import Folder</button>
+              <button onClick={() => setIsSoundPickerOpen(true)} className="flex-1 bg-[#1e2230] border border-[#2d3247] hover:bg-[#2a2e3d] text-gray-300 rounded p-1.5 text-[10px] text-center">Browse Ambient</button>
+              <button className="flex-1 bg-[#1e2230] border border-[#2d3247] hover:bg-[#2a2e3d] text-gray-300 rounded p-1.5 text-[10px] text-center" disabled>Import Folder</button>
             </div>
-            <div className="bg-[#181922] p-2 rounded border border-[#2d3247] text-[10px] text-gray-400">
-              <div className="text-emerald-400 font-bold truncate">{m4AmbientAudio.filename}</div>
-              <div className="h-6 w-full bg-[#12131a] mt-2 rounded border border-[#2d3247] overflow-hidden flex items-end justify-between px-1 opacity-50">
-                {[...Array(20)].map((_, i) => <div key={i} className="w-1 bg-emerald-500 rounded-t" style={{height: `${Math.random() * 100}%`}}></div>)}
+            
+            {Array.isArray(m4AmbientAudio) && m4AmbientAudio.map((ambient, idx) => (
+              <div key={ambient.id || idx} className="space-y-3 border-t border-[#2d3247] pt-3 mt-3">
+                <div className="bg-[#181922] p-2 rounded border border-[#2d3247] text-[10px] text-gray-400">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-emerald-400 font-bold truncate">{ambient.name || ambient.filename}</span>
+                    <button onClick={() => setM4AmbientAudio(prev => prev.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-300">✕</button>
+                  </div>
+                  <div className="h-6 w-full bg-[#12131a] mt-2 rounded border border-[#2d3247] overflow-hidden flex items-end justify-between px-1 opacity-50">
+                    {[...Array(20)].map((_, i) => <div key={i} className="w-1 bg-emerald-500 rounded-t" style={{height: `${Math.random() * 100}%`}}></div>)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-400">
+                  <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+                    <input type="checkbox" checked={ambient.mute || false} onChange={e => {
+                      const updated = [...m4AmbientAudio];
+                      updated[idx].mute = e.target.checked;
+                      setM4AmbientAudio(updated);
+                    }} className="accent-emerald-500" /> Mute
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+                    <input type="checkbox" checked={ambient.solo || false} onChange={e => {
+                      const updated = [...m4AmbientAudio];
+                      updated[idx].solo = e.target.checked;
+                      setM4AmbientAudio(updated);
+                    }} className="accent-emerald-500" /> Solo
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:text-white">
+                    <input type="checkbox" checked={ambient.loop !== false} onChange={e => {
+                      const updated = [...m4AmbientAudio];
+                      updated[idx].loop = e.target.checked;
+                      setM4AmbientAudio(updated);
+                    }} className="accent-emerald-500" /> Loop
+                  </label>
+                </div>
+                <div className="space-y-1 text-[10px] text-gray-400">
+                  <div className="flex justify-between"><span>Volume</span><span>{ambient.volume || 100}%</span></div>
+                  <input type="range" min="0" max="100" value={ambient.volume || 100} onChange={e => {
+                    const updated = [...m4AmbientAudio];
+                    updated[idx].volume = parseInt(e.target.value);
+                    setM4AmbientAudio(updated);
+                  }} className="w-full accent-emerald-500" />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-400">
-              <label className="flex items-center gap-2 cursor-pointer hover:text-white">
-                <input type="checkbox" checked={m4AmbientAudio.mute} onChange={e => updateAmbient('mute', e.target.checked)} className="accent-emerald-500" /> Mute
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer hover:text-white">
-                <input type="checkbox" checked={m4AmbientAudio.solo} onChange={e => updateAmbient('solo', e.target.checked)} className="accent-emerald-500" /> Solo
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer hover:text-white">
-                <input type="checkbox" checked={m4AmbientAudio.loop} onChange={e => updateAmbient('loop', e.target.checked)} className="accent-emerald-500" /> Loop
-              </label>
-            </div>
-            <div className="space-y-1 text-[10px] text-gray-400">
-              <div className="flex justify-between"><span>Volume</span><span>{m4AmbientAudio.volume}%</span></div>
-              <input type="range" min="0" max="100" value={m4AmbientAudio.volume} onChange={e => updateAmbient('volume', e.target.value)} className="w-full accent-emerald-500" />
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-400">
-              <div className="flex flex-col gap-1">
-                <span>Fade In</span>
-                <select className="bg-[#1e2230] border border-[#2d3247] rounded p-1 text-gray-300"><option>None</option><option>3s</option><option>5s</option></select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span>Fade Out</span>
-                <select className="bg-[#1e2230] border border-[#2d3247] rounded p-1 text-gray-300"><option>None</option><option>3s</option><option>5s</option></select>
-              </div>
-            </div>
+            ))}
           </div>
         </Accordion>
 
@@ -267,6 +296,7 @@ export default function M4AssetsPanel({
         </Accordion>
 
       </div>
+      <SoundPicker isOpen={isSoundPickerOpen} onClose={() => setIsSoundPickerOpen(false)} onSelect={handleSoundSelect} />
     </div>
   );
 }

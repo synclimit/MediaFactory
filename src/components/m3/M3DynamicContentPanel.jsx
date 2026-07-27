@@ -11,6 +11,7 @@ import ReactivePanel from './panels/ReactivePanel';
 import BrandingPanel from './panels/BrandingPanel';
 import M3FXPresetPanel from './panels/M3FXPresetPanel';
 import ParticlesPanel from './panels/ParticlesPanel';
+import LyricsPanel from './panels/LyricsPanel';
 import { ThumbnailCard, GridThumbnail } from '../ui/Thumbnails';
 
 // Thumbnails are now imported from ../ui/Thumbnails.jsx
@@ -55,6 +56,7 @@ export default function M3DynamicContentPanel({
   const renderReactive = () => <ReactivePanel addObject={addObject} />;
   const renderBranding = () => <BrandingPanel addObject={addObject} />;
   const renderFXPreset = () => <M3FXPresetPanel />;
+  const renderLyrics = () => <LyricsPanel addObject={addObject} m3Objects={m3Objects || []} setM3Objects={setM3Objects} m3SelectedObjectId={m3SelectedObjectId} setM3SelectedObjectId={setM3SelectedObjectId} />;
 
   const renderRenderPresets = () => (
     <div className="space-y-3">
@@ -68,6 +70,7 @@ export default function M3DynamicContentPanel({
   switch (activeContextCategory) {
     case 'Background': content = renderBackground(); break;
     case 'Playlist Audio': content = renderPlaylistAudio(); break;
+    case 'Lyrics': content = renderLyrics(); break;
     case 'Visualizer': content = renderVisualizer(); break;
     case 'Particle': content = renderParticle(); break;
     case 'Effects': content = renderEffects(); break;

@@ -6,6 +6,7 @@ import RealtimeEffectRenderer from '../../../components/m3/renderers/RealtimeEff
 import VisualizerRenderer from '../../../components/m3/widgets/VisualizerRenderer';
 import ParticleRenderer from '../../../components/m3/widgets/ParticleRenderer';
 import IntroSequenceRenderer from '../../../components/m3/widgets/IntroSequenceRenderer';
+import ProceduralSpeaker from '../../../components/m3/overlays/ProceduralSpeaker';
 import { renderFrameStore } from '../runtime/RenderFrameStore';
 import { beatEngine } from '../../audio/BeatEngine';
 
@@ -86,7 +87,7 @@ export default function MediaFactoryRenderer({
 
                 // --- Audio Reactivity Math ---
                 let mScale = 0, mSwayX = 0, mSwayY = 0, mRotate = 0;
-                if (el.beatZoom) {
+                if (el.beatZoom && el.type !== 'procedural-speaker' && el.mediaType !== 'procedural') {
                     const b = beatEngine.getState() || { bass: 0, mid: 0, treble: 0, energy: 0 };
                     let danceStyle = el.danceStyle || 'Calm Pulse';
                     if (danceStyle === 'Subtle Sway') danceStyle = 'Calm Pulse';
@@ -150,6 +151,13 @@ export default function MediaFactoryRenderer({
                     mRotate = state.rotate;
                 }
                 
+                if (el.beatPump && el.type !== 'procedural-speaker' && el.mediaType !== 'procedural') {
+                    const b = beatEngine.getState() || { bass: 0, kick: 0, beatStrength: 0 };
+                    const pumpVal = (b.kick || 0) * 0.4 + (b.bass || 0) * 0.3 + (b.beatStrength || 0) * 0.15;
+                    const intensity = el.pumpIntensity !== undefined ? el.pumpIntensity : 1.5;
+                    mScale += pumpVal * 0.04 * intensity;
+                }
+
                 const finalScale = (el.scale !== undefined ? el.scale : 1) + mScale;
                 const finalRotate = (el.rotation || 0) + mRotate;
 
@@ -257,6 +265,21 @@ export default function MediaFactoryRenderer({
                                     <ParticleRenderer config={el} id={el.id} />
                                 </div>
                             )}
+                            {(el.type === 'procedural-speaker' || el.mediaType === 'procedural') && (
+                                <div className="w-full h-full relative" style={{ mixBlendMode: el.blend === 'Normal' ? 'normal' : el.blend?.toLowerCase() }}>
+                                    <ProceduralSpeaker 
+                                        opacity={(el.opacity !== undefined ? el.opacity : 100) / 100} 
+                                        speed={el.playbackRate !== undefined ? el.playbackRate : (el.speed !== undefined ? el.speed : 1.0)} 
+                                        color={el.color || '#00ffcc'} 
+                                        rings={0} 
+                                        model={el.model || 'studio'}
+                                        pumpIntensity={el.pumpIntensity !== undefined ? el.pumpIntensity : 2.5}
+                                        audioReactive={el.audioReactive !== false} 
+                                        width={el.width || 700}
+                                        height={el.height || 700}
+                                    />
+                                </div>
+                            )}
                             {(el.type === 'playlist' || el.type === 'track_list_column') && (
                                 <div className="w-full h-full flex justify-center items-center pointer-events-none">
                                     <div className="pointer-events-auto">
@@ -283,12 +306,6 @@ export default function MediaFactoryRenderer({
                     </React.Fragment>
                 );
             })}
-
-            {/* Global Effect Overlay */}
-            <RealtimeEffectRenderer 
-                effects={objects ? objects.filter(o => (o.type === 'effect' || o.type === 'reactive') && o.enabled !== false) : []} 
-                targetRef={targetRef} 
-            />
 
             {/* Cinematic Intro / Outro Overlays (Always Full Screen, No Bounding Boxes) */}
             {(() => {

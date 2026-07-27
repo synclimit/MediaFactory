@@ -1,77 +1,56 @@
 /**
- * SubtitleAnimationEngine
- * Computes timestamp-based animation values (opacity, offset) for transitions.
- * Mutates the SubtitleRuntime state directly to avoid allocations.
+ * SubtitleAnimationEngine (V2 Architecture)
+ * Responsibilities:
+ * - Enter/Exit transitions ONLY (Fade, Zoom, Pop)
+ * - NO display logic, NO subtitle text parsing.
+ * 
+ * Takes the RenderInstruction from the Display Strategy and enriches it with global transition offsets/opacities.
  */
 export class SubtitleAnimationEngine {
-    static _registry = {
-        'Classic': (state, phase, progress, tOffset) => {
-            state.opacity = 1.0;
-            state.offsetX = 0;
-            state.offsetY = 0;
-        },
-        'Fade': (state, phase, progress, tOffset) => {
-            state.opacity = progress;
-            state.offsetX = 0;
-            state.offsetY = 0;
-        },
-        'Slide': (state, phase, progress, tOffset) => {
-            state.opacity = 1.0;
-            state.offsetX = 0;
-            state.offsetY = phase === 'enter' ? tOffset * 20 : (phase === 'exit' ? -tOffset * 20 : 0);
-        },
-        'Slide + Fade': (state, phase, progress, tOffset) => {
-            state.opacity = progress;
-            state.offsetX = 0;
-            state.offsetY = phase === 'enter' ? tOffset * 20 : (phase === 'exit' ? -tOffset * 20 : 0);
-        }
-    };
-
     /**
-     * Registers a new animation style.
+     * @param {Object} runtimeState The shared state containing renderInstruction
+     * @param {number} timestamp Current audio playback time in seconds
      */
-    static register(styleName, animationFn) {
-        SubtitleAnimationEngine._registry[styleName] = animationFn;
-    }
+    static compute(runtimeState, timestamp) {
+        if (!runtimeState.renderInstruction || !runtimeState.activeSegment) return;
 
-    /**
-     * @param {Object} state The SubtitleRuntime state object
-     * @param {number} timestamp The current audio playback time in seconds
-     */
-    static compute(state, timestamp) {
-        if (!state.activeSegment) {
-            state.opacity = 0;
-            state.offsetX = 0;
-            state.offsetY = 0;
-            state.animationState.phase = 'idle';
-            state.animationState.progress = 0;
-            return;
-        }
-
-        const seg = state.activeSegment;
-        const style = state.style || 'Classic';
+        const seg = runtimeState.activeSegment;
+        const animationPreset = runtimeState.config?.animationPreset || 'Fade';
         
         const transitionDuration = 0.2; // 200ms transition
         let phase = 'active';
         let progress = 1.0;
         let tOffset = 0;
 
-        // Determine phase and progress based strictly on timestamps
         if (timestamp < seg.start + transitionDuration) {
             phase = 'enter';
-            // Clamp progress between 0 and 1
             progress = Math.max(0, Math.min(1, (timestamp - seg.start) / transitionDuration));
-            tOffset = 1.0 - progress; // 1.0 -> 0.0
+            tOffset = 1.0 - progress; 
         } else if (timestamp > seg.end - transitionDuration) {
             phase = 'exit';
             progress = Math.max(0, Math.min(1, (seg.end - timestamp) / transitionDuration));
-            tOffset = 1.0 - progress; // 0.0 -> 1.0 (inverted mapping for exit)
+            tOffset = 1.0 - progress; 
         }
 
-        state.animationState.phase = phase;
-        state.animationState.progress = progress;
+        const instruction = runtimeState.renderInstruction;
 
-        const animator = SubtitleAnimationEngine._registry[style] || SubtitleAnimationEngine._registry['Classic'];
-        animator(state, phase, progress, tOffset);
+        // Apply transition to RenderInstruction based on the selected animation preset
+        switch (animationPreset) {
+            case 'Fade':
+                instruction.opacity = instruction.opacity * progress;
+                break;
+            case 'Slide':
+                instruction.opacity = instruction.opacity * progress;
+                instruction.offsetY = (instruction.offsetY || 0) + (phase === 'enter' ? tOffset * 20 : (phase === 'exit' ? -tOffset * 20 : 0));
+                break;
+            case 'Zoom':
+                instruction.opacity = instruction.opacity * progress;
+                instruction.scale = (instruction.scale || 1.0) * (phase === 'enter' ? 0.9 + (progress * 0.1) : 1.0);
+                break;
+            case 'None':
+            default:
+                // No extra transition, strategy output remains untouched
+                break;
+        }
     }
 }

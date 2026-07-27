@@ -5,6 +5,7 @@ import SocialWidgetRenderer from '../widgets/SocialWidgetRenderer.jsx';
 import VisualizerRenderer from '../widgets/VisualizerRenderer.jsx';
 import ChromaKeyImage from '../widgets/ChromaKeyImage';
 import ChromaKeyVideo from '../widgets/ChromaKeyVideo';
+import ProceduralSpeaker from '../overlays/ProceduralSpeaker';
 import { reactiveObjectProcessor } from '../../../services/audio/ReactiveObjectProcessor';
 import { interactionStore, useInteractionStore } from '../../../services/interaction/InteractionStore';
 
@@ -60,10 +61,14 @@ const SmartVideoRenderer = ({ el }) => {
 
     if (!el.source) return null;
 
+    const isChromaKey = el.chromaKey !== undefined ? el.chromaKey : (el.chromaKeyEnable !== undefined ? el.chromaKeyEnable : (el.blend === 'Screen' || (el.source || '').toLowerCase().endsWith('.mp4') || (el.source || '').toLowerCase().endsWith('.mov')));
+    const chromaColor = el.chromaKeyColor || el.keyColor || '#000000';
+    const chromaTol = el.chromaKeyTolerance !== undefined ? el.chromaKeyTolerance : (el.similarity !== undefined ? el.similarity * 100 : 35);
+
     return (
         <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.3s ease', width: '100%', height: '100%' }} ref={handleVideoRef}>
-            {el.chromaKeyEnable ? (
-                <ChromaKeyVideo src={el.source} keyColor={el.chromaKeyColor} tolerance={el.chromaKeyTolerance} className="w-full h-full object-contain pointer-events-none" />
+            {isChromaKey ? (
+                <ChromaKeyVideo src={el.source} keyColor={chromaColor} tolerance={chromaTol} className="w-full h-full object-contain pointer-events-none" />
             ) : (
                 <video src={el.source} autoPlay loop={!el.useInterval} muted className="w-full h-full object-contain pointer-events-none" />
             )}
@@ -349,8 +354,8 @@ const CanvasObjectNode = React.memo(({
                     border: el.stroke ? '2px solid white' : 'none'
                 }}>
                     {el.source ? (
-                        el.chromaKeyEnable ? (
-                            <ChromaKeyImage src={el.source} keyColor={el.chromaKeyColor} tolerance={el.chromaKeyTolerance} className="w-full h-full object-cover pointer-events-none" />
+                        (el.chromaKeyEnable || el.chromaKey) ? (
+                            <ChromaKeyImage src={el.source} keyColor={el.chromaKeyColor || el.keyColor || '#00ff00'} tolerance={el.chromaKeyTolerance || (el.similarity !== undefined ? el.similarity * 100 : 15)} className="w-full h-full object-cover pointer-events-none" />
                         ) : (
                             <img src={el.source} alt={el.name} className="w-full h-full object-cover pointer-events-none" />
                         )
@@ -374,6 +379,20 @@ const CanvasObjectNode = React.memo(({
             {el.type === 'social-widget' && <SocialWidgetRenderer config={el} currentTime={currentTime} />}
             {el.type === 'visualizer' && <VisualizerRenderer config={el} />}
             {el.type === 'playlist' && <PlaylistRenderer config={el} id={el.id} frame={frame} />}
+            {(el.type === 'procedural-speaker' || el.mediaType === 'procedural') && (
+                <div className="w-full h-full relative" style={{ mixBlendMode: el.blend === 'Normal' ? 'normal' : el.blend?.toLowerCase() }}>
+                    <ProceduralSpeaker 
+                        opacity={(el.opacity !== undefined ? el.opacity : 100) / 100} 
+                        speed={el.playbackRate !== undefined ? el.playbackRate : (el.speed !== undefined ? el.speed : 1.0)} 
+                        color={el.color || '#00ffcc'} 
+                        rings={0} 
+                        model={el.model || 'studio'}
+                        audioReactive={el.audioReactive !== false} 
+                        width={el.width || 700}
+                        height={el.height || 700}
+                    />
+                </div>
+            )}
 
             {m3SelectedObjectId === el.id && !el.locked && !isIntroOutro && handleHandleDown && (
                 <>

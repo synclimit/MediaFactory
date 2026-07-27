@@ -184,6 +184,9 @@ export default function BeatDebugOverlay() {
               zoomValue:     zm?.value    || 0,
               zoomImpulse:   zm?.impulse  || 0,
               zoomVelocity:  zm?.velocity || 0,
+              rawPunch:      zm?.rawPunch || 0,
+              confidence:    zm?.confidence || 0,
+              kickTrigger:   zm?.kickTrigger || false,
           });
       }
 

@@ -165,6 +165,7 @@ export class RenderPipeline {
                 beat: beatEngine.state.beat || false,
                 beatStrength: beatEngine.state.beatStrength || 0,
                 bpm: beatEngine.state.bpm || 120,
+                beatPhase: beatEngine.state.beatPhase || 0,
             },
             BeatEngine: beatEngine,
             MotionEngine: motionEngine.getState(),

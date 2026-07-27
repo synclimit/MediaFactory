@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs/promises');
 const crypto = require('crypto');
 const os = require('os');
+const AppPaths = require('../system/AppPaths');
 
 const router = express.Router();
 
@@ -12,6 +13,12 @@ function hashUri(uri) {
 }
 const { jobs, processJob, hashUri: hashUriM2 } = require('./m2-render');
 let { jobCounter } = require('./m2-render');
+
+const ytDownloads = {};
+
+router.get('/api/m2/yt-downloads', (req, res) => {
+    res.json(ytDownloads);
+});
 
 router.post('/api/m2/dialog/file', (req, res) => {
     try {
@@ -92,9 +99,14 @@ router.post('/api/m2/yt-metadata', async (req, res) => {
     let url = req.body.url;
     if (!url) return res.status(400).json({ error: 'URL required' });
 
+    let searchUrl = url;
+    if (!url.startsWith('http') && !url.startsWith('ytsearch:')) {
+        searchUrl = `ytsearch:${url}`;
+    }
+
     try {
         const ytData = await new Promise((resolve, reject) => {
-            const ytArgs = ['--dump-json', '--no-playlist', '--', url];
+            const ytArgs = ['--dump-json', '--no-playlist', '--js-runtimes', 'node', '--', searchUrl];
             const ytProc = spawn('yt-dlp', ytArgs);
             
             let stdoutData = '';
@@ -122,6 +134,38 @@ router.post('/api/m2/yt-metadata', async (req, res) => {
             });
         });
         
+        // Background audio download immediately so track is ready for instant playback
+        try {
+            const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
+            await fs.mkdir(cacheDir, { recursive: true });
+            const hash = hashUri(url);
+            const cachePath = path.join(cacheDir, `${hash}.mp3`);
+            const stats = await fs.stat(cachePath).catch(() => null);
+            if (!stats || stats.size < 1000) {
+                const ytOut = path.join(cacheDir, hash + '.%(ext)s');
+                const dlArgs = ['--newline', '--no-playlist', '-f', 'bestaudio', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUrl];
+                const dlProc = spawn('yt-dlp', dlArgs);
+                ytDownloads[url] = { status: 'downloading', progress: 0 };
+                
+                dlProc.stdout.on('data', chunk => {
+                    const out = chunk.toString();
+                    const match = out.match(/\[download\]\s+([\d\.]+)\%/);
+                    if (match) ytDownloads[url] = { status: 'downloading', progress: parseFloat(match[1]) };
+                    else if (out.includes('Extracting Audio') || out.includes('Destination:')) ytDownloads[url] = { status: 'extracting', progress: 100 };
+                });
+                
+                dlProc.on('close', code => {
+                    if (code === 0) ytDownloads[url] = { status: 'ready', progress: 100 };
+                    else ytDownloads[url] = { status: 'error', progress: 0 };
+                    
+                    // keep status around for a minute then clean up to avoid memory leak
+                    setTimeout(() => { delete ytDownloads[url]; }, 60000);
+                });
+            }
+        } catch (bgErr) {
+            console.error('[yt-metadata] Background download failed to start:', bgErr);
+        }
+
         const payload = {
             videoTitle: ytData.title,
             channelName: ytData.uploader || ytData.channel,
@@ -133,7 +177,6 @@ router.post('/api/m2/yt-metadata', async (req, res) => {
 
         res.json(payload);
     } catch(ytError) {
-        // Fallback simplified since this is just an extraction
         res.status(500).json({ error: ytError.message });
     }
 });
@@ -165,7 +208,7 @@ router.get('/api/m2/render/:id', (req, res) => {
 router.post('/api/m2/cache/stats', async (req, res) => {
     let referencedUris = req.body.referencedUris || [];
     let queueIds = req.body.queueIds || [];
-    const cacheDir = path.resolve('.mediafactory/cache/m2');
+    const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
     
     let fileCount = 0;
     let sizeMb = 0;
@@ -211,7 +254,7 @@ router.post('/api/m2/cache/stats', async (req, res) => {
 });
 
 router.post('/api/m2/cache/validate', async (req, res) => {
-    const cacheDir = path.resolve('.mediafactory/cache/m2');
+    const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
     let valid = 0, invalid = 0;
     try {
         const files = await fs.readdir(cacheDir);
@@ -227,7 +270,7 @@ router.post('/api/m2/cache/validate', async (req, res) => {
 });
 
 router.post('/api/m2/cache/clear', async (req, res) => {
-    const cacheDir = path.resolve('.mediafactory/cache/m2');
+    const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
     let deleted = 0;
     try {
         const files = await fs.readdir(cacheDir);
@@ -242,7 +285,7 @@ router.post('/api/m2/cache/clear', async (req, res) => {
 router.post('/api/m2/cache/remove-orphans', async (req, res) => {
     let referencedUris = req.body.referencedUris || [];
     let queueIds = req.body.queueIds || [];
-    const cacheDir = path.resolve('.mediafactory/cache/m2');
+    const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
     let deleted = 0;
     
     const referencedFiles = new Set();
@@ -282,42 +325,87 @@ router.get('/api/m2/prepare-stream', async (req, res) => {
         'Connection': 'keep-alive'
     });
 
-    const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be');
+    let localPath = uri;
+    let isAsset = uri.startsWith('Assets/') || uri.startsWith('Assets\\');
+    let searchUri = uri;
+    if (!isAsset && !require('path').isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:')) {
+        searchUri = `ytsearch:${uri}`;
+    }
+    if (isAsset || (!require('path').isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:'))) {
+        try {
+            const ServiceRegistry = require('../system/ServiceRegistry');
+            const wsService = ServiceRegistry.resolve('WorkspaceService');
+            if (wsService && wsService.getCurrentWorkspace()) {
+                localPath = require('path').join(wsService._getActivePath(), uri);
+            } else {
+                localPath = require('path').resolve(uri);
+            }
+        } catch (e) {
+            localPath = require('path').resolve(uri);
+        }
+    }
+
+    const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be') || uri.startsWith('ytsearch:') || (!isAsset && !require('path').isAbsolute(uri) && !require('fs').existsSync(localPath) && !uri.startsWith('http'));
     if (!isYouTube) {
+        if (!require('fs').existsSync(localPath)) {
+            res.write(`data: {"status": "error", "message": "File not found"}\n\n`);
+            return res.end();
+        }
         res.write(`data: {"status": "ready"}\n\n`);
         return res.end();
     }
 
-    const cacheDir = path.resolve('.mediafactory/cache/m2');
+    const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
+    const hashUri = (str) => require('crypto').createHash('md5').update(str).digest('hex').slice(0,8);
+    // Use the original uri for hashing to match yt-metadata
     const cachePath = path.join(cacheDir, `${hashUri(uri)}.mp3`);
 
+    res.write(`data: {"status": "loading"}\n\n`);
+
     try {
-        await fs.stat(cachePath);
-        res.write(`data: {"status": "ready_cached"}\n\n`);
-        res.end();
+        const stats = await fs.stat(cachePath);
+        const files = await fs.readdir(cacheDir);
+        const hashStr = hashUri(uri);
+        const inProgress = files.some(f => f.startsWith(hashStr) && f !== `${hashStr}.mp3` && !f.endsWith('.json') && !f.endsWith('.lock'));
+        
+        if (stats.size > 1000 && !inProgress) {
+            res.write(`data: {"status": "ready_cached"}\n\n`);
+            return res.end();
+        }
+        if (!inProgress) {
+            await fs.unlink(cachePath).catch(() => {});
+        }
     } catch (e) {
-        res.write(`data: {"status": "downloading", "progress": 0}\n\n`);
-        try {
-            await fs.mkdir(cacheDir, { recursive: true });
-            const ytOut = path.join(cacheDir, hashUri(uri) + '.%(ext)s');
-            const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', uri];
+        // file doesn't exist or not ready
+    }
+
+    try {
+        await fs.mkdir(cacheDir, { recursive: true });
+        const ytOut = path.join(cacheDir, hashUri(uri) + '.%(ext)s');
+            // Adding --newline to force line-by-line output for easier parsing
+            const ytArgs = ['--newline', '-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUri];
             const ytProc = spawn('yt-dlp', ytArgs);
             
             ytProc.stdout.on('data', chunk => {
                 const out = chunk.toString();
+                // match things like "[download]  50.0% of"
                 const match = out.match(/\[download\]\s+([\d\.]+)\%/);
-                if (match) res.write(`data: {"status": "downloading", "progress": ${match[1]}}\n\n`);
-                else if (out.includes('Extracting Audio') || (out.includes('Destination:') && out.includes('.mp3'))) {
+                if (match) {
+                    res.write(`data: {"status": "downloading", "progress": ${match[1]}}\n\n`);
+                }
+                else if (out.includes('Extracting Audio') || out.includes('Destination:')) {
                     res.write(`data: {"status": "extracting"}\n\n`);
                 }
             });
-            ytProc.stderr.on('data', () => {}); // Consume stderr
+            ytProc.stderr.on('data', (err) => {
+                console.error('[yt-dlp error]', err.toString());
+            });
             
             const timeoutId = setTimeout(() => {
                 ytProc.kill();
                 res.write(`data: {"status": "error"}\n\n`);
                 res.end();
-            }, 300000); // 5 minutes timeout for long videos
+            }, 300000); // 5 minutes timeout
             
             ytProc.on('close', code => {
                 clearTimeout(timeoutId);
@@ -334,7 +422,6 @@ router.get('/api/m2/prepare-stream', async (req, res) => {
             res.write(`data: {"status": "error"}\n\n`);
             res.end();
         }
-    }
 });
 
 router.get('/api/m2/stream', async (req, res) => {
@@ -382,19 +469,41 @@ router.get('/api/m2/stream', async (req, res) => {
         }
     };
 
-    const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be');
+    let localPath = uri;
+    let isAsset = uri.startsWith('Assets/') || uri.startsWith('Assets\\');
+    if (isAsset || (!require('path').isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:'))) {
+        try {
+            const ServiceRegistry = require('../system/ServiceRegistry');
+            const wsService = ServiceRegistry.resolve('WorkspaceService');
+            if (wsService && wsService.getCurrentWorkspace()) {
+                localPath = require('path').join(wsService._getActivePath(), uri);
+            } else {
+                localPath = require('path').resolve(uri);
+            }
+        } catch (e) {
+            localPath = require('path').resolve(uri);
+        }
+    }
+
+    const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be') || uri.startsWith('ytsearch:') || (!isAsset && !require('path').isAbsolute(uri) && !require('fs').existsSync(localPath) && !uri.startsWith('http'));
     if (isYouTube) {
-        const cacheDir = path.resolve('.mediafactory/cache/m2');
-        const cachePath = path.join(cacheDir, `${hashUri(uri)}.mp3`);
+        let searchUri = uri;
+        if (!require('path').isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:')) {
+            searchUri = `ytsearch:${uri}`;
+        }
+        const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
+        const hashUri = (str) => require('crypto').createHash('md5').update(str).digest('hex').slice(0,8);
+        const cachePath = require('path').join(cacheDir, `${hashUri(uri)}.mp3`);
         
         try {
-            await fs.stat(cachePath);
+            await require('fs').promises.stat(cachePath);
             streamFile(cachePath);
         } catch (e) {
             try {
                 await fs.mkdir(cacheDir, { recursive: true });
-                const ytOut = path.join(cacheDir, hashUri(uri) + '.%(ext)s');
-                const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', uri];
+                const ytOut = cachePath;
+                const ytArgs = ['--newline', '-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUri];
+                const { spawn } = require('child_process');
                 await new Promise((resolve, reject) => {
                     const ytProc = spawn('yt-dlp', ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
                     ytProc.stdout.on('data', () => {});
@@ -420,22 +529,11 @@ router.get('/api/m2/stream', async (req, res) => {
             }
         }
     } else {
-        let localPath = uri;
-        if (!require('path').isAbsolute(uri)) {
-            try {
-                const ServiceRegistry = require('../system/ServiceRegistry');
-                const wsService = ServiceRegistry.resolve('WorkspaceService');
-                if (wsService && wsService.getCurrentWorkspace()) {
-                    localPath = require('path').join(wsService._getActivePath(), uri);
-                } else {
-                    localPath = require('path').resolve(uri);
-                }
-            } catch (e) {
-                localPath = require('path').resolve(uri);
-            }
-        }
         streamFile(localPath);
     }
 });
 
 module.exports = { router };
+
+
+

@@ -186,7 +186,8 @@ export class EnvelopeBank {
 }
 
 export class BeatDetector {
-    constructor() {
+    constructor(baseCooldown = 300) {
+        this._baseCooldown = baseCooldown;
         this._emaShort     = 0;
         this._emaLong      = 0;
         this._lastBeatTime = 0;
@@ -242,7 +243,7 @@ export class BeatDetector {
 
         const threshold         = 0.15;
         const timeSinceLast     = now - this._lastBeatTime;
-        const cooldownRemaining = timeSinceLast < 300 ? 300 - timeSinceLast : 0;
+        const cooldownRemaining = timeSinceLast < this._baseCooldown ? this._baseCooldown - timeSinceLast : 0;
 
         r.flux              = flux;
         r.threshold         = threshold;
@@ -358,8 +359,7 @@ export class AudioFeatureExtractor {
 
 export class HypothesisTempoEstimator {
     constructor() {
-        this._votes = new Float32Array(181); // 60 BPM to 240 BPM inclusive
-        this._intervals = new Float32Array(8); // Ring buffer for recent intervals
+        this._intervals = new Float32Array(32); // 32 interval sliding window
         this._idx = 0;
         this._count = 0;
         this._lastBeatTime = 0;
@@ -368,72 +368,107 @@ export class HypothesisTempoEstimator {
             bpm: 120,
             confidence: 0,
             beatPhase: 0,
+            softLockTriggered: false
         };
     }
 
     addInterval(ms, now) {
-        this._lastBeatTime = now;
+        this.result.softLockTriggered = false; // reset per beat
 
-        if (ms > 250 && ms < 3000) { // 20–240 BPM range
-            this._intervals[this._idx] = ms;
-            this._idx = (this._idx + 1) % this._intervals.length;
-            this._count = Math.min(this._count + 1, this._intervals.length);
+        let bpm = 60000 / ms;
+        if (bpm < 20 || bpm > 600) return; // Ignore absurdly fast/slow intervals
+        
+        // Harmonic fold to 90-180 range
+        while (bpm < 90) bpm *= 2;
+        while (bpm > 180) bpm /= 2;
+        const foldedBpm = Math.round(bpm);
+        
+        // Add to sliding window
+        this._intervals[this._idx] = foldedBpm;
+        this._idx = (this._idx + 1) % this._intervals.length;
+        this._count = Math.min(this._count + 1, this._intervals.length);
+        
+        // Rebuild histogram immediately to check confidence
+        this.estimate();
+        
+        // ----------------------------------------------------------------
+        // Soft Lock Logic (Phase Reset)
+        // ----------------------------------------------------------------
+        
+        // 1. Is the metronome near the wrap point? (expected beat)
+        const phase = this.result.beatPhase;
+        const isNearWrap = phase > 0.85 || phase < 0.15;
+        
+        // 2. Is the new interval consistent with the currently locked BPM?
+        const diffRatio = Math.abs(foldedBpm - this.result.bpm) / this.result.bpm;
+        const isConsistent = diffRatio < 0.10; // within 10%
+        
+        // 3. Fallback: Has it been too long since the last correction?
+        const timeSinceLastLock = now - this._lastBeatTime;
+        const isFallback = timeSinceLastLock > 4000 && this.result.confidence >= 0.5;
+        
+        let shouldLock = false;
+        
+        // First few beats lock aggressively to bootstrap the clock
+        if (this._count < 4) {
+            shouldLock = true;
+        } 
+        else if ((isNearWrap && isConsistent) || isFallback) {
+            shouldLock = true;
+        }
 
-            let bpm = 60000 / ms;
-            
-            while (bpm < 60) bpm *= 2;
-            while (bpm > 240) bpm /= 2;
-
-            const targetIdx = Math.round(bpm) - 60;
-            if (targetIdx >= 0 && targetIdx <= 180) {
-                this._votes[targetIdx] += 1.0;
-                if (targetIdx > 0) this._votes[targetIdx - 1] += 0.5;
-                if (targetIdx < 180) this._votes[targetIdx + 1] += 0.5;
-            }
+        if (shouldLock) {
+            this._lastBeatTime = now;
+            this.result.softLockTriggered = true;
+            this.result.beatPhase = 0; // instantly snap
         }
     }
 
     estimate() {
         const r = this.result;
-        let maxVote = 0;
-        let bestIdx = 60;
+        r.softLockTriggered = r.softLockTriggered || false; // preserve within the frame
 
-        for (let i = 0; i <= 180; i++) {
-            this._votes[i] *= 0.98;
-            if (this._votes[i] > maxVote) {
-                maxVote = this._votes[i];
+        if (this._count === 0) return;
+
+        // Rebuild histogram from the 32-item buffer
+        const histogram = new Float32Array(91); // 90 to 180 inclusive
+        
+        for (let i = 0; i < this._count; i++) {
+            const b = this._intervals[i];
+            if (b >= 90 && b <= 180) {
+                const idx = b - 90;
+                histogram[idx] += 1.0;
+                // Light smoothing kernel
+                if (idx > 0) histogram[idx - 1] += 0.5;
+                if (idx < 90) histogram[idx + 1] += 0.5;
+            }
+        }
+
+        let maxVote = 0;
+        let bestIdx = 0;
+        for (let i = 0; i <= 90; i++) {
+            if (histogram[i] > maxVote) {
+                maxVote = histogram[i];
                 bestIdx = i;
             }
         }
 
-        r.bpm = bestIdx + 60;
-
-        if (this._count < 4) {
-            r.confidence = 0;
-        } else {
-            let sum = 0;
-            for (let i = 0; i < this._count; i++) sum += this._intervals[i];
-            const avg = sum / this._count;
-
-            let vSum = 0;
-            for (let i = 0; i < this._count; i++) {
-                const d = this._intervals[i] - avg;
-                vSum += d * d;
-            }
-            const stddev = Math.sqrt(vSum / this._count);
-
-            const cv = stddev / avg;
-            r.confidence = Math.max(0, Math.min(1.0 - cv * 5.0, 1.0));
-        }
+        // Lock BPM and compute confidence based on dominance
+        r.bpm = bestIdx + 90;
+        // Max possible vote for a single bin (with center=1.0) is exactly this._count.
+        // Confidence approaches 1.0 when all beats agree on the exact same BPM.
+        r.confidence = Math.min(1.0, maxVote / this._count);
     }
 
     updatePhase(now) {
-        if (this.result.bpm > 0) {
+        if (this.result.bpm > 0 && this._count >= 2) {
             const beatIntervalMs = 60000 / this.result.bpm;
             const elapsed = now - this._lastBeatTime;
-            this.result.beatPhase = Math.max(0, Math.min(elapsed / beatIntervalMs, 1.0));
+            this.result.beatPhase = (elapsed / beatIntervalMs) % 1.0;
         } else {
             this.result.beatPhase = 0;
         }
+        // reset the flag for the next frame if it wasn't a beat frame
+        // Wait, BeatEngine consumes this every frame, so BeatEngine must capture it when beat is true.
     }
 }

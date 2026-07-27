@@ -107,9 +107,15 @@ export class VisualRuntime {
                     this._lastZoomStyleName = styleName;
                 }
                 
-                // Allow dynamic override from UI if amplitude is present (e.g., amplitude: 5 means maxScale = 1.05)
-                if (activeZoomObj.amplitude !== undefined) {
-                    this.zoomEffect.style.maxScale = this.zoomEffect.style.baseScale + (activeZoomObj.amplitude / 100);
+                // Allow dynamic override from UI
+                let dynamicDepth = activeZoomObj.props?.depth;
+                if (dynamicDepth === undefined) {
+                    dynamicDepth = activeZoomObj.amplitude;
+                }
+                
+                if (dynamicDepth !== undefined) {
+                    // Skala amplitudo dikembalikan ke /400 untuk pengujian terisolasi
+                    this.zoomEffect.style.maxScale = this.zoomEffect.style.baseScale + (dynamicDepth / 400);
                 }
             } else {
                 isZoomActive = false;
@@ -123,10 +129,13 @@ export class VisualRuntime {
             writeComp.debug.activeEffects.push('Zoom');
         }
         writeComp.debug.zoom = {
-            value: (writeComp.transform.scale || 1.0) - 1.0,
+            value: zoomState.scale - 1.0,
             velocity: this.zoomEffect.velocity || 0,
             impulse: this.zoomEffect.state === 'ATTACK' ? (this.zoomEffect.activeMaxScale - 1.0) : (this.zoomEffect.state !== 'IDLE' ? (this.zoomEffect.activeMaxScale - 1.0) : 0),
-            state: this.zoomEffect.state
+            state: this.zoomEffect.state,
+            rawPunch: audioDrivenState && audioDrivenState.musicalFeel ? Number(audioDrivenState.musicalFeel.punch.toFixed(4)) : 0,
+            confidence: audioDrivenState && audioDrivenState.musicalFeel ? Number(audioDrivenState.musicalFeel.confidence.toFixed(4)) : 0,
+            kickTrigger: audioDrivenState && audioDrivenState.kick ? !!audioDrivenState.kick.justTriggered : false
         };
 
         const glowState = this.glowEffect.update(dt, audioDrivenState);

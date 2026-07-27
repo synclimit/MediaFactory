@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { exec, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs/promises');
+const AppPaths = require('../system/AppPaths');
 
 const jobs = {};
 let jobCounter = 0;
@@ -37,10 +38,10 @@ async function processJob(job) {
     job.progress = 0;
 
     try {
-        const cacheDir = path.resolve('.mediafactory/cache/m2');
+        const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
         await fs.mkdir(cacheDir, { recursive: true });
 
-        const outputDir = path.resolve('Output/AudioMix');
+        const outputDir = path.resolve(job.outputFolder || 'Output/AudioMix');
         await fs.mkdir(outputDir, { recursive: true });
 
         const resolvedPaths = [];
@@ -52,7 +53,7 @@ async function processJob(job) {
             else if (track.title) uri = track.title;
             else uri = 'unknown';
 
-            const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be');
+            const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be') || uri.startsWith('ytsearch:') || (!path.isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('Assets/') && !uri.startsWith('Assets\\') && !require('fs').existsSync(path.resolve(uri)));
             const ext = '.mp3';
             const cachePath = path.join(cacheDir, `${hashUri(uri)}${ext}`);
             
@@ -61,8 +62,12 @@ async function processJob(job) {
                 if (stats.size === 0) throw new Error('Cache empty');
             } catch (err) {
                 if (isYouTube) {
+                    let searchUri = uri;
+                    if (!path.isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:')) {
+                        searchUri = `ytsearch:${uri}`;
+                    }
                     const ytOut = path.join(cacheDir, hashUri(uri) + '.%(ext)s');
-                    const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', uri];
+                    const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUri];
                     await new Promise((resolve, reject) => {
                         const ytProc = spawn('yt-dlp', ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
                         ytProc.stdout.on('data', () => {});
@@ -214,3 +219,5 @@ async function processJob(job) {
 }
 
 module.exports = { jobs, processJob, hashUri, jobCounter };
+
+

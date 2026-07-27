@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ServiceRegistry = require('../system/ServiceRegistry');
+const AppPaths = require('../system/AppPaths');
 
 // Middleware to inject standardized response formatter
 router.use((req, res, next) => {
@@ -25,6 +26,30 @@ router.post('/api/v1/system/runtime/event', (req, res) => {
 });
 router.get('/api/v1/system/services', (req, res) => res.standardResponse({ services: Array.from(ServiceRegistry.services.keys()) }));
 router.get('/api/v1/system/workers', (req, res) => res.standardResponse({ activeWorkers: 0 }));
+router.get('/api/v1/system/telemetry', (req, res) => {
+    const hwService = ServiceRegistry.resolve('HardwareService');
+    if (hwService) {
+        res.standardResponse(hwService.getTelemetry());
+    } else {
+        res.standardResponse({ cpu: 0, ram: 0, gpu: 0 });
+    }
+});
+
+router.get('/api/v1/system/cache-path', (req, res) => {
+    res.standardResponse({ cacheDir: AppPaths.getCacheBase() });
+});
+router.post('/api/v1/system/cache-path', (req, res) => {
+    const { cacheDir } = req.body;
+    if (!cacheDir) {
+        return res.standardResponse(null, { status: "error", message: "cacheDir is required" }, false);
+    }
+    const success = AppPaths.setCacheBase(cacheDir);
+    if (success) {
+        res.standardResponse({ cacheDir: AppPaths.getCacheBase() });
+    } else {
+        res.standardResponse(null, { status: "error", message: "Failed to save cache directory" }, false);
+    }
+});
 
 // --- Workspace Endpoints ---
 router.post('/api/v1/system/workspace/active', (req, res) => {

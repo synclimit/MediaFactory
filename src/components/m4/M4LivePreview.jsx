@@ -1,38 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './m4-theme.css';
-import { Maximize2, Play, Pause, RefreshCw, Volume2 } from 'lucide-react';
+import { Maximize2, Play, Pause, RefreshCw, Volume2, VolumeX } from 'lucide-react';
+import IntroSequenceRenderer from '../m3/widgets/IntroSequenceRenderer.jsx';
 
-export default function M4LivePreview({ m4BgVideo, m4AmbientAudio, m4RelaxMusic, isGeneratingPreview }) {
+export default function M4LivePreview({ m4BgVideo, m4AmbientAudio, m4RelaxMusic, isGeneratingPreview, m4Objects, durationMode, setDurationMode, targetDuration, setTargetDuration }) {
   const isReady = m4BgVideo;
   const videoRef = useRef(null);
-  const ambientRef = useRef(null);
-  const musicRef = useRef(null);
+  const audioRefs = useRef(new Set());
   
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [loopCount, setLoopCount] = useState(0);
+  const [currentTimeSec, setCurrentTimeSec] = useState(0);
   const lastTime = useRef(0);
   const [durationDisplay, setDurationDisplay] = useState('00:00 / 00:00');
+  const [previewMuted, setPreviewMuted] = useState(false);
 
-  useEffect(() => {
-    if (ambientRef.current) ambientRef.current.volume = Math.min(1, Math.max(0, (m4AmbientAudio?.volume || 100) / 100));
-  }, [m4AmbientAudio?.volume]);
 
-  useEffect(() => {
-    if (musicRef.current) musicRef.current.volume = Math.min(1, Math.max(0, (m4RelaxMusic?.volume || 100) / 100));
-  }, [m4RelaxMusic?.volume]);
 
   const togglePlay = () => {
     const nextState = !isPlaying;
     setIsPlaying(nextState);
     if (nextState) {
       videoRef.current?.play();
-      ambientRef.current?.play();
-      musicRef.current?.play();
+      audioRefs.current.forEach(a => a?.play());
     } else {
       videoRef.current?.pause();
-      ambientRef.current?.pause();
-      musicRef.current?.pause();
+      audioRefs.current.forEach(a => a?.pause());
     }
   };
 
@@ -41,15 +35,33 @@ export default function M4LivePreview({ m4BgVideo, m4AmbientAudio, m4RelaxMusic,
     const ct = videoRef.current.currentTime;
     const dur = videoRef.current.duration || 1;
     
+    // Calculate max audio duration
+    const maxAudioDur = Math.max(
+      0,
+      ...(m4AmbientAudio || []).map(a => a.durationSec || 0),
+      ...(m4RelaxMusic || []).map(m => m.durationSec || 0)
+    );
+
     let currentLoop = loopCount;
     if (ct < lastTime.current - 1) {
-      currentLoop = (currentLoop + 1) % 2;
+      const maxLoops = durationMode === 'Custom' ? Math.ceil((targetDuration * 60) / dur) : ((durationMode === 'Match Audio' && maxAudioDur > 0) ? Math.ceil(maxAudioDur / dur) : 2);
+      currentLoop = currentLoop + 1;
+      
+      if (currentLoop >= maxLoops) {
+         currentLoop = 0;
+         // Entire preview resets
+         if (durationMode === '2x Loop' || durationMode === 'Match Audio') {
+             audioRefs.current.forEach(a => { if(a) a.currentTime = 0; });
+         }
+      }
       setLoopCount(currentLoop);
     }
     lastTime.current = ct;
     
     const virtTime = currentLoop * dur + ct;
-    const totalVirt = dur * 2;
+    setCurrentTimeSec(virtTime);
+    
+    const totalVirt = durationMode === 'Custom' ? (targetDuration * 60) : ((durationMode === 'Match Audio' && maxAudioDur > 0) ? maxAudioDur : (dur * 2));
     setProgress((virtTime / totalVirt) * 100);
 
     const format = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${Math.floor(s%60).toString().padStart(2,'0')}`;
@@ -60,16 +72,26 @@ export default function M4LivePreview({ m4BgVideo, m4AmbientAudio, m4RelaxMusic,
     if (!videoRef.current) return;
     const pct = parseFloat(e.target.value);
     const dur = videoRef.current.duration || 1;
-    const totalVirt = dur * 2;
+    
+    const maxAudioDur = Math.max(
+      0,
+      ...(m4AmbientAudio || []).map(a => a.durationSec || 0),
+      ...(m4RelaxMusic || []).map(m => m.durationSec || 0)
+    );
+    const totalVirt = durationMode === 'Custom' ? (targetDuration * 60) : ((durationMode === 'Match Audio' && maxAudioDur > 0) ? maxAudioDur : (dur * 2));
     const targetVirt = (pct / 100) * totalVirt;
     
     const targetLoop = Math.floor(targetVirt / dur);
-    setLoopCount(targetLoop % 2);
+    
+    const maxLoops = durationMode === 'Custom' ? Math.ceil((targetDuration * 60) / dur) : ((durationMode === 'Match Audio' && maxAudioDur > 0) ? Math.ceil(maxAudioDur / dur) : 2);
+    setLoopCount(targetLoop % maxLoops);
     
     const targetReal = targetVirt % dur;
     videoRef.current.currentTime = targetReal;
     lastTime.current = targetReal;
     setProgress(pct);
+    
+    audioRefs.current.forEach(a => { if(a) a.currentTime = targetVirt; });
   };
 
   return (
@@ -86,36 +108,67 @@ export default function M4LivePreview({ m4BgVideo, m4AmbientAudio, m4RelaxMusic,
               <video 
                 ref={videoRef}
                 src={`/api/m4/stream?path=${encodeURIComponent(m4BgVideo.path)}`}
-                className="w-full h-full object-cover opacity-80"
-                autoPlay loop muted playsInline
+                className={`w-full h-full object-cover opacity-80 ${m4BgVideo.cropWatermark ? 'scale-[1.15]' : ''}`}
+                autoPlay loop muted={previewMuted || (m4BgVideo.isMuted !== false)} playsInline
                 onTimeUpdate={handleTimeUpdate}
               />
             ) : (
               <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1506744626753-14013444ab31?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-80" />
             )}
             
+            {/* Intro Sequence Overlay */}
+            {(m4Objects || []).filter(o => o.name === 'Intro Sequence' && o.visible).map(introObj => (
+              <IntroSequenceRenderer 
+                key={introObj.id} 
+                el={introObj} 
+                currentTime={currentTimeSec} 
+              />
+            ))}
+            
             {/* Real Audio Elements */}
-            {m4AmbientAudio?.path && (
-              <audio ref={ambientRef} src={`/api/m4/stream?path=${encodeURIComponent(m4AmbientAudio.path)}`} autoPlay loop />
-            )}
-            {m4RelaxMusic?.path && (
-              <audio ref={musicRef} src={`/api/m4/stream?path=${encodeURIComponent(m4RelaxMusic.path)}`} autoPlay loop />
-            )}
+            {m4AmbientAudio && m4AmbientAudio.length > 0 && m4AmbientAudio.map(ambient => (
+              <audio 
+                key={ambient.id} 
+                src={ambient.path?.startsWith('/api/') ? ambient.path : `/api/m4/stream?path=${encodeURIComponent(ambient.path)}`} 
+                autoPlay loop 
+                ref={el => { 
+                  if (el) { 
+                    el.volume = Math.min(1, Math.max(0, (ambient.volume || 100) / 100)); 
+                    el.muted = previewMuted; 
+                    audioRefs.current.add(el); 
+                  } 
+                }}
+              />
+            ))}
+            {m4RelaxMusic && m4RelaxMusic.length > 0 && m4RelaxMusic.map(music => (
+              <audio 
+                key={music.id} 
+                src={music.path?.startsWith('/api/') ? music.path : `/api/m4/stream?path=${encodeURIComponent(music.path)}`} 
+                autoPlay loop 
+                ref={el => { 
+                  if (el) { 
+                    el.volume = Math.min(1, Math.max(0, (music.volume || 100) / 100)); 
+                    el.muted = previewMuted; 
+                    audioRefs.current.add(el);
+                  } 
+                }}
+              />
+            ))}
             
             {/* Floating Audio Indicators */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              {m4AmbientAudio && (
-                <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+              {m4AmbientAudio && m4AmbientAudio.map(ambient => (
+                <div key={ambient.id} className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
                   <Volume2 size={12} className="text-orange-400" />
-                  <span className="text-[10px] text-white font-mono">{m4AmbientAudio.name}</span>
+                  <span className="text-[10px] text-white font-mono">{ambient.name}</span>
                 </div>
-              )}
-              {m4RelaxMusic && (
-                <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+              ))}
+              {m4RelaxMusic && m4RelaxMusic.map(music => (
+                <div key={music.id} className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
                   <Volume2 size={12} className="text-emerald-400" />
-                  <span className="text-[10px] text-white font-mono">{m4RelaxMusic.name}</span>
+                  <span className="text-[10px] text-white font-mono">{music.name}</span>
                 </div>
-              )}
+              ))}
             </div>
 
             {/* Play/Pause Overlay */}
@@ -138,7 +191,37 @@ export default function M4LivePreview({ m4BgVideo, m4AmbientAudio, m4RelaxMusic,
             {/* Custom Timeline Scrubber */}
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
                <div className="flex justify-between items-center px-1">
-                 <span className="text-[10px] text-orange-400 font-mono tracking-widest uppercase">Seamless Preview (2x Loop)</span>
+                 <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-orange-400 font-mono tracking-widest uppercase">Preview Mode:</span>
+                    <select 
+                      value={durationMode || '2x Loop'}
+                      onChange={(e) => {
+                        setDurationMode(e.target.value);
+                        setLoopCount(0);
+                        if(videoRef.current) {
+                           videoRef.current.currentTime = 0;
+                           audioRefs.current.forEach(a => { if(a) a.currentTime = 0; });
+                        }
+                      }}
+                      className="bg-black/50 border border-white/10 text-white text-[10px] rounded px-2 py-0.5 outline-none font-mono"
+                    >
+                      <option value="2x Loop">2x Loop</option>
+                      <option value="Match Audio">Match Audio</option>
+                      <option value="Custom">Custom</option>
+                    </select>
+                    {durationMode === 'Custom' && (
+                       <div className="flex items-center gap-1">
+                          <input 
+                            type="number" 
+                            className="bg-black/50 border border-white/10 text-white text-[10px] rounded px-1 py-0.5 outline-none font-mono w-12 text-center" 
+                            value={targetDuration} 
+                            onChange={(e) => setTargetDuration(parseInt(e.target.value) || 1)} 
+                            min="1" max="600"
+                          />
+                          <span className="text-[10px] text-gray-400 font-mono">min</span>
+                       </div>
+                    )}
+                 </div>
                  <span className="text-[10px] text-gray-300 font-mono">{durationDisplay}</span>
                </div>
                <input 
@@ -174,7 +257,10 @@ export default function M4LivePreview({ m4BgVideo, m4AmbientAudio, m4RelaxMusic,
         <button className="w-8 h-8 rounded bg-black/50 border border-white/10 hover:border-orange-500 hover:text-orange-400 text-gray-400 flex items-center justify-center transition-colors">
           <RefreshCw size={14} />
         </button>
-        <button className="w-8 h-8 rounded bg-black/50 border border-white/10 hover:border-orange-500 hover:text-orange-400 text-gray-400 flex items-center justify-center transition-colors">
+        <button className="w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 border border-white/10 flex items-center justify-center text-white transition-colors" onClick={() => setPreviewMuted(!previewMuted)} title={previewMuted ? "Unmute Preview" : "Mute Preview"}>
+          {previewMuted ? <VolumeX size={14} className="text-gray-400" /> : <Volume2 size={14} className="text-orange-400" />}
+        </button>
+        <button className="w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 border border-white/10 flex items-center justify-center text-white transition-colors">
           <Maximize2 size={14} />
         </button>
       </div>

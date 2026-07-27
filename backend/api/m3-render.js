@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const os = require('os');
 const path = require('path');
 const fs = require('fs/promises');
+const AppPaths = require('../system/AppPaths');
 
 const getSystemStats = () => new Promise(resolve => {
   exec('wmic cpu get loadpercentage', (err, stdout) => {
@@ -173,7 +174,7 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
           logRuntimeEvent(job, 'ffmpeg spawn TRY (yt-dlp)');
           console.log(`[M3] Downloading YouTube audio: ${sp}`);
           await new Promise((resolve, reject) => {
-            const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', sp];
+            const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', sp];
             const ytProc = spawn('yt-dlp', ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
             ytProc.stdout.on('data', () => {});
             ytProc.stderr.on('data', () => {});
@@ -225,9 +226,54 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
   return outAudioPath;
 }
 
-async function buildImageVideo(job, imagePath, audioPath, outputPath) {
+function generateOverlayFilter(objects) {
+  if (!objects || objects.length === 0) return { inputs: '', filter: '', map: '' };
+  
+  // Filter only overlays
+  const overlays = objects.filter(o => o.type === 'image' && o.mediaType === 'video' && o.visible);
+  if (overlays.length === 0) return { inputs: '', filter: '', map: '' };
+
+  let inputs = '';
+  let filter = '';
+  let lastOutput = '[0:v]';
+
+  overlays.forEach((ov, index) => {
+    // Note: M3 frontend sends source as absolute URL or path. Assuming path is clean.
+    // If it's a localhost URL, we need to extract the path.
+    let ovPath = ov.source;
+    if (ovPath.startsWith('http')) {
+        try {
+            const url = new URL(ovPath);
+            ovPath = path.join(__dirname, '..', url.pathname); // e.g. /assets/overlays/... -> backend/assets/overlays/...
+        } catch(e) {}
+    } else {
+        if (!ovPath.includes('/') && !ovPath.includes('\\')) {
+            ovPath = path.resolve('public', ovPath);
+        }
+    }
+
+    const inputIndex = index + 1; // 0 is background
+    inputs += ` -stream_loop -1 -i "${ovPath}"`;
+
+    const speed = ov.playbackRate || 1.0;
+    const opacity = (ov.opacity !== undefined ? ov.opacity : 100) / 100;
+
+    filter += `[${inputIndex}:v]setpts=PTS/${speed},format=yuva420p,colorchannelmixer=aa=${opacity}[ov${inputIndex}];`;
+    filter += `${lastOutput}[ov${inputIndex}]overlay=x=${ov.x}:y=${ov.y}:shortest=1[bg${inputIndex}];`;
+    
+    lastOutput = `[bg${inputIndex}]`;
+  });
+
+  return { inputs, filter, map: lastOutput };
+}
+
+async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
   logRuntimeEvent(job, 'buildImageVideo STARTED');
-  const cmd = `ffmpeg -y -loop 1 -framerate 30 -i "${imagePath}" -i "${audioPath}" -c:v libx264 -tune stillimage -c:a copy -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2" -shortest -pix_fmt yuv420p "${outputPath}"`;
+  
+  const { inputs, filter, map } = generateOverlayFilter(payload.objects);
+  const filterFlag = filter ? `-filter_complex "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2[base];[base]${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}"` : `-vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2"`;
+
+  const cmd = `ffmpeg -y -loop 1 -framerate 30 -i "${imagePath}"${inputs} -i "${audioPath}" -c:v libx264 -tune stillimage -c:a copy ${filterFlag} -shortest -pix_fmt yuv420p "${outputPath}"`;
   await spawnFFmpegM3(cmd, job);
   logRuntimeEvent(job, 'buildImageVideo END');
 }
@@ -244,14 +290,17 @@ async function buildPingPongIntermediate(videoPath, cacheDir, job) {
   return pingpongPath;
 }
 
-async function buildLoopVideo(job, videoPath, audioPath, loopType, cacheDir, outputPath) {
+async function buildLoopVideo(job, videoPath, audioPath, loopType, cacheDir, outputPath, payload) {
   logRuntimeEvent(job, 'buildLoopVideo STARTED');
   let finalSource = videoPath;
   if (loopType === 'Ping Pong') {
     finalSource = await buildPingPongIntermediate(videoPath, cacheDir, job);
   }
   
-  const cmd = `ffmpeg -y -stream_loop -1 -i "${finalSource}" -i "${audioPath}" -c:v libx264 -c:a copy -shortest -pix_fmt yuv420p "${outputPath}"`;
+  const { inputs, filter, map } = generateOverlayFilter(payload.objects);
+  const filterFlag = filter ? `-filter_complex "${filter}" -map "${map}"` : ``;
+
+  const cmd = `ffmpeg -y -stream_loop -1 -i "${finalSource}"${inputs} -i "${audioPath}" -c:v libx264 -c:a copy ${filterFlag} -shortest -pix_fmt yuv420p "${outputPath}"`;
   await spawnFFmpegM3(cmd, job);
   logRuntimeEvent(job, 'buildLoopVideo END');
 }
@@ -275,10 +324,10 @@ async function buildFinalRender(job, cacheDir, outputDir, payload) {
 
   await startM3Stage(job, 'Rendering Video');
   if (bg.type === 'image') {
-    await buildImageVideo(job, bgPath, compiledAudio, outVid);
+    await buildImageVideo(job, bgPath, compiledAudio, outVid, payload);
   } else if (bg.type === 'video') {
     const loopType = payload.background.loopMode || 'Normal'; // Or get from payload
-    await buildLoopVideo(job, bgPath, compiledAudio, loopType, cacheDir, outVid);
+    await buildLoopVideo(job, bgPath, compiledAudio, loopType, cacheDir, outVid, payload);
   } else {
     // Fallback if no valid background type, use a black screen
     await spawnFFmpegM3(`ffmpeg -y -f lavfi -i color=c=black:s=1920x1080:r=30 -i "${compiledAudio}" -c:v libx264 -c:a copy -shortest "${outVid}"`, job);
@@ -305,7 +354,7 @@ async function processM3Job(job) {
     if (!payload) throw new Error("Missing M3 Payload");
     
     logRuntimeEvent(job, 'fs.mkdir TRY (Cache & Output)');
-    const cacheDir = path.resolve('.mediafactory/cache/m3');
+    const cacheDir = path.join(AppPaths.getCacheBase(), 'm3');
     await fs.mkdir(cacheDir, { recursive: true });
     const outputDir = path.resolve(job.outputFolder || 'Output/M3');
     await fs.mkdir(outputDir, { recursive: true });
@@ -459,3 +508,4 @@ COMPONENT VERIFICATION
 let jobCounterM3 = 0;
 module.exports = { jobs, processM3Job, jobCounterM3 };
 
+

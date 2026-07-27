@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import M1WindowFrame from './ui/M1WindowFrame';
 import M1MechanicalPanel from './ui/M1MechanicalPanel';
 import M1Divider from './ui/M1Divider';
@@ -8,6 +8,8 @@ import M1Select from './ui/M1Select';
 import M1Button from './ui/M1Button';
 
 export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeModal }) {
+  const [showDescModal, setShowDescModal] = useState(false);
+  
   if (!slot) return null;
 
   // Determine Active Thumbnail Source
@@ -28,7 +30,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pt-[80px]">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={closeModal}></div>
 
       <M1WindowFrame className="w-[95vw] max-w-[1300px] h-[650px] animate-fade-in">
@@ -216,8 +218,8 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                                   updateM1Slot(idx, 'videoTitle', data.title || 'Unknown Title');
                                   updateM1Slot(idx, 'videoId', data.videoId);
                                   updateM1Slot(idx, 'audio', data.audioPath);
-                                  updateM1Slot(idx, 'originalDesc', "Metadata Fetched automatically via backend integration.\n\nDescription content will appear here.");
-                                  updateM1Slot(idx, 'cleanedDesc', "Metadata Fetched automatically via backend integration.\n\nDescription content will appear here.");
+                                  updateM1Slot(idx, 'originalDesc', data.description || "Metadata Fetched automatically via backend integration.\n\nDescription content will appear here.");
+                                  updateM1Slot(idx, 'cleanedDesc', data.description || "Metadata Fetched automatically via backend integration.\n\nDescription content will appear here.");
                                   updateM1Slot(idx, 'duration', data.durationDisplay || "0m 00s");
                                   let base = data.title ? data.title.replace(/[^a-zA-Z0-9 ]/g, '') : 'YouTube_Audio';
                                   if (slot?.titleStrategy === 'Original + Suffix') base += slot?.titleSuffix || '';
@@ -363,6 +365,9 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
 
               {/* ZONE 4: ACTIONS */}
               <div className="flex gap-4 shrink-0">
+                <M1Button variant="secondary" className="flex-1 !h-[48px] text-[13px]" disabled={!isReady} onClick={() => setShowDescModal(true)}>
+                  DESKRIPSI
+                </M1Button>
                 <M1Button variant="secondary" className="flex-1 !h-[48px] text-[13px]" disabled={!isReady}>
                   PREVIEW
                 </M1Button>
@@ -404,6 +409,29 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
             </M1Button>
           </div>
         </div>
+
+        {/* Description Modal Overlay */}
+        {showDescModal && (
+          <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-8">
+            <div className="bg-[#20222a] border border-[#3b3e4f] rounded-lg p-6 w-full max-w-3xl flex flex-col h-[85%] shadow-2xl">
+              <div className="flex justify-between items-center mb-4 border-b border-[#3b3e4f] pb-4">
+                <h3 className="font-['Rajdhani'] font-bold text-lg text-white uppercase tracking-widest flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[var(--m1-accent-orange)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                  YOUTUBE METADATA DESCRIPTION
+                </h3>
+                <button onClick={() => setShowDescModal(false)} className="text-gray-400 hover:text-[var(--m1-accent-orange)] transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <textarea 
+                className="flex-1 bg-[#15161c] text-gray-300 p-5 rounded-[var(--m1-radius-control)] border border-[#3b3e4f] focus:outline-none focus:border-orange-500/50 shadow-[inset_0_5px_15px_rgba(0,0,0,0.5)] custom-scroll resize-none font-['Inter'] text-sm leading-relaxed"
+                value={slot?.originalDesc || ''}
+                placeholder="No description available."
+                onChange={(e) => updateM1Slot(idx, 'originalDesc', e.target.value)}
+              />
+            </div>
+          </div>
+        )}
       </M1WindowFrame>
     </div>
   );

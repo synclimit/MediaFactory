@@ -39,9 +39,8 @@ const ChromaKeyVideo = ({ src, keyColor = '#00ff00', tolerance = 10, className, 
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         
-        // Auto-detect background color from the top-left pixel for every frame
-        // This makes it completely automatic and adapts to lighting changes!
-        const targetColor = { r: data[0], g: data[1], b: data[2] };
+        // Use keyColor if provided, otherwise fallback to top-left pixel
+        const targetColor = keyColor && keyColor !== 'auto' ? hexToRgb(keyColor) : { r: data[0], g: data[1], b: data[2] };
         
         const tol = (tolerance / 100) * 255;
         

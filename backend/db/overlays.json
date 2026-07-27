@@ -1,0 +1,274 @@
+[
+  {
+    "id": "coffee_smoke",
+    "name": "Asap Kopi",
+    "category": "smoke_steam",
+    "genres": ["lofi", "jazz", "study", "chillhop"],
+    "isAsmrSignature": false,
+    "variants": [
+      {
+        "id": "coffee_smoke_thin",
+        "label": "Tipis & Lurus",
+        "fileUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 0.5,
+        "defaultSpeed": 1.0
+      },
+      {
+        "id": "coffee_smoke_swirl",
+        "label": "Tebal & Berputar",
+        "fileUrl": "/assets/overlays/smoke_steam/coffee_smoke_swirl.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_swirl_thumb.jpg",
+        "defaultOpacity": 0.7,
+        "defaultSpeed": 1.0
+      },
+      {
+        "id": "coffee_smoke_double_cup",
+        "label": "Dua Cangkir",
+        "fileUrl": "/assets/overlays/smoke_steam/coffee_smoke_double.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_double_thumb.jpg",
+        "defaultOpacity": 0.6,
+        "defaultSpeed": 1.0
+      },
+      {
+        "id": "coffee_smoke_custom_mov",
+        "label": "Asap Kopi (Custom MOV)",
+        "fileUrl": "/assets/overlays/smoke_steam/smoke_1.mov",
+        "format": "mov",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 0.85,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Screen"
+      }
+    ]
+  },
+  {
+    "id": "rain_window",
+    "name": "Rintik Hujan",
+    "category": "rain_water",
+    "genres": ["ambient", "sad", "asmr", "sleep"],
+    "isAsmrSignature": false,
+    "variants": [
+      {
+        "id": "rain_window_heavy",
+        "label": "Deras",
+        "fileUrl": "/assets/overlays/rain_water/rain_window_heavy.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/rain_water/rain_window_heavy_thumb.jpg",
+        "defaultOpacity": 0.6,
+        "defaultSpeed": 1.0
+      },
+      {
+        "id": "rain_window_light",
+        "label": "Gerimis",
+        "fileUrl": "/assets/overlays/rain_water/rain_window_light.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/rain_water/rain_window_light_thumb.jpg",
+        "defaultOpacity": 0.4,
+        "defaultSpeed": 1.0
+      },
+      {
+        "id": "rain_window_hujan_deras",
+        "label": "Hujan Deras (Custom MP4)",
+        "fileUrl": "/assets/overlays/rain_water/hujan_deras.mp4",
+        "format": "mp4",
+        "thumbnailUrl": "/assets/overlays/rain_water/rain_window_heavy_thumb.jpg",
+        "defaultOpacity": 0.85,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Screen"
+      },
+      {
+        "id": "rain_window_hujan_deras_alpha",
+        "label": "Hujan Deras (WebM Alpha)",
+        "fileUrl": "/assets/overlays/rain_water/hujan_deras_alpha.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/rain_water/rain_window_heavy_thumb.jpg",
+        "defaultOpacity": 0.9,
+        "defaultSpeed": 1.0
+      },
+      {
+        "id": "rain_window_hujan_deras_webm",
+        "label": "Hujan Deras (WebM Standard)",
+        "fileUrl": "/assets/overlays/rain_water/hujan_deras.webm",
+        "format": "webm",
+        "thumbnailUrl": "/assets/overlays/rain_water/rain_window_heavy_thumb.jpg",
+        "defaultOpacity": 0.85,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Screen"
+      }
+    ]
+  },
+  {
+    "id": "water_drip",
+    "name": "Tetesan Air",
+    "category": "asmr_specific",
+    "genres": ["asmr", "sleep", "ambient"],
+    "isAsmrSignature": true,
+    "variants": [
+      {
+        "id": "water_drip_closeup",
+        "label": "Close-up Ripple",
+        "fileUrl": "/assets/overlays/asmr_specific/water_drip_closeup.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/asmr_specific/water_drip_closeup_thumb.jpg",
+        "defaultOpacity": 0.4,
+        "defaultSpeed": 0.7
+      },
+      {
+        "id": "water_drip_slow",
+        "label": "Sangat Lambat",
+        "fileUrl": "/assets/overlays/asmr_specific/water_drip_slow.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/asmr_specific/water_drip_slow_thumb.jpg",
+        "defaultOpacity": 0.5,
+        "defaultSpeed": 0.5
+      }
+    ]
+  },
+  {
+    "id": "feather_sway",
+    "name": "Bulu Bergoyang",
+    "category": "asmr_specific",
+    "genres": ["asmr", "sleep"],
+    "isAsmrSignature": true,
+    "variants": [
+      {
+        "id": "feather_sway_soft",
+        "label": "Lembut",
+        "fileUrl": "/assets/overlays/asmr_specific/feather_sway_soft.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/asmr_specific/feather_sway_soft_thumb.jpg",
+        "defaultOpacity": 0.3,
+        "defaultSpeed": 0.8
+      },
+      {
+        "id": "feather_sway_heavy",
+        "label": "Tegas",
+        "fileUrl": "/assets/overlays/asmr_specific/feather_sway_heavy.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/asmr_specific/feather_sway_heavy_thumb.jpg",
+        "defaultOpacity": 0.5,
+        "defaultSpeed": 1.0
+      }
+    ]
+  },
+  {
+    "id": "warm_candle",
+    "name": "Api Lilin",
+    "category": "fire_light",
+    "genres": ["ambient", "acoustic", "sleep"],
+    "isAsmrSignature": false,
+    "variants": [
+      {
+        "id": "warm_candle_single",
+        "label": "Tunggal",
+        "fileUrl": "/assets/overlays/fire_light/warm_candle_single.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/fire_light/warm_candle_single_thumb.jpg",
+        "defaultOpacity": 0.6,
+        "defaultSpeed": 1.0
+      },
+      {
+        "id": "warm_candle_triple",
+        "label": "Tiga Jejer",
+        "fileUrl": "/assets/overlays/fire_light/warm_candle_triple.webm",
+        "format": "webm_alpha",
+        "thumbnailUrl": "/assets/overlays/fire_light/warm_candle_triple_thumb.jpg",
+        "defaultOpacity": 0.8,
+        "defaultSpeed": 1.0
+      }
+    ]
+  },
+  {
+    "id": "procedural_speaker",
+    "name": "Speaker Bulat (Procedural)",
+    "category": "procedural_audio",
+    "genres": ["lofi", "ambient", "edm", "jazz", "asmr", "sleep"],
+    "isAsmrSignature": false,
+    "variants": [
+      {
+        "id": "procedural_speaker_studio",
+        "label": "1. Studio Reference (Classic Dome)",
+        "fileUrl": "procedural://speaker?model=studio",
+        "format": "procedural",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 1.0,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Normal"
+      },
+      {
+        "id": "procedural_speaker_kevlar",
+        "label": "2. Inverted Concave & 8 Bolts (Charcoal)",
+        "fileUrl": "procedural://speaker?model=inverted",
+        "format": "procedural",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 1.0,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Normal"
+      },
+      {
+        "id": "procedural_speaker_titanium",
+        "label": "3. Hex Carbon Fiber & Rivets (Graphite)",
+        "fileUrl": "procedural://speaker?model=carbon",
+        "format": "procedural",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 1.0,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Normal"
+      },
+      {
+        "id": "procedural_speaker_redbeast",
+        "label": "4. Dual-Surround Extreme Excursion (Deep Black)",
+        "fileUrl": "procedural://speaker?model=dual",
+        "format": "procedural",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 1.0,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Normal"
+      },
+      {
+        "id": "procedural_speaker_blue",
+        "label": "5. Flat-Piston Honeycomb Disc (Matte Black)",
+        "fileUrl": "procedural://speaker?model=flat",
+        "format": "procedural",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 1.0,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Normal"
+      },
+      {
+        "id": "procedural_speaker_white",
+        "label": "6. Turbofan Spoked Heavy-Duty (Gunmetal)",
+        "fileUrl": "procedural://speaker?model=turbofan",
+        "format": "procedural",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 1.0,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Normal"
+      },
+      {
+        "id": "procedural_speaker_rgb",
+        "label": "7. RGB LED Ring (Cyberpunk)",
+        "fileUrl": "procedural://speaker?model=rgb_ring",
+        "format": "procedural",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 1.0,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Normal"
+      },
+      {
+        "id": "procedural_speaker_neon",
+        "label": "8. Glowing White Neon (Clean & Bright)",
+        "fileUrl": "procedural://speaker?model=neon_white",
+        "format": "procedural",
+        "thumbnailUrl": "/assets/overlays/smoke_steam/coffee_smoke_thin_thumb.jpg",
+        "defaultOpacity": 1.0,
+        "defaultSpeed": 1.0,
+        "defaultBlend": "Normal"
+      }
+    ]
+  }
+]

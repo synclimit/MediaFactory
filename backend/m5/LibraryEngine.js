@@ -1,10 +1,11 @@
 const fs = require('fs/promises');
 const fsSync = require('fs');
 const path = require('path');
+const AppPaths = require('../system/AppPaths');
 
 class LibraryEngine {
     constructor() {
-        this.cachePath = path.resolve('.mediafactory/cache/m5');
+        this.cachePath = path.join(AppPaths.getCacheBase(), 'm5');
         this.stateFile = path.join(this.cachePath, 'library_state.json');
         this.state = {
             components: {}

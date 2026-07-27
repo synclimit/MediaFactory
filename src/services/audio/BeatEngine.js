@@ -576,6 +576,11 @@ class BeatEngine {
         }
 
         const tStart = performance.now();
+        
+        if (isPlaying && !window.hasStartedCalibrationAuto && window.startCalibrationLog) {
+            window.hasStartedCalibrationAuto = true;
+            window.startCalibrationLog();
+        }
         const dtMs   = Math.min(tStart - this.lastTime, 100); // clamp: max 100ms Δt
         const dt     = dtMs * 1e-3;
         this.lastTime = tStart;
@@ -693,6 +698,17 @@ class BeatEngine {
         this.state.features.isSilence        = feat.isSilence;
         this.state.features.density          = feat.density;
 
+        if (window.isRecordingCalibration) {
+            window.beatCalibrationLog.push({
+                time: tStart,
+                beatPhase: tr.beatPhase,
+                bpm: tr.bpm,
+                confidence: tr.confidence,
+                softLockTriggered: tr.softLockTriggered,
+                rawEnergy: feat.energy
+            });
+        }
+
         // ── Step 9: Notify Subscribers ────────────────────────────────────────
         const tPub = performance.now();
         this._queue.flush(this.beatSubscribers);
@@ -722,3 +738,18 @@ if (typeof window !== 'undefined') {
     window.beatEngine = beatEngine;
 }
 export { beatEngine };
+
+window.startCalibrationLog = () => {
+    window.beatCalibrationLog = [];
+    window.isRecordingCalibration = true;
+    console.log("⏺ Calibration Log STARTED (Auto)! Merekam selama 15 detik...");
+    setTimeout(() => {
+        window.isRecordingCalibration = false;
+        console.log("⏹ Selesai! Mengirim data ke log receiver Gemini...");
+        fetch('http://localhost:13337', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(window.beatCalibrationLog)
+        }).then(() => console.log("✅ Data berhasil dikirim!"));
+    }, 15000);
+};

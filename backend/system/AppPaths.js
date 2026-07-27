@@ -31,6 +31,16 @@ class AppPaths {
         this.diagnosticsDir = path.join(userDataPath, 'Diagnostics');
         this.cacheDir = path.join(userDataPath, 'Cache');
         this.outputDir = documentsPath;
+        this.settingsFile = path.join(userDataPath, 'system_settings.json');
+
+        if (fs.existsSync(this.settingsFile)) {
+            try {
+                const settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8'));
+                if (settings.cacheDir) {
+                    this.cacheDir = settings.cacheDir;
+                }
+            } catch (e) { console.error('Failed to load system settings:', e); }
+        }
 
         this._ensureDirs();
     }
@@ -47,6 +57,26 @@ class AppPaths {
     getDiagnosticsBase() { return this.diagnosticsDir; }
     getCacheBase() { return this.cacheDir; }
     getOutputBase() { return this.outputDir; }
+
+    setCacheBase(newPath) {
+        if (!newPath) return false;
+        this.cacheDir = newPath;
+        if (!fs.existsSync(this.cacheDir)) {
+            fs.mkdirSync(this.cacheDir, { recursive: true });
+        }
+        try {
+            let settings = {};
+            if (fs.existsSync(this.settingsFile)) {
+                settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8'));
+            }
+            settings.cacheDir = newPath;
+            fs.writeFileSync(this.settingsFile, JSON.stringify(settings, null, 2));
+            return true;
+        } catch (e) {
+            console.error('Failed to save system settings:', e);
+            return false;
+        }
+    }
     
     // For specific modules
     getAmbientOutputDir() {
@@ -56,20 +86,23 @@ class AppPaths {
     }
 
     getFFmpegPath() {
+        let p;
         if (this.isElectron) {
-            // Dalam mode Electron, asumsi ffmpeg.exe ada di folder instalasi (resources/backend/ffmpeg)
-            // Namun, untuk amannya, kita baca dari __dirname (yang akan berada di resources/app.asar/backend/system)
-            return path.join(__dirname, '..', 'ffmpeg', 'ffmpeg.exe');
+            p = path.join(__dirname, '..', 'ffmpeg', 'ffmpeg.exe');
+        } else {
+            p = path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe');
         }
-        // Dalam mode dev, baca dari folder backend/ffmpeg
-        return path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe');
+        return require('fs').existsSync(p) ? p : 'ffmpeg';
     }
 
     getFFprobePath() {
+        let p;
         if (this.isElectron) {
-            return path.join(__dirname, '..', 'ffmpeg', 'ffprobe.exe');
+            p = path.join(__dirname, '..', 'ffmpeg', 'ffprobe.exe');
+        } else {
+            p = path.join(process.cwd(), 'backend', 'ffmpeg', 'ffprobe.exe');
         }
-        return path.join(process.cwd(), 'backend', 'ffmpeg', 'ffprobe.exe');
+        return require('fs').existsSync(p) ? p : 'ffprobe';
     }
 }
 

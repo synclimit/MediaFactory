@@ -1,0 +1,120 @@
+                        {getIntroProp('visible', false) && (
+                          <div className="flex flex-col gap-2 mt-1 p-2 bg-black/20 border border-[#333] rounded">
+                            <select className="m4-input-glass h-7 text-[10px]" value={getIntroProp('introStyle', 'Focus Pull (Blur)')} onChange={e => updateIntroProp('introStyle', e.target.value)}>
+                              <option>Focus Pull (Blur)</option>
+                              <option>Fade from Black</option>
+                              <option>Fade from White</option>
+                              <option>Cinematic Vignette</option>
+                              <option>Effect Blur</option>
+                              <option>Paragraph (Text)</option>
+                            </select>
+                            
+                            {getIntroProp('introStyle', 'Focus Pull (Blur)') !== 'Paragraph (Text)' && (
+                                <select className="m4-input-glass h-7 text-[10px]" value={getIntroProp('introDuration', '3s')} onChange={e => updateIntroProp('introDuration', e.target.value)}>
+                                    <option>2s</option><option>3s</option><option>4s</option><option>5s</option><option>6s</option><option>8s</option><option>10s</option>
+                                </select>
+                            )}
+                            
+                            {getIntroProp('introStyle', 'Focus Pull (Blur)') === 'Effect Blur' ? (
+                                <>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] text-gray-400">Blur Intensity</label>
+                                        <input type="range" className="accent-orange-500" min="0" max="100" value={getIntroProp('intensity', 40)} onChange={e => updateIntroProp('intensity', Number(e.target.value))} />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] text-gray-400">Dark Intensity</label>
+                                        <input type="range" className="accent-orange-500" min="0" max="100" value={getIntroProp('darkIntensity', 100)} onChange={e => updateIntroProp('darkIntensity', Number(e.target.value))} />
+                                    </div>
+                                </>
+                            ) : getIntroProp('introStyle', 'Focus Pull (Blur)') === 'Paragraph (Text)' ? (
+                                <>
+                                    <div className="flex flex-col gap-1 mt-1">
+                                        <label className="text-[10px] text-gray-400">Bg Dark Intensity</label>
+                                        <input type="range" className="accent-orange-500" min="0" max="100" value={getIntroProp('darkIntensity', 100)} onChange={e => updateIntroProp('darkIntensity', Number(e.target.value))} />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] text-gray-400">Bg Blur Intensity</label>
+                                        <input type="range" className="accent-orange-500" min="0" max="100" value={getIntroProp('blurIntensity', 40)} onChange={e => updateIntroProp('blurIntensity', Number(e.target.value))} />
+                                    </div>
+                                    
+                                    <div className="flex flex-col gap-1 mt-1">
+                                        <label className="text-[10px] text-gray-400">Text Transition</label>
+                                        <select className="m4-input-glass h-7 text-[10px]" value={getIntroProp('textTransition', 'Fade In/Out')} onChange={e => updateIntroProp('textTransition', e.target.value)}>
+                                            <option>Handwriting (Sweep)</option>
+                                            <option>Focus Pull (Text)</option>
+                                            <option>Cinematic Tracking</option>
+                                            <option>Fade In/Out</option>
+                                            <option>Typewriter</option>
+                                            <option>Slide Up</option>
+                                            <option>Zoom In</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] text-gray-400">Main Video Transition</label>
+                                        <select className="m4-input-glass h-7 text-[10px]" value={getIntroProp('mainTransition', 'Fade to Video')} onChange={e => updateIntroProp('mainTransition', e.target.value)}>
+                                            <option>Fade to Video</option>
+                                            <option>Flash White</option>
+                                            <option>Blur Reveal</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] text-gray-400">Total Paragraphs</label>
+                                        <select className="m4-input-glass h-7 text-[10px]" value={getIntroProp('paragraphCount', 1).toString()} onChange={e => {
+                                            const count = Number(e.target.value);
+                                            updateIntroProp('paragraphCount', count);
+                                        }}>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] text-gray-400">Duration per Paragraph</label>
+                                        <select className="m4-input-glass h-7 text-[10px]" value={getIntroProp('paragraphDuration', '5s')} onChange={e => updateIntroProp('paragraphDuration', e.target.value)}>
+                                            <option>3s</option><option>4s</option><option>5s</option><option>6s</option><option>8s</option><option>10s</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="mt-3 mb-1 border-t border-white/[0.05] pt-2">
+                                      <span className="text-[9px] font-bold text-orange-500 mb-2 block tracking-wider uppercase">TEXT CONTENT</span>
+                                      
+                                      {[...Array(getIntroProp('paragraphCount', 1))].map((_, i) => (
+                                          <textarea 
+                                            key={i}
+                                            className="w-full bg-[#11131a] border border-[#222] rounded p-2 text-[11px] text-gray-300 resize-none h-[50px] outline-none focus:border-orange-500 mb-2"
+                                            placeholder={`Paragraf ${i + 1}...`}
+                                            value={getIntroProp(`introText${i+1}`, '')}
+                                            onChange={e => updateIntroProp(`introText${i+1}`, e.target.value)}
+                                          />
+                                      ))}
+                                    </div>
+
+                                    <div className="flex justify-between items-center text-[10px] text-gray-300 mb-1">
+                                      <span>Text Color</span>
+                                      <input type="color" value={getIntroProp('introTextColor', '#ffffff')} onChange={e => updateIntroProp('introTextColor', e.target.value)} className="w-6 h-6 bg-transparent border-none cursor-pointer" />
+                                    </div>
+                                    
+                                    <select className="m4-input-glass h-7 text-[10px] mb-1" value={getIntroProp('introFontFamily', 'Inter')} onChange={e => updateIntroProp('introFontFamily', e.target.value)}>
+                                      <option>Great Vibes</option><option>Dancing Script</option><option>Pacifico</option><option>Playball</option><option>Inter</option><option>Oswald</option><option>Bebas Neue</option>
+                                    </select>
+                                    
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] text-gray-400">Font Size</label>
+                                        <input type="range" className="accent-orange-500" min="10" max="100" value={getIntroProp('introFontSize', 32)} onChange={e => updateIntroProp('introFontSize', Number(e.target.value))} />
+                                    </div>
+                                    
+                                    <select className="m4-input-glass h-7 text-[10px]" value={getIntroProp('introTextAlign', 'center')} onChange={e => updateIntroProp('introTextAlign', e.target.value)}>
+                                      <option>left</option><option>center</option><option>right</option>
+                                    </select>
+                                </>
+                            ) : (
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-[10px] text-gray-400">Effect Intensity</label>
+                                    <input type="range" className="accent-orange-500" min="0" max="100" value={getIntroProp('intensity', 40)} onChange={e => updateIntroProp('intensity', Number(e.target.value))} />
+                                </div>
+                            )}
+                          </div>
+                        )}

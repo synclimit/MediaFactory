@@ -19,10 +19,18 @@ export default function ManualSlicer({ uri, titles = [], duration = 0, onExport 
   const [markers, setMarkers] = useState([]);
   const [customTitles, setCustomTitles] = useState(titles);
   
+  // Dragging states
+  const [isDraggingTimeline, setIsDraggingTimeline] = useState(false);
+  const [draggingMarkerIdx, setDraggingMarkerIdx] = useState(null);
+  const wasPlayingRef = useRef(false);
+  const markerClickStart = useRef({ x: 0, time: 0 });
+  
   const audioRef = useRef(null);
   const timelineRef = useRef(null);
   const rafRef = useRef(null);
 
+  const [audioUrl, setAudioUrl] = useState('');
+  
   // Initialize markers evenly spaced based on titles length
   useEffect(() => {
     if (titles.length > 0 && audioDuration > 0 && markers.length === 0) {
@@ -63,10 +71,8 @@ export default function ManualSlicer({ uri, titles = [], duration = 0, onExport 
         });
         
         if (mounted) {
+          setAudioUrl(`/api/m2/stream?uri=${encodeURIComponent(uri)}`);
           setStatus('ready');
-          if (audioRef.current) {
-            audioRef.current.src = `/api/m2/stream?uri=${encodeURIComponent(uri)}`;
-          }
         }
       } catch (err) {
         if (mounted) setStatus('error');
@@ -81,7 +87,7 @@ export default function ManualSlicer({ uri, titles = [], duration = 0, onExport 
   }, [uri]);
 
   const updateTime = () => {
-    if (audioRef.current) {
+    if (audioRef.current && !isDraggingTimeline) {
       setCurrentTime(audioRef.current.currentTime);
       rafRef.current = requestAnimationFrame(updateTime);
     }
@@ -99,20 +105,80 @@ export default function ManualSlicer({ uri, titles = [], duration = 0, onExport 
     setIsPlaying(!isPlaying);
   };
 
-  const handleTimelineClick = (e) => {
-    if (!timelineRef.current || status !== 'ready') return;
+  const handleTimelinePointerDown = (e) => {
+    if (!timelineRef.current || status !== 'ready' || e.target.closest('.marker-element')) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsDraggingTimeline(true);
+    
+    const rect = timelineRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const newTime = percentage * audioDuration;
+    setCurrentTime(newTime);
+    
+    if (audioRef.current && Number.isFinite(newTime) && !isNaN(newTime)) {
+      try { audioRef.current.currentTime = newTime; } catch(err){}
+    }
+  };
+
+  const handleTimelinePointerMove = (e) => {
+    if (!isDraggingTimeline || !timelineRef.current) return;
+    const rect = timelineRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const newTime = percentage * audioDuration;
+    setCurrentTime(newTime);
+    
+    if (audioRef.current && Number.isFinite(newTime) && !isNaN(newTime)) {
+      try { audioRef.current.currentTime = newTime; } catch(err){}
+    }
+  };
+
+  const handleTimelinePointerUp = (e) => {
+    if (!isDraggingTimeline) return;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    
+    // Prevent the jump-back glitch by delaying the release of the drag state
+    setTimeout(() => setIsDraggingTimeline(false), 100);
+  };
+
+  const handleMarkerPointerDown = (e, idx) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDraggingMarkerIdx(idx);
+    markerClickStart.current = { x: e.clientX, time: Date.now() };
+  };
+
+  const handleMarkerPointerMove = (e) => {
+    if (draggingMarkerIdx === null || !timelineRef.current) return;
     const rect = timelineRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, x / rect.width));
     const newTime = percentage * audioDuration;
     
-    if (audioRef.current && Number.isFinite(newTime) && !isNaN(newTime)) {
-      try {
-        audioRef.current.currentTime = newTime;
-        setCurrentTime(newTime);
-      } catch (err) {}
-    }
+    setMarkers(prev => {
+      const updated = [...prev];
+      updated[draggingMarkerIdx] = newTime;
+      return updated;
+    });
   };
+
+  const handleMarkerPointerUp = (e) => {
+    if (draggingMarkerIdx === null) return;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    
+    const isClick = Math.abs(e.clientX - markerClickStart.current.x) < 5 && (Date.now() - markerClickStart.current.time) < 300;
+    
+    if (isClick) {
+      removeMarker(draggingMarkerIdx);
+    } else {
+      setMarkers(prev => [...prev].sort((a,b) => a - b));
+    }
+    
+    setDraggingMarkerIdx(null);
+  };
+
+  const [isDetecting, setIsDetecting] = useState(false);
 
   const addMarker = () => {
     if (currentTime > 0 && currentTime < audioDuration) {
@@ -121,6 +187,23 @@ export default function ManualSlicer({ uri, titles = [], duration = 0, onExport 
         return updated;
       });
     }
+  };
+
+  const autoDetectSilences = async () => {
+    if (!uri) return;
+    setIsDetecting(true);
+    try {
+      const res = await fetch(`/api/m2/splitter/detect-silence?uri=${encodeURIComponent(uri)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.markers && data.markers.length > 0) {
+          setMarkers(data.markers);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to auto-detect silences', err);
+    }
+    setIsDetecting(false);
   };
 
   const removeMarker = (index) => {
@@ -179,6 +262,7 @@ export default function ManualSlicer({ uri, titles = [], duration = 0, onExport 
 
       <audio 
         ref={audioRef} 
+        src={audioUrl}
         onLoadedMetadata={(e) => {
           // Only update if duration from props was 0, or if the new duration is valid
           if (duration === 0 && Number.isFinite(e.target.duration) && !isNaN(e.target.duration) && e.target.duration !== Infinity) {
@@ -189,13 +273,16 @@ export default function ManualSlicer({ uri, titles = [], duration = 0, onExport 
       />
 
       {/* Scrubber Area */}
-      <div className="relative w-full h-24 bg-gray-900 rounded-lg border border-white/10 overflow-hidden cursor-crosshair group"
+      <div className="relative w-full h-24 bg-gray-900 rounded-lg border border-white/10 overflow-hidden cursor-crosshair group select-none"
+           style={{ background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 4px), #111827' }}
            ref={timelineRef}
-           onClick={handleTimelineClick}>
+           onPointerDown={handleTimelinePointerDown}
+           onPointerMove={handleTimelinePointerMove}
+           onPointerUp={handleTimelinePointerUp}>
         
         {/* Playhead */}
         <div 
-          className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 pointer-events-none transition-all duration-75"
+          className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20 pointer-events-none"
           style={{ left: `${(currentTime / audioDuration) * 100}%` }}
         />
 
@@ -203,15 +290,13 @@ export default function ManualSlicer({ uri, titles = [], duration = 0, onExport 
         {markers.map((markerTime, idx) => (
           <div 
             key={idx}
-            className="absolute top-0 bottom-0 w-0.5 bg-cyan-400 z-10 cursor-col-resize hover:bg-cyan-300 transition-colors group-hover:opacity-100"
+            className="absolute top-0 bottom-0 w-0.5 bg-cyan-400 z-10 cursor-ew-resize hover:bg-cyan-300 transition-colors group-hover:opacity-100 marker-element touch-none"
             style={{ left: `${(markerTime / audioDuration) * 100}%` }}
-            onClick={(e) => {
-              e.stopPropagation();
-              // In a full implementation we'd support drag. For now, click to remove.
-              removeMarker(idx);
-            }}
+            onPointerDown={(e) => handleMarkerPointerDown(e, idx)}
+            onPointerMove={handleMarkerPointerMove}
+            onPointerUp={handleMarkerPointerUp}
           >
-            <div className="absolute top-1 -translate-x-1/2 bg-cyan-500 text-black text-[9px] font-bold px-1 rounded">
+            <div className="absolute top-1 -translate-x-1/2 bg-cyan-500 text-black text-[9px] font-bold px-1 rounded pointer-events-none">
               {idx + 1}
             </div>
           </div>
@@ -264,6 +349,16 @@ export default function ManualSlicer({ uri, titles = [], duration = 0, onExport 
             className="ml-2 px-3 py-1.5 text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-md transition-colors"
           >
             + Add Marker at Playhead
+          </button>
+
+          <button 
+            onClick={autoDetectSilences}
+            disabled={isDetecting}
+            className={`ml-2 px-3 py-1.5 text-xs rounded-md transition-colors ${
+              isDetecting ? 'bg-amber-500/10 text-amber-500/50 cursor-not-allowed' : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-400'
+            }`}
+          >
+            {isDetecting ? 'Detecting...' : '✨ Auto-Detect Silences'}
           </button>
         </div>
 

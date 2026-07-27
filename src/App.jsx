@@ -66,6 +66,8 @@ export default function App() {
   const [m5Queue, setM5Queue] = useState([]);
   
   const [isApiKeysModalOpen, setIsApiKeysModalOpen] = useState(false);
+  const [isCacheModalOpen, setIsCacheModalOpen] = useState(false);
+  const [cachePathSetting, setCachePathSetting] = useState('');
   const [apiKeys, setApiKeys] = useState(() => {
     try {
       const stored = localStorage.getItem('mf_api_keys');
@@ -85,6 +87,28 @@ export default function App() {
 
   const [appState, setAppState] = useState('SPLASH'); // 'SPLASH' | 'PICKER' | 'WIZARD' | 'EDITOR'
   const [activeWorkspace, setActiveWorkspace] = useState(null);
+  const [hardwareStats, setHardwareStats] = useState({ cpu: 12, gpu: 18, ram: 32 });
+
+  useEffect(() => {
+    let interval;
+    if (appState === 'EDITOR') {
+      interval = setInterval(() => {
+        fetch('/api/v1/system/telemetry')
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.data) {
+              setHardwareStats({
+                cpu: typeof data.data.cpu === 'number' ? data.data.cpu : 0,
+                gpu: typeof data.data.gpu === 'number' ? data.data.gpu : 0,
+                ram: typeof data.data.ram === 'number' ? data.data.ram : 0,
+              });
+            }
+          })
+          .catch(() => {});
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [appState]);
   const [isWorkspaceDrawerOpen, setIsWorkspaceDrawerOpen] = useState(false);
   const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
 
@@ -276,7 +300,9 @@ export default function App() {
             baseName += slot.titleSuffix;
           }
           if (slot.titleStrategy !== 'Custom') {
-            slot.outputName = `${baseName}.mp4`;
+            // Sanitize filename for FFmpeg safety before appending .mp4
+            const cleanBase = baseName.replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, ' ').trim();
+            slot.outputName = `${cleanBase}.mp4`;
           }
         } else {
           slot.outputName = '';
@@ -381,7 +407,7 @@ export default function App() {
           uri: t.uri || t.youtubeUrl || t.localPath || t.title
         })),
         outputFiles: [plan.renderName + '.mp3'],
-        outputFolder: 'Output/AudioMix/',
+        outputFolder: `${workspaceConfig?.output?.main || 'Output'}/M2/Audio Compiler/`,
         estTimeSec: Math.round(plan.totalDurationSec * 0.1),
         estStorageMb: Math.round(plan.totalDurationSec * 0.2),
         totalDurationSec: plan.totalDurationSec,
@@ -454,8 +480,8 @@ export default function App() {
 
   // --- MODE 4 INPUTS ---
   const [m4BgVideo, setM4BgVideo] = useState({ filename: 'ambient_forest.mp4', duration: 10, resolution: '1080p', fps: 30, loopMode: 'Seamless', brightness: 100, contrast: 100, saturation: 100, temperature: 0, blur: 0, sharpen: 0, vignette: 0, cameraMotion: 'Static' });
-  const [m4AmbientAudio, setM4AmbientAudio] = useState({ filename: 'rain_sound.mp3', duration: 60, volume: 100, mute: false, solo: false, loop: true });
-  const [m4RelaxMusic, setM4RelaxMusic] = useState([{ filename: 'lofi_track_1.mp3', duration: 180 }]);
+  const [m4AmbientAudio, setM4AmbientAudio] = useState([]);
+  const [m4RelaxMusic, setM4RelaxMusic] = useState([]);
   const [m4Objects, setM4Objects] = useState([
     { id: 'm4-bg', canvasMode: 'composer', type: 'background', name: 'Background Video', x: 0, y: 0, width: 1920, height: 1080, rotation: 0, opacity: 100, visible: true, locked: true, layer: 0 },
     { id: 'm4-txt', canvasMode: 'composer', type: 'text', name: 'Ambient Title', x: 100, y: 100, width: 800, height: 100, rotation: 0, opacity: 100, visible: true, locked: false, layer: 1 }
@@ -599,6 +625,48 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    fetch('/api/v1/system/cache-path')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.data?.cacheDir) {
+          setCachePathSetting(data.data.cacheDir);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveCachePath = (newPath) => {
+    fetch('/api/v1/system/cache-path', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cacheDir: newPath })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.data?.cacheDir) {
+          setCachePathSetting(data.data.cacheDir);
+          addNotification('Cache Path Updated', `Storage path changed to: ${data.data.cacheDir}`);
+          setIsCacheModalOpen(false);
+        } else {
+          alert('Failed to update cache path: ' + (data.error?.message || 'Unknown error'));
+        }
+      })
+      .catch(err => alert('Error: ' + err.message));
+  };
+
+  const handleBrowseCachePath = async () => {
+    try {
+      const res = await fetch('/api/v1/m5/dialog/folder', { method: 'POST' });
+      const data = await res.json();
+      if (data && (data.path || data.success)) {
+        setCachePathSetting(data.path || cachePathSetting);
+      }
+    } catch (e) {
+      console.error('Folder browse failed:', e);
+    }
+  };
+
   // ─── Platform Foundation Bootstrap (TASK_00) ─────────────────────────────
   // Runs once on mount. Ensures default workspace + user exist.
   // SAFE: Zero impact on M1/M2/M3 queue or rendering logic.
@@ -631,7 +699,18 @@ export default function App() {
     'Loading Runtime...'
   ];
 
-  const handleWorkspaceSelected = (name) => {
+  const [workspaceConfig, setWorkspaceConfig] = useState(null);
+
+  const handleWorkspaceSelected = async (name) => {
+    try {
+        const res = await fetch(`/api/v1/system/workspace/${name}/settings`);
+        const data = await res.json();
+        if (data.success && data.data) {
+            setWorkspaceConfig(data.data.data || {});
+        }
+    } catch (e) {
+        console.error(e);
+    }
     setActiveWorkspace(name);
     setAppState('WORKSPACE_LOADING');
     setLoadingStep(0);
@@ -937,7 +1016,7 @@ export default function App() {
         newWarnings.push({ id: 'w_vid_used', text: `⚠ Asset was used previously: Video "${m1VideoFile}" already exists in the queue.` });
       }
       m1Slots.filter(Boolean).forEach((aud, i) => {
-        const isAudUsed = queue.some(q => q.tracks.includes(aud));
+        const isAudUsed = queue.some(q => q.tracks?.includes(aud));
         if (isAudUsed) {
           newWarnings.push({ id: `w_aud_used_${i}`, text: `⚠ Asset was used previously: Audio "${aud}" was processed in a prior job.` });
         }
@@ -950,7 +1029,7 @@ export default function App() {
         }
       });
       m3AudioTracks.forEach((aud, i) => {
-        const isAudUsed = queue.some(q => q.tracks.includes(aud));
+        const isAudUsed = queue.some(q => q.tracks?.includes(aud));
         if (isAudUsed) {
           newWarnings.push({ id: `w_m3aud_used_${i}`, text: `⚠ Asset was used previously: Audio track "${aud}" is in active queue.` });
         }
@@ -987,7 +1066,17 @@ export default function App() {
       if (storedQueue) {
         try {
           const parsed = JSON.parse(storedQueue);
-          setQueue(Array.isArray(parsed) ? parsed : []);
+          if (Array.isArray(parsed)) {
+            const resumed = parsed.map(job => {
+              if (['Rendering', 'Processing', 'Downloading', 'Converting', 'Splitting'].includes(job.status)) {
+                return { ...job, status: 'Waiting', progress: 0, backendJobId: undefined, error: null, failureReason: null };
+              }
+              return job;
+            });
+            setQueue(resumed);
+          } else {
+            setQueue([]);
+          }
         } catch (e) {
           setQueue([]);
         }
@@ -1240,9 +1329,9 @@ export default function App() {
         const d = new Date();
         const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;
         const rid = `RID_${dateStr}_${uuid}`;
-        const safeTitle = slot.outputName.replace('.mp4', '').replace(/[^a-zA-Z0-9]/g, '_');
+        const safeTitle = slot.outputName.replace('.mp4', '').replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, ' ').trim();
         const yyyymmdd = d.toISOString().split('T')[0];
-        const outFolder = `Output/M1/${yyyymmdd}/${rid}_${safeTitle}/`;
+        const outFolder = `${workspaceConfig?.output?.main || 'Output'}/M1/${yyyymmdd}/${rid}_${safeTitle.replace(/\s+/g, '_')}/`;
         
         const metadataPayload = {
           title: slot.videoTitle || slot.outputName.replace('.mp4', ''),
@@ -1319,23 +1408,48 @@ export default function App() {
       // PIPELINE_AFTER log is printed inside handleAddSelectedToPipeline due to async nature of state, 
       // but we can log the length difference based on selectedPlans.length.
       console.log('PIPELINE_AFTER', queue.length + reviewDialog.data.selectedPlans.length);
-    } else if (activeMode === 'Mode 3') {
-      // Configuration generation is now handled by handleGenerateM3Configuration for Sprint 01
+    } else if (activeMode === 'Mode 4') {
+      // Configuration generation is handled by Review Dialog Confirm
+      if (reviewDialog.data && reviewDialog.data.m4JobPayload) {
+        const payload = reviewDialog.data.m4JobPayload;
+        setQueue(prev => [...prev, {
+          ...payload,
+          id: Date.now().toString(),
+          mode: 'Mode 4',
+          status: 'Waiting',
+          progress: 0
+        }]);
+        addNotification('success', 'M4 Render Job added to queue!');
+        addLog(`Added M4 Job: ${payload.renderName}`);
+        setPipelineDrawerCollapsed(false);
+      }
     }
     setReviewDialog({ isOpen: false, data: null });
   };
 
   const handleAddM4ToQueue = (m4JobPayload) => {
-    setQueue(prev => [...prev, {
-      ...m4JobPayload,
-      id: Date.now().toString(),
-      mode: 'Mode 4',
-      status: 'Waiting',
-      progress: 0
-    }]);
-    addNotification('success', 'M4 Render Job added to queue!');
-    addLog(`Added M4 Job: ${m4JobPayload.renderName}`);
-    setPipelineDrawerCollapsed(false);
+    // Open Review Dialog instead of directly queueing
+    const estTimeSec = m4JobPayload.totalDurationSec * 0.15; // Rough estimate
+    const estStorageMb = (m4JobPayload.totalDurationSec * 8000 * 1000 / 8) / (1024 * 1024); // Assuming 8Mbps video
+    
+    setReviewDialog({
+      isOpen: true,
+      data: {
+        mode: 'Mode 4',
+        projectName: m4JobPayload.renderName || 'Ambient Project',
+        profile: 'Ambient Engine V5',
+        m4JobPayload: m4JobPayload,
+        details: [
+          { label: 'Background Video', value: m4JobPayload.m4Payload.bgVideo ? m4JobPayload.m4Payload.bgVideo.name : 'None' },
+          { label: 'Ambient Audio', value: `${(m4JobPayload.m4Payload.ambientAudio || []).length} tracks` },
+          { label: 'Relax Music', value: `${(m4JobPayload.m4Payload.relaxMusic || []).length} tracks` },
+          { label: 'Output Duration', value: `${Math.round(m4JobPayload.totalDurationSec / 60)} minutes` },
+          { label: 'Est. Render Time', value: `${Math.round(estTimeSec / 60)} minutes` },
+          { label: 'Est. Storage Usage', value: `${Math.round(estStorageMb)} MB` },
+          { label: 'Output Folder Path', value: m4JobPayload.outputFolder }
+        ]
+      }
+    });
   };
 
   const handleGenerateM3Configuration = async () => {
@@ -1410,7 +1524,7 @@ export default function App() {
     // Sprint 04: Queue Submit
     const prof = profiles.find(p => p.id === m3ProfileId);
     const projName = m3OutputFilename ? m3OutputFilename.split('.')[0] : 'Project';
-    const outFolder = `Output/${projName}/`;
+    const outFolder = `${workspaceConfig?.output?.main || 'Output'}/M3/Live Composer/${projName}/`;
     
     const newJob = {
       id: 'q_' + Date.now(),
@@ -1982,15 +2096,15 @@ export default function App() {
         </div>
 
         {/* RIGHT: Stats & Profile */}
-        <div className="flex items-center gap-6">
-          {/* Hardware Stats */}
-          <div className="hidden lg:flex items-center gap-4 bg-[#050608] border border-white/5 px-4 py-1.5 rounded-full text-[10px] font-mono text-gray-400">
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_5px_rgba(249,115,22,0.8)]"></span> CPU 12%</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_5px_rgba(249,115,22,0.8)]"></span> GPU 18%</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_5px_rgba(249,115,22,0.8)]"></span> RAM 32%</span>
+        <div className="flex items-center gap-4">
+          {/* Hardware Stats (Minimalist) */}
+          <div className="hidden lg:flex items-center gap-3 px-3 py-1 bg-black/40 border border-white/5 rounded-full text-[10px] font-mono text-gray-500 transition-all duration-300">
+            <span className="flex items-center gap-1.5 w-[55px]"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.cpu) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> CPU: {parseInt(hardwareStats.cpu) || 0}%</span>
+            <span className="flex items-center gap-1.5 w-[55px]"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.gpu) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> GPU: {parseInt(hardwareStats.gpu) || 0}%</span>
+            <span className="flex items-center gap-1.5 w-[55px]"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.ram) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> RAM: {parseInt(hardwareStats.ram) || 0}%</span>
           </div>
 
-          <div className="w-px h-6 bg-white/10"></div>
+          <div className="w-px h-5 bg-white/10"></div>
 
           {/* Engine Status */}
           <div className="flex items-center gap-2">
@@ -2041,6 +2155,12 @@ export default function App() {
                     className="w-full text-left text-[10px] text-gray-300 hover:text-white hover:bg-white/5 px-2 py-1 rounded flex items-center gap-1.5 transition-colors"
                   >
                     <span className="text-[10px]">🔑</span> Manage API Keys
+                  </button>
+                  <button
+                    onClick={() => { setIsCacheModalOpen(true); setIsSettingsOpen(false); }}
+                    className="w-full text-left text-[10px] text-gray-300 hover:text-white hover:bg-white/5 px-2 py-1 rounded flex items-center gap-1.5 transition-colors"
+                  >
+                    <span className="text-[10px]">📁</span> Manage Cache Storage
                   </button>
                   <button
                     onClick={handleCheckUpdate}
@@ -2194,6 +2314,7 @@ export default function App() {
               m4ThumbnailSaved={m4ThumbnailSaved} setM4ThumbnailSaved={setM4ThumbnailSaved}
               addNotification={addNotification}
               onAddToQueue={handleAddM4ToQueue}
+              queue={queue}
             />
           )}
 
@@ -2366,6 +2487,24 @@ export default function App() {
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="text-gray-300 text-[8px] uppercase font-bold tracking-widest bg-gray-800/80 px-1 py-0.5 rounded border border-gray-600/30">{item.mode}</span>
                                 <span className="text-gray-500 text-[8px] truncate">{item.profileName}</span>
+                                {item.totalDurationSec ? (
+                                  <span className="text-emerald-400/90 text-[8px] bg-emerald-900/20 px-1 py-0.5 rounded border border-emerald-800/40 font-jetbrains ml-auto shadow-[0_0_5px_rgba(52,211,153,0.1)]">
+                                    ⏱ {Math.floor(item.totalDurationSec / 60)}m {Math.round(item.totalDurationSec % 60)}s
+                                  </span>
+                                ) : null}
+                                {(() => {
+                                   let fps = null;
+                                   if (item.mode === 'Mode 1') fps = item.selectedVideo?.metadata?.fps;
+                                   else if (item.mode === 'Mode 3') fps = item.m3RenderSettings?.fps;
+                                   else if (item.mode === 'Mode 4') fps = item.m4Payload?.bgVideo?.fps;
+                                   
+                                   if (fps) return (
+                                     <span className="text-cyan-400/90 text-[8px] bg-cyan-900/20 px-1 py-0.5 rounded border border-cyan-800/40 font-jetbrains shadow-[0_0_5px_rgba(34,211,238,0.1)]">
+                                       🎞 {fps} FPS
+                                     </span>
+                                   );
+                                   return null;
+                                })()}
                               </div>
                               {item.outputFolder && <span 
                                 className="text-blue-400/90 text-[8px] font-jetbrains mt-1 block flex items-center gap-1 cursor-pointer hover:text-blue-300 transition-colors break-all"
@@ -3294,6 +3433,64 @@ export default function App() {
           apiKeys={apiKeys}
           setApiKeys={setApiKeys}
         />
+      )}
+      {/* ─── Cache Storage Modal ─────────────────────────────────────────── */}
+      {isCacheModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-[#141820] border border-white/10 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>📁</span> Manage Cache & Storage Path
+              </h3>
+              <button
+                onClick={() => setIsCacheModalOpen(false)}
+                className="text-gray-400 hover:text-white text-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-300 leading-relaxed">
+              Configure where temporary cache files, downloads, and rendering intermediates (M1-M6) are stored on your disk.
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-gray-400 uppercase">Cache Storage Path</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={cachePathSetting}
+                  onChange={(e) => setCachePathSetting(e.target.value)}
+                  placeholder="e.g. D:\MediaFactory\.mediafactory\cache"
+                  className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={handleBrowseCachePath}
+                  className="px-3 py-2 bg-white/5 hover:bg-orange-500/20 border border-white/10 hover:border-orange-500 rounded text-xs text-gray-300 hover:text-white font-bold flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+                  title="Open folder explorer to select storage path"
+                >
+                  <span>📂</span> Browse...
+                </button>
+              </div>
+              <span className="text-[9px] text-gray-500 block mt-1">
+                All subfolders (m1, m2, m3, m4, m5, etc.) will be automatically created inside this directory.
+              </span>
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+              <button
+                onClick={() => setIsCacheModalOpen(false)}
+                className="px-3 py-1.5 rounded text-xs bg-white/5 hover:bg-white/10 text-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSaveCachePath(cachePathSetting)}
+                className="px-4 py-1.5 rounded text-xs bg-orange-500 hover:bg-orange-600 text-white font-medium shadow-lg shadow-orange-500/20 transition-all"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 <DevPanel
         isOpen={isDevPanelOpen}

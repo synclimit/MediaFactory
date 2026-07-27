@@ -21,6 +21,11 @@ export class ZoomEffect {
         this.adaptiveDecay = this.style.baseDecay;
         this.adaptiveRelease = this.style.baseRelease;
 
+        // Zero-allocation rolling window buffer (32 beats)
+        this._punchHistory = new Float32Array(32);
+        this._punchIndex = 0;
+        this._punchCount = 0;
+
         // Pre-allocated output structure
         this._output = {
             scale: this.style.baseScale,
@@ -61,13 +66,10 @@ export class ZoomEffect {
         const feel = audioDrivenState.musicalFeel;
         const liveKick = audioDrivenState.liveKick || (audioDrivenState.kick ? audioDrivenState.kick.intensity : 0) || 0;
         const liveBass = audioDrivenState.liveBass || 0;
-        const livePulse = (liveKick * 0.08) + (liveBass * 0.08);
 
         const kickTrigger = (audioDrivenState.kick && audioDrivenState.kick.justTriggered) || 
                             (audioDrivenState.beat && audioDrivenState.beat.justTriggered) || 
-                            (audioDrivenState.downbeat && audioDrivenState.downbeat.justTriggered) ||
-                            (liveKick > 0.6 && this.state === 'IDLE') ||
-                            (liveBass > 0.7 && this.state === 'IDLE');
+                            (audioDrivenState.downbeat && audioDrivenState.downbeat.justTriggered);
 
         // Auto-Calibration Mapping (zero allocations)
         // Agility inversely affects time -> high agility = shorter time
@@ -79,22 +81,46 @@ export class ZoomEffect {
         this.adaptiveDecay = this.style.baseDecay * sustainFactor;
         this.adaptiveRelease = this.style.baseRelease * sustainFactor;
         
-        // Target scale is base + dynamic range multiplied by punch and stability factors
-        const scaleRange = Math.max(0.08, this.style.maxScale - this.style.baseScale);
-        const stabilityFactor = feel.stability > 0 ? Math.min(1.0, Math.max(0.6, feel.stability)) : 1.0;
-        const punchFactor = Math.max(0.9, Math.min(2.5, feel.punch * 2.2));
-        const targetMaxScale = this.style.baseScale + (scaleRange * punchFactor * stabilityFactor) + livePulse;
+        const scaleRange = Math.max(0.0, this.style.maxScale - this.style.baseScale);
 
         // Trigger logic
         if (kickTrigger && this.state !== 'ATTACK') {
+            let targetMaxScale = this.style.maxScale;
+            
+            if (feel.punch > 0) {
+                // Rolling Window 32 beats (Zero-Allocation Circular Buffer)
+                this._punchHistory[this._punchIndex] = feel.punch;
+                this._punchIndex = (this._punchIndex + 1) % 32;
+                if (this._punchCount < 32) this._punchCount++;
+                
+                let minP = Infinity, maxP = -Infinity;
+                for (let i = 0; i < this._punchCount; i++) {
+                    const p = this._punchHistory[i];
+                    if (p < minP) minP = p;
+                    if (p > maxP) maxP = p;
+                }
+                
+                // Mencegah range collapse pas chorus: paksa minimal range 0.35
+                const effectiveMin = Math.min(minP, maxP - 0.35);
+                const range = maxP - effectiveMin;
+                const normalizedPunch = Math.max(0.0, Math.min(1.0, (feel.punch - effectiveMin) / range));
+                
+                // Punch factor maps normalized punch (0 to 1) ke (0.3 to 1.0)
+                const punchFactor = 0.3 + (normalizedPunch * 0.7);
+                const stabilityFactor = feel.stability > 0 ? Math.min(1.0, Math.max(0.6, feel.stability)) : 1.0;
+                
+                targetMaxScale = this.style.baseScale + (scaleRange * punchFactor * stabilityFactor);
+            }
+            
+            // Enforce strict upper bound from UI setting
+            this.activeMaxScale = Math.min(targetMaxScale, this.style.maxScale);
             this.state = 'ATTACK';
             this.timeInState = 0;
-            this.activeMaxScale = targetMaxScale;
         }
 
         if (this.state === 'IDLE') {
-            const targetBase = this.style.baseScale + livePulse;
-            // Apply smooth exponential return or track live pulse
+            const targetBase = this.style.baseScale;
+            // Apply smooth exponential return
             if (this.currentScale > targetBase) {
                 this.currentScale += (targetBase - this.currentScale) * (1 - Math.exp(-dt * 15));
                 if (this.currentScale - targetBase < 0.001) {

@@ -9,6 +9,7 @@ const RenderPipeline = require('../m5/RenderPipeline');
 const { PipelineEmitter, PipelineEvents } = require('../m5/core/Events');
 const DownloadEngine = require('../m5/DownloadEngine');
 const dbEngine = require('../m5/Database');
+const AppPaths = require('../system/AppPaths');
 
 const PipelineManager = require('../m5/news/pipeline/PipelineManager');
 const NewsReaderEngine = require('../m5/news/reader/NewsReaderEngine');
@@ -89,6 +90,9 @@ router.post('/api/v1/m5/dialog/file', (req, res) => {
 let sseClients = [];
 
 function broadcastSseEvent(event, data) {
+    if (event === 'queue_update') {
+        try { saveM5Queue(); } catch(e) {}
+    }
     const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     sseClients.forEach(client => {
         try {
@@ -160,8 +164,38 @@ router.get('/api/v1/m5/stream', (req, res) => {
 });
 
 // --- M5 Queue Database Setup ---
-let m5Queue = []; // In-memory queue
+let m5Queue = []; // In-memory queue with file backup
 let m5QueueCounter = 1;
+
+function saveM5Queue() {
+    try {
+        const qFile = path.join(AppPaths.getCacheBase(), 'm5_queue.json');
+        fsSync.writeFileSync(qFile, JSON.stringify(m5Queue, null, 2));
+    } catch(e) {}
+}
+
+function loadM5Queue() {
+    try {
+        const qFile = path.join(AppPaths.getCacheBase(), 'm5_queue.json');
+        if (fsSync.existsSync(qFile)) {
+            const data = JSON.parse(fsSync.readFileSync(qFile, 'utf8'));
+            if (Array.isArray(data)) {
+                m5Queue = data.map(j => {
+                    if (j.status === 'Rendering' || j.status === 'Processing') return { ...j, status: 'Ready', progress: 0 };
+                    if (j.status === 'Downloading') return { ...j, status: 'Pending', progress: 0 };
+                    return j;
+                });
+                let maxId = 0;
+                m5Queue.forEach(j => {
+                    const idNum = parseInt(j.id, 10);
+                    if (!isNaN(idNum) && idNum > maxId) maxId = idNum;
+                });
+                m5QueueCounter = maxId + 1;
+            }
+        }
+    } catch(e) {}
+}
+loadM5Queue();
 
 // M5 Global Queue API
 router.get('/api/v1/m5/queue', (req, res) => {

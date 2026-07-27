@@ -99,7 +99,7 @@ function ThumbnailPreview({ url, title, expanded = false }) {
 
 // ─── YouTube Source Row (Compact List) ────────────────────────────────────────
 
-function YouTubeSourceCard({ source, onRemove, onToggleSelect, onFetchMetadata, onUpdateCleanTitle, isFetching }) {
+function YouTubeSourceCard({ source, onRemove, onToggleSelect, onFetchMetadata, onUpdateCleanTitle, isFetching, dlStatus }) {
   const hasMetadata = source.metadataStatus === METADATA_STATUS.READY;
   const isFetchingThis = source.metadataStatus === METADATA_STATUS.FETCHING || isFetching;
   const hasFailed = source.metadataStatus === METADATA_STATUS.FAILED;
@@ -167,10 +167,22 @@ function YouTubeSourceCard({ source, onRemove, onToggleSelect, onFetchMetadata, 
         <div className="flex-1 flex items-center gap-2 overflow-hidden">
           <TypeBadge type={source.sourceType} />
           {hasMetadata ? (
-            <>
-              <span className="text-[9px] text-gray-500 truncate max-w-[100px]">{source.channelName}</span>
-              <span className="text-[9px] text-emerald-400 font-mono">{source.duration}</span>
-            </>
+            dlStatus ? (
+               <div className="flex-1 min-w-[100px] max-w-[140px] bg-black/60 rounded h-4 overflow-hidden ml-2 border border-[#3a3f58] relative shadow-inner">
+                 <div 
+                   className={`h-full ${dlStatus.status === 'extracting' ? 'bg-amber-500/80 animate-pulse w-full' : 'bg-orange-500/80 transition-all duration-300'}`} 
+                   style={{ width: dlStatus.status === 'extracting' ? '100%' : `${dlStatus.progress}%` }} 
+                 />
+                 <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold tracking-wider text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                   {dlStatus.status === 'extracting' ? 'EXTRACTING...' : `DOWNLOADING ${dlStatus.progress}%`}
+                 </span>
+               </div>
+            ) : (
+               <>
+                 <span className="text-[9px] text-gray-500 truncate max-w-[100px]">{source.channelName}</span>
+                 <span className="text-[9px] text-emerald-400 font-mono">{source.duration}</span>
+               </>
+            )
           ) : (
             <MetadataPill source={source} />
           )}
@@ -450,9 +462,20 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
   const [stats, setStats] = useState(null);
   const [bulkProgress, setBulkProgress] = useState(null);
   const [portalTarget, setPortalTarget] = useState(null);
+  const [downloadStatuses, setDownloadStatuses] = useState({});
 
   useEffect(() => {
     setPortalTarget(document.getElementById('m2-add-to-queue-portal-target'));
+    const intv = setInterval(async () => {
+      try {
+        const res = await fetch('/api/m2/yt-downloads');
+        if (res.ok) {
+          const data = await res.json();
+          setDownloadStatuses(data);
+        }
+      } catch (e) {}
+    }, 1500);
+    return () => clearInterval(intv);
   }, []);
 
   const loadSources = useCallback(async () => {
@@ -847,6 +870,7 @@ export default function SourcePoolPanel({ isDevMode = false, addLog, addNotifica
                       onFetchMetadata={handleFetchMetadata}
                       onUpdateCleanTitle={handleUpdateCleanTitle}
                       isFetching={fetchingIds.has(source.id)}
+                      dlStatus={downloadStatuses[source.youtubeUrl] || downloadStatuses[source.youtubeUrl?.replace('ytsearch:', '')]}
                     />
                   ) : (
                     <AudioSourceCard

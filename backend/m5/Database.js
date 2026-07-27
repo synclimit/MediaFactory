@@ -4,10 +4,11 @@ const fs = require('fs/promises');
 const path = require('path');
 const { DatabaseLocked } = require('./Errors');
 const DiagnosticsManager = require('../system/DiagnosticsManager');
+const AppPaths = require('../system/AppPaths');
 
 class Database {
     constructor() {
-        this.dbPath = path.resolve('.mediafactory/cache/m5');
+        this.dbPath = path.join(AppPaths.getCacheBase(), 'm5');
         this.dbFile = path.join(this.dbPath, 'production.db');
         this.db = null;
     }

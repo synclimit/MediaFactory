@@ -151,17 +151,30 @@ export class AudioDrivenRuntime {
         if (!beatEvent) return;
         
         // Use flat properties provided by BeatEngine V2 Zero-Allocation Contract
-        if (beatEvent.type === 'beat' || beatEvent.type === 'onset' || beatEvent.confidence > 0) {
-            this.channels.beat.trigger(beatEvent.confidence || beatEvent.strength || 1.0);
+        if (beatEvent.isBroadband !== undefined) {
+            // New Multi-Band Architecture
+            if (beatEvent.isBroadband || beatEvent.type === 'beat' || beatEvent.type === 'onset') {
+                this.channels.beat.trigger(beatEvent.confidence || beatEvent.strength || 1.0);
+            }
+            if (beatEvent.type === 'downbeat') {
+                this.channels.downbeat.trigger(beatEvent.confidence || beatEvent.strength || 1.0);
+            }
+            
+            if (beatEvent.isKick) this.channels.kick.trigger(beatEvent.kickStrength || 1.0);
+            if (beatEvent.isSnare) this.channels.snare.trigger(beatEvent.snareStrength || 1.0);
+            if (beatEvent.isHat) this.channels.hihat.trigger(beatEvent.hatStrength || 1.0);
+        } else {
+            // Legacy Fallback
+            if (beatEvent.type === 'beat' || beatEvent.type === 'onset' || beatEvent.confidence > 0) {
+                this.channels.beat.trigger(beatEvent.confidence || beatEvent.strength || 1.0);
+            }
+            if (beatEvent.type === 'downbeat') {
+                this.channels.downbeat.trigger(beatEvent.confidence || beatEvent.strength || 1.0);
+            }
+            if (beatEvent.kickScore > 0.5) this.channels.kick.trigger(beatEvent.strength || 1.0);
+            if (beatEvent.snareScore > 0.5) this.channels.snare.trigger(beatEvent.strength || 1.0);
+            if (beatEvent.hatScore > 0.5) this.channels.hihat.trigger(beatEvent.strength || 1.0);
         }
-        if (beatEvent.type === 'downbeat') {
-            this.channels.downbeat.trigger(beatEvent.confidence || beatEvent.strength || 1.0);
-        }
-        
-        // For individual components, use the pre-calculated classification scores from BeatClassifier
-        if (beatEvent.kickScore > 0.5) this.channels.kick.trigger(beatEvent.strength || 1.0);
-        if (beatEvent.snareScore > 0.5) this.channels.snare.trigger(beatEvent.strength || 1.0);
-        if (beatEvent.hatScore > 0.5) this.channels.hihat.trigger(beatEvent.strength || 1.0);
         
         this.energyValue = beatEvent.energy || 0;
         this.currentSpectrum = beatEvent.spectrum || null;

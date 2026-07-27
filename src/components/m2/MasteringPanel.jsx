@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MASTERING_PROFILES } from '../../entities/m2/MasteringProfileEntity.js';
 // HMR FORCE UPDATE - Remove Purple Emojis
 
@@ -83,6 +83,149 @@ const CleanUpToggle = ({ label, field, masteringSettings, setSetting }) => (
   </div>
 );
 
+const GraphicEQEditor = ({ eqBands = Array(10).fill(0), onChange }) => {
+  const [localBands, setLocalBands] = useState(eqBands);
+  const [activeBand, setActiveBand] = useState(null);
+  const draggingRef = useRef({ index: null, lastEmit: 0, bands: eqBands });
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (draggingRef.current.index === null) {
+      setLocalBands(eqBands);
+      draggingRef.current.bands = eqBands;
+    }
+  }, [eqBands]);
+
+  const handlePointerDown = (index, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    draggingRef.current.index = index;
+    setActiveBand(index);
+    updateBandFromEvent(index, e, true);
+
+    const onMove = (ev) => {
+      if (draggingRef.current.index !== null) {
+        updateBandFromEvent(draggingRef.current.index, ev, false);
+      }
+    };
+
+    const onUp = (ev) => {
+      if (draggingRef.current.index !== null) {
+        updateBandFromEvent(draggingRef.current.index, ev, true);
+        draggingRef.current.index = null;
+        setActiveBand(null);
+      }
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
+  const updateBandFromEvent = (index, e, forceEmit = false) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    const newVal = Math.round((12 - (pct * 24)) * 2) / 2;
+
+    const currentBands = [...draggingRef.current.bands];
+    if (currentBands[index] !== newVal) {
+      currentBands[index] = newVal;
+      draggingRef.current.bands = currentBands;
+      setLocalBands(currentBands);
+
+      const now = Date.now();
+      if (forceEmit || now - draggingRef.current.lastEmit > 50) {
+        draggingRef.current.lastEmit = now;
+        onChange(currentBands);
+      }
+    } else if (forceEmit) {
+      onChange(currentBands);
+    }
+  };
+
+  const eqFreqs = ['31', '62', '125', '250', '500', '1k', '2k', '4k', '8k', '16k'];
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0 relative z-20">
+      {/* Top labels (Values) */}
+      <div className="flex justify-between w-full shrink-0 mb-1">
+        {localBands.map((val, i) => (
+          <div key={`val-${i}`} className="flex-1 flex justify-center">
+            <span className={`text-[9px] font-bold font-mono leading-none transition-colors ${val !== 0 ? 'text-[#f97316] drop-shadow-[0_0_3px_rgba(249,115,22,0.8)]' : 'text-gray-500'}`}>
+              {(val > 0 ? '+' + val : val)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Slider Area (Middle) */}
+      <div ref={containerRef} className="flex-1 w-full relative flex my-2 select-none touch-none">
+        {/* SVG Background (Paths & Dots) */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
+            <defs>
+              <linearGradient id="eqGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f97316" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+
+            {/* Fill */}
+            <path
+              d={`M 0,100 L 0,${100 - ((localBands[0] + 12) / 24 * 100)} L ${localBands.map((val, i) => `${(i * 10) + 5},${100 - ((val + 12) / 24 * 100)}`).join(' L ')} L 100,${100 - ((localBands[9] + 12) / 24 * 100)} L 100,100 Z`}
+              fill="url(#eqGradient)"
+              className={activeBand !== null ? "transition-none" : "transition-all duration-150 ease-out"}
+            />
+
+            {/* Stroke */}
+            <path
+              d={`M ${localBands.map((val, i) => `${(i * 10) + 5},${100 - ((val + 12) / 24 * 100)}`).join(' L ')}`}
+              fill="none" stroke="#f97316" strokeWidth="1.5"
+              className={`drop-shadow-[0_0_4px_rgba(249,115,22,0.6)] ${activeBand !== null ? "transition-none" : "transition-all duration-150 ease-out"}`}
+            />
+
+            {/* Dots (Handles) */}
+            {localBands.map((val, i) => (
+              <circle
+                key={`dot-${i}`}
+                cx={(i * 10) + 5}
+                cy={100 - ((val + 12) / 24 * 100)}
+                r={activeBand === i ? "6" : "4"}
+                fill="#f97316"
+                stroke="#13151f"
+                strokeWidth="1.5"
+                className={`drop-shadow-[0_0_5px_rgba(249,115,22,0.8)] ${activeBand !== null ? "transition-none" : "transition-all duration-150 ease-out"}`}
+              />
+            ))}
+          </svg>
+        </div>
+
+        {/* Custom Interactive Hitboxes */}
+        {localBands.map((val, i) => (
+          <div
+            key={`hitbox-${i}`}
+            className="flex-1 h-full relative cursor-ns-resize touch-none z-10 group"
+            onPointerDown={(e) => handlePointerDown(i, e)}
+          >
+            <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-5 transition-colors rounded-full ${activeBand === i ? 'bg-orange-500/15 border border-orange-500/30' : 'bg-white/0 group-hover:bg-orange-500/5'}`} />
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom labels (Freqs) */}
+      <div className="flex justify-between w-full shrink-0 mt-1">
+        {eqFreqs.map((freq, i) => (
+          <div key={`freq-${i}`} className="flex-1 flex justify-center">
+            <span className="text-[8px] text-gray-500 font-bold font-mono leading-none">{freq}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function MasteringPanel({ masteringSettings, setMasteringSettings }) {
   
   const handleProfileChange = (e) => {
@@ -114,23 +257,6 @@ export default function MasteringPanel({ masteringSettings, setMasteringSettings
   };
 
   if (!masteringSettings) return null;
-
-  const eqFreqs = ['31', '62', '125', '250', '500', '1k', '2k', '4k', '8k', '16k'];
-
-  // Calculate SVG curve path for EQ
-  const eqBands = masteringSettings.eqBands || Array(10).fill(0);
-  const getPathData = (fill = false) => {
-    const points = eqBands.map((val, i) => {
-      const x = (i / 9) * 100;
-      const y = 100 - ((val + 12) / 24 * 100);
-      return `${x},${y}`;
-    });
-    
-    if (fill) {
-      return `M 0,100 L 0,${100 - ((eqBands[0] + 12) / 24 * 100)} L ${points.join(' L ')} L 100,100 Z`;
-    }
-    return `M ${points.join(' L ')}`;
-  };
 
   return (
     <div className="bg-transparent flex flex-col h-full overflow-hidden text-[12px] text-gray-300">
@@ -193,110 +319,10 @@ export default function MasteringPanel({ masteringSettings, setMasteringSettings
               </div>
               <button onClick={() => setSetting('eqBands', [0,0,0,0,0,0,0,0,0,0])} className="text-[8px] font-bold text-gray-400 hover:text-orange-500 transition-colors bg-[#1a1d27] border border-orange-500/20 hover:border-orange-500/50 px-2 py-1 rounded uppercase">Reset EQ</button>
             </div>
-            
-            <div className="flex flex-col flex-1 min-h-0 relative z-20">
-              
-              {/* Top labels (Values) */}
-              <div className="flex justify-between w-full shrink-0 mb-1">
-                 {eqBands.map((val, i) => (
-                   <div key={`val-${i}`} className="flex-1 flex justify-center">
-                     <span className={`text-[9px] font-bold font-mono leading-none transition-colors ${val !== 0 ? 'text-[#f97316] drop-shadow-[0_0_3px_rgba(249,115,22,0.8)]' : 'text-gray-500'}`}>
-                       {(val > 0 ? '+'+val : val)}
-                     </span>
-                   </div>
-                 ))}
-              </div>
-              
-              {/* Slider Area (Middle) */}
-              <div className="flex-1 w-full relative flex my-2">
-                 
-                 {/* SVG Background (Paths & Dots) */}
-                 <div className="absolute inset-0 pointer-events-none z-0">
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                      <defs>
-                        <linearGradient id="eqGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#f97316" stopOpacity="0.4" />
-                          <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      
-                      {/* Fill */}
-                      <path 
-                        d={`M 0,100 L 0,${100 - ((eqBands[0] + 12) / 24 * 100)} L ${eqBands.map((val, i) => `${(i * 10) + 5},${100 - ((val + 12) / 24 * 100)}`).join(' L ')} L 100,${100 - ((eqBands[9] + 12) / 24 * 100)} L 100,100 Z`}
-                        fill="url(#eqGradient)" className="transition-all duration-150 ease-out" 
-                      />
-                      
-                      {/* Stroke */}
-                      <path 
-                        d={`M ${eqBands.map((val, i) => `${(i * 10) + 5},${100 - ((val + 12) / 24 * 100)}`).join(' L ')}`}
-                        fill="none" stroke="#f97316" strokeWidth="1.5" className="transition-all duration-150 ease-out drop-shadow-[0_0_4px_rgba(249,115,22,0.6)]" 
-                      />
-
-                      {/* Dots (Handles) */}
-                      {eqBands.map((val, i) => (
-                        <circle 
-                          key={`dot-${i}`}
-                          cx={(i * 10) + 5} 
-                          cy={100 - ((val + 12) / 24 * 100)} 
-                          r="4" 
-                          fill="#f97316" 
-                          stroke="#13151f"
-                          strokeWidth="1.5"
-                          className="transition-all duration-150 ease-out drop-shadow-[0_0_5px_rgba(249,115,22,0.8)]"
-                        />
-                      ))}
-                    </svg>
-                 </div>
-                 
-                 {/* Custom Interactive Hitboxes */}
-                 {eqBands.map((val, i) => (
-                    <div 
-                      key={`hitbox-${i}`} 
-                      className="flex-1 h-full relative cursor-crosshair touch-none"
-                      onPointerDown={(e) => {
-                        e.target.setPointerCapture(e.pointerId);
-                        e.target.dataset.dragging = "true";
-                        
-                        const rect = e.target.getBoundingClientRect();
-                        const pct = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-                        const newVal = Math.round((12 - (pct * 24)) * 2) / 2;
-                        
-                        const newBands = [...masteringSettings.eqBands];
-                        newBands[i] = newVal;
-                        setSetting('eqBands', newBands);
-                      }}
-                      onPointerMove={(e) => {
-                        if (e.target.dataset.dragging === "true") {
-                          const rect = e.target.getBoundingClientRect();
-                          const pct = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-                          const newVal = Math.round((12 - (pct * 24)) * 2) / 2;
-                          
-                          const newBands = [...masteringSettings.eqBands];
-                          if (newBands[i] !== newVal) {
-                            newBands[i] = newVal;
-                            setSetting('eqBands', newBands);
-                          }
-                        }
-                      }}
-                      onPointerUp={(e) => {
-                        e.target.dataset.dragging = "false";
-                        e.target.releasePointerCapture(e.pointerId);
-                      }}
-                    >
-                    </div>
-                 ))}
-              </div>
-
-              {/* Bottom labels (Freqs) */}
-              <div className="flex justify-between w-full shrink-0 mt-1">
-                 {eqFreqs.map((freq, i) => (
-                   <div key={`freq-${i}`} className="flex-1 flex justify-center">
-                     <span className="text-[8px] text-gray-500 font-bold font-mono leading-none">{freq}</span>
-                   </div>
-                 ))}
-              </div>
-            </div>
-
+            <GraphicEQEditor 
+              eqBands={masteringSettings.eqBands || Array(10).fill(0)} 
+              onChange={(newBands) => setSetting('eqBands', newBands)} 
+            />
           </div>
         </div>
 

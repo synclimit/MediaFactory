@@ -22,6 +22,8 @@ app.use(require('./api/m4.js').router);
 app.use(require('./api/m5.js').router);
 app.use(require('./api/qa.js'));
 app.use(require('./api/diagnostics.js'));
+app.use(require('./routes/sounds.js'));
+app.use('/api/overlays', require('./routes/overlays.js'));
 
 // Serve static frontend in production
 const path = require('path');

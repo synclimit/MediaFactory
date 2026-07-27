@@ -6,6 +6,7 @@ import M3MenuBar from './M3MenuBar.jsx';
 import M3NavigationRail from './M3NavigationRail.jsx';
 import M3DynamicContentPanel from './M3DynamicContentPanel.jsx';
 import M3PreviewCanvas from './M3PreviewCanvas.jsx';
+import M3ExportSettingsPanel from './panels/M3ExportSettingsPanel.jsx';
 import M3ObjectInspector from './M3ObjectInspector.jsx';
 import M3ThumbnailEditor from './M3ThumbnailEditor.jsx';
 import M3PlaybackBar from './M3PlaybackBar.jsx';
@@ -134,6 +135,7 @@ export default function M3StudioPanel({
         else if (obj.type === 'playlist' || obj.type === 'track_list_column') setActiveContextCategory('Text Objects');
         else if (obj.type === 'effect') setActiveContextCategory('Overlay');
         else if (obj.type === 'particle') setActiveContextCategory('Particle');
+        else if (obj.type === 'subtitle') setActiveContextCategory('Lyrics');
       }
     }
   };
@@ -141,22 +143,7 @@ export default function M3StudioPanel({
   return (
     <>
       <Surface variant={BackgroundVariants.Default} className="flex flex-col flex-1 min-h-0 border border-[#21232d] rounded overflow-hidden shadow-2xl mb-2">
-        {/* Top File Menu */}
-        <M3MenuBar 
-          onNew={handleNew}
-          onOpen={handleOpen}
-          onSave={handleSave}
-          onSaveAs={handleSaveAs}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          onCopy={() => addNotification('Copied')}
-          onPaste={() => addNotification('Pasted')}
-          onDelete={() => addNotification('Deleted')}
-          onExport={handleExport}
-          addNotification={addNotification}
-        />
-
-        {/* Top Toolbar */}
+        {/* Top File Menu removed to save vertical space */}        {/* Top Toolbar */}
         <M3Toolbar 
           mode={editorMode} 
           setMode={setEditorMode} 
@@ -169,7 +156,6 @@ export default function M3StudioPanel({
         
         {/* Main Studio Area */}
         <div className="flex flex-1 overflow-hidden">
-          
           {/* Navigation Rail */}
           <M3NavigationRail 
             activeCategory={activeContextCategory} 
@@ -222,7 +208,21 @@ export default function M3StudioPanel({
                 m3EstRenderTimeSec={m3EstRenderTimeSec}
                 m3EstStorageMb={m3EstStorageMb}
                 analyser={analyser}
-              />
+              >
+                <div className="w-full bg-[#0a0a0a] border border-[#1a1b26] rounded-b-lg overflow-hidden shadow-lg mb-1">
+                  <M3PlaybackBar
+                    m3AudioTracks={m3AudioTracks}
+                    currentTimeSec={m3CurrentTimeSec}
+                    setCurrentTimeSec={setM3CurrentTimeSec}
+                    currentTrackIndex={m3CurrentTrackIndex}
+                    setCurrentTrackIndex={setM3CurrentTrackIndex}
+                    onAnalyserReady={setAnalyser}
+                  />
+                </div>
+                
+                {/* Export Settings added directly under playback bar */}
+                <M3ExportSettingsPanel onAddToQueue={onExportQueue} />
+              </M3PreviewCanvas>
             ) : (
               <M3ThumbnailEditor 
                 m3BgPool={m3BgPool} 
@@ -236,28 +236,8 @@ export default function M3StudioPanel({
                 setM3SelectedObjectId={setM3SelectedObjectId}
               />
             )}
-            
-            {/* Playback Controls (Outside Canvas) */}
-            {editorMode === 'Composer' && (
-              <div className="flex-shrink-0 w-full bg-[#0a0a0a] border-t border-[#1a1b26]">
-                <M3PlaybackBar
-                  m3AudioTracks={m3AudioTracks}
-                  currentTimeSec={m3CurrentTimeSec}
-                  setCurrentTimeSec={setM3CurrentTimeSec}
-                  currentTrackIndex={m3CurrentTrackIndex}
-                  setCurrentTrackIndex={setM3CurrentTrackIndex}
-                  onAnalyserReady={setAnalyser}
-                />
-              </div>
-            )}
 
-            {editorMode === 'Composer' && (
-              <M3Statistics 
-                m3TotalDurationSec={m3TotalDurationSec}
-                m3EstRenderTimeSec={m3EstRenderTimeSec}
-                m3EstStorageMb={m3EstStorageMb}
-              />
-            )}
+
           </div>
 
         </div>

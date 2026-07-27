@@ -2,6 +2,7 @@ const express = require('express');
 const { exec, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs/promises');
+const AppPaths = require('../system/AppPaths');
 
 const router = express.Router();
 const jobs = {};
@@ -166,7 +167,7 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
         return res.end();
     }
 
-    const cacheDir = path.resolve('.mediafactory/cache/m1');
+    const cacheDir = path.join(AppPaths.getCacheBase(), 'm1');
     await fs.mkdir(cacheDir, { recursive: true });
 
     const ytIdCmd = `yt-dlp --no-warnings --no-playlist --get-id "${url}"`;
@@ -178,7 +179,7 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
         const videoId = idOut.trim().split('\n').pop();
         const outTemplate = path.join(cacheDir, `${videoId}.%(ext)s`);
         
-        const ytArgs = ['--no-warnings', '--no-playlist', '-x', '--audio-format', 'mp3', '--write-thumbnail', '--write-info-json', '-o', outTemplate, '--', url];
+        const ytArgs = ['--no-warnings', '--no-playlist', '-x', '--audio-format', 'mp3', '--write-thumbnail', '--write-info-json', '--js-runtimes', 'node', '-o', outTemplate, '--', url];
         const ytProc = spawn('yt-dlp', ytArgs);
         
         ytProc.stdout.on('data', (data) => {
@@ -207,7 +208,8 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
                     const mins = Math.floor(durationSec / 60);
                     const secs = Math.floor(durationSec % 60);
                     const audioPath = path.join(cacheDir, `${videoId}.mp3`);
-                    res.write(`data: {"done": true, "videoId": "${videoId}", "title": ${JSON.stringify(info.title)}, "durationDisplay": "${mins}m ${String(secs).padStart(2, '0')}s", "audioPath": ${JSON.stringify(audioPath)}}\n\n`);
+                    const description = info.description || "";
+                    res.write(`data: {"done": true, "videoId": "${videoId}", "title": ${JSON.stringify(info.title)}, "description": ${JSON.stringify(description)}, "durationDisplay": "${mins}m ${String(secs).padStart(2, '0')}s", "audioPath": ${JSON.stringify(audioPath)}}\n\n`);
                     res.end();
                 } catch (e) {
                     res.write(`data: {"error": "Failed to parse metadata JSON"}\n\n`);
@@ -219,3 +221,5 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
 });
 
 module.exports = { router, jobs };
+
+

@@ -23,8 +23,12 @@ export class MusicalFeelEngine {
             stability: 1.0,
             energy: 0,
             groove: 0,
-            bpm: 120
+            bpm: 120,
+            confidence: 0
         };
+        
+        this._fallbackCount = 0;
+        this._totalBeats = 0;
     }
 
     /**
@@ -40,7 +44,25 @@ export class MusicalFeelEngine {
         this.stability = beatEvent.intervalConfidence !== undefined ? beatEvent.intervalConfidence : this.confidence;
         this.energy = beatEvent.energy !== undefined ? beatEvent.energy : this.energy;
 
-        this.kickStrength = beatEvent.kickScore > 0.5 ? (beatEvent.strength || 1.0) : 0;
+        const isKickLike = beatEvent.isKick || beatEvent.kickScore > 0.5 || beatEvent.type === 'kick' || beatEvent.type === 'downbeat' || beatEvent.type === 'beat';
+        if (isKickLike) {
+            if (beatEvent.kickStrength > 0) {
+                this.kickStrength = beatEvent.kickStrength;
+            } else if (beatEvent.strength > 0) {
+                this.kickStrength = beatEvent.strength;
+            } else {
+                // Fallback kepakai (kickStrength dan strength kosong/0) -> gunakan energy aktual
+                this.kickStrength = beatEvent.energy || 0;
+                this._fallbackCount = (this._fallbackCount || 0) + 1;
+            }
+            this._totalBeats = (this._totalBeats || 0) + 1;
+            if (this._totalBeats % 100 === 0) {
+                console.warn(`[MusicalFeelEngine] Dalam 100 beat terakhir, fallback ke beatEvent.energy kepakai ${this._fallbackCount} kali.`);
+                this._fallbackCount = 0;
+            }
+        } else {
+            this.kickStrength = 0;
+        }
         this.beatStrength = beatEvent.energy || 0;
         this.isDownbeat = !!beatEvent.downbeat;
     }
@@ -78,6 +100,7 @@ export class MusicalFeelEngine {
         this._output.energy = this.energy;
         this._output.groove = groove;
         this._output.bpm = this.bpm;
+        this._output.confidence = this.confidence;
 
         // Reset triggers so they only apply on the exact event frame
         this.isDownbeat = false;

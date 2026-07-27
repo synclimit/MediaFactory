@@ -3,6 +3,7 @@ const { exec, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs/promises');
 const crypto = require('crypto');
+const AppPaths = require('../system/AppPaths');
 const router = express.Router();
 
 // Memory store for splitter jobs to allow polling progress
@@ -14,7 +15,7 @@ function hashUrl(url) {
 }
 
 // Ensure cache directory exists
-const cacheDir = path.resolve('.mediafactory/cache/m2-splitter');
+const cacheDir = path.join(AppPaths.getCacheBase(), 'm2-splitter');
 fs.mkdir(cacheDir, { recursive: true }).catch(() => {});
 
 // 1. Metadata Extractor
@@ -24,7 +25,7 @@ router.post('/api/m2/splitter/metadata', async (req, res) => {
 
     try {
         const ytData = await new Promise((resolve, reject) => {
-            const ytArgs = ['--dump-json', '--no-playlist', '--', url];
+            const ytArgs = ['--dump-json', '--no-playlist', '--js-runtimes', 'node', '--', url];
             const ytProc = spawn('yt-dlp', ytArgs);
             let stdoutData = '';
             let stderrData = '';
@@ -128,6 +129,48 @@ router.post('/api/m2/splitter/vision', async (req, res) => {
     }
 });
 
+// 1.5 Silence Detection Endpoint
+router.get('/api/m2/splitter/detect-silence', async (req, res) => {
+    const { uri } = req.query;
+    if (!uri) return res.status(400).json({ error: 'URI required' });
+
+    try {
+        const hashUri = (str) => crypto.createHash('md5').update(str).digest('hex').slice(0,8);
+        const cachePath = path.join(AppPaths.getCacheBase(), 'm2', `${hashUri(uri)}.mp3`);
+        
+        await fs.access(cachePath); // Check if file exists
+
+        const ffArgs = ['-i', cachePath, '-af', 'silencedetect=noise=-35dB:d=1.5', '-f', 'null', '-'];
+        const ffProc = spawn('ffmpeg', ffArgs);
+        
+        let ffOut = '';
+        ffProc.stderr.on('data', chunk => ffOut += chunk.toString());
+        
+        ffProc.on('close', code => {
+            if (code === 0) {
+                const regex = /silence_end: ([\d\.]+) \| silence_duration: ([\d\.]+)/g;
+                let match;
+                const markers = [];
+                while ((match = regex.exec(ffOut)) !== null) {
+                    const silenceEnd = parseFloat(match[1]);
+                    const silenceDuration = parseFloat(match[2]);
+                    const splitPoint = silenceEnd - (silenceDuration / 2);
+                    if (splitPoint > 1) { // Skip very early silences
+                        markers.push(splitPoint);
+                    }
+                }
+                res.json({ markers });
+            } else {
+                res.status(500).json({ error: 'ffmpeg failed to detect silences' });
+            }
+        });
+        
+        ffProc.on('error', err => res.status(500).json({ error: err.message }));
+    } catch (e) {
+        res.status(404).json({ error: 'Audio file not found in cache' });
+    }
+});
+
 // 2. Download and Split Flow
 router.post('/api/m2/splitter/process', async (req, res) => {
     const { url, outputFolder, songs, videoId, videoTitle, aiTitles, videoDuration } = req.body;
@@ -184,7 +227,7 @@ async function processSplitterJob(jobId, url, outputFolder, songs, videoId, vide
         job.progress = 0;
         
         await new Promise((resolve, reject) => {
-            const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', downloadPathTemplate, '--', url];
+            const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--audio-quality', '0', '--js-runtimes', 'node', '-o', downloadPathTemplate, '--', url];
             const ytProc = spawn('yt-dlp', ytArgs);
             
             ytProc.stdout.on('data', chunk => {
@@ -236,7 +279,7 @@ async function processSplitterJob(jobId, url, outputFolder, songs, videoId, vide
                 job.progress = 0;
                 
                 finalSongs = await new Promise((resolve, reject) => {
-                    const ffArgs = ['-i', downloadedFile, '-af', 'silencedetect=noise=-35dB:d=0.4', '-f', 'null', '-'];
+                    const ffArgs = ['-i', downloadedFile, '-af', 'silencedetect=noise=-35dB:d=1.5', '-f', 'null', '-'];
                     const ffProc = spawn('ffmpeg', ffArgs);
                     let ffOut = '';
                     ffProc.stderr.on('data', chunk => ffOut += chunk.toString());
@@ -351,3 +394,5 @@ async function processSplitterJob(jobId, url, outputFolder, songs, videoId, vide
 }
 
 module.exports = { router };
+
+

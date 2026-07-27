@@ -359,11 +359,11 @@ export default function AudioPreviewPanel({ isDevMode = false, addLog, addNotifi
   }, []);
 
   // ─── Animation frame for position tracking ─────────────────────────────────
-  const tickPosition = useCallback(() => {
+  const tickPosition = useCallback(function tickFn() {
     if (engineRef.current?.isPlaying && !isSeeking) {
       setPosition(engineRef.current.currentPosition());
     }
-    rafRef.current = requestAnimationFrame(tickPosition);
+    rafRef.current = requestAnimationFrame(tickFn);
   }, [isSeeking]);
 
   useEffect(() => {

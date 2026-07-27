@@ -2,10 +2,12 @@ const { spawn, exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const AppPaths = require('../system/AppPaths');
+const SmartAudioLooper = require('./SmartAudioLooper');
 
 class M4RenderEngine {
     constructor() {
         this.activeProcesses = new Map();
+        this.tempFiles = new Map();
     }
 
     getDuration(filePath) {
@@ -19,7 +21,11 @@ class M4RenderEngine {
 
     async render(job, onProgress, onComplete, onError) {
         try {
-            const { bgVideo, ambientAudio, relaxMusic, totalDurationSec, loopMode } = job.m4Payload;
+            let { totalDurationSec } = job;
+            if (!totalDurationSec && job.m4Payload) totalDurationSec = job.m4Payload.totalDurationSec;
+            if (!totalDurationSec) totalDurationSec = 60; // Ultimate fallback
+            
+            const { bgVideo, ambientAudio, relaxMusic, loopMode } = job.m4Payload;
             
             if (!bgVideo || !bgVideo.path) {
                 return onError(new Error("Background video is missing."));
@@ -80,44 +86,89 @@ class M4RenderEngine {
             let audioCount = 0;
             let audioInputs = [];
 
-            if (ambientAudio && ambientAudio.path) {
-                args.push('-stream_loop', '-1', '-i', ambientAudio.path);
-                audioInputs.push({ index: 1, volume: (ambientAudio.volume || 100) / 100 });
-                audioCount++;
-            }
+            const fs = require('fs');
+            const resolveAudioPath = (p) => {
+                if (!p) return null;
+                if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
+                    const files = fs.readdirSync(p).filter(f => f.match(/\.(mp3|wav|flac|m4a)$/i));
+                    if (files.length > 0) return path.join(p, files[0]);
+                }
+                return p;
+            };
 
-            if (relaxMusic && relaxMusic.path) {
-                args.push('-stream_loop', '-1', '-i', relaxMusic.path);
-                audioInputs.push({ index: audioCount === 1 ? 2 : 1, volume: (relaxMusic.volume || 100) / 100 });
-                audioCount++;
+            let jobTempFiles = [];
+
+            const processAudioSource = async (audioSource) => {
+                const arr = Array.isArray(audioSource) ? audioSource : (audioSource && audioSource.path ? [audioSource] : []);
+                for (let a of arr) {
+                    const resolvedPath = resolveAudioPath(a?.path);
+                    if (resolvedPath) {
+                        try {
+                            // Verify audio file integrity. If it fails, skip it to prevent FFmpeg crashes.
+                            await this.getDuration(resolvedPath);
+                        } catch (err) {
+                            console.error('[M4RenderEngine] Skipping invalid/corrupt audio:', resolvedPath);
+                            continue;
+                        }
+                        
+                        onProgress(0, `Smart Looping: ${path.basename(resolvedPath)}...`);
+                        const seamlessPath = await SmartAudioLooper.makeSeamless(resolvedPath, this.activeProcesses, job.id);
+                        if (seamlessPath !== resolvedPath) {
+                            jobTempFiles.push(seamlessPath);
+                        }
+                        args.push('-stream_loop', '-1', '-i', seamlessPath);
+                        audioCount++;
+                        audioInputs.push({ index: audioCount, volume: (a.volume !== undefined ? a.volume : 100) / 100 });
+                    }
+                }
+            };
+
+            await processAudioSource(ambientAudio);
+            await processAudioSource(relaxMusic);
+            
+            this.tempFiles.set(job.id, jobTempFiles);
+
+
+            let videoFilterStr = '';
+            let vMap = '0:v';
+            
+            if (bgVideo.cropWatermark) {
+                videoFilterStr = '[0:v]crop=trunc(iw/1.15/2)*2:trunc(ih/1.15/2)*2:iw/2:ih/2,scale=trunc(iw*1.15/2)*2:trunc(ih*1.15/2)*2[vout]';
+                vMap = '[vout]';
             }
 
             if (audioCount > 0) {
+                let audioFilterStr = '';
                 if (audioCount === 1) {
                     const a = audioInputs[0];
-                    filterComplex = `[${a.index}:a]volume=${a.volume.toFixed(2)}[aout]`;
-                    args.push('-filter_complex', filterComplex);
-                    args.push('-map', '0:v');
-                    args.push('-map', '[aout]');
+                    audioFilterStr = `[${a.index}:a]volume=${a.volume.toFixed(2)}[aout]`;
                 } else {
-                    let filterStr = '';
                     let mixInputs = '';
-                    
                     audioInputs.forEach((a, i) => {
-                        filterStr += `[${a.index}:a]volume=${a.volume.toFixed(2)}[a${i}];`;
+                        audioFilterStr += `[${a.index}:a]volume=${a.volume.toFixed(2)}[a${i}];`;
                         mixInputs += `[a${i}]`;
                     });
-                    
-                    filterStr += `${mixInputs}amix=inputs=${audioCount}:duration=first:dropout_transition=2[aout]`;
-                    filterComplex = filterStr;
-                    
-                    args.push('-filter_complex', filterComplex);
-                    args.push('-map', '0:v');
-                    args.push('-map', '[aout]');
+                    audioFilterStr += `${mixInputs}amix=inputs=${audioCount}:duration=first:dropout_transition=2[aout]`;
                 }
+                
+                if (videoFilterStr) {
+                    args.push('-filter_complex', videoFilterStr + ';' + audioFilterStr);
+                } else {
+                    args.push('-filter_complex', audioFilterStr);
+                }
+                args.push('-map', vMap);
+                args.push('-map', '[aout]');
             } else {
-                args.push('-map', '0:v');
-                args.push('-an'); // No audio
+                if (videoFilterStr) {
+                    args.push('-filter_complex', videoFilterStr);
+                }
+                args.push('-map', vMap);
+                
+                if (bgVideo.isMuted !== false || finalBgVideoPath !== bgVideo.path) {
+                    args.push('-an'); // No audio (temp videos are generated with -an)
+                } else {
+                    args.push('-map', '0:a'); // Include original audio
+                }
             }
 
             // Target Duration and Output Format
@@ -137,8 +188,11 @@ class M4RenderEngine {
             const ffmpeg = spawn(AppPaths.getFFmpegPath(), args);
             this.activeProcesses.set(job.id, ffmpeg);
 
+            let ffmpegLog = '';
             ffmpeg.stderr.on('data', (data) => {
                 const text = data.toString();
+                ffmpegLog += text;
+                console.log('[FFMPEG]', text);
                 const timeMatch = text.match(/time=(\d{2}):(\d{2}):(\d{2})/);
                 if (timeMatch) {
                     const h = parseInt(timeMatch[1], 10);
@@ -161,11 +215,18 @@ class M4RenderEngine {
                 if (finalBgVideoPath !== bgVideo.path) {
                     try { fs.unlinkSync(finalBgVideoPath); } catch (e) {}
                 }
+                const jobTemps = this.tempFiles.get(job.id) || [];
+                jobTemps.forEach(t => {
+                    try { fs.unlinkSync(t); } catch (e) {}
+                });
+                this.tempFiles.delete(job.id);
 
                 if (code === 0) {
                     onComplete(outPath);
                 } else {
-                    onError(new Error(`FFmpeg exited with code ${code}`));
+                    const crashMsg = `FFmpeg exited with code ${code}.\nLog: ${ffmpegLog.split('\n').slice(-5).join('\n')}`;
+                    try { require('fs').writeFileSync('D:/MediaFactory/ffmpeg_crash_log.txt', ffmpegLog); } catch(e){}
+                    onError(new Error(crashMsg));
                 }
             });
 
@@ -188,6 +249,22 @@ class M4RenderEngine {
             this.activeProcesses.delete(jobId + '_temp');
             killed = true;
         }
+        
+        // Find any audio generation processes for this job
+        for (const [key, p] of this.activeProcesses.entries()) {
+            if (key.startsWith(jobId + '_audio_')) {
+                p.kill('SIGKILL');
+                this.activeProcesses.delete(key);
+                killed = true;
+            }
+        }
+
+        const jobTemps = this.tempFiles.get(jobId) || [];
+        jobTemps.forEach(t => {
+            try { require('fs').unlinkSync(t); } catch (e) {}
+        });
+        this.tempFiles.delete(jobId);
+
         return killed;
     }
 }

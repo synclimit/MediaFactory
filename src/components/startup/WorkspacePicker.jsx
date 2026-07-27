@@ -112,7 +112,7 @@ export default function WorkspacePicker({ onWorkspaceSelected, onNewWorkspace })
                                 </div>
                                 <div className="flex flex-col items-center">
                                     <span className="text-gray-500 mb-1">STORAGE</span>
-                                    <span className="font-bold text-white text-[14px]">0 GB</span>
+                                    <span className="font-bold text-white text-[14px]">{ws.storageSizeGB || 0} GB</span>
                                 </div>
                             </div>
                             

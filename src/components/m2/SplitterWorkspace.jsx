@@ -25,7 +25,8 @@ export default function SplitterWorkspace({ panelId, isDevMode, addLog, addNotif
         job.status !== 'Completed' && 
         job.status !== 'Failed' && 
         job.status !== 'Playlist Structure Not Supported' && 
-        job.status !== 'Metadata Not Found'
+        job.status !== 'Metadata Not Found' &&
+        job.status !== 'Needs Manual Slicing'
       ) {
         if (job.backendJobId) {
           // Simple deduplication: pollProgress handles its own interval, 
@@ -33,8 +34,9 @@ export default function SplitterWorkspace({ panelId, isDevMode, addLog, addNotif
           // It's safe on mount because interval closures are fresh.
           pollProgress(job.id, job.backendJobId);
         } else {
-          // If it was interrupted before getting a backend job ID (stuck in Reading Metadata/Waiting)
-          updateJob(job.id, { status: 'Failed', error: 'Interrupted by application restart.' });
+          // If it was interrupted before getting a backend job ID (e.g. while fetching metadata)
+          // Just restart the process safely.
+          setTimeout(() => processJob(job.id), 500);
         }
       }
     });
@@ -59,6 +61,18 @@ export default function SplitterWorkspace({ panelId, isDevMode, addLog, addNotif
 
   const handleClearQueue = () => {
     setQueue([]);
+  };
+
+  const handleSelectFileInput = async () => {
+    try {
+      const res = await fetch('/api/m2/dialog/file', { method: 'POST' });
+      const data = await res.json();
+      if (data.path) {
+        setUrlInput(data.path);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleAddUrl = () => {
@@ -142,8 +156,9 @@ export default function SplitterWorkspace({ panelId, isDevMode, addLog, addNotif
         return;
       }
       
-      // If we only have titles but NO explicit timestamps, trigger Manual Slicing instead of auto-split
-      if (aiTitles.length > 0 && analysis.songs.length === 0) {
+      // If we don't have explicit timestamps, ALWAYS trigger Manual Slicing instead of auto-split.
+      // This allows the user to use the waveform UI to manually slice, even if AI titles are missing.
+      if (analysis.songs.length === 0) {
         updateJob(jobId, { 
           songs: [], 
           aiTitles: aiTitles, 
@@ -252,9 +267,16 @@ export default function SplitterWorkspace({ panelId, isDevMode, addLog, addNotif
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddUrl()}
-            placeholder="Paste YouTube URL here..."
+            placeholder="Paste YouTube URL or Local File Path here..."
             className="flex-1 bg-[#0a0b0f] border border-[#2d3247] text-gray-200 px-3 py-1.5 rounded text-[11px] focus:outline-none focus:border-orange-500 transition-colors"
           />
+          <button 
+            onClick={handleSelectFileInput}
+            className="shrink-0 bg-[#2d3247] hover:bg-[#3d4257] text-white px-3 py-1.5 rounded text-[10px] font-bold transition-colors"
+            title="Browse Local Audio File"
+          >
+            🎵 Select File
+          </button>
           <button 
             onClick={handleAddUrl}
             disabled={!urlInput.trim() || !outputFolder}

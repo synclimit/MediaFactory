@@ -1,5 +1,6 @@
 import React from 'react';
 import { useM3Panel } from '../../../hooks/useM3Panel';
+import OverlayPicker from './OverlayPicker';
 
 export default function OverlayPanel({ addObject }) {
     const { 
@@ -178,31 +179,24 @@ export default function OverlayPanel({ addObject }) {
         <div className="space-y-4">
             {error && <div className="bg-red-900/40 border border-red-500 text-red-400 p-2 rounded text-[10px]">{error.message}</div>}
 
-            <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => injectImage('image', 'PNG Overlay')} className="w-full flex flex-col items-center justify-center gap-2 p-3 rounded bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] hover:border-emerald-500/50 transition-colors text-gray-300">
-                    <span className="text-xl">🖼️</span>
-                    <span className="text-[10px] font-bold">Image / PNG</span>
-                </button>
-                <button onClick={() => injectImage('video', 'Video Overlay')} className="w-full flex flex-col items-center justify-center gap-2 p-3 rounded bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] hover:border-emerald-500/50 transition-colors text-gray-300">
-                    <span className="text-xl">🎬</span>
-                    <span className="text-[10px] font-bold">Video / WebM</span>
-                </button>
-                <button onClick={() => injectImage('gif', 'GIF Overlay')} className="w-full flex flex-col items-center justify-center gap-2 p-3 rounded bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] hover:border-emerald-500/50 transition-colors text-gray-300">
-                    <span className="text-xl">🎞️</span>
-                    <span className="text-[10px] font-bold">Sticker / GIF</span>
-                </button>
-                <button onClick={() => injectWidget('logo', 'Corner Logo', 'Ⓜ️')} className="w-full flex flex-col items-center justify-center gap-2 p-3 rounded bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] hover:border-emerald-500/50 transition-colors text-gray-300">
-                    <span className="text-xl">Ⓜ️</span>
-                    <span className="text-[10px] font-bold">Logo</span>
-                </button>
-                <button onClick={injectPlaylist} className="w-full flex flex-col items-center justify-center gap-2 p-3 rounded bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] hover:border-emerald-500/50 transition-colors text-gray-300">
-                    <span className="text-xl">🎵</span>
-                    <span className="text-[10px] font-bold">Playlist</span>
-                </button>
-                <button onClick={injectSubtitle} className="w-full flex flex-col items-center justify-center gap-2 p-3 rounded bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] hover:border-emerald-500/50 transition-colors text-gray-300">
-                    <span className="text-xl">💬</span>
-                    <span className="text-[10px] font-bold">Subtitle</span>
-                </button>
+            <OverlayPicker addObject={addObject} />
+
+            <div className="border-t border-[#21232d] pt-4">
+                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Basic Tools</h3>
+                <div className="grid grid-cols-3 gap-2">
+                    <button onClick={() => injectWidget('logo', 'Corner Logo', 'Ⓜ️')} className="w-full flex flex-col items-center justify-center gap-1 p-2 rounded bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] hover:border-emerald-500/50 transition-colors text-gray-300">
+                        <span className="text-lg">Ⓜ️</span>
+                        <span className="text-[9px] font-bold">Logo</span>
+                    </button>
+                    <button onClick={injectPlaylist} className="w-full flex flex-col items-center justify-center gap-1 p-2 rounded bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] hover:border-emerald-500/50 transition-colors text-gray-300">
+                        <span className="text-lg">🎵</span>
+                        <span className="text-[9px] font-bold">Playlist</span>
+                    </button>
+                    <button onClick={injectSubtitle} className="w-full flex flex-col items-center justify-center gap-1 p-2 rounded bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] hover:border-emerald-500/50 transition-colors text-gray-300">
+                        <span className="text-lg">💬</span>
+                        <span className="text-[9px] font-bold">Subtitle</span>
+                    </button>
+                </div>
             </div>
 
             <div className="border-t border-[#21232d] pt-4">

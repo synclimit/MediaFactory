@@ -17,7 +17,7 @@ export default function M4Statistics({ m4BgVideo, m4AmbientAudio, m4RelaxMusic }
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Ambient:</span>
-            <span className="font-mono text-emerald-400">{m4AmbientAudio?.duration}s</span>
+            <span className="font-mono text-emerald-400">{m4AmbientAudio?.length ? `${m4AmbientAudio.length} trx` : '0s'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Relax Music:</span>

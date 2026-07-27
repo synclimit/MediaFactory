@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { renderFrameStore } from '../../services/pipeline/runtime/RenderFrameStore';
 import Surface from '../ui/Surface';
+import DisplayModeSelector from './widgets/DisplayModeSelector';
 import { BackgroundVariants } from '../ui/BackgroundVariants';
 import { emitRuntimeEvent } from '../../services/RuntimeClient';
 import { fontLibrary } from '../../services/FontLibrary';
 import PlaylistParser from '../../services/playlist/PlaylistParser';
 import { TypographyThemes, getThemeById } from '../../services/typography/TypographyThemes';
+import { ALL_EFFECTS } from './panels/EffectsPanel';
 
 const LiveAudioMeter = ({ source }) => {
   const canvasRef = useRef(null);
@@ -51,16 +53,20 @@ const LiveAudioMeter = ({ source }) => {
 };
 
 // --- Helpers ---
-function SettingGroup({ title, children, headerClass="" }) {
+function SettingGroup({ title, children, headerClass="", headerAction=null }) {
   return (
     <div className="relative bg-gradient-to-br from-[#2a2c33] to-[#111216] rounded-xl border border-[#2a2c33] shadow-[0_15px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05),inset_0_-1px_2px_rgba(0,0,0,0.5)] p-4 mb-4 flex flex-col shrink-0 overflow-hidden group z-10">
       <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-orange-600/50 via-orange-500 to-orange-600/50 shadow-[0_0_15px_rgba(249,115,22,0.6)] z-0 pointer-events-none"></div>
       <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-0" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, #fff 2px, #fff 4px)'}}></div>
       
-      <h3 className={`text-[11px] font-bold text-white tracking-wide uppercase flex items-center gap-2 mb-4 relative z-10 m5-white-glow ${headerClass}`}>
-        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_#f97316]"></span>
-        {title}
-      </h3>
+      <div className="flex items-center justify-between mb-4 relative z-10">
+          <h3 className={`text-[11px] font-bold text-white tracking-wide uppercase flex items-center gap-2 m5-white-glow ${headerClass}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_#f97316]"></span>
+            {title}
+          </h3>
+          {headerAction && <div className="flex items-center">{headerAction}</div>}
+      </div>
+      
       <div className="space-y-4 relative z-10">
         {children}
       </div>
@@ -94,6 +100,31 @@ function ToggleRow({ label, checked, onChange, disabled }) {
 }
 
 function SliderRow({ label, min = 0, max = 100, step, value = 50, onChange, disabled, checkbox }) {
+  const [localValue, setLocalValue] = React.useState(value);
+  const lastUpdateRef = React.useRef(0);
+  const timeoutRef = React.useRef(null);
+
+  React.useEffect(() => {
+      setLocalValue(value);
+  }, [value]);
+
+  const handleChange = (e) => {
+      const val = e.target.value;
+      setLocalValue(val);
+      
+      const now = performance.now();
+      if (now - lastUpdateRef.current > 60) {
+          lastUpdateRef.current = now;
+          onChange({ target: { value: val } });
+      } else {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = setTimeout(() => {
+              lastUpdateRef.current = performance.now();
+              onChange({ target: { value: val } });
+          }, 60);
+      }
+  };
+
   return (
     <div className={`flex flex-col gap-1.5 ${disabled && !checkbox ? 'opacity-40 pointer-events-none' : ''} group`}>
       <div className="flex justify-between items-center text-[11px] text-gray-300 font-bold tracking-wide transition-colors duration-300">
@@ -115,10 +146,10 @@ function SliderRow({ label, min = 0, max = 100, step, value = 50, onChange, disa
             )}
             <span className="group-hover:text-white">{label}</span>
         </div>
-        <span className="font-mono text-orange-400 bg-[#161822] px-2 py-0.5 rounded-lg border border-orange-500/20 shadow-inner text-[10px] transition-all focus-within:border-orange-500">{Number(value).toFixed(step && step < 1 ? 1 : 0)}</span>
+        <span className="font-mono text-orange-400 bg-[#161822] px-2 py-0.5 rounded-lg border border-orange-500/20 shadow-inner text-[10px] transition-all focus-within:border-orange-500">{Number(localValue).toFixed(step && step < 1 ? 1 : 0)}</span>
       </div>
       <div className={`relative w-full flex items-center pt-1 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
-        <input type="range" min={min} max={max} step={step} value={value} onChange={onChange} disabled={disabled} className="w-full h-1 bg-[#161822] rounded-full appearance-none cursor-pointer border border-orange-500/20 shadow-inner focus:outline-none transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500 [&::-webkit-slider-thumb]:shadow-[0_0_8px_rgba(249,115,22,0.6)] [&::-webkit-slider-thumb]:hover:scale-125 [&::-webkit-slider-thumb]:transition-transform" />
+        <input type="range" min={min} max={max} step={step} value={localValue} onChange={handleChange} disabled={disabled} className="w-full h-1 bg-[#161822] rounded-full appearance-none cursor-pointer border border-orange-500/20 shadow-inner focus:outline-none transition-all [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500 [&::-webkit-slider-thumb]:shadow-[0_0_8px_rgba(249,115,22,0.6)] [&::-webkit-slider-thumb]:hover:scale-125 [&::-webkit-slider-thumb]:transition-transform" />
       </div>
     </div>
   );
@@ -169,6 +200,385 @@ function ButtonGroup({ label, options, active = options[0], onChange }) {
   );
 }
 
+// --- Pemicu options ---
+const PEMICU_OPTIONS = [
+    { value: 'metronom', label: 'Ikuti Ketukan (Metronom)' },
+    { value: 'kick', label: 'Ikuti Low (kick)' },
+    { value: 'mid', label: 'Ikuti Mid' },
+    { value: 'treble', label: 'Ikuti High' },
+    { value: 'energy', label: 'Ikuti Energy' },
+    { value: 'none', label: 'Selalu tampil' },
+];
+
+// --- Mode options ---
+const MODE_OPTIONS = ['Ringan — cepat (disarankan)', 'Kasar — lambat', 'Halus — bergelombang'];
+const COLOR_MODE_OPTIONS = ['Warna kustom', 'Pelangi', 'Dinamis', 'Ikuti cover'];
+
+// ============================================================
+// Inline UI Components (BSPLabs Style)
+// ============================================================
+
+function FxSlider({ label, min = 0, max = 100, step, value, onChange, suffix = '%' }) {
+    const [localValue, setLocalValue] = React.useState(value);
+    const timeoutRef = React.useRef(null);
+    const isDragging = React.useRef(false);
+
+    React.useEffect(() => {
+        if (!isDragging.current) {
+            setLocalValue(value);
+        }
+    }, [value]);
+
+    const displayVal = suffix === '×' ? Number(localValue).toFixed(2) : Math.round(localValue);
+
+    const handleChange = (e) => {
+        const val = suffix === '×' ? parseFloat(e.target.value) : parseInt(e.target.value);
+        setLocalValue(val);
+        
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+            if (isDragging.current) return; // Wait for pointerup if still dragging
+            onChange(val);
+        }, 250);
+    };
+
+    const handlePointerDown = (e) => {
+        isDragging.current = true;
+        e.stopPropagation();
+    };
+
+    const handlePointerUp = () => {
+        isDragging.current = false;
+        clearTimeout(timeoutRef.current);
+        onChange(localValue);
+    };
+
+    return (
+        <div className="flex flex-col gap-1 mb-3">
+            <div className="flex justify-between items-center">
+                <span className="text-[11px] text-gray-400 font-medium">{label}</span>
+                <span className="text-[11px] text-orange-400 font-bold tabular-nums">{displayVal}{suffix}</span>
+            </div>
+            <input
+                type="range" min={min} max={max} step={step || (suffix === '×' ? 0.05 : 1)} value={localValue}
+                onChange={handleChange}
+                onPointerDown={handlePointerDown}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={() => { if(isDragging.current) handlePointerUp(); }}
+                onKeyDown={e => e.stopPropagation()}
+                className="w-full h-2 bg-[#1e2035] rounded-full appearance-none cursor-pointer accent-orange-500
+                    border border-[#2d3060] focus:outline-none focus:border-orange-500
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500
+                    [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(249,115,22,0.8)]
+                    [&::-webkit-slider-thumb]:hover:bg-orange-400 [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-all"
+            />
+        </div>
+    );
+}
+
+function FxSelect({ label, options, value, onChange }) {
+    const [localValue, setLocalValue] = React.useState(value);
+    const timeoutRef = React.useRef(null);
+
+    React.useEffect(() => {
+        setLocalValue(value);
+    }, [value]);
+
+    const handleChange = (e) => {
+        const val = e.target.value;
+        setLocalValue(val);
+        
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+            onChange(val);
+        }, 50); // Fast commit
+    };
+
+    return (
+        <div className="flex flex-col gap-1.5 mb-3">
+            <span className="text-[11px] text-gray-400 font-medium">{label}</span>
+            <select
+                className="w-full bg-[#1a1c2e] border border-[#2d3060] rounded-md px-2.5 h-[32px] text-[11px] text-white
+                    focus:outline-none focus:border-orange-500 appearance-none font-medium cursor-pointer
+                    hover:border-orange-400/50 transition-colors"
+                value={localValue} onChange={handleChange}
+                onKeyDown={e => e.stopPropagation()}
+                style={{
+                    backgroundImage: "url(\"data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2210%22%20height%3D%226%22%20viewBox%3D%220%200%2010%206%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M1%201L5%205L9%201%22%20stroke%3D%22%23f97316%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E\")",
+                    backgroundRepeat: 'no-repeat', backgroundPosition: 'right .5rem top 50%', backgroundSize: '.5rem auto'
+                }}
+            >
+                {options.map((opt, idx) => {
+                    if (typeof opt === 'object') return <option key={idx} value={opt.value} className="bg-[#1a1c2e]">{opt.label}</option>;
+                    return <option key={idx} value={opt} className="bg-[#1a1c2e]">{opt}</option>;
+                })}
+            </select>
+        </div>
+    );
+}
+
+function FxColor({ label, value, onChange }) {
+    const [localValue, setLocalValue] = React.useState(value || '#ffffff');
+    const timeoutRef = React.useRef(null);
+
+    React.useEffect(() => {
+        setLocalValue(value || '#ffffff');
+    }, [value]);
+
+    const handleChange = (e) => {
+        const val = e.target.value;
+        setLocalValue(val);
+        
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+            onChange(val);
+        }, 150);
+    };
+
+    return (
+        <div className="flex items-center justify-between gap-3 mb-3">
+            <span className="text-[11px] text-gray-400 font-medium">{label}</span>
+            <div className="relative w-7 h-7 rounded-md overflow-hidden border border-[#2d3060] hover:border-orange-500 transition-colors cursor-pointer">
+                <input type="color" value={localValue} onChange={handleChange}
+                    onKeyDown={e => e.stopPropagation()}
+                    className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer border-none" />
+            </div>
+        </div>
+    );
+}
+
+// ============================================================
+// Per-Effect Inline Inspector Renderers
+// ============================================================
+
+function InspectorGuncangKamera({ props, update }) {
+    return (<>
+        <FxSlider label="Kekuatan guncang" value={props.strength ?? 23} onChange={v => update('strength', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Mode" options={MODE_OPTIONS} value={props.mode ?? MODE_OPTIONS[0]} onChange={v => update('mode', v)} />
+        <FxSelect label="Bentuk" options={['Semua arah', 'Horizontal', 'Vertikal']} value={props.shape ?? 'Semua arah'} onChange={v => update('shape', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 27} onChange={v => update('size', v)} />
+    </>);
+}
+
+function InspectorZoomHentak({ props, update }) {
+    return (<>
+        <FxSlider label="Kedalaman zoom" value={props.depth ?? 50} onChange={v => update('depth', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Mode" options={MODE_OPTIONS} value={props.mode ?? MODE_OPTIONS[0]} onChange={v => update('mode', v)} />
+        <FxSelect label="Bentuk" options={['Masuk', 'Keluar', 'Bolak-balik']} value={props.shape ?? 'Masuk'} onChange={v => update('shape', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorKilatStrobe({ props, update }) {
+    return (<>
+        <FxSlider label="Terang kilat" value={props.brightness ?? 50} onChange={v => update('brightness', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Mode warna" options={COLOR_MODE_OPTIONS} value={props.colorMode ?? 'Warna kustom'} onChange={v => update('colorMode', v)} />
+        {props.colorMode === 'Warna kustom' && <FxColor label="utama" value={props.color ?? '#ffffff'} onChange={v => update('color', v)} />}
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorLampuDisko({ props, update }) {
+    return (<>
+        <FxSlider label="Kecerahan lampu" value={props.brightness ?? 50} onChange={v => update('brightness', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Mode warna" options={COLOR_MODE_OPTIONS} value={props.colorMode ?? 'Warna kustom'} onChange={v => update('colorMode', v)} />
+        {props.colorMode === 'Warna kustom' && <FxColor label="utama" value={props.color ?? '#ffffff'} onChange={v => update('color', v)} />}
+        <FxSelect label="Bentuk" options={['Bulatan', 'Bulatan balik', 'Kerucut sorot', 'Beam vertikal', 'Batang']} value={props.shape ?? 'Kerucut sorot'} onChange={v => update('shape', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+        <FxSlider label="Jumlah" min={1} max={20} value={props.count ?? 4} onChange={v => update('count', v)} suffix="" />
+    </>);
+}
+
+function InspectorNeonKedalaman({ props, update }) {
+    return (<>
+        <FxSlider label="Kecerahan neon" value={props.brightness ?? 50} onChange={v => update('brightness', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Mode warna" options={COLOR_MODE_OPTIONS} value={props.colorMode ?? 'Warna kustom'} onChange={v => update('colorMode', v)} />
+        {props.colorMode === 'Warna kustom' && <FxColor label="utama" value={props.color ?? '#00ffff'} onChange={v => update('color', v)} />}
+        <FxSelect label="Bentuk" options={['Garis lurus', 'Gelombang', 'Zigzag']} value={props.shape ?? 'Garis lurus'} onChange={v => update('shape', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorLampuKedalaman({ props, update }) {
+    return (<>
+        <FxSlider label="Sorot 2 lampu" value={props.brightness ?? 50} onChange={v => update('brightness', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSlider label="Titik pisah (0% semua latar — 100% semua subjel)" value={props.split ?? 50} onChange={v => update('split', v)} />
+        <FxSelect label="Mode warna" options={COLOR_MODE_OPTIONS} value={props.colorMode ?? 'Warna kustom'} onChange={v => update('colorMode', v)} />
+        {props.colorMode === 'Warna kustom' && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+                <FxColor label="utama" value={props.color ?? '#ffffff'} onChange={v => update('color', v)} />
+                <FxColor label="kedua" value={props.color2 ?? '#00ffff'} onChange={v => update('color2', v)} />
+            </div>
+        )}
+        <FxSelect label="Bentuk" options={['Panggung', 'Ikuti beat', 'Silih berganti']} value={props.shape ?? 'Ikuti beat'} onChange={v => update('shape', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorSinarKedalaman({ props, update }) {
+    return (<>
+        <FxSlider label="Berkas cahaya" value={props.strength ?? 50} onChange={v => update('strength', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSlider label="Kedalaman (0% jauh — 100% depan)" value={props.depthLevel ?? 80} onChange={v => update('depthLevel', v)} />
+        <FxSelect label="Mode warna" options={COLOR_MODE_OPTIONS} value={props.colorMode ?? 'Warna kustom'} onChange={v => update('colorMode', v)} />
+        {props.colorMode === 'Warna kustom' && <FxColor label="utama" value={props.color ?? '#ffaa55'} onChange={v => update('color', v)} />}
+        <FxSelect label="Bentuk" options={['Atas', 'Kanan-atas', 'Kanan', 'Kanan-bawah', 'Bawah', 'Kiri-bawah', 'Kiri', 'Kiri-atas']} value={props.direction ?? 'Atas'} onChange={v => update('direction', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+        <FxSlider label="Jumlah" value={props.count ?? 50} onChange={v => update('count', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorBokehKedalaman({ props, update }) {
+    return (<>
+        <FxSlider label="Cahaya melayang" value={props.brightness ?? 50} onChange={v => update('brightness', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'energy'} onChange={v => update('source', v)} />
+        <FxSlider label="Kedalaman (0% jauh — 100% depan)" value={props.depthLevel ?? 80} onChange={v => update('depthLevel', v)} />
+        <FxSelect label="Mode warna" options={COLOR_MODE_OPTIONS} value={props.colorMode ?? 'Warna kustom'} onChange={v => update('colorMode', v)} />
+        {props.colorMode === 'Warna kustom' && <FxColor label="utama" value={props.color ?? '#ffffff'} onChange={v => update('color', v)} />}
+        <FxSelect label="Bentuk" options={['Melayang', 'Naik pelan', 'Berdenyut']} value={props.shape ?? 'Melayang'} onChange={v => update('shape', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+        <FxSlider label="Jumlah" min={1} max={100} value={props.count ?? 30} onChange={v => update('count', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorPindaiKedalaman({ props, update }) {
+    return (<>
+        <FxSlider label="Kecerahan pindai" value={props.brightness ?? 50} onChange={v => update('brightness', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Mode warna" options={COLOR_MODE_OPTIONS} value={props.colorMode ?? 'Warna kustom'} onChange={v => update('colorMode', v)} />
+        {props.colorMode === 'Warna kustom' && <FxColor label="utama" value={props.color ?? '#00ff88'} onChange={v => update('color', v)} />}
+        <FxSelect label="Bentuk" options={['Maju', 'Mundur', 'Pantul', 'Ikuti beat']} value={props.shape ?? 'Maju'} onChange={v => update('shape', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+        <FxSlider label="Jumlah" value={props.count ?? 50} onChange={v => update('count', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorKabutKedalaman({ props, update }) {
+    return (<>
+        <FxSlider label="Kepadatan kabut" value={props.density ?? 50} onChange={v => update('density', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'energy'} onChange={v => update('source', v)} />
+        <FxSelect label="Mode warna" options={COLOR_MODE_OPTIONS} value={props.colorMode ?? 'Warna kustom'} onChange={v => update('colorMode', v)} />
+        {props.colorMode === 'Warna kustom' && <FxColor label="utama" value={props.color ?? '#ffffff'} onChange={v => update('color', v)} />}
+        <FxSelect label="Bentuk" options={['Tenang', 'Berarak', 'Berdenyut']} value={props.shape ?? 'Tenang'} onChange={v => update('shape', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+        <FxSlider label="Kedalaman" value={props.depthLevel ?? 80} onChange={v => update('depthLevel', v)} />
+    </>);
+}
+
+function InspectorGlitch({ props, update }) {
+    return (<>
+        <FxSlider label="Intensitas glitch" value={props.intensity ?? 50} onChange={v => update('intensity', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Bentuk" options={['RGB Split', 'Block', 'Digital']} value={props.shape ?? 'RGB Split'} onChange={v => update('shape', v)} />
+        <FxSlider label="Frekuensi" value={props.frequency ?? 50} onChange={v => update('frequency', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorDebuFilmTua({ props, update }) {
+    return (<>
+        <FxSlider label="Kepadatan debu" value={props.density ?? 50} onChange={v => update('density', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'energy'} onChange={v => update('source', v)} />
+        <FxSelect label="Bentuk" options={['Ringan', 'Sedang', 'Berat']} value={props.shape ?? 'Ringan'} onChange={v => update('shape', v)} />
+        <FxColor label="Warna" value={props.color ?? '#ffffff'} onChange={v => update('color', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorGarisKecepatan({ props, update }) {
+    return (<>
+        <FxSlider label="Intensitas garis" value={props.intensity ?? 50} onChange={v => update('intensity', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Bentuk" options={['Radial', 'Horizontal', 'Vertikal']} value={props.shape ?? 'Radial'} onChange={v => update('shape', v)} />
+        <FxColor label="Warna" value={props.color ?? '#ffffff'} onChange={v => update('color', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+        <FxSlider label="Jumlah" min={10} max={200} value={props.count ?? 60} onChange={v => update('count', v)} suffix="" />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+function InspectorGrainFilm({ props, update }) {
+    return (<>
+        <FxSlider label="Intensitas grain" value={props.intensity ?? 50} onChange={v => update('intensity', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'none'} onChange={v => update('source', v)} />
+        <FxSelect label="Bentuk" options={['Halus', 'Kasar', 'Film 8mm']} value={props.shape ?? 'Halus'} onChange={v => update('shape', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+    </>);
+}
+
+function InspectorVignette({ props, update }) {
+    return (<>
+        <FxSlider label="Gelap tepi" value={props.darkness ?? 50} onChange={v => update('darkness', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'none'} onChange={v => update('source', v)} />
+        <FxSelect label="Bentuk" options={['Bulat', 'Kotak']} value={props.shape ?? 'Bulat'} onChange={v => update('shape', v)} />
+        <FxColor label="Warna" value={props.color ?? '#000000'} onChange={v => update('color', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+    </>);
+}
+
+function InspectorLetterbox({ props, update }) {
+    return (<>
+        <FxSlider label="Tinggi bar" value={props.height ?? 50} onChange={v => update('height', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'none'} onChange={v => update('source', v)} />
+        <FxColor label="Warna" value={props.color ?? '#000000'} onChange={v => update('color', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+    </>);
+}
+
+function InspectorScanline({ props, update }) {
+    return (<>
+        <FxSlider label="Kepekatan garis" value={props.density ?? 50} onChange={v => update('density', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Bentuk" options={['Turun', 'Naik', 'Statis']} value={props.shape ?? 'Turun'} onChange={v => update('shape', v)} />
+        <FxColor label="Warna" value={props.color ?? '#000000'} onChange={v => update('color', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+    </>);
+}
+
+function InspectorLightLeak({ props, update }) {
+    return (<>
+        <FxSlider label="Kekuatan cahaya" value={props.strength ?? 50} onChange={v => update('strength', v)} />
+        <FxSelect label="Pemicu" options={PEMICU_OPTIONS} value={props.source ?? 'kick'} onChange={v => update('source', v)} />
+        <FxSelect label="Mode warna" options={COLOR_MODE_OPTIONS} value={props.colorMode ?? 'Warna kustom'} onChange={v => update('colorMode', v)} />
+        {props.colorMode === 'Warna kustom' && <FxColor label="utama" value={props.color ?? '#ff8800'} onChange={v => update('color', v)} />}
+        <FxSelect label="Bentuk" options={['Kanan-atas', 'Kiri-atas', 'Kiri-bawah', 'Kanan-bawah', 'Tengah']} value={props.shape ?? 'Kanan-atas'} onChange={v => update('shape', v)} />
+        <FxSlider label="Ukuran" value={props.size ?? 50} onChange={v => update('size', v)} />
+        <FxSlider label="Kecepatan" min={0.1} max={3.0} step={0.05} value={props.speed ?? 1.0} onChange={v => update('speed', v)} suffix="×" />
+    </>);
+}
+
+// Map presetId → Inspector component
+const INSPECTOR_MAP = {
+    'camera-shake': InspectorGuncangKamera,
+    'zoom-hentak': InspectorZoomHentak,
+    'strobe-flash': InspectorKilatStrobe,
+    'disco-light': InspectorLampuDisko,
+    'neon-depth': InspectorNeonKedalaman,
+    'deep-light': InspectorLampuKedalaman,
+    'god-rays': InspectorSinarKedalaman,
+    'depth-bokeh': InspectorBokehKedalaman,
+    'depth-scan': InspectorPindaiKedalaman,
+    'depth-fog': InspectorKabutKedalaman,
+    'glitch-digital': InspectorGlitch,
+    'old-film-dust': InspectorDebuFilmTua,
+    'speed-lines': InspectorGarisKecepatan,
+    'film-grain': InspectorGrainFilm,
+    'vignette': InspectorVignette,
+    'letterbox': InspectorLetterbox,
+    'scanline': InspectorScanline,
+    'light-leak': InspectorLightLeak,
+};
 export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPool = [], setM3BgPool, m3SelectedObjectId, activeCategory, renderSettings = {}, setRenderSettings }) {
   const [demoState, setDemoState] = React.useState({});
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -462,56 +872,100 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
 
   const renderSubtitleInspector = () => (
     <>
-      <SettingGroup title="Subtitle Transform">
-        <SliderRow label="Position X" min={-1000} max={3000} value={getProp('transform', {}).x !== undefined ? getProp('transform', {}).x : 400} onChange={e => updateProp('transform', { ...(getProp('transform', {})), x: Number(e.target.value) })} />
-        <SliderRow label="Position Y" min={-1000} max={2000} value={getProp('transform', {}).y !== undefined ? getProp('transform', {}).y : 400} onChange={e => updateProp('transform', { ...(getProp('transform', {})), y: Number(e.target.value) })} />
+      <SettingGroup title="Text Layout" headerClass="text-[#a855f7] border-[#a855f7]/30">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-[10px] text-gray-400 font-bold uppercase">Typography Preset</span>
+          <button 
+            onClick={() => {
+              updateProps({
+                font: 'Segoe UI, sans-serif', fontWeight: 'Extra-Bold', lines: '1 Line', wordsPerLine: 8,
+                autoShrink: true, keepInGaps: false, lineMovement: 'None', displayMode: 'Paragraph'
+              });
+            }}
+            className="text-[10px] bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded transition-all"
+          >
+            Reset Preset
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2 mb-3">
+          <SelectRow label="Font Family" options={['Segoe UI, sans-serif', 'Inter, sans-serif', 'Roboto, sans-serif', 'Oswald, sans-serif', 'Montserrat, sans-serif', 'Dancing Script, cursive', 'Great Vibes, cursive', 'Courier New, monospace']} value={getProp('font', 'Segoe UI, sans-serif')} onChange={e => updateProp('font', e.target.value)} />
+          <SelectRow label="Font Weight" options={['Extra-Bold', 'Bold', 'Semi-Bold', 'Normal', 'Light']} value={getProp('fontWeight', 'Extra-Bold')} onChange={e => updateProp('fontWeight', e.target.value)} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 mb-3 pt-2 border-t border-[#2d3247]">
+          <SelectRow label="Lines" options={['1 Line', '2 Lines', '3 Lines', '4 Lines']} value={getProp('lines', '1 Line')} onChange={e => updateProp('lines', e.target.value)} />
+          <div className="flex items-center justify-between text-[11px] text-gray-300">
+            <span>Words / Line</span>
+            <input 
+              type="number" min={1} max={30} value={getProp('wordsPerLine', 8)} 
+              onChange={e => updateProp('wordsPerLine', Number(e.target.value))}
+              className="w-12 bg-[#11131a] border border-[#2d3247] rounded px-1.5 py-0.5 text-center text-white font-bold"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 mb-3 pt-2 border-t border-[#2d3247]">
+          <ToggleRow label="Auto-shrink long lines" checked={getProp('autoShrink', true)} onChange={e => updateProp('autoShrink', e.target.checked)} />
+          <ToggleRow label="Keep visible in gaps" checked={getProp('keepInGaps', false)} onChange={e => updateProp('keepInGaps', e.target.checked)} />
+        </div>
+
+        <div className="flex flex-col gap-2 pt-2 border-t border-[#2d3247]">
+          <SelectRow label="Line Movement (Scroll)" options={['None', 'Smooth Scroll', 'Pop Up', 'Fade & Slide', 'Typewriter', 'Bounce']} value={getProp('lineMovement', 'None')} onChange={e => updateProp('lineMovement', e.target.value)} />
+          <div className="flex flex-col mb-1 w-full text-[11px]">
+            <span className="text-gray-300 mb-1">Display Mode</span>
+            <DisplayModeSelector 
+               value={getProp('displayMode', 'Static')} 
+               onChange={val => updateProp('displayMode', val)} 
+            />
+          </div>
+        </div>
+      </SettingGroup>
+
+      <SettingGroup title="Text Style" headerClass="text-[#a855f7] border-[#a855f7]/30">
+        <div className="flex justify-between items-center text-[11px] text-gray-300 mb-3">
+          <span>Color & Alignment</span>
+          <div className="flex items-center gap-2">
+            <input type="color" value={getProp('color', '#ffffff')} onChange={e => updateProp('color', e.target.value)} className="w-6 h-6 bg-transparent border-none cursor-pointer" />
+            <select value={getProp('align', 'Center')} onChange={e => updateProp('align', e.target.value)} className="bg-[#11131a] border border-[#2d3247] rounded px-2 py-0.5 text-[11px] text-white">
+              <option value="Center">Center</option>
+              <option value="Left">Left</option>
+              <option value="Right">Right</option>
+            </select>
+          </div>
+        </div>
+
+        <SliderRow label="Font Size" min={10} max={120} value={getProp('fontSize', 36)} onChange={e => updateProp('fontSize', Number(e.target.value))} />
+        <SliderRow label="Line Height" min={0.5} max={3} step={0.1} value={getProp('lineHeight', 1.5)} onChange={e => updateProp('lineHeight', Number(e.target.value))} />
+
+        <div className="mt-3 pt-3 border-t border-[#2d3247] flex flex-col gap-2">
+          <ToggleRow label="Stroke Outline" checked={getProp('strokeEnabled', true)} onChange={e => updateProp('strokeEnabled', e.target.checked)} />
+          {getProp('strokeEnabled', true) && (
+            <div className="pl-3 border-l-2 border-[#2d3247] ml-1 flex flex-col gap-2.5 mt-1">
+              <ColorRow label="Stroke Color" value={getProp('strokeColor', '#000000')} onChange={e => updateProp('strokeColor', e.target.value)} />
+              <SliderRow label="Stroke Width" min={0} max={20} value={getProp('strokeWidth', 1)} onChange={e => updateProp('strokeWidth', Number(e.target.value))} />
+            </div>
+          )}
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-[#2d3247] flex flex-col gap-2">
+          <ToggleRow label="Outer Glow" checked={getProp('glowEnabled', false)} onChange={e => updateProp('glowEnabled', e.target.checked)} />
+          {getProp('glowEnabled', false) && (
+            <div className="pl-3 border-l-2 border-[#2d3247] ml-1 flex flex-col gap-2.5 mt-1">
+              <ColorRow label="Glow Color" value={getProp('glowColor', '#a855f7')} onChange={e => updateProp('glowColor', e.target.value)} />
+              <SliderRow label="Glow Blur / Intensity" min={0} max={100} value={getProp('glowBlur', 18)} onChange={e => updateProp('glowBlur', Number(e.target.value))} />
+            </div>
+          )}
+        </div>
+      </SettingGroup>
+
+      <SettingGroup title="Transform & Position">
+        <SliderRow label="Position X" min={-1000} max={3000} value={getProp('transform', {}).x !== undefined ? getProp('transform', {}).x : 960} onChange={e => updateProp('transform', { ...(getProp('transform', {})), x: Number(e.target.value) })} />
+        <SliderRow label="Position Y" min={-1000} max={2000} value={getProp('transform', {}).y !== undefined ? getProp('transform', {}).y : 850} onChange={e => updateProp('transform', { ...(getProp('transform', {})), y: Number(e.target.value) })} />
+        <SliderRow label="Width" min={100} max={3840} value={getProp('width', 800)} onChange={e => updateProp('width', Number(e.target.value))} />
         <SliderRow label="Scale" min={0.1} max={3} step={0.1} value={getProp('transform', {}).scale !== undefined ? getProp('transform', {}).scale : 1} onChange={e => updateProp('transform', { ...(getProp('transform', {})), scale: Number(e.target.value) })} />
         <SliderRow label="Rotation" min={-180} max={180} value={getProp('transform', {}).rotation || 0} onChange={e => updateProp('transform', { ...(getProp('transform', {})), rotation: Number(e.target.value) })} />
         <SliderRow label="Opacity" min={0} max={100} value={getProp('transform', {}).opacity !== undefined ? getProp('transform', {}).opacity : 100} onChange={e => updateProp('transform', { ...(getProp('transform', {})), opacity: Number(e.target.value) })} />
-      </SettingGroup>
-
-      <SettingGroup title="Subtitle Layout">
-        <SliderRow label="Width" min={100} max={3840} value={getProp('width', 800)} onChange={e => updateProp('width', Number(e.target.value))} />
-        <SliderRow label="Bottom Margin" min={0} max={500} value={getProp('bottomMargin', 50)} onChange={e => updateProp('bottomMargin', Number(e.target.value))} />
-      </SettingGroup>
-
-      <SettingGroup title="Typography">
-        <SelectRow 
-            label="Theme" 
-            options={['custom', ...TypographyThemes.map(t => t.id)]} 
-            value={getProp('typographyTheme', 'custom')} 
-            onChange={e => {
-                const themeId = e.target.value;
-                if (themeId !== 'custom') {
-                    const theme = getThemeById(themeId);
-                    setM3Objects(prev => prev.map(o => {
-                        if (o.id !== m3SelectedObjectId) return o;
-                        return { 
-                            ...o, 
-                            typographyTheme: themeId,
-                            font: theme.typography.fontFamily,
-                            fontSize: theme.typography.fontSize,
-                            color: theme.typography.color,
-                            lineHeight: theme.typography.lineHeight,
-                            fontWeight: theme.typography.fontWeight,
-                            fontStyle: theme.typography.fontStyle,
-                            letterSpacing: theme.typography.letterSpacing,
-                            align: theme.typography.textAlign,
-                            opacity: theme.typography.opacity
-                        };
-                    }));
-                } else {
-                    updateProp('typographyTheme', 'custom');
-                }
-            }} 
-        />
-        <SelectRow label="Font" options={['Arial, sans-serif', 'Roboto, sans-serif', 'Inter, sans-serif', 'Oswald, sans-serif', 'Montserrat, sans-serif', 'Impact, sans-serif', 'Courier New, monospace']} value={getProp('font', 'Arial, sans-serif')} onChange={e => updateProp('font', e.target.value)} />
-        <SliderRow label="Font Size" min={8} max={120} value={getProp('fontSize', 32)} onChange={e => updateProp('fontSize', Number(e.target.value))} />
-        <SliderRow label="Line Height" min={0.5} max={3} step={0.1} value={getProp('lineHeight', 1.5)} onChange={e => updateProp('lineHeight', Number(e.target.value))} />
-        <div className="flex justify-between items-center text-[11px] text-gray-300 mt-2">
-            <span>Color</span>
-            <input type="color" value={getProp('color', '#ffffff')} onChange={e => updateProp('color', e.target.value)} className="w-8 h-8 bg-transparent border-none cursor-pointer" />
-        </div>
       </SettingGroup>
 
       <SettingGroup title="State">
@@ -674,220 +1128,87 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
     }
   };
 
-  const renderEffectsInspector = () => {
-    const obj = m3Objects.find(o => o.id === m3SelectedObjectId);
-    if (!obj || obj.type !== 'effect') return null;
 
-    const props = obj.props || {};
-    const keys = Object.keys(props);
-
-    // Dictionary for UI language translation
-    const labelMap = {
-      'intensity': 'Strength',
-      'baseIntensity': 'Strength',
-      'beatMultiplier': 'Music Impact',
-      'attack': 'Reaction Speed',
-      'release': 'Smoothness',
-      'threshold': 'Beat Detection',
-      'impulse': 'Music Impact',
-      'maxOffset': 'Shake Amount',
-      'maxScale': 'Zoom Amount',
-      'count': 'Density'
+  const renderVisualFXInspector = () => {
+    const activeEffects = m3Objects.filter(obj => obj.type === 'effect' || obj.type === 'reactive');
+    
+    const handleDelete = (id) => {
+        setM3Objects(prev => prev.filter(obj => obj.id !== id));
     };
 
-    const getLabel = (k) => labelMap[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-
-    const renderRawProps = () => {
-      if (keys.length === 0) return <div className="text-[10px] text-gray-500">No editable properties</div>;
-      
-      return keys.map(k => {
-        let min = 0; let max = 100;
-        if (k === 'amount') max = 300;
-        if (k === 'count') { min = 10; max = 500; }
-        if (k === 'redOffset' || k === 'greenOffset' || k === 'blueOffset') { min = -50; max = 50; }
-        if (k === 'intensity' || k === 'baseIntensity') max = 200;
-        if (k === 'radius') max = 200;
-        if (k === 'beatMultiplier') max = 300;
-        if (k === 'maxOffset') max = 200;
-        if (k === 'maxScale') { min = 100; max = 150; }
-        if (k === 'attack' || k === 'release') max = 1000;
-        
-        if (typeof props[k] === 'string') {
-            if (k === 'color') {
-                 return (
-                    <div key={k} className="flex justify-between items-center text-[11px] text-gray-300 mt-2 mb-2">
-                      <span className="capitalize">{getLabel(k)}</span>
-                      <input type="color" value={props[k]} onChange={e => {
-                           if (m3SelectedObjectId && setM3Objects) {
-                               setM3Objects(prev => prev.map(o => o.id === m3SelectedObjectId ? { ...o, props: { ...o.props, [k]: e.target.value } } : o));
-                           }
-                      }} className="w-8 h-8 bg-transparent border-none cursor-pointer" />
-                    </div>
-                 );
-            }
-            return null;
-        }
-
-        return <SliderRow key={k} label={getLabel(k)} min={min} max={max} value={getEffectProp(k, 0)} onChange={e => updateEffectProp(k, e.target.value)} />;
-      });
-    };
-
-    // Quick Controls mapped to real underlying properties based on category
-    const renderQuickControls = () => {
-      if (obj.presetId === 'camera-shake') {
-        return (
-          <SettingGroup title="Quick Controls">
-            <div className="flex flex-col gap-2 mb-2">
-              <span className="text-[10px] text-gray-400 uppercase font-bold">Motion</span>
-              <div className="flex gap-1">
-                <button onClick={() => updateEffectProp('baseIntensity', 5)} className={`flex-1 py-1.5 text-xs rounded ${props.baseIntensity <= 5 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Soft</button>
-                <button onClick={() => updateEffectProp('baseIntensity', 10)} className={`flex-1 py-1.5 text-xs rounded ${props.baseIntensity > 5 && props.baseIntensity <= 15 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Natural ⭐</button>
-                <button onClick={() => updateEffectProp('baseIntensity', 40)} className={`flex-1 py-1.5 text-xs rounded ${props.baseIntensity > 15 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Strong</button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] text-gray-400 uppercase font-bold">Music Sync</span>
-              <div className="flex gap-1">
-                <button onClick={() => updateEffectProp('beatMultiplier', 20)} className={`flex-1 py-1.5 text-xs rounded ${props.beatMultiplier <= 50 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Relaxed</button>
-                <button onClick={() => updateEffectProp('beatMultiplier', 100)} className={`flex-1 py-1.5 text-xs rounded ${props.beatMultiplier > 50 && props.beatMultiplier <= 120 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Natural ⭐</button>
-                <button onClick={() => updateEffectProp('beatMultiplier', 200)} className={`flex-1 py-1.5 text-xs rounded ${props.beatMultiplier > 120 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Aggressive</button>
-              </div>
-            </div>
-          </SettingGroup>
-        );
-      }
-      if (obj.presetId === 'zoom-pulse') {
-        return (
-          <div className="flex flex-col">
-            <SettingGroup title="Quick Controls">
-              <SliderRow label="Strength" min={100} max={150} value={getEffectProp('maxScale', 102)} onChange={e => updateEffectProp('maxScale', e.target.value)} />
-              <SliderRow label="Speed" min={0} max={100} value={getEffectProp('speed', 50)} onChange={e => updateEffectProp('speed', e.target.value)} />
-              <SliderRow label="Music Sync" min={0} max={300} value={getEffectProp('beatMultiplier', 100)} onChange={e => updateEffectProp('beatMultiplier', e.target.value)} />
-            </SettingGroup>
-
-            {showAdvanced ? (
-              <>
-                <button onClick={() => setShowAdvanced(false)} className="text-[10px] text-gray-400 font-bold mb-3 hover:text-white self-start">▲ Hide Advanced</button>
-                <SettingGroup title="Advanced Properties">
-                  {renderRawProps()}
-                </SettingGroup>
-              </>
-            ) : (
-              <button onClick={() => setShowAdvanced(true)} className="text-[10px] text-gray-400 font-bold mb-3 hover:text-white self-start">▼ Advanced</button>
-            )}
-          </div>
-        );
-      }
-      if (obj.presetId === 'glow') {
-        return (
-          <SettingGroup title="Quick Controls">
-            <div className="flex flex-col gap-2 mb-2">
-              <span className="text-[10px] text-gray-400 uppercase font-bold">Brightness</span>
-              <div className="flex gap-1">
-                <button onClick={() => updateEffectProp('intensity', 30)} className={`flex-1 py-1.5 text-xs rounded ${props.intensity <= 40 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Low</button>
-                <button onClick={() => updateEffectProp('intensity', 80)} className={`flex-1 py-1.5 text-xs rounded ${props.intensity > 40 && props.intensity <= 100 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Medium ⭐</button>
-                <button onClick={() => updateEffectProp('intensity', 150)} className={`flex-1 py-1.5 text-xs rounded ${props.intensity > 100 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>High</button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] text-gray-400 uppercase font-bold">Radius</span>
-              <div className="flex gap-1">
-                <button onClick={() => updateEffectProp('radius', 10)} className={`flex-1 py-1.5 text-xs rounded ${props.radius <= 15 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Small</button>
-                <button onClick={() => updateEffectProp('radius', 40)} className={`flex-1 py-1.5 text-xs rounded ${props.radius > 15 && props.radius <= 60 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Medium</button>
-                <button onClick={() => updateEffectProp('radius', 100)} className={`flex-1 py-1.5 text-xs rounded ${props.radius > 60 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Large ⭐</button>
-              </div>
-            </div>
-          </SettingGroup>
-        );
-      }
-      if (obj.presetId === 'snow') {
-        return (
-          <SettingGroup title="Quick Controls">
-            <div className="flex flex-col gap-2 mb-2">
-              <span className="text-[10px] text-gray-400 uppercase font-bold">Density</span>
-              <div className="flex gap-1">
-                <button onClick={() => updateEffectProp('count', 50)} className={`flex-1 py-1.5 text-xs rounded ${props.count <= 100 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Light</button>
-                <button onClick={() => updateEffectProp('count', 200)} className={`flex-1 py-1.5 text-xs rounded ${props.count > 100 && props.count <= 300 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Normal ⭐</button>
-                <button onClick={() => updateEffectProp('count', 500)} className={`flex-1 py-1.5 text-xs rounded ${props.count > 300 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Heavy</button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] text-gray-400 uppercase font-bold">Wind</span>
-              <div className="flex gap-1">
-                <button onClick={() => updateEffectProp('wind', 2)} className={`flex-1 py-1.5 text-xs rounded ${props.wind <= 5 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Calm</button>
-                <button onClick={() => updateEffectProp('wind', 15)} className={`flex-1 py-1.5 text-xs rounded ${props.wind > 5 && props.wind <= 30 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Natural ⭐</button>
-                <button onClick={() => updateEffectProp('wind', 80)} className={`flex-1 py-1.5 text-xs rounded ${props.wind > 30 ? 'bg-purple-600 text-white' : 'bg-[#2d3247] text-gray-400'}`}>Storm</button>
-              </div>
-            </div>
-          </SettingGroup>
-        );
-      }
-      
-      // Fallback for others: just show top 2 props as sliders, rest hidden
-      const topKeys = keys.slice(0, 2);
-      if (topKeys.length > 0) {
-         return (
-           <SettingGroup title="Quick Controls">
-             {topKeys.map(k => (
-               <SliderRow key={k} label={getLabel(k)} min={0} max={k==='amount'||k==='intensity'?200:100} value={getEffectProp(k, 0)} onChange={e => updateEffectProp(k, e.target.value)} />
-             ))}
-           </SettingGroup>
-         );
-      }
-      return null;
+    const handleAddEffect = (effectDef) => {
+        const newEffect = {
+            id: 'fx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            type: 'effect',
+            presetId: effectDef.presetId,
+            name: effectDef.name,
+            category: 'effect',
+            enabled: true,
+            sensitivityMode: 'Normal',
+            amplitude: 100, threshold: 35, attack: 15, release: 180, smoothness: 60,
+            operation: 'multiply', curve: 'easeOut',
+            source: effectDef.defaultProps.source || 'energy',
+            props: { ...effectDef.defaultProps },
+        };
+        setM3Objects(prev => [...prev, newEffect]);
+        emitRuntimeEvent('Effect.Created', { id: newEffect.id, name: newEffect.name });
     };
 
     return (
-      <div className="flex flex-col gap-2">
-        {/* Large Effect Preview Block */}
-        <div className="p-4 bg-gradient-to-b from-[#2a2d3e] to-[#1e2230] border-b border-[#2d3247] flex gap-4 items-center">
-            <div className="w-16 h-16 rounded bg-[#11131a] flex items-center justify-center text-3xl border border-white/10 shadow-inner shrink-0">
-                {getEffectIcon(obj.category)}
-            </div>
-            <div className="flex flex-col">
-                <span className="text-lg font-bold text-white">{obj.name}</span>
-                <span className="text-xs text-gray-400 mt-1">{obj.presetId === 'camera-shake' ? 'Adds rhythmic motion to the scene.' : 'Visual effect layer.'}</span>
-            </div>
+      <div className="flex flex-col gap-2 px-2">
+        <div className="flex justify-between items-center mb-4 mt-2">
+            <span className="text-[12px] text-gray-300 font-bold tracking-widest uppercase">Visual FX Layer</span>
         </div>
 
-        {/* Quick Controls */}
-        <div className="px-2">
-           {renderQuickControls()}
-        </div>
-
-        {/* Advanced Accordion */}
-        <div className="px-2 pb-4 mt-2">
-            <details className="group bg-[#1a1d27] border border-[#2d3247] rounded overflow-hidden">
-                <summary className="p-3 text-xs font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-[#2d3247] transition-colors flex justify-between items-center outline-none">
-                    <span>Customize</span>
-                    <span className="text-gray-600 group-open:rotate-180 transition-transform">▼</span>
-                </summary>
-                <div className="p-3 bg-[#11131a] border-t border-[#2d3247]">
-                    <SettingGroup title="Advanced Properties">
-                      {renderRawProps()}
-                    </SettingGroup>
-                    
-                    <SettingGroup title="Audio Reactive">
-                      <ToggleRow label="Enable Audio Reactive" checked={getAudioBinding(0, 'enabled', false)} onChange={e => updateAudioBinding(0, 'enabled', e.target.checked)} />
-                      {getAudioBinding(0, 'enabled', false) && (
-                        <div className="mt-4 space-y-3 pt-3 border-t border-[#2d3247]">
-                           <SelectRow label="Parameter" options={keys.map(k=>({value:k, label:getLabel(k)}))} value={getAudioBinding(0, 'parameter', keys[0] || '')} onChange={e => updateAudioBinding(0, 'parameter', e.target.value)} />
-                           <SelectRow label="Source" options={['Peak', 'Bass', 'Mid', 'Treble']} value={getAudioBinding(0, 'source', 'Bass')} onChange={e => updateAudioBinding(0, 'source', e.target.value)} />
-                           <LiveAudioMeter source={getAudioBinding(0, 'source', 'Bass')} />
-                           <SliderRow label="Sensitivity" min={0} max={200} value={getAudioBinding(0, 'sensitivity', 100)} onChange={e => updateAudioBinding(0, 'sensitivity', e.target.value)} />
-                           <SliderRow label="Min Value" min={0} max={500} value={getAudioBinding(0, 'min', 0)} onChange={e => updateAudioBinding(0, 'min', e.target.value)} />
-                           <SliderRow label="Max Value" min={0} max={500} value={getAudioBinding(0, 'max', 100)} onChange={e => updateAudioBinding(0, 'max', e.target.value)} />
-                           <SliderRow label="Reaction Speed" min={0} max={1000} value={getAudioBinding(0, 'attack', 20)} onChange={e => updateAudioBinding(0, 'attack', e.target.value)} />
-                           <SliderRow label="Smoothness" min={0} max={1000} value={getAudioBinding(0, 'release', 180)} onChange={e => updateAudioBinding(0, 'release', e.target.value)} />
-                        </div>
-                      )}
-                    </SettingGroup>
-                </div>
-            </details>
-        </div>
+        {activeEffects.length === 0 ? (
+            <div className="text-[10px] text-gray-500 italic text-center p-6 border border-dashed border-[#2d3060] rounded-lg">
+                Belum ada efek yang diterapkan. Klik "+ Tambah Efek" atau gunakan Preset Genre.
+            </div>
+        ) : (
+            activeEffects.map(obj => {
+                const InspectorComp = INSPECTOR_MAP[obj.presetId];
+                return (
+                    <div key={obj.id} className="relative group">
+                        <SettingGroup 
+                            title={obj.name.toUpperCase()}
+                            headerAction={
+                                <button 
+                                    onClick={() => handleDelete(obj.id)} 
+                                    className="text-gray-500 hover:text-red-500 transition-colors bg-black/20 hover:bg-red-500/10 p-1.5 rounded flex items-center justify-center opacity-60 hover:opacity-100"
+                                    title="Hapus Efek"
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
+                            }
+                        >
+                            
+                            <div className="mt-1">
+                                {InspectorComp ? (
+                                    <InspectorComp 
+                                        props={obj.props || {}} 
+                                        update={(key, value) => {
+                                            const updated = m3Objects.map(o => {
+                                                if (o.id === obj.id) {
+                                                    return { ...o, props: { ...o.props, [key]: value } };
+                                                }
+                                                return o;
+                                            });
+                                            setM3Objects(updated);
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="text-[11px] text-gray-500 italic">No custom inspector for this effect.</div>
+                                )}
+                            </div>
+                        </SettingGroup>
+                    </div>
+                );
+            })
+        )}
       </div>
     );
   };
+
 
   const handleLayerMove = (direction) => {
     if (!m3SelectedObjectId || !setM3Objects) return;
@@ -931,6 +1252,9 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         const objectUrl = URL.createObjectURL(file);
         updateProp('source', objectUrl);
         updateProp('name', file.name);
+        if (file.name.toLowerCase().endsWith('.mp4')) {
+            updateProp('blend', 'Screen');
+        }
     };
     input.click();
   };
@@ -1006,8 +1330,61 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
 
       <SettingGroup title="🔊 Audio Reactivity" headerClass="text-[#10b981] border-[#10b981]/30">
         <ToggleRow label="Enable Audio Motion" checked={getProp('beatZoom', false)} onChange={e => updateProp('beatZoom', e.target.checked)} />
+        <ToggleRow label="Bass Pumping / Kempang-Kempis" checked={getProp('beatPump', false)} onChange={e => updateProp('beatPump', e.target.checked)} />
         {getProp('beatZoom', false) && renderAudioReactivityParams()}
       </SettingGroup>
+
+      {(obj?.type === 'procedural-speaker' || obj?.mediaType === 'procedural') && (
+        <SettingGroup title="🔊 Subwoofer Model & Style" headerClass="text-[#00ffcc] border-[#00ffcc]/30">
+          <SelectRow label="Subwoofer Model" options={[
+            '1. Studio Reference (Classic Dome)',
+            '2. Inverted Concave & 8 Bolts (Charcoal)',
+            '3. Hex Carbon Fiber & Rivets (Graphite)',
+            '4. Dual-Surround Extreme Excursion (Deep Black)',
+            '5. Flat-Piston Honeycomb Disc (Matte Black)',
+            '6. Turbofan Spoked Heavy-Duty (Gunmetal)',
+            '7. RGB LED Ring (Cyberpunk)',
+            '8. Glowing White Neon (Clean & Bright)'
+          ]} value={(() => {
+            const m = getProp('model', 'studio');
+            const map = {
+              'studio': '1. Studio Reference (Classic Dome)',
+              'inverted': '2. Inverted Concave & 8 Bolts (Charcoal)',
+              'carbon': '3. Hex Carbon Fiber & Rivets (Graphite)',
+              'dual': '4. Dual-Surround Extreme Excursion (Deep Black)',
+              'flat': '5. Flat-Piston Honeycomb Disc (Matte Black)',
+              'turbofan': '6. Turbofan Spoked Heavy-Duty (Gunmetal)',
+              'rgb_ring': '7. RGB LED Ring (Cyberpunk)',
+              'neon_white': '8. Glowing White Neon (Clean & Bright)'
+            };
+            return map[m] || '1. Studio Reference (Classic Dome)';
+          })()} onChange={e => {
+            const val = e.target.value;
+            const revMap = {
+              '1. Studio Reference (Classic Dome)': 'studio',
+              '2. Inverted Concave & 8 Bolts (Charcoal)': 'inverted',
+              '3. Hex Carbon Fiber & Rivets (Graphite)': 'carbon',
+              '4. Dual-Surround Extreme Excursion (Deep Black)': 'dual',
+              '5. Flat-Piston Honeycomb Disc (Matte Black)': 'flat',
+              '6. Turbofan Spoked Heavy-Duty (Gunmetal)': 'turbofan',
+              '7. RGB LED Ring (Cyberpunk)': 'rgb_ring',
+              '8. Glowing White Neon (Clean & Bright)': 'neon_white'
+            };
+            updateProp('model', revMap[val] || 'studio');
+          }} />
+          <SliderRow label="Pumping Intensity (Kekuatan Getaran)" min={0.5} max={6.0} step={0.2} value={getProp('pumpIntensity', 2.5)} onChange={e => updateProp('pumpIntensity', Number(e.target.value))} />
+          <div className="flex justify-between items-center text-[11px] text-gray-300 my-3">
+            <span>Rim Accent / Light Color</span>
+            <input type="color" value={getProp('color', '#00ffcc')} onChange={e => updateProp('color', e.target.value)} className="w-7 h-7 bg-transparent border border-[#2d3247] rounded cursor-pointer" />
+          </div>
+          <div className="mt-2">
+            <ToggleRow label="Real-Time Audio Reactive" checked={getProp('audioReactive', true)} onChange={e => updateProp('audioReactive', e.target.checked)} />
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2 leading-relaxed bg-[#14151c] p-2 rounded border border-[#2d3247]/50">
+            Semua model bernuansa Hitam/Abu-abu mekanikal (tanpa warna-warni aneh). Kerucut beneran mendenyut kempang-kempis mengikuti tendangan bass/kick drum! Anda juga bisa upload gambar PNG speaker sendiri dan aktifkan "Bass Pumping" di atas!
+          </p>
+        </SettingGroup>
+      )}
 
       <SettingGroup title="Media & Layering">
         <button onClick={handleReplaceMedia} className="w-full bg-[#181922] hover:bg-[#1e2230] border border-[#2d3247] text-gray-300 text-[11px] py-2 rounded mb-3">Replace Media</button>
@@ -1490,7 +1867,10 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         if (obj.type === 'background') return 'Background';
         if (obj.type === 'playlist' || obj.type === 'track_list_column') return 'Text Objects';
         if (obj.type === 'effect') return 'Effects';
-        if (obj.type === 'reactive') return 'Audio Reactive';
+        if (obj.type === 'reactive') {
+            if (ALL_EFFECTS.some(e => e.presetId === obj.presetId)) return 'Effects';
+            return 'Audio Reactive';
+        }
         if (obj.type === 'subtitle') return 'Subtitle';
         if (obj.type === 'particle') return 'Particle';
       }
@@ -1525,7 +1905,6 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         return renderAudioSettingsInspector();
       }
       case 'Visualizer': return renderVisualizerInspector();
-      case 'Effects': return renderEffectsInspector();
       case 'Overlay': return renderImageInspector();
       case 'Social Widget': return renderImageInspector();
       case 'Text Objects': {
@@ -1538,8 +1917,11 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
       case 'Audio Reactive': return renderReactiveInspector();
       case 'Branding': return renderBrandingInspector();
       case 'Render': return renderRenderInspector();
+      case 'Lyrics':
       case 'Subtitle': return renderSubtitleInspector();
       case 'Particle': return renderParticleInspector();
+      case 'Visual FX': return renderVisualFXInspector();
+      case 'Effects': return renderVisualFXInspector();
       default: return <div className="text-gray-500 text-[11px] p-4 italic text-center">Select a category to view properties.</div>;
     }
   };

@@ -239,9 +239,37 @@ class WorkspaceService {
         return backupName;
     }
 
+    async _calculateDirStats(dirPath) {
+        const fs = require('fs').promises;
+        const path = require('path');
+        let totalSize = 0;
+        let fileCount = 0;
+
+        const walk = async (currentPath) => {
+            try {
+                const entries = await fs.readdir(currentPath, { withFileTypes: true });
+                for (const entry of entries) {
+                    const fullPath = path.join(currentPath, entry.name);
+                    if (entry.isDirectory()) {
+                        await walk(fullPath);
+                    } else if (entry.isFile()) {
+                        const stat = await fs.stat(fullPath);
+                        totalSize += stat.size;
+                        fileCount++;
+                    }
+                }
+            } catch (e) {
+                // Ignore missing folders/permissions
+            }
+        };
+        await walk(dirPath);
+        return { totalSize, fileCount };
+    }
+
     async listWorkspaces() {
         const storage = this._getStorage();
         const config = this._getConfig();
+        const fs = require('fs').promises;
         
         if (!await storage.exists(this.basePath)) {
             return [];
@@ -255,11 +283,36 @@ class WorkspaceService {
                 const manifestPath = path.join(this.basePath, entry.name, 'workspace.manifest.json');
                 if (await storage.exists(manifestPath)) {
                     const manifestData = await config.load(manifestPath);
-                    // Generate basic stats (Last Opened, Projects, etc)
-                    // Stubbed logic for now
+                    
+                    // Count Projects
                     const projectsPath = path.join(this.basePath, entry.name, 'Projects');
-                    const projectEntries = await storage.readDir(projectsPath);
-                    const totalProjects = projectEntries.filter(p => p.isFile()).length;
+                    let totalProjects = 0;
+                    try {
+                        const pEntries = await storage.readDir(projectsPath);
+                        totalProjects = pEntries.filter(p => p.isFile()).length;
+                    } catch (e) {}
+
+                    // Get Settings for Output Path
+                    let renderCount = 0;
+                    let storageSizeGB = 0;
+                    try {
+                        const settingsPath = path.join(this.basePath, entry.name, 'Config', 'workspace.json');
+                        let settings = await config.load(settingsPath);
+                        const outPath = settings?.data?.output?.main || path.join(this.basePath, entry.name, 'Output');
+                        
+                        // Count renders (.mp4 files in Output/M6)
+                        const m6Path = path.join(outPath, 'M6');
+                        try {
+                            const m6Files = await fs.readdir(m6Path);
+                            renderCount = m6Files.filter(f => f.toLowerCase().endsWith('.mp4')).length;
+                        } catch (e) {}
+
+                        // Calculate entire workspace size
+                        const wsPath = path.join(this.basePath, entry.name);
+                        const { totalSize } = await this._calculateDirStats(wsPath);
+                        // Convert to GB with 2 decimals
+                        storageSizeGB = (totalSize / (1024 * 1024 * 1024)).toFixed(2);
+                    } catch (e) {}
 
                     workspaces.push({
                         name: entry.name,
@@ -267,7 +320,8 @@ class WorkspaceService {
                         lastOpened: manifestData?.data?.updatedAt || manifestData?.data?.createdAt,
                         totalProjects: totalProjects,
                         lastRender: null,
-                        renderCount: 0
+                        renderCount: renderCount,
+                        storageSizeGB: storageSizeGB
                     });
                 }
             }
@@ -314,6 +368,35 @@ class WorkspaceService {
         
         const existing = await this.getSettings(name);
         existing.data = { ...existing.data, ...payload };
+        
+        // Auto-create output folder structure when output.main is set
+        if (payload.output && payload.output.main) {
+            const outPath = payload.output.main;
+            const fs = require('fs');
+            
+            const dirsToCreate = [
+                outPath,
+                path.join(outPath, 'M1'),
+                path.join(outPath, 'M2'),
+                path.join(outPath, 'M2', 'Audio Compiler'),
+                path.join(outPath, 'M2', 'Playlist Splitter'),
+                path.join(outPath, 'M2', 'Asset Generator'),
+                path.join(outPath, 'M3'),
+                path.join(outPath, 'M4'),
+                path.join(outPath, 'M5'),
+                path.join(outPath, 'M6')
+            ];
+            
+            for (const dir of dirsToCreate) {
+                if (!fs.existsSync(dir)) {
+                    try {
+                        fs.mkdirSync(dir, { recursive: true });
+                    } catch (e) {
+                        console.error('Failed to create output directory:', dir, e);
+                    }
+                }
+            }
+        }
         
         return await config.save(settingsPath, existing);
     }
