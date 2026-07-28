@@ -141,7 +141,7 @@ router.post('/api/m3/render', async (req, res) => {
         };
         
         processM3Job(jobs[queueId]);
-        res.json({ queueId, status: 'QUEUED' });
+        res.json({ queueId, jobId: queueId, id: queueId, status: 'QUEUED' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
