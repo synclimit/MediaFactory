@@ -33,7 +33,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const API_BASE = "http://localhost:3001"; // ganti kalau backend beda origin, mis. "http://localhost:3001"
+const API_BASE = ""; // Relative URL path to work with any backend port/proxy
 
 const STYLES = `
 .sound-picker-overlay {

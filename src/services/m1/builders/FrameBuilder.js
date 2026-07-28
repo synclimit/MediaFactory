@@ -5,8 +5,13 @@ export class FrameBuilder {
     const overlayEffect = job.effects?.overlay;
     if (!overlayEffect || !overlayEffect.enabled) return null;
     
-    // Resolve asset path via Workspace Integration
-    const assetPath = await AssetResolver.resolve(overlayEffect.asset || 'frame.png');
+    let assetPath;
+    try {
+      assetPath = await AssetResolver.resolve(overlayEffect.asset || 'frame.png');
+    } catch (err) {
+      console.warn(`[FrameBuilder] Warning: ${err.message}. Skipping overlay effect.`);
+      return null;
+    }
     
     // Default position: Top Left
     const position = overlayEffect.position || 'top-left';

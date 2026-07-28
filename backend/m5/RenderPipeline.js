@@ -6,6 +6,7 @@ const PipelineContext = require('./core/PipelineContext');
 const PipelineLifecycle = require('./core/PipelineLifecycle');
 const RenderArtifact = require('./core/RenderArtifact');
 const CapabilityRegistry = require('./registry/CapabilityRegistry');
+const AppPaths = require('../system/AppPaths');
 
 // Pre-register engines required by the pipeline
 EngineRegistry.register('AssetEngine', require('./AssetEngine'));
@@ -311,7 +312,8 @@ class RenderPipeline {
         if (audioInputPath) {
             try {
                 const { execSync } = require('child_process');
-                const probeOut = execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioInputPath}"`, { encoding: 'utf8' });
+                const ffprobeBin = AppPaths.getFFprobePath();
+                const probeOut = execSync(`"${ffprobeBin}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioInputPath}"`, { encoding: 'utf8' });
                 const parsedAudDur = parseFloat(probeOut.trim());
                 if (!isNaN(parsedAudDur) && parsedAudDur > 0) {
                     // durSec = Math.ceil(parsedAudDur); // Disabled per user request so it follows UI setting
@@ -565,7 +567,8 @@ class RenderPipeline {
             // Check if bgInputPath has audio
             try {
                 const { execSync } = require('child_process');
-                const probeAudio = execSync(`ffprobe -v error -select_streams a -show_entries stream=codec_type -of default=noprint_wrappers=1:nokey=1 "${bgInputPath}"`, { encoding: 'utf8' });
+                const ffprobeBin = AppPaths.getFFprobePath();
+                const probeAudio = execSync(`"${ffprobeBin}" -v error -select_streams a -show_entries stream=codec_type -of default=noprint_wrappers=1:nokey=1 "${bgInputPath}"`, { encoding: 'utf8' });
                 if (probeAudio.trim() === 'audio') {
                     audioIdx = 0; // Use background audio
                 } else {

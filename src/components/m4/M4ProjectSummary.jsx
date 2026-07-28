@@ -26,7 +26,7 @@ export default function M4ProjectSummary({ m4BgVideo, m4AmbientAudio, m4RelaxMus
     ...(m4AmbientAudio || []).map(a => a.durationSec || 0),
     ...(m4RelaxMusic || []).map(m => m.durationSec || 0)
   );
-  const totalVirtSec = durationMode === 'Custom' ? (targetDuration * 60) : ((durationMode === 'Match Audio' && maxAudioDur > 0) ? maxAudioDur : ((m4BgVideo?.duration || 1) * 2));
+  const totalVirtSec = durationMode === 'Custom' ? (targetDuration * 60) : ((durationMode === 'Match Audio' && maxAudioDur > 0) ? maxAudioDur : ((m4BgVideo?.durationSec || 1) * 2));
 
   const formatTime = (s) => {
     const hrs = Math.floor(s / 3600).toString().padStart(2, '0');

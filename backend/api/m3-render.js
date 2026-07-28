@@ -1,4 +1,6 @@
 const { exec, spawn } = require('child_process');
+const util = require('util');
+const execAsync = util.promisify(exec);
 const crypto = require('crypto');
 const os = require('os');
 const path = require('path');
@@ -80,11 +82,13 @@ const spawnFFmpegM3 = (cmd, job) => new Promise((resolve, reject) => {
   const cmdNum = job.ffmpegCmdCounter++;
   
   const cmdHeader = `\nFFMPEG COMMAND #${cmdNum}\n\n${job.stage}\n\n${cmd}\n\n`;
+  console.log(`[FFMPEG CMD #${cmdNum}]`, cmd);
   job.logs += cmdHeader;
   job.diagnosticReport += cmdHeader;
   
   const args = cmd.match(/(?:[^\s"]+|"[^"]*")+/g).map(s => s.replace(/^"|"$/g, ''));
   const proc = spawn(args[0], args.slice(1));
+  job.ffmpegProcess = proc;
   
   let timerId = setInterval(async () => {
     const stats = await getSystemStats();
@@ -107,6 +111,7 @@ const spawnFFmpegM3 = (cmd, job) => new Promise((resolve, reject) => {
   });
   proc.on('close', code => {
     clearInterval(timerId);
+    job.ffmpegProcess = null;
     job.diagnosticReport += `\nExit Code : ${code}\n\n`;
     if (code === 0) resolve();
     else {
@@ -116,6 +121,7 @@ const spawnFFmpegM3 = (cmd, job) => new Promise((resolve, reject) => {
   });
   proc.on('error', err => {
     clearInterval(timerId);
+    job.ffmpegProcess = null;
     job.diagnosticReport += `\nExit Code : 1 (Spawn Error)\nError : ${err.message}\n\n`;
     reject(err);
   });
@@ -175,7 +181,7 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
           console.log(`[M3] Downloading YouTube audio: ${sp}`);
           await new Promise((resolve, reject) => {
             const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', sp];
-            const ytProc = spawn('yt-dlp', ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+            const ytProc = spawn('yt-dlp', ytArgs, { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
             ytProc.stdout.on('data', () => {});
             ytProc.stderr.on('data', () => {});
             
@@ -226,66 +232,132 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
   return outAudioPath;
 }
 
-function generateOverlayFilter(objects) {
-  if (!objects || objects.length === 0) return { inputs: '', filter: '', map: '' };
+function getFFmpegEncodingFlags(metadata = {}) {
+  const mode = (metadata.renderMode || 'FAST').toUpperCase();
+  const res = metadata.resolution || 'SD';
+  const fps = parseInt(metadata.fps) || 30;
+  const bFrame = metadata.bFrame || 'Otomatis';
+
+  let targetWidth = 1920;
+  let targetHeight = 1080;
+  if (res === 'SD' || res === '480p') {
+    targetWidth = 854;
+    targetHeight = 480;
+  } else if (res === '720p') {
+    targetWidth = 1280;
+    targetHeight = 720;
+  } else if (res === '1080p') {
+    targetWidth = 1920;
+    targetHeight = 1080;
+  }
+
+  let preset = 'ultrafast';
+  let crf = '28';
+
+  if (mode === 'FAST') {
+    preset = 'ultrafast';
+    crf = '28';
+  } else {
+    // NORMAL Mode: Higher quality, medium preset
+    preset = 'medium';
+    crf = '23';
+  }
+
+  let bFrameFlag = '';
+  if (bFrame === 'Mati') {
+    bFrameFlag = '-bf 0';
+  } else if (bFrame === 'Aktif') {
+    bFrameFlag = '-bf 2';
+  }
+
+  const flags = `-c:v libx264 -preset ${preset} -crf ${crf} ${bFrameFlag} -r ${fps} -pix_fmt yuv420p`.replace(/\s+/g, ' ').trim();
+
+  return {
+    flags,
+    targetWidth,
+    targetHeight,
+    fps,
+    preset,
+    mode
+  };
+}
+
+function generateOverlayFilter(objects, fps = 30) {
+  if (!objects || objects.length === 0) return { inputs: '', filter: '', map: '', overlaysCount: 0 };
   
-  // Filter only overlays
-  const overlays = objects.filter(o => o.type === 'image' && o.mediaType === 'video' && o.visible);
-  if (overlays.length === 0) return { inputs: '', filter: '', map: '' };
+  // Filter overlays (video or animated overlays)
+  const overlays = objects.filter(o => o && (o.type === 'overlay' || (o.type === 'image' && o.mediaType === 'video')) && o.visible !== false);
+  if (overlays.length === 0) return { inputs: '', filter: '', map: '', overlaysCount: 0 };
 
   let inputs = '';
   let filter = '';
   let lastOutput = '[0:v]';
 
   overlays.forEach((ov, index) => {
-    // Note: M3 frontend sends source as absolute URL or path. Assuming path is clean.
-    // If it's a localhost URL, we need to extract the path.
     let ovPath = ov.source;
-    if (ovPath.startsWith('http')) {
+    if (ovPath && ovPath.startsWith('http')) {
         try {
             const url = new URL(ovPath);
-            ovPath = path.join(__dirname, '..', url.pathname); // e.g. /assets/overlays/... -> backend/assets/overlays/...
+            ovPath = path.join(__dirname, '..', url.pathname);
         } catch(e) {}
-    } else {
+    } else if (ovPath) {
         if (!ovPath.includes('/') && !ovPath.includes('\\')) {
             ovPath = path.resolve('public', ovPath);
         }
     }
 
+    if (!ovPath) return;
+
     const inputIndex = index + 1; // 0 is background
-    inputs += ` -stream_loop -1 -i "${ovPath}"`;
+    const isVideoOverlay = ov.mediaType === 'video' || (ovPath && ovPath.match(/\.(mp4|webm|mov|mkv)$/i));
+    const loopFlag = isVideoOverlay ? '-stream_loop -1' : `-loop 1 -framerate ${fps}`;
+    inputs += ` ${loopFlag} -i "${ovPath}"`;
 
     const speed = ov.playbackRate || 1.0;
     const opacity = (ov.opacity !== undefined ? ov.opacity : 100) / 100;
 
-    filter += `[${inputIndex}:v]setpts=PTS/${speed},format=yuva420p,colorchannelmixer=aa=${opacity}[ov${inputIndex}];`;
-    filter += `${lastOutput}[ov${inputIndex}]overlay=x=${ov.x}:y=${ov.y}:shortest=1[bg${inputIndex}];`;
+    filter += `[${inputIndex}:v]setpts=PTS/${speed},format=rgba,colorchannelmixer=aa=${opacity}[ov${inputIndex}];`;
+    filter += `${lastOutput}[ov${inputIndex}]overlay=x=${ov.x || 0}:y=${ov.y || 0}:shortest=1[bg${inputIndex}];`;
     
     lastOutput = `[bg${inputIndex}]`;
   });
 
-  return { inputs, filter, map: lastOutput };
+  return { inputs, filter, map: lastOutput, overlaysCount: overlays.length };
 }
 
 async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
   logRuntimeEvent(job, 'buildImageVideo STARTED');
   
-  const { inputs, filter, map } = generateOverlayFilter(payload.objects);
-  const filterFlag = filter ? `-filter_complex "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2[base];[base]${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}"` : `-vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2"`;
+  const enc = getFFmpegEncodingFlags(payload.metadata);
+  const w = enc.targetWidth;
+  const h = enc.targetHeight;
+  
+  const objects = payload.objects || (payload.composer && payload.composer.objects) || [];
+  const { inputs, filter, map, overlaysCount } = generateOverlayFilter(objects, enc.fps);
+  const baseScale = `scale=${w}:${h}`;
+  
+  // Audio stream index is 1 + overlaysCount (since background is 0, overlays are 1..overlaysCount, audio is 1 + overlaysCount)
+  const audioMap = `-map ${1 + overlaysCount}:a`;
+  const filterFlag = filter ? `-filter_complex "${baseScale}[base];${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}" ${audioMap}` : `-vf "${baseScale}"`;
 
-  const cmd = `ffmpeg -y -loop 1 -framerate 30 -i "${imagePath}"${inputs} -i "${audioPath}" -c:v libx264 -tune stillimage -c:a copy ${filterFlag} -shortest -pix_fmt yuv420p "${outputPath}"`;
+  const cmd = `ffmpeg -y -fflags +genpts -loop 1 -framerate ${enc.fps} -i "${imagePath}"${inputs} -i "${audioPath}" ${filterFlag} ${enc.flags} -c:a aac -b:a 192k -shortest "${outputPath}"`;
   await spawnFFmpegM3(cmd, job);
   logRuntimeEvent(job, 'buildImageVideo END');
 }
 
-async function buildPingPongIntermediate(videoPath, cacheDir, job) {
+async function buildPingPongIntermediate(videoPath, cacheDir, job, payload) {
   logRuntimeEvent(job, 'buildPingPongIntermediate STARTED');
   const queueId = job.queueId;
+  const enc = getFFmpegEncodingFlags(payload?.metadata);
+  const w = enc.targetWidth;
+  const h = enc.targetHeight;
+  const scaleFilter = `scale=${w}:${h}`;
+
   const revPath = path.join(cacheDir, `rev_${queueId}.mp4`);
-  await spawnFFmpegM3(`ffmpeg -y -i "${videoPath}" -vf reverse "${revPath}"`, job);
+  await spawnFFmpegM3(`ffmpeg -y -i "${videoPath}" -vf "${scaleFilter},reverse" ${enc.flags} "${revPath}"`, job);
   
   const pingpongPath = path.join(cacheDir, `pingpong_${queueId}.mp4`);
-  await spawnFFmpegM3(`ffmpeg -y -i "${videoPath}" -i "${revPath}" -filter_complex "[0:v][1:v]concat=n=2:v=1[v]" -map "[v]" "${pingpongPath}"`, job);
+  await spawnFFmpegM3(`ffmpeg -y -i "${videoPath}" -i "${revPath}" -filter_complex "[0:v]${scaleFilter}[v0];[1:v][v0]concat=n=2:v=1[v]" -map "[v]" ${enc.flags} "${pingpongPath}"`, job);
   logRuntimeEvent(job, 'buildPingPongIntermediate END');
   return pingpongPath;
 }
@@ -294,13 +366,21 @@ async function buildLoopVideo(job, videoPath, audioPath, loopType, cacheDir, out
   logRuntimeEvent(job, 'buildLoopVideo STARTED');
   let finalSource = videoPath;
   if (loopType === 'Ping Pong') {
-    finalSource = await buildPingPongIntermediate(videoPath, cacheDir, job);
+    finalSource = await buildPingPongIntermediate(videoPath, cacheDir, job, payload);
   }
   
-  const { inputs, filter, map } = generateOverlayFilter(payload.objects);
-  const filterFlag = filter ? `-filter_complex "${filter}" -map "${map}"` : ``;
+  const enc = getFFmpegEncodingFlags(payload.metadata);
+  const w = enc.targetWidth;
+  const h = enc.targetHeight;
 
-  const cmd = `ffmpeg -y -stream_loop -1 -i "${finalSource}"${inputs} -i "${audioPath}" -c:v libx264 -c:a copy ${filterFlag} -shortest -pix_fmt yuv420p "${outputPath}"`;
+  const objects = payload.objects || (payload.composer && payload.composer.objects) || [];
+  const { inputs, filter, map, overlaysCount } = generateOverlayFilter(objects, enc.fps);
+  const baseScale = `scale=${w}:${h}`;
+  
+  const audioMap = `-map ${1 + overlaysCount}:a`;
+  const filterFlag = filter ? `-filter_complex "[0:v]${baseScale}[base];${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}" ${audioMap}` : `-vf "${baseScale}"`;
+
+  const cmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${finalSource}"${inputs} -i "${audioPath}" ${filterFlag} ${enc.flags} -c:a aac -b:a 192k -shortest "${outputPath}"`;
   await spawnFFmpegM3(cmd, job);
   logRuntimeEvent(job, 'buildLoopVideo END');
 }

@@ -68,6 +68,12 @@ export default function App() {
   const [isApiKeysModalOpen, setIsApiKeysModalOpen] = useState(false);
   const [isCacheModalOpen, setIsCacheModalOpen] = useState(false);
   const [cachePathSetting, setCachePathSetting] = useState('');
+  const [cacheCleanupModeSetting, setCacheCleanupModeSetting] = useState('never');
+  
+  const [cacheItems, setCacheItems] = useState([]);
+  const [selectedCacheItems, setSelectedCacheItems] = useState(new Set());
+  const [isFetchingCache, setIsFetchingCache] = useState(false);
+
   const [apiKeys, setApiKeys] = useState(() => {
     try {
       const stored = localStorage.getItem('mf_api_keys');
@@ -88,6 +94,28 @@ export default function App() {
   const [appState, setAppState] = useState('SPLASH'); // 'SPLASH' | 'PICKER' | 'WIZARD' | 'EDITOR'
   const [activeWorkspace, setActiveWorkspace] = useState(null);
   const [hardwareStats, setHardwareStats] = useState({ cpu: 12, gpu: 18, ram: 32 });
+  const [fps, setFps] = useState(60);
+
+  useEffect(() => {
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let animationFrameId;
+
+    const measureFPS = (currentTime) => {
+      frameCount++;
+      const deltaTime = currentTime - lastTime;
+      
+      if (deltaTime >= 1000) {
+        setFps(Math.round((frameCount * 1000) / deltaTime));
+        frameCount = 0;
+        lastTime = currentTime;
+      }
+      animationFrameId = requestAnimationFrame(measureFPS);
+    };
+
+    animationFrameId = requestAnimationFrame(measureFPS);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
 
   useEffect(() => {
     let interval;
@@ -249,8 +277,8 @@ export default function App() {
   const [m1Subscribe, setM1Subscribe] = useState(false);
   const [m1Quality, setM1Quality] = useState('240p');
 
-  // Calculate Mode 1 slots dynamically using precise seconds
-  const m1SlotCount = selectedVideo?.metadata ? Math.floor(selectedVideo.metadata.durationSec / (m1TargetSegment * 60)) : 0;
+  // Calculate Mode 1 slots dynamically using precise seconds (at least 1 slot if video loaded)
+  const m1SlotCount = selectedVideo?.metadata ? Math.max(1, Math.floor(selectedVideo.metadata.durationSec / (m1TargetSegment * 60))) : 0;
 
   // Sync slots when slot count changes
   useEffect(() => {
@@ -295,7 +323,8 @@ export default function App() {
       // Auto-update outputName based on titleStrategy
       if (field === 'audio' || field === 'titleStrategy' || field === 'titleSuffix') {
         if (slot.audio) {
-          let baseName = slot.audio.split('.')[0] || 'audio';
+          const rawFileName = slot.audio.split(/[\\/]/).pop() || 'audio';
+          let baseName = rawFileName.substring(0, rawFileName.lastIndexOf('.')) || rawFileName;
           if (slot.titleStrategy === 'Original + Suffix') {
             baseName += slot.titleSuffix;
           }
@@ -625,27 +654,80 @@ export default function App() {
     }
   };
 
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const fetchCacheItems = async () => {
+    setIsFetchingCache(true);
+    try {
+      const res = await fetch('/api/v1/system/cache-list');
+      const data = await res.json();
+      if (data && data.success && data.data?.items) {
+        setCacheItems(data.data.items);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsFetchingCache(false);
+    }
+  };
+
+  const handleDeleteSelectedCache = async () => {
+    if (selectedCacheItems.size === 0) return;
+    try {
+      const res = await fetch('/api/v1/system/cache-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths: Array.from(selectedCacheItems) })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        addNotification('Cache Cleaned', `Deleted ${data.data?.deletedCount} item(s)`);
+        setSelectedCacheItems(new Set());
+        fetchCacheItems();
+      } else {
+        alert('Failed to delete cache items.');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (isCacheModalOpen) {
+      fetchCacheItems();
+      setSelectedCacheItems(new Set());
+    }
+  }, [isCacheModalOpen]);
+
   useEffect(() => {
     fetch('/api/v1/system/cache-path')
       .then(res => res.json())
       .then(data => {
         if (data && data.success && data.data?.cacheDir) {
           setCachePathSetting(data.data.cacheDir);
+          setCacheCleanupModeSetting(data.data.cacheCleanupMode || 'never');
         }
       })
       .catch(() => {});
   }, []);
 
-  const handleSaveCachePath = (newPath) => {
+  const handleSaveCachePath = (newPath, newMode) => {
     fetch('/api/v1/system/cache-path', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cacheDir: newPath })
+      body: JSON.stringify({ cacheDir: newPath, cacheCleanupMode: newMode })
     })
       .then(res => res.json())
       .then(data => {
         if (data && data.success && data.data?.cacheDir) {
           setCachePathSetting(data.data.cacheDir);
+          setCacheCleanupModeSetting(data.data.cacheCleanupMode || 'never');
           addNotification('Cache Path Updated', `Storage path changed to: ${data.data.cacheDir}`);
           setIsCacheModalOpen(false);
         } else {
@@ -1088,7 +1170,7 @@ export default function App() {
     if (activeMode === 'Mode 1') {
       const readySlotsCount = m1Slots.filter(s => s.outputName && (
         (s.sourceType === 'Audio File' && s.audio) || 
-        (s.sourceType === 'YouTube URL' && s.isApproved)
+        (s.sourceType === 'YouTube URL' && (s.isApproved || (s.isFetched && s.audio)))
       )).length;
       if (readySlotsCount === 0) {
         addLog('ERROR: Cannot add to queue. No ready slots found.');
@@ -1300,7 +1382,7 @@ export default function App() {
       const batchSources = [];
       
       m1Slots.forEach((slot, idx) => {
-        if (!slot.outputName || (slot.sourceType === 'Audio File' && !slot.audio) || (slot.sourceType === 'YouTube URL' && !slot.isApproved)) {
+        if (!slot.outputName || (slot.sourceType === 'Audio File' && !slot.audio) || (slot.sourceType === 'YouTube URL' && !slot.isApproved && !(slot.isFetched && slot.audio))) {
            summary.skippedIncomplete++;
            summary.skippedIncNames.push(`Slot ${idx + 1}`);
            return;
@@ -1369,8 +1451,8 @@ export default function App() {
           
           // Phase 1, 2 & 4: New Contract Payload
           segmentIndex: idx,
-          segmentStartSec: idx * (m1TargetSegment * 60),
-          segmentEndSec: (idx + 1) * (m1TargetSegment * 60),
+          segmentStartSec: selectedVideo?.metadata?.durationSec ? Math.min(idx * (m1TargetSegment * 60), Math.max(0, selectedVideo.metadata.durationSec - 1)) : idx * (m1TargetSegment * 60),
+          segmentEndSec: selectedVideo?.metadata?.durationSec ? Math.min((idx + 1) * (m1TargetSegment * 60), selectedVideo.metadata.durationSec) : (idx + 1) * (m1TargetSegment * 60),
           playbackSpeed: 0.5,
           audioDurationSec: parsedAudioSec,
           quality: m1Quality || '480p',
@@ -1378,8 +1460,10 @@ export default function App() {
           watermarkEnabled: m1Watermark,
           subscribeEnabled: m1Subscribe,
           effects: {
-            logo: { enabled: m1Watermark, asset: 'logo.png', opacity: 0.8 },
-            subscribe: { enabled: m1Subscribe, asset: 'subscribe.webm', position: 'bottom-center' }
+            logo: { enabled: slot.useLogoChannel || false, asset: workspaceConfig?.branding?.logo || 'logo.png', opacity: 1, position: 'bottom-right' },
+            subscribe: { enabled: slot.useSubscribe || false, asset: workspaceConfig?.branding?.subscribeAnim || 'subscribe.webm', position: 'center' },
+            overlay: { enabled: slot.useOverlay || false, asset: workspaceConfig?.branding?.overlay || 'overlay.png', position: 'bottom-left' },
+            watermark: { enabled: slot.useWatermark || false, asset: workspaceConfig?.branding?.watermark || 'watermark.png', position: 'top-left' }
           },
           outputName: slot.outputName,
           thumbnail: slot.manualThumbnail || (slot.sourceType === 'YouTube URL' && slot.videoId ? `https://img.youtube.com/vi/${slot.videoId}/maxresdefault.jpg` : null),
@@ -1452,7 +1536,7 @@ export default function App() {
     });
   };
 
-  const handleGenerateM3Configuration = async () => {
+  const handleGenerateM3Configuration = async (settings) => {
     // Validation
     if (m3BgPool.length === 0) {
       addNotification("Background belum dipilih.", "Validation Error");
@@ -1506,16 +1590,24 @@ export default function App() {
     }
 
     // Generate Configuration Object
+    const composerObjects = m3Objects.filter(o => o.canvasMode === 'composer');
     const payload = {
       background: m3BgPool[0] || {},
       playlist: m3AudioTracks,
+      objects: composerObjects,
       composer: {
-        objects: m3Objects.filter(o => o.canvasMode === 'composer')
+        objects: composerObjects
       },
       thumbnail: thumbData,
       metadata: {
         outputName: m3OutputFilename,
-        profileId: m3ProfileId
+        profileId: m3ProfileId,
+        renderMode: settings?.renderMode || 'FAST',
+        resolution: settings?.resolution || 'SD',
+        fps: settings?.fps || '30',
+        codec: settings?.codec || 'H.264',
+        bFrame: settings?.bFrame || 'Otomatis',
+        renderPerSong: settings?.renderPerSong || false
       }
     };
 
@@ -1540,6 +1632,7 @@ export default function App() {
       outputFolder: outFolder,
       totalDurationSec: m3AudioTracks.reduce((acc, t) => acc + (t.durationSec || 0), 0),
       progress: 0,
+      renderMode: settings?.renderMode || 'FAST',
       m3Payload: payload // Store full M3 configuration for backend processing
     };
 
@@ -1818,6 +1911,7 @@ export default function App() {
                     clearInterval(renderIntervalRef.current);
                     setIsRendering(false);
                     addLog('ENGINE_STOPPED: All jobs processed.');
+                    fetch('/api/v1/system/clean-cache/immediate', { method: 'POST' }).catch(()=>{});
                 }
                 return currentQueue;
             }
@@ -2061,7 +2155,8 @@ export default function App() {
           <div className="flex items-end gap-1">
             {['Mode 1', 'Mode 2', 'Mode 3', 'Mode 4', 'Mode 5', 'Mode 6'].map((mode) => {
               const isActive = activeMode === mode;
-              const label = mode === 'Mode 1' ? 'M1 : BATCH' : mode === 'Mode 2' ? 'M2 : COMPILER' : mode === 'Mode 3' ? 'M3 : PLAYLIST' : mode === 'Mode 4' ? 'M4 : AMBIENT' : mode === 'Mode 5' ? 'M5 : CREATE' : 'M6 : COLLECT';
+              const modeId = mode.replace('Mode ', 'M');
+              const modeTitle = mode === 'Mode 1' ? 'BATCH' : mode === 'Mode 2' ? 'COMPILER' : mode === 'Mode 3' ? 'PLAYLIST' : mode === 'Mode 4' ? 'AMBIENT' : mode === 'Mode 5' ? 'CREATE' : 'COLLECT';
               return (
                 <button
                   key={mode}
@@ -2069,26 +2164,28 @@ export default function App() {
                     setActiveMode(mode);
                     addLog(`Switched Mode: ${mode}`);
                   }}
-                  className={`relative px-8 pt-2 pb-3 text-[10px] font-bold tracking-widest uppercase transition-all duration-300
-                    ${isActive 
-                      ? 'text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] z-10' 
-                      : 'text-gray-500 hover:text-gray-300 z-0'
-                    }`}
-                  style={{
-                    clipPath: 'polygon(15% 0, 85% 0, 100% 100%, 0% 100%)',
-                    backgroundColor: isActive ? '#1a0b05' : '#0A0B10',
-                    borderBottom: isActive ? '2px solid #f97316' : '1px solid rgba(255,255,255,0.1)',
-                    boxShadow: isActive ? 'inset 0px -10px 15px -10px rgba(249,115,22,0.5)' : 'none'
-                  }}
+                  className="relative px-3 md:px-5 xl:px-7 py-2 group cursor-pointer"
                 >
-                  {/* Glowing Top/Side borders for active tab using absolute divs since clip-path cuts borders */}
+                  {/* Skewed Background */}
+                  <div className={`absolute inset-0 skew-x-[-15deg] transition-all duration-300 border
+                    ${isActive 
+                      ? 'bg-gradient-to-t from-orange-500/20 to-[#1a0b05] border-orange-500/50 border-b-[3px] border-b-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.3)] z-10' 
+                      : 'bg-[#0A0B10]/80 border-white/5 border-b-transparent group-hover:bg-white/5 z-0'
+                    }`}
+                  ></div>
+                  
+                  {/* Glowing Top line for active tab */}
                   {isActive && (
-                    <>
-                      <div className="absolute top-0 left-[15%] right-[15%] h-[2px] bg-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,1)]"></div>
-                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,1)]"></div>
-                    </>
+                    <div className="absolute top-0 left-[10%] right-[10%] h-[1px] bg-orange-400 shadow-[0_0_10px_rgba(249,115,22,1)] skew-x-[-15deg]"></div>
                   )}
-                  {label}
+
+                  {/* Tab Text (Un-skewed) */}
+                  <div className={`relative z-20 flex flex-col items-center justify-center transition-colors duration-300
+                    ${isActive ? 'text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]' : 'text-gray-500 group-hover:text-gray-300'}
+                  `}>
+                    <span className="text-[9px] md:text-[10px] font-bold tracking-[0.2em]">{modeId}</span>
+                    <span className="text-[8px] md:text-[9px] font-medium tracking-[0.15em] opacity-80">{modeTitle}</span>
+                  </div>
                 </button>
               );
             })}
@@ -2098,10 +2195,11 @@ export default function App() {
         {/* RIGHT: Stats & Profile */}
         <div className="flex items-center gap-4">
           {/* Hardware Stats (Minimalist) */}
-          <div className="hidden lg:flex items-center gap-3 px-3 py-1 bg-black/40 border border-white/5 rounded-full text-[10px] font-mono text-gray-500 transition-all duration-300">
-            <span className="flex items-center gap-1.5 w-[55px]"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.cpu) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> CPU: {parseInt(hardwareStats.cpu) || 0}%</span>
-            <span className="flex items-center gap-1.5 w-[55px]"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.gpu) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> GPU: {parseInt(hardwareStats.gpu) || 0}%</span>
-            <span className="flex items-center gap-1.5 w-[55px]"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.ram) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> RAM: {parseInt(hardwareStats.ram) || 0}%</span>
+          <div className="hidden md:flex items-center gap-2 xl:gap-3 px-3 py-1 bg-black/40 border border-white/5 rounded-full text-[9px] xl:text-[10px] font-mono text-gray-500 transition-all duration-300">
+            <span className="flex items-center gap-1.5"><span className={`w-1 h-1 rounded-full ${fps >= 50 ? 'bg-green-500' : fps >= 30 ? 'bg-orange-500' : 'bg-red-500 shadow-[0_0_5px_#ef4444]'}`}></span> FPS: {fps}</span>
+            <span className="flex items-center gap-1.5"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.cpu) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> CPU: {parseInt(hardwareStats.cpu) || 0}%</span>
+            <span className="flex items-center gap-1.5"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.gpu) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> GPU: {parseInt(hardwareStats.gpu) || 0}%</span>
+            <span className="flex items-center gap-1.5"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.ram) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> RAM: {parseInt(hardwareStats.ram) || 0}%</span>
           </div>
 
           <div className="w-px h-5 bg-white/10"></div>
@@ -2130,72 +2228,75 @@ export default function App() {
               <span className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full border border-[#0A0B10]"></span>
             </button>
             
-            <button 
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            </button>
-            {isSettingsOpen && (
-              <div className="absolute top-14 right-16 w-56 bg-[#0f1115] border border-white/10 rounded shadow-2xl z-50 p-2 space-y-2">
-                <div className="text-[9px] font-bold text-gray-500 uppercase border-b border-white/10 pb-1">Advanced Options</div>
-                <label className="flex items-center gap-2 text-[10px] text-gray-300 cursor-pointer hover:text-white">
-                  <input
-                    type="checkbox"
-                    checked={isDevMode}
-                    onChange={(e) => setIsDevMode(e.target.checked)}
-                    className="accent-orange-500"
-                  />
-                  Developer Mode
-                </label>
+            <div className="relative">
+              <button 
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5 text-gray-400 hover:text-white transition-colors border border-transparent hover:border-white/10"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              </button>
+              {isSettingsOpen && (
+                <div className="absolute top-10 right-0 w-60 bg-[#141820]/95 backdrop-blur-md border border-orange-500/20 rounded-xl shadow-[0_0_30px_-5px_rgba(249,115,22,0.15)] z-50 p-2.5 space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="text-[10px] font-bold text-orange-500/80 uppercase tracking-widest border-b border-orange-500/20 pb-2 mb-2 px-1">⚙️ Advanced Options</div>
+                  
+                  <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white px-1 py-1 rounded transition-colors hover:bg-white/5">
+                    <input
+                      type="checkbox"
+                      checked={isDevMode}
+                      onChange={(e) => setIsDevMode(e.target.checked)}
+                      className="accent-orange-500 w-3.5 h-3.5"
+                    />
+                    Developer Mode
+                  </label>
 
-                <div className="border-t border-white/10 pt-1.5 mt-1.5 space-y-1">
-                  <button
-                    onClick={() => { setIsApiKeysModalOpen(true); setIsSettingsOpen(false); }}
-                    className="w-full text-left text-[10px] text-gray-300 hover:text-white hover:bg-white/5 px-2 py-1 rounded flex items-center gap-1.5 transition-colors"
-                  >
-                    <span className="text-[10px]">🔑</span> Manage API Keys
-                  </button>
-                  <button
-                    onClick={() => { setIsCacheModalOpen(true); setIsSettingsOpen(false); }}
-                    className="w-full text-left text-[10px] text-gray-300 hover:text-white hover:bg-white/5 px-2 py-1 rounded flex items-center gap-1.5 transition-colors"
-                  >
-                    <span className="text-[10px]">📁</span> Manage Cache Storage
-                  </button>
-                  <button
-                    onClick={handleCheckUpdate}
-                    disabled={updateState.status === 'checking' || updateState.status === 'downloading'}
-                    className={`w-full text-left text-[10px] ${updateState.status === 'ready' ? 'text-green-400 font-bold hover:bg-green-900/30' : 'text-gray-300 hover:text-white hover:bg-white/5'} px-2 py-1 rounded flex items-center justify-between transition-colors`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px]">🚀</span> 
-                      {updateState.status === 'idle' && "Check for Updates"}
-                      {updateState.status === 'checking' && "Checking..."}
-                      {updateState.status === 'downloading' && `Downloading (${Math.round(updateState.progress)}%)`}
-                      {updateState.status === 'ready' && "Restart to Update"}
-                      {updateState.status === 'not-available' && "Up to date"}
-                      {updateState.status === 'available' && "Downloading..."}
-                    </div>
-                    {updateState.status === 'downloading' && (
-                      <div className="w-10 h-1 bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500" style={{width: `${updateState.progress}%`}}></div>
-                      </div>
-                    )}
-                  </button>
-                </div>
-
-                {isDevMode && (
-                  <div className="border-t border-white/10 pt-1.5 space-y-1">
+                  <div className="space-y-1">
                     <button
-                      onClick={() => { setIsDevPanelOpen(true); setIsSettingsOpen(false); }}
-                      className="w-full text-left text-[10px] text-red-400 hover:text-red-300 hover:bg-red-950/30 px-2 py-1 rounded flex items-center gap-1.5 transition-colors"
+                      onClick={() => { setIsApiKeysModalOpen(true); setIsSettingsOpen(false); }}
+                      className="w-full text-left text-xs text-gray-300 hover:text-orange-100 hover:bg-orange-500/10 px-2 py-1.5 rounded-lg flex items-center gap-2 transition-all border border-transparent hover:border-orange-500/20"
                     >
-                      <span className="text-[8px]">🔴</span> Open Dev Panel
+                      <span className="text-orange-500 text-sm drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]">🔑</span> Manage API Keys
+                    </button>
+                    <button
+                      onClick={() => { setIsCacheModalOpen(true); setIsSettingsOpen(false); }}
+                      className="w-full text-left text-xs text-gray-300 hover:text-orange-100 hover:bg-orange-500/10 px-2 py-1.5 rounded-lg flex items-center gap-2 transition-all border border-transparent hover:border-orange-500/20"
+                    >
+                      <span className="text-orange-500 text-sm drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]">🗄️</span> Manage Cache Storage
+                    </button>
+                    <button
+                      onClick={handleCheckUpdate}
+                      disabled={updateState.status === 'checking' || updateState.status === 'downloading'}
+                      className={`w-full text-left text-xs ${updateState.status === 'ready' ? 'text-green-400 font-bold hover:bg-green-500/10 border hover:border-green-500/20' : 'text-gray-300 hover:text-orange-100 hover:bg-orange-500/10 border border-transparent hover:border-orange-500/20'} px-2 py-1.5 rounded-lg flex items-center justify-between transition-all`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-orange-500 text-sm drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]">🔄</span> 
+                        {updateState.status === 'idle' && "Check for Updates"}
+                        {updateState.status === 'checking' && "Checking..."}
+                        {updateState.status === 'downloading' && `Downloading (${Math.round(updateState.progress)}%)`}
+                        {updateState.status === 'ready' && "Restart to Update"}
+                        {updateState.status === 'error' && "Update Failed"}
+                      </div>
+                      {updateState.status === 'downloading' && (
+                        <div className="w-10 h-1 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-orange-500" style={{width: `${updateState.progress}%`}}></div>
+                        </div>
+                      )}
                     </button>
                   </div>
-                )}
-              </div>
-            )}
+
+                  {isDevMode && (
+                    <div className="border-t border-white/10 pt-1.5 space-y-1">
+                      <button
+                        onClick={() => { setIsDevPanelOpen(true); setIsSettingsOpen(false); }}
+                        className="w-full text-left text-[10px] text-red-400 hover:text-red-300 hover:bg-red-950/30 px-2 py-1 rounded flex items-center gap-1.5 transition-colors"
+                      >
+                        <span className="text-[8px]">🛠</span> Open Dev Panel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
 
             <button 
               onClick={() => setIsWorkspaceDrawerOpen(true)}
@@ -3426,7 +3527,7 @@ export default function App() {
       {/* ─── Developer Panel (TASK_00) ─────────────────────────────────────── */}
       {/* SAFE: Rendered as a portal-style overlay. Zero impact on M1 logic. */}
       
-      {/* ─── API Keys Modal ─────────────────────────────────────────── */}
+      {/* ─── API Keys Modal */}
       {isApiKeysModalOpen && (
         <ApiKeysModal
           onClose={() => setIsApiKeysModalOpen(false)}
@@ -3436,62 +3537,186 @@ export default function App() {
       )}
       {/* ─── Cache Storage Modal ─────────────────────────────────────────── */}
       {isCacheModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="bg-[#141820] border border-white/10 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <span>📁</span> Manage Cache & Storage Path
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-6">
+          <div className="bg-[#141820] border-2 border-orange-500/30 rounded-xl max-w-4xl w-full p-6 shadow-[0_0_50px_-12px_rgba(249,115,22,0.25)] flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 relative overflow-hidden">
+            {/* Elegant Glow Effect */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-orange-500/20 blur-[100px] rounded-full pointer-events-none opacity-50"></div>
+            
+            <div className="flex items-center justify-between border-b border-orange-500/20 pb-4 shrink-0 relative z-10">
+              <h3 className="text-lg font-black tracking-wider text-white flex items-center gap-3">
+                <span className="text-orange-500">🗄️</span> 
+                CACHE & <span className="text-orange-500">STORAGE MANAGER</span>
               </h3>
               <button
                 onClick={() => setIsCacheModalOpen(false)}
-                className="text-gray-400 hover:text-white text-lg"
+                className="text-gray-400 hover:text-orange-500 text-3xl transition-colors leading-none"
               >
-                ✕
+                ×
               </button>
             </div>
-            <p className="text-[11px] text-gray-300 leading-relaxed">
-              Configure where temporary cache files, downloads, and rendering intermediates (M1-M6) are stored on your disk.
-            </p>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase">Cache Storage Path</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={cachePathSetting}
-                  onChange={(e) => setCachePathSetting(e.target.value)}
-                  placeholder="e.g. D:\MediaFactory\.mediafactory\cache"
-                  className="flex-1 bg-black/40 border border-white/10 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500 font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={handleBrowseCachePath}
-                  className="px-3 py-2 bg-white/5 hover:bg-orange-500/20 border border-white/10 hover:border-orange-500 rounded text-xs text-gray-300 hover:text-white font-bold flex items-center gap-1.5 transition-all shadow-sm shrink-0"
-                  title="Open folder explorer to select storage path"
-                >
-                  <span>📂</span> Browse...
-                </button>
+            
+            <div className="flex-1 overflow-hidden flex flex-col gap-6 pt-5 relative z-10">
+              {/* Settings Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0 bg-black/40 p-5 rounded-xl border border-white/5 shadow-inner">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-orange-500/80 uppercase tracking-widest flex items-center gap-2">
+                    <span>📁</span> Cache Storage Path
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={cachePathSetting}
+                      onChange={(e) => setCachePathSetting(e.target.value)}
+                      placeholder="e.g. D:\MediaFactory\.mediafactory\cache"
+                      className="flex-1 bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 shadow-inner transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleBrowseCachePath}
+                      className="px-3 py-2.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 hover:border-orange-500 rounded text-xs text-orange-400 hover:text-orange-300 font-bold flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+                      title="Open folder explorer to select storage path"
+                    >
+                      Browse...
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-orange-500/80 uppercase tracking-widest flex items-center gap-2">
+                    <span>⏱️</span> Auto Cleanup Schedule
+                  </label>
+                  <select
+                    value={cacheCleanupModeSetting}
+                    onChange={(e) => setCacheCleanupModeSetting(e.target.value)}
+                    className="w-full bg-black/60 border border-white/10 rounded px-3 py-2.5 text-xs text-white focus:outline-none focus:border-orange-500 shadow-inner transition-colors"
+                  >
+                    <option value="never">Jangan Hapus Otomatis</option>
+                    <option value="immediate">Hapus Otomatis Saat Selesai Render</option>
+                    <option value="daily">Per Satu Hari</option>
+                    <option value="weekly">Per 1 Minggu</option>
+                    <option value="monthly">Per 1 Bulan</option>
+                  </select>
+                </div>
               </div>
-              <span className="text-[9px] text-gray-500 block mt-1">
-                All subfolders (m1, m2, m3, m4, m5, etc.) will be automatically created inside this directory.
-              </span>
+
+              {/* Data Table Section */}
+              <div className="flex-1 overflow-hidden flex flex-col bg-[#0a0c10]/80 rounded-xl border border-white/5 relative shadow-inner">
+                <div className="flex items-center justify-between p-4 border-b border-white/5 shrink-0 bg-black/40">
+                  <div className="text-xs font-bold text-gray-300 flex items-center gap-2">
+                    <span className="text-orange-500 text-sm">📊</span>
+                    CACHE DATA <span className="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full">{cacheItems.length} items</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => fetchCacheItems()}
+                      className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[10px] text-gray-300 transition-colors flex items-center gap-1.5"
+                    >
+                      <span>🔄</span> Refresh
+                    </button>
+                    {selectedCacheItems.size > 0 && (
+                      <button
+                        onClick={handleDeleteSelectedCache}
+                        className="px-4 py-1.5 bg-red-500 hover:bg-red-600 rounded text-[10px] font-bold text-white transition-all flex items-center gap-1.5 shadow-[0_0_15px_-3px_rgba(239,68,68,0.5)]"
+                      >
+                        <span>🗑️</span> DELETE SELECTED ({selectedCacheItems.size})
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Table Header */}
+                <div className="grid grid-cols-[40px_1fr_120px_150px] gap-4 px-4 py-2 border-b border-white/5 bg-[#141820] text-[10px] font-bold text-gray-500 uppercase tracking-widest shrink-0">
+                  <div className="flex items-center justify-center">
+                    <input 
+                      type="checkbox"
+                      className="accent-orange-500 w-3.5 h-3.5 cursor-pointer"
+                      checked={cacheItems.length > 0 && selectedCacheItems.size === cacheItems.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCacheItems(new Set(cacheItems.map(i => i.name)));
+                        } else {
+                          setSelectedCacheItems(new Set());
+                        }
+                      }}
+                    />
+                  </div>
+                  <div>Name</div>
+                  <div>Size</div>
+                  <div>Last Modified</div>
+                </div>
+
+                {/* Table Body */}
+                <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-orange-500/20 hover:scrollbar-thumb-orange-500/40">
+                  {isFetchingCache ? (
+                    <div className="h-full flex items-center justify-center text-xs text-orange-500 animate-pulse">
+                      Loading cache data...
+                    </div>
+                  ) : cacheItems.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-xs text-gray-500 gap-2">
+                      <span className="text-3xl opacity-20">✨</span>
+                      Cache directory is empty.
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {cacheItems.map((item, idx) => {
+                        const isSelected = selectedCacheItems.has(item.name);
+                        return (
+                          <label 
+                            key={item.name + idx}
+                            className={`grid grid-cols-[40px_1fr_120px_150px] gap-4 px-4 py-3 rounded-lg border transition-colors cursor-pointer ${isSelected ? 'bg-orange-500/10 border-orange-500/30' : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/10'}`}
+                          >
+                            <div className="flex items-center justify-center">
+                              <input 
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  const newSet = new Set(selectedCacheItems);
+                                  if (e.target.checked) newSet.add(item.name);
+                                  else newSet.delete(item.name);
+                                  setSelectedCacheItems(newSet);
+                                }}
+                                className="accent-orange-500 w-3.5 h-3.5 cursor-pointer"
+                              />
+                            </div>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="text-sm shrink-0">{item.isDir ? '📁' : '📄'}</span>
+                              <span className={`text-xs truncate ${isSelected ? 'text-orange-300' : 'text-gray-300'}`}>{item.name}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="text-[10px] text-orange-500/70 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
+                                {formatBytes(item.sizeBytes)}
+                              </span>
+                            </div>
+                            <div className="flex items-center text-[10px] text-gray-500">
+                              {new Date(item.mtime).toLocaleString()}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+
+            <div className="flex justify-end gap-3 pt-5 mt-2 border-t border-orange-500/20 shrink-0 relative z-10">
               <button
                 onClick={() => setIsCacheModalOpen(false)}
-                className="px-3 py-1.5 rounded text-xs bg-white/5 hover:bg-white/10 text-gray-300 transition-colors"
+                className="px-6 py-2.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-white/5 transition-colors font-medium border border-transparent hover:border-white/10"
               >
-                Cancel
+                Close
               </button>
               <button
-                onClick={() => handleSaveCachePath(cachePathSetting)}
-                className="px-4 py-1.5 rounded text-xs bg-orange-500 hover:bg-orange-600 text-white font-medium shadow-lg shadow-orange-500/20 transition-all"
+                onClick={() => handleSaveCachePath(cachePathSetting, cacheCleanupModeSetting)}
+                className="px-8 py-2.5 rounded-lg text-xs bg-orange-500 hover:bg-orange-600 text-white font-bold shadow-[0_0_20px_-5px_rgba(249,115,22,0.6)] transition-all flex items-center gap-2"
               >
-                Save Changes
+                <span>💾</span> SAVE SETTINGS
               </button>
             </div>
           </div>
         </div>
       )}
+
 <DevPanel
         isOpen={isDevPanelOpen}
         onClose={() => setIsDevPanelOpen(false)}

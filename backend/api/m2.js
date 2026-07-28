@@ -107,7 +107,7 @@ router.post('/api/m2/yt-metadata', async (req, res) => {
     try {
         const ytData = await new Promise((resolve, reject) => {
             const ytArgs = ['--dump-json', '--no-playlist', '--js-runtimes', 'node', '--', searchUrl];
-            const ytProc = spawn('yt-dlp', ytArgs);
+            const ytProc = spawn('yt-dlp', ytArgs, { shell: true });
             
             let stdoutData = '';
             let stderrData = '';
@@ -144,7 +144,7 @@ router.post('/api/m2/yt-metadata', async (req, res) => {
             if (!stats || stats.size < 1000) {
                 const ytOut = path.join(cacheDir, hash + '.%(ext)s');
                 const dlArgs = ['--newline', '--no-playlist', '-f', 'bestaudio', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUrl];
-                const dlProc = spawn('yt-dlp', dlArgs);
+                const dlProc = spawn('yt-dlp', dlArgs, { shell: true });
                 ytDownloads[url] = { status: 'downloading', progress: 0 };
                 
                 dlProc.stdout.on('data', chunk => {
@@ -384,7 +384,7 @@ router.get('/api/m2/prepare-stream', async (req, res) => {
         const ytOut = path.join(cacheDir, hashUri(uri) + '.%(ext)s');
             // Adding --newline to force line-by-line output for easier parsing
             const ytArgs = ['--newline', '-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUri];
-            const ytProc = spawn('yt-dlp', ytArgs);
+            const ytProc = spawn('yt-dlp', ytArgs, { shell: true });
             
             ytProc.stdout.on('data', chunk => {
                 const out = chunk.toString();
@@ -505,7 +505,7 @@ router.get('/api/m2/stream', async (req, res) => {
                 const ytArgs = ['--newline', '-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUri];
                 const { spawn } = require('child_process');
                 await new Promise((resolve, reject) => {
-                    const ytProc = spawn('yt-dlp', ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+                    const ytProc = spawn('yt-dlp', ytArgs, { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
                     ytProc.stdout.on('data', () => {});
                     ytProc.stderr.on('data', () => {});
                     

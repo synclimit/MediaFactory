@@ -39,7 +39,7 @@ class RenderGraphBuilder extends Engine {
       
       const bgAsset = (recipe.assets.background && recipe.assets.background.absolutePath) ? recipe.assets.background : recipe.assets.videoA;
       if (!bgAsset || !bgAsset.absolutePath) {
-          const { PipelineError, ErrorCodes } = require('../../core/Errors');
+          const { PipelineError, ErrorCodes } = require('../core/Errors');
           throw new PipelineError(ErrorCodes.M5_INVALID_RECIPE, "M5_GRAPH_BG: Missing Background Asset and Video A fallback.");
       }
 
@@ -137,7 +137,7 @@ class RenderGraphBuilder extends Engine {
         } else {
           const asset = recipe.assets[segment.type];
           if (!asset || !asset.absolutePath) {
-            const { PipelineError, ErrorCodes } = require("../../core/Errors");
+            const { PipelineError, ErrorCodes } = require("../core/Errors");
             throw new PipelineError(ErrorCodes.M5_INVALID_RECIPE, `M5_GRAPH_001: Missing InputNode Asset for segment type '${segment.type}'.`);
           }
           const inputNode = createNode("InputNode", {

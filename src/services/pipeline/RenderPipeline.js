@@ -94,12 +94,36 @@ export class RenderPipeline {
             return obj;
         });
 
-        // 2. Execute Runtimes (Deterministic Order)
-        subtitleRuntime.update(currentTime, 1.0);
-        const subtitleState = subtitleRuntime.getState();
+        // FEATURE FLAG: Lazy Pipeline
+        const enableLazyPipeline = window.__M3_FEATURE_FLAGS?.enableLazyPipeline ?? true;
+        let activeEngineCount = 0;
+        let skippedEngineCount = 0;
 
+        // 2. Execute Runtimes (Deterministic Order)
+        
+        // --- A. Subtitle Engine ---
+        const prevSubState = subtitleRuntime.getState();
+        const hasSubtitleObjects = processedObjects.some(obj => obj.type === 'text' || obj.type === 'subtitle');
+        const hasSubtitles = hasSubtitleObjects || (prevSubState && (
+            (prevSubState.subtitles && prevSubState.subtitles.length > 0) || 
+            (prevSubState.segments && prevSubState.segments.length > 0) ||
+            (prevSubState.cues && prevSubState.cues.length > 0)
+        ));
+
+        let subtitleState = prevSubState;
+        if (!enableLazyPipeline || hasSubtitles) {
+            subtitleRuntime.update(currentTime, 1.0);
+            subtitleState = subtitleRuntime.getState();
+            activeEngineCount++;
+        } else {
+            skippedEngineCount++;
+        }
+
+        // --- B. Audio & Motion Engines (MANDATORY / NON-SKIPPABLE) ---
         const isPlaying = window.m3IsPlaying || this.timeline.clock.isPlaying;
         beatEngine.update(isPlaying);
+        activeEngineCount++;
+
         if (beatEngine.state && beatEngine.state.beat) {
             motionEngine.applyImpulse('zoom', beatEngine.state.beatStrength || 1.0);
             motionEngine.applyImpulse('pulse', beatEngine.state.beatStrength || 1.0);
@@ -109,37 +133,56 @@ export class RenderPipeline {
                 audioDrivenRuntime.processEvent({ type: 'beat', strength: beatEngine.state.beatStrength || 1.0, kickScore: 1.0, energy: beatEngine.state.energy });
             }
         }
+        
         motionEngine.update(isPlaying ? 1.0 : 0.0, deltaTime);
+        activeEngineCount++;
 
         const audioDrivenState = audioDrivenRuntime.update(deltaTime, beatEngine.state);
-        const visualComposition = visualRuntime.update(deltaTime, audioDrivenState, processedObjects);
+        activeEngineCount++;
+
+        // --- C. Visual Engine ---
+        const needsVisual = processedObjects && processedObjects.length > 0;
+        let visualComposition = null;
         
-        // Playlist Engine
+        if (!enableLazyPipeline || needsVisual) {
+            visualComposition = visualRuntime.update(deltaTime, audioDrivenState, processedObjects);
+            activeEngineCount++;
+        } else {
+            visualComposition = {}; // Empty composition to prevent crash in FrameComposer
+            skippedEngineCount++;
+        }
+        
+        // --- D. Playlist Engine ---
         const playlistState = {};
         const playlistObjects = this.frameInput.getInputs().playlistObjects || [];
         const audioTracks = settings.m3AudioTracks || [];
         const trackTitles = audioTracks.length > 0 ? audioTracks.map(t => t.title) : ['Track 01', 'Track 02', 'Track 03', 'Track 04'];
         
-        playlistState.globalPlaylistInfo = {
-            activeTrackTitle: trackTitles[realtimeTrackIndex] || trackTitles[0] || 'Unknown Track'
-        };
-        
-        for (const config of playlistObjects) {
-            let tracksForThisConfig = trackTitles;
-            let startIndex = 1;
+        if (!enableLazyPipeline || playlistObjects.length > 0) {
+            playlistState.globalPlaylistInfo = {
+                activeTrackTitle: trackTitles[realtimeTrackIndex] || trackTitles[0] || 'Unknown Track'
+            };
             
-            if (config.trackSplit === 'first-half') {
-                tracksForThisConfig = trackTitles.slice(0, Math.ceil(trackTitles.length / 2));
-            } else if (config.trackSplit === 'second-half') {
-                startIndex = Math.ceil(trackTitles.length / 2) + 1;
-                tracksForThisConfig = trackTitles.slice(Math.ceil(trackTitles.length / 2));
+            for (const config of playlistObjects) {
+                let tracksForThisConfig = trackTitles;
+                let startIndex = 1;
+                
+                if (config.trackSplit === 'first-half') {
+                    tracksForThisConfig = trackTitles.slice(0, Math.ceil(trackTitles.length / 2));
+                } else if (config.trackSplit === 'second-half') {
+                    startIndex = Math.ceil(trackTitles.length / 2) + 1;
+                    tracksForThisConfig = trackTitles.slice(Math.ceil(trackTitles.length / 2));
+                }
+                
+                const layoutConfig = { ...config, startIndex };
+                const layoutData = PlaylistLayoutEngine.calculate(tracksForThisConfig, layoutConfig, realtimeTrackIndex);
+                const transformData = PlaylistTransformEngine.calculate(layoutData, config);
+                const typographyData = TypographyEngine.normalize(config);
+                playlistState[config.id] = { layoutData, transformData, typographyData };
             }
-            
-            const layoutConfig = { ...config, startIndex };
-            const layoutData = PlaylistLayoutEngine.calculate(tracksForThisConfig, layoutConfig, realtimeTrackIndex);
-            const transformData = PlaylistTransformEngine.calculate(layoutData, config);
-            const typographyData = TypographyEngine.normalize(config);
-            playlistState[config.id] = { layoutData, transformData, typographyData };
+            activeEngineCount++;
+        } else {
+            skippedEngineCount++;
         }
         
         // 3. Call FrameComposer

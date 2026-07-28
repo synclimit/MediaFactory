@@ -1,10 +1,15 @@
 import { LogoBuilder } from './LogoBuilder.js';
 import { SubscribeBuilder } from './SubscribeBuilder.js';
 import { FrameBuilder } from './FrameBuilder.js';
+import { WatermarkBuilder } from './WatermarkBuilder.js';
 
 export class OverlayBuilder {
   static async build(job) {
     const nodes = [];
+    
+    // Watermark
+    const watermarkNode = await WatermarkBuilder.build(job);
+    if (watermarkNode) nodes.push(watermarkNode);
     
     // Watermark/Logo
     const logoNode = await LogoBuilder.build(job);

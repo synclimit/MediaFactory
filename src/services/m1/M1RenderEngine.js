@@ -6,10 +6,11 @@ import { FilterGraphBuilder } from './builders/FilterGraphBuilder.js';
 
 export async function processM1Job(job, updateProgress, onComplete, onError) {
   const cacheDir = path.resolve('Workspace/Cache/M1');
-  const tempSegmentPath = path.join(cacheDir, 'temp_segment.mp4').replace(/\\/g, '/');
-  const concatTxtPath = path.join(cacheDir, 'concat.txt').replace(/\\/g, '/');
-  const outLogPath = path.join(cacheDir, 'render.log');
-  const outReportPath = path.join(cacheDir, 'render_report.json');
+  const jobIdClean = (job.id || 'temp').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+  const tempSegmentPath = path.join(cacheDir, `temp_segment_${jobIdClean}.mp4`).replace(/\\/g, '/');
+  const concatTxtPath = path.join(cacheDir, `concat_${jobIdClean}.txt`).replace(/\\/g, '/');
+  const outLogPath = path.join(cacheDir, `render_${jobIdClean}.log`);
+  const outReportPath = path.join(cacheDir, `render_report_${jobIdClean}.json`);
 
   const logEntries = [];
   const log = (step, details = '') => {
@@ -72,8 +73,8 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
         else throw new Error('Cache file empty');
       } catch (e) {
         await new Promise((resolve, reject) => {
-          const ytProc = spawn('yt-dlp', ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', audioIn]);
-          ytProc.on('close', (code) => { if (code === 0) resolve(); else reject(new Error('yt-dlp failed')); });
+          const ytProc = spawn('yt-dlp', ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', audioIn], { shell: true });
+          ytProc.on('close', (code) => { if (code === 0) resolve(); else reject(new Error('yt-dlp failed to download audio')); });
           ytProc.on('error', reject);
         });
         audioIn = ytOut;
@@ -88,8 +89,37 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     const outThumbPath = path.join(outDir, 'thumbnail.jpg');
     
     // Playback Engine Calculation
-    // Video segment is exactly as requested (e.g. 10 mins)
-    const segmentDuration = job.segmentEndSec - job.segmentStartSec;
+    // Probe video duration to prevent trimming out-of-bounds (0 frames / stream map errors)
+    let videoDurationSec = typeof job.inputVideo === 'object' ? job.inputVideo?.metadata?.durationSec : job.videoDurationSec;
+    if (!videoDurationSec) {
+      try {
+        const probeRes = await new Promise((res) => {
+          exec(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoIn}"`, (err, stdout) => {
+            res(parseFloat(stdout.trim()) || 0);
+          });
+        });
+        if (probeRes > 0) videoDurationSec = probeRes;
+      } catch (e) {}
+    }
+
+    let segmentDuration = job.segmentEndSec - job.segmentStartSec;
+    if (segmentDuration <= 0) segmentDuration = 10;
+
+    if (videoDurationSec && videoDurationSec > 0) {
+      if (job.segmentStartSec >= videoDurationSec) {
+        job.segmentStartSec = job.segmentStartSec % videoDurationSec;
+      }
+      job.segmentEndSec = job.segmentStartSec + segmentDuration;
+      if (job.segmentEndSec > videoDurationSec) {
+        job.segmentEndSec = videoDurationSec;
+      }
+      if (job.segmentEndSec <= job.segmentStartSec) {
+        job.segmentStartSec = 0;
+        job.segmentEndSec = videoDurationSec;
+      }
+    }
+
+    segmentDuration = job.segmentEndSec - job.segmentStartSec;
     const playbackSpeed = job.playbackSpeed || 1.0;
     const targetDuration = segmentDuration / playbackSpeed;
     job.tempSegmentDuration = targetDuration;

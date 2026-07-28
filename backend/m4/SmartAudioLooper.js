@@ -42,10 +42,12 @@ class SmartAudioLooper {
                     '-y', '-i', audioPath,
                     '-filter_complex', filter,
                     '-map', '[aout]',
-                    '-c:a', audioCodec,
-                    '-b:a', '192k',
-                    outPath
+                    '-c:a', audioCodec
                 ];
+                if (audioCodec !== 'pcm_s16le') {
+                    pArgs.push('-b:a', '192k');
+                }
+                pArgs.push(outPath);
 
                 const p = spawn(AppPaths.getFFmpegPath(), pArgs);
                 const procId = jobId + '_audio_' + Date.now() + Math.random().toString().substring(2,6);

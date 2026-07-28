@@ -24,15 +24,17 @@ class DurationManager extends Engine {
             let ctaRaw = projectAsset.cta ? (parseFloat(projectAsset.cta.duration) || 0) : 0;
 
             const execSync = require('child_process').execSync;
+            const AppPaths = require('../system/AppPaths');
+            const ffprobeBin = AppPaths.getFFprobePath();
             if (projectAsset.hook && projectAsset.hook.absolutePath) {
                 try {
-                    const out = execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${projectAsset.hook.absolutePath}"`);
+                    const out = execSync(`"${ffprobeBin}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${projectAsset.hook.absolutePath}"`);
                     hookRaw = parseFloat(out.toString().trim()) || hookRaw;
                 } catch (err) { /* ignore */ }
             }
             if (projectAsset.cta && projectAsset.cta.absolutePath) {
                 try {
-                    const out = execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${projectAsset.cta.absolutePath}"`);
+                    const out = execSync(`"${ffprobeBin}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${projectAsset.cta.absolutePath}"`);
                     ctaRaw = parseFloat(out.toString().trim()) || ctaRaw;
                 } catch (err) { /* ignore */ }
             }

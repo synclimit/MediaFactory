@@ -27,7 +27,6 @@ export class BarsRenderer extends Canvas2DRenderer {
         const ctx = this.ctx;
         const cfg = this.currentConfig || this.currentContext?.config || {};
 
-        // Auto zoom width if plugin passed default unscaled thickness
         const effectiveWidth = (this.layoutBarWidth && (width === cfg.barWidth || width === 4 || width === 6 || width === 8 || !width || width < this.layoutBarWidth)) ? this.layoutBarWidth : width;
 
         const barTotal = this.layoutBarCount || cfg.barCount || 64;
@@ -36,9 +35,12 @@ export class BarsRenderer extends Canvas2DRenderer {
             this.layoutBarIndex++;
         }
 
-        // Determine bar color based on colorMode
         let validColor = color;
         const mode = cfg.colorMode || '2 Gradient';
+        
+        // Flag gradient
+        const isGradient = mode === '2 Gradient' || mode === 'Gradient' || mode === '3 Gradient' || mode === 'Rainbow';
+
         if (mode === 'Solid' || mode === 'Solid Color') {
             validColor = cfg.colorLeft || cfg.color || '#AB55F7';
         } else if (mode === '2 Gradient' || mode === 'Gradient') {
@@ -64,12 +66,43 @@ export class BarsRenderer extends Canvas2DRenderer {
             validColor = '#00ffcc';
         }
 
-        // Apply glow
+        // FEATURE FLAG: Visualizer Batching
+        const enableBatching = window.__M3_FEATURE_FLAGS?.enableVisualizerBatching ?? true;
+
+        if (enableBatching && !isGradient) {
+            // State-based Path2D Batching
+            const stateKey = `${validColor}_${outline}_${rounded}_${mode}_${cfg.bloom}_${cfg.fakeNeon}_${cfg.outerGlow}_${cfg.outerGlowColor}_${cfg.outerGlowThickness}`;
+            
+            if (this._batchStateKey !== stateKey) {
+                this.flushBatch();
+                this._batchStateKey = stateKey;
+                this._batchPath = new Path2D();
+                this._batchProps = { validColor, outline, rounded, mode, cfg };
+            }
+            
+            if (rounded) {
+                this._batchPath.roundRect(x, y, effectiveWidth, height, effectiveWidth / 2);
+            } else {
+                this._batchPath.rect(x, y, effectiveWidth, height);
+            }
+            
+            // Flush immediately if it is the last bar in the sequence
+            if (barIdx >= barTotal - 1) {
+                this.flushBatch();
+            }
+            return;
+        }
+
+        // LEGACY BEHAVIOUR (For Gradients or when flag is false)
+        this.flushBatch(); // Ensure no pending paths overlap out of order
+
+        ctx.save();
         if (cfg.bloom || cfg.fakeNeon || mode === 'Neon') {
             ctx.shadowBlur = mode === 'Neon' ? 24 : (cfg.fakeNeon ? 16 : 10);
             ctx.shadowColor = validColor;
         } else {
             ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
         }
 
         ctx.fillStyle = validColor;
@@ -85,7 +118,6 @@ export class BarsRenderer extends Canvas2DRenderer {
             else ctx.fillRect(x, y, effectiveWidth, height);
         }
 
-        // Apply Outer Edge Glow directly to each bar/shape contour (Neon Emphasis: Outer edge glow right on spectrum bars)
         if (cfg.outerGlow) {
             const outerColor = cfg.outerGlowColor || '#BD0F0F';
             const outerThick = cfg.outerGlowThickness !== undefined ? Number(cfg.outerGlowThickness) : 3;
@@ -103,9 +135,52 @@ export class BarsRenderer extends Canvas2DRenderer {
             }
             ctx.restore();
         }
+        ctx.restore();
+    }
+
+    flushBatch() {
+        if (!this._batchPath || !this._batchProps || !this.ctx) return;
+        
+        const ctx = this.ctx;
+        const { validColor, outline, rounded, mode, cfg } = this._batchProps;
+        
+        ctx.save();
+        if (cfg.bloom || cfg.fakeNeon || mode === 'Neon') {
+            ctx.shadowBlur = mode === 'Neon' ? 24 : (cfg.fakeNeon ? 16 : 10);
+            ctx.shadowColor = validColor;
+        } else {
+            ctx.shadowBlur = 0;
+        }
+
+        ctx.fillStyle = validColor;
+        ctx.strokeStyle = validColor;
+        
+        if (outline) {
+            ctx.stroke(this._batchPath);
+        } else {
+            ctx.fill(this._batchPath);
+        }
+
+        if (cfg.outerGlow) {
+            const outerColor = cfg.outerGlowColor || '#BD0F0F';
+            const outerThick = cfg.outerGlowThickness !== undefined ? Number(cfg.outerGlowThickness) : 3;
+            ctx.save();
+            ctx.strokeStyle = outerColor;
+            ctx.lineWidth = outerThick;
+            ctx.shadowColor = outerColor;
+            ctx.shadowBlur = outerThick * 4;
+            ctx.stroke(this._batchPath);
+            ctx.restore();
+        }
+        ctx.restore();
+        
+        this._batchPath = null;
+        this._batchStateKey = null;
+        this._batchProps = null;
     }
 
     endFrame(context) {
+        this.flushBatch();
         super.endFrame(context);
     }
 

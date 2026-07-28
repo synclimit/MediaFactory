@@ -20,6 +20,7 @@ app.use(require('./api/m2-mode3-assets.js'));
 app.use(require('./api/m3.js'));
 app.use(require('./api/m4.js').router);
 app.use(require('./api/m5.js').router);
+app.use(require('./api/whisper.js'));
 app.use(require('./api/qa.js'));
 app.use(require('./api/diagnostics.js'));
 app.use(require('./routes/sounds.js'));

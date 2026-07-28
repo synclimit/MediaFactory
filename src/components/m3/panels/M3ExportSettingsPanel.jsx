@@ -7,6 +7,7 @@ export default function M3ExportSettingsPanel({ onAddToQueue }) {
   const [codec, setCodec] = useState('H.264');
   const [renderPerSong, setRenderPerSong] = useState(false);
   const [bFrame, setBFrame] = useState('Otomatis');
+  const [renderMode, setRenderMode] = useState('FAST'); // FAST or NORMAL
   
   return (
     <div className="w-full flex flex-col select-none px-5 py-2">
@@ -118,19 +119,54 @@ export default function M3ExportSettingsPanel({ onAddToQueue }) {
 
       </div>
 
-      {/* ROW 3: Checkbox & Button */}
-      {/* Reduced margins and paddings here to pull it upwards! */}
+      {/* ROW 3: Checkbox, Render Mode & Button */}
       <div className="flex items-center justify-between border-t border-[#1a1b26] pt-2.5 mt-2.5">
         
-        <label className="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white transition-colors text-[11px] font-semibold group">
-          <div className="relative flex items-center justify-center text-orange-500" onClick={() => setRenderPerSong(!renderPerSong)}>
-            {renderPerSong ? <CheckSquare size={14} /> : <Square size={14} className="text-gray-500 group-hover:text-gray-400" />}
+        <div className="flex items-center gap-6">
+          <label className="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white transition-colors text-[11px] font-semibold group">
+            <div className="relative flex items-center justify-center text-orange-500" onClick={() => setRenderPerSong(!renderPerSong)}>
+              {renderPerSong ? <CheckSquare size={14} /> : <Square size={14} className="text-gray-500 group-hover:text-gray-400" />}
+            </div>
+            Render per song (resumable)
+          </label>
+
+          {/* RENDER MODE SELECTOR */}
+          <div className="flex items-center gap-3 bg-[#12131a] px-3 py-1 rounded border border-[#2d3247]">
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Mode</span>
+            <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-gray-300 hover:text-white transition-colors">
+              <input 
+                type="radio" 
+                name="renderMode" 
+                value="FAST"
+                checked={renderMode === 'FAST'}
+                onChange={() => setRenderMode('FAST')}
+                className="accent-orange-500 cursor-pointer"
+              />
+              Fast
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-gray-300 hover:text-white transition-colors">
+              <input 
+                type="radio" 
+                name="renderMode" 
+                value="NORMAL"
+                checked={renderMode === 'NORMAL'}
+                onChange={() => setRenderMode('NORMAL')}
+                className="accent-orange-500 cursor-pointer"
+              />
+              Normal
+            </label>
           </div>
-          Render per song (resumable)
-        </label>
+        </div>
 
         <button 
-          onClick={onAddToQueue}
+          onClick={() => {
+            if (onAddToQueue) {
+              // Pass the render settings payload out
+              onAddToQueue({
+                resolution, fps, codec, bFrame, renderPerSong, renderMode
+              });
+            }
+          }}
           className="bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white text-[11px] font-bold px-8 py-2 rounded shadow-[0_0_15px_rgba(234,88,12,0.3)] flex items-center gap-1.5 transition-all"
         >
           <Play size={12} className="fill-current" />

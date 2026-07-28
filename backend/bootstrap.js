@@ -11,6 +11,7 @@ const JobService = require('./system/JobService');
 const RecoveryService = require('./system/RecoveryService');
 const AssetService = require('./assets/AssetService');
 const PresetManagerService = require('./system/PresetManagerService');
+const CacheCleanerService = require('./system/CacheCleanerService');
 
 // M3 Panel Services
 const BackgroundService = require('./m3/background/BackgroundService');
@@ -25,6 +26,10 @@ const BrandingService = require('./m3/branding/BrandingService');
 function bootstrapBackend() {
     // Prevent double registration if already bootstrapped
     if (ServiceRegistry.services.size > 0) return;
+
+    const cacheCleaner = new CacheCleanerService();
+    cacheCleaner.start();
+    ServiceRegistry.register('CacheCleanerService', cacheCleaner);
 
     ServiceRegistry.register('ConfigurationService', new ConfigurationService());
     ServiceRegistry.register('StorageService', new StorageService());

@@ -11,6 +11,8 @@
  */
 
 import { createQueueJob, QUEUE_JOB_STATUS } from '../entities/index.js';
+import { PlannerFactory } from './pipeline/fastrender/factories/PlannerFactory.js';
+import { ProjectContext } from './pipeline/fastrender/contracts/Contexts.js';
 
 export class QueueService {
   /**
@@ -43,7 +45,62 @@ export class QueueService {
    * @returns {Promise<Object>}
    */
   async register({ workspaceId, projectId = null, createdBy, mode, payload = {} }) {
-    const job = createQueueJob({ workspaceId, projectId, createdBy, mode, payload });
+    let job = createQueueJob({ workspaceId, projectId, createdBy, mode, payload });
+
+    if (mode === 'FAST') {
+      console.log('Queue Received Project -> Planner Started');
+      job.plannerStartedAt = new Date().toISOString();
+      
+      // Check if this is an M3 configuration payload
+      if (payload.m3Payload || payload.playlist || payload.background) {
+        console.log('Queue Service: M3 Fast Render Job Accepted');
+        job.plannerFinishedAt = new Date().toISOString();
+        job.plannerStatus = 'COMPLETED';
+        job.status = QUEUE_JOB_STATUS.READY_FOR_SCHEDULER;
+        job.renderPlanSummary = `M3 Fast Render: ${payload.playlist?.length || 0} tracks`;
+      } else {
+        job.plannerStatus = 'PLANNING';
+        job.status = QUEUE_JOB_STATUS.PLANNING;
+        
+        try {
+          const kernel = PlannerFactory.createPlanner();
+          const projectCtx = new ProjectContext(payload);
+          const result = await kernel.execute(projectCtx);
+          
+          job.plannerFinishedAt = new Date().toISOString();
+          
+          if (result.validation && !result.validation.isValid) {
+            throw new Error(result.validation.errors.join('; '));
+          }
+
+          if (result.plan.globalStrategy === 'NORMAL_ONLY') {
+            // Automatic Fallback
+            console.log('Planner Fallback: NORMAL_RENDER_ONLY');
+            job.plannerStatus = 'FALLBACK';
+            job.status = QUEUE_JOB_STATUS.PENDING;
+            job.mode = 'NORMAL';
+            job.plannerWarnings.push('Automatic fallback to normal render triggered.');
+          } else {
+            console.log('Planner Finished -> RenderPlan Generated -> Waiting Scheduler');
+            job.plannerStatus = 'COMPLETED';
+            job.status = QUEUE_JOB_STATUS.READY_FOR_SCHEDULER;
+            job.renderPlanVersion = result.plan.version;
+            job.renderPlanSummary = `Segments: ${result.plan.segments.length}, Strategy: ${result.plan.globalStrategy}`;
+            job.payload.renderPlan = result.plan;
+            if (result.validation && result.validation.warnings) {
+              job.plannerWarnings = result.validation.warnings;
+            }
+          }
+        } catch (err) {
+          console.error('Planner Error:', err);
+          job.plannerFinishedAt = new Date().toISOString();
+          job.plannerStatus = 'FAILED';
+          job.status = QUEUE_JOB_STATUS.PLANNER_FAILED;
+          job.plannerErrors.push(err.message || 'Unknown Planner Error');
+        }
+      }
+    }
+
     const saved = await this.repo.insert(job);
 
     if (this.activityService) {
@@ -52,7 +109,7 @@ export class QueueService {
         userId: createdBy,
         projectId,
         action: 'Create Queue Item',
-        details: { mode, jobId: saved.id },
+        details: { mode: job.mode, jobId: saved.id },
       });
     }
     return saved;

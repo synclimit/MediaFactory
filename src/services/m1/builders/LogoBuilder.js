@@ -5,8 +5,13 @@ export class LogoBuilder {
     const logoEffect = job.effects?.logo;
     if (!logoEffect || !logoEffect.enabled) return null;
     
-    // Resolve asset path via Workspace Integration
-    const assetPath = await AssetResolver.resolve(logoEffect.asset || 'watermark.png');
+    let assetPath;
+    try {
+      assetPath = await AssetResolver.resolve(logoEffect.asset || 'watermark.png');
+    } catch (err) {
+      console.warn(`[LogoBuilder] Warning: ${err.message}. Skipping logo effect.`);
+      return null;
+    }
     
     // Default position: Bottom Right
     const position = logoEffect.position || 'bottom-right';

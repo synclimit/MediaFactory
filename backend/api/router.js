@@ -36,19 +36,89 @@ router.get('/api/v1/system/telemetry', (req, res) => {
 });
 
 router.get('/api/v1/system/cache-path', (req, res) => {
-    res.standardResponse({ cacheDir: AppPaths.getCacheBase() });
+    res.standardResponse({ 
+        cacheDir: AppPaths.getCacheBase(),
+        cacheCleanupMode: AppPaths.getCacheCleanupMode()
+    });
 });
 router.post('/api/v1/system/cache-path', (req, res) => {
-    const { cacheDir } = req.body;
+    const { cacheDir, cacheCleanupMode } = req.body;
     if (!cacheDir) {
         return res.standardResponse(null, { status: "error", message: "cacheDir is required" }, false);
     }
-    const success = AppPaths.setCacheBase(cacheDir);
+    const success = AppPaths.setCacheBase(cacheDir, cacheCleanupMode || 'never');
     if (success) {
-        res.standardResponse({ cacheDir: AppPaths.getCacheBase() });
+        // Trigger a fresh schedule check if the user just updated the mode
+        const ServiceRegistry = require('../system/ServiceRegistry');
+        const cacheCleaner = ServiceRegistry.get('CacheCleanerService');
+        if (cacheCleaner) cacheCleaner.runScheduledCleanup();
+        
+        res.standardResponse({ 
+            cacheDir: AppPaths.getCacheBase(),
+            cacheCleanupMode: AppPaths.getCacheCleanupMode()
+        });
     } else {
         res.standardResponse(null, { status: "error", message: "Failed to save cache directory" }, false);
     }
+});
+
+router.get('/api/v1/system/cache-list', async (req, res) => {
+    const ServiceRegistry = require('../system/ServiceRegistry');
+    const storage = ServiceRegistry.get('StorageService');
+    const path = require('path');
+    const cacheDir = AppPaths.getCacheBase();
+    
+    try {
+        const entries = await storage.readDir(cacheDir);
+        const items = await Promise.all(entries.map(async entry => {
+            const fullPath = path.join(cacheDir, entry.name);
+            const stat = await storage.stat(fullPath);
+            return {
+                name: entry.name,
+                isDir: stat.isDirectory(),
+                sizeBytes: stat.size,
+                mtime: stat.mtimeMs
+            };
+        }));
+        res.standardResponse({ items });
+    } catch (e) {
+        res.standardResponse({ items: [] });
+    }
+});
+
+router.post('/api/v1/system/cache-delete', async (req, res) => {
+    const { paths } = req.body;
+    if (!Array.isArray(paths)) return res.standardResponse(null, { status: "error", message: "paths array required" }, false);
+    
+    const ServiceRegistry = require('../system/ServiceRegistry');
+    const storage = ServiceRegistry.get('StorageService');
+    const path = require('path');
+    const cacheDir = AppPaths.getCacheBase();
+    
+    let deletedCount = 0;
+    for (const p of paths) {
+        // Prevent path traversal
+        const safePath = path.resolve(cacheDir, p);
+        if (safePath.startsWith(path.resolve(cacheDir))) {
+            try {
+                await storage.delete(safePath);
+                deletedCount++;
+            } catch (e) { console.error('Failed to delete cache item:', p, e); }
+        }
+    }
+    res.standardResponse({ deletedCount });
+});
+
+router.post('/api/v1/system/clean-cache/immediate', (req, res) => {
+    const mode = AppPaths.getCacheCleanupMode();
+    if (mode === 'immediate') {
+        const ServiceRegistry = require('../system/ServiceRegistry');
+        const cacheCleaner = ServiceRegistry.get('CacheCleanerService');
+        if (cacheCleaner) {
+            cacheCleaner.runImmediateCleanup();
+        }
+    }
+    res.standardResponse({ status: "ok" });
 });
 
 // --- Workspace Endpoints ---

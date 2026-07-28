@@ -171,7 +171,9 @@ class Renderer {
                     
                     if (code === 0) {
                         try {
-                            const probe = execSync(`ffprobe -v quiet -print_format json -show_format -show_streams "${outPath}"`);
+                            const AppPaths = require('../system/AppPaths');
+                            const ffprobeBin = AppPaths.getFFprobePath();
+                            const probe = execSync(`"${ffprobeBin}" -v quiet -print_format json -show_format -show_streams "${outPath}"`);
                             const probeData = JSON.parse(probe.toString());
                             const format = probeData.format || {};
                             const videoStream = probeData.streams?.find(s => s.codec_type === 'video') || {};

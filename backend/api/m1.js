@@ -35,7 +35,8 @@ router.post('/api/m1/video-metadata', (req, res) => {
         return res.status(400).json({ error: 'No path provided' });
     }
 
-    exec(`ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,codec_name -show_entries format=duration,size -of json "${filePath}"`, (err, stdout) => {
+    const ffprobeBin = AppPaths.getFFprobePath();
+    exec(`"${ffprobeBin}" -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,codec_name -show_entries format=duration,size -of json "${filePath}"`, (err, stdout) => {
         if (err) {
             return res.status(500).json({ error: 'ffprobe failed or file not found' });
         }
@@ -144,7 +145,8 @@ router.post('/api/m1/audio/probe', (req, res) => {
     const audioPath = req.body.path;
     if (!audioPath) return res.status(400).json({ error: 'No path provided' });
     
-    const cmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`;
+    const ffprobeBin = AppPaths.getFFprobePath();
+    const cmd = `"${ffprobeBin}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`;
     exec(cmd, (error, stdout) => {
         if (error) return res.status(500).json({ error: error.message });
         const durationSec = parseFloat(stdout.trim()) || 0;
@@ -180,7 +182,7 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
         const outTemplate = path.join(cacheDir, `${videoId}.%(ext)s`);
         
         const ytArgs = ['--no-warnings', '--no-playlist', '-x', '--audio-format', 'mp3', '--write-thumbnail', '--write-info-json', '--js-runtimes', 'node', '-o', outTemplate, '--', url];
-        const ytProc = spawn('yt-dlp', ytArgs);
+        const ytProc = spawn('yt-dlp', ytArgs, { shell: true });
         
         ytProc.stdout.on('data', (data) => {
             const output = data.toString();
@@ -207,7 +209,7 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
                     const durationSec = info.duration || 0;
                     const mins = Math.floor(durationSec / 60);
                     const secs = Math.floor(durationSec % 60);
-                    const audioPath = path.join(cacheDir, `${videoId}.mp3`);
+                    const audioPath = path.join(cacheDir, `${videoId}.mp3`).replace(/\\/g, '/');
                     const description = info.description || "";
                     res.write(`data: {"done": true, "videoId": "${videoId}", "title": ${JSON.stringify(info.title)}, "description": ${JSON.stringify(description)}, "durationDisplay": "${mins}m ${String(secs).padStart(2, '0')}s", "audioPath": ${JSON.stringify(audioPath)}}\n\n`);
                     res.end();

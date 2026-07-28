@@ -297,6 +297,7 @@ const RealtimeVisualizer = ({ config }) => {
 
 export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3CurrentTrackIndex = 0, m3Objects, setM3Objects, m3SelectedObjectId, setM3SelectedObjectId, canvasMode = 'composer', m3CurrentTimeSec = 0, m3TotalDurationSec = 1, setM3CurrentTimeSec, m3EstRenderTimeSec, m3EstStorageMb, analyser, children }) {
   const containerRef = useRef(null);
+  const effectTargetRef = useRef(null);
   const [canvasStyle, setCanvasStyle] = useState({ width: 800, height: 450 });
   const [dragState, setDragState] = useState({ isDragging: false, action: 'drag', handle: '', id: null, startX: 0, startY: 0, origX: 0, origY: 0, origW: 0, origH: 0, subTarget: null });
   const bgMediaRef = useRef(null);
@@ -753,7 +754,10 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      <div style={{ width: canvasStyle.width + 'px', height: canvasStyle.height + 'px', position: 'relative' }}>
+      <div 
+        ref={effectTargetRef}
+        style={{ width: canvasStyle.width + 'px', height: canvasStyle.height + 'px', position: 'relative' }}
+      >
         <div 
           id={canvasMode === 'thumbnail' ? 'm3-thumbnail-canvas' : 'm3-composer-canvas'}
           className="bg-[#12131a] absolute top-0 left-0 border border-[#2d3247] shadow-2xl overflow-hidden ring-1 ring-black"
@@ -787,7 +791,7 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
         {/* Global Effect Engine Overlay */}
         <RealtimeEffectRenderer 
             effects={m3Objects.filter(o => (o.type === 'effect' || o.type === 'reactive') && o.enabled !== false)} 
-            targetRef={containerRef} 
+            targetRef={effectTargetRef} 
         />
 
         {/* Empty State / Welcome Screen */}
@@ -850,7 +854,7 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
           {/* Unified Render Pipeline */}
           <MediaFactoryRenderer 
               renderMode={canvasMode} 
-              targetRef={containerRef}
+              targetRef={effectTargetRef}
               onPointerDown={handlePointerDown}
               handleHandleDown={handleHandleDown}
               m3SelectedObjectId={m3SelectedObjectId}

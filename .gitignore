@@ -32,3 +32,11 @@ Cache/
 *.mp4
 *.mp3
 *.wav
+Test_Output/
+dummy_bg.jpg
+dummy_audio.mp3
+*.zip
+m3 fast render/
+m3 render batch/
+m3 render normal/
+production_report.*

@@ -54,7 +54,10 @@ class CommandBuilder {
                 const outStr = fNode.outputs && fNode.outputs.length > 0
                     ? fNode.outputs.map(o => `[${o}]`).join('')
                     : '';
-                complexFilters.push(`${inStr}${filterStr}${outStr}`);
+                let rawChain = `${inStr}${filterStr}${outStr}`;
+                // Clean up any accidental leading/trailing commas right after stream labels
+                rawChain = rawChain.replace(/\[([^\]]+)\],/g, '[$1]').replace(/,\[/g, '[');
+                complexFilters.push(rawChain);
             }
         });
 

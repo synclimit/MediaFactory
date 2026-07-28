@@ -45,7 +45,7 @@ router.post('/api/m4/generate-preview', async (req, res) => {
             const offset = dur - 2 * x;
             filter = `[0:v]trim=start=0:end=${x},setpts=PTS-STARTPTS[v1];[0:v]trim=start=${x}:end=${dur},setpts=PTS-STARTPTS[v2];[v2][v1]xfade=transition=fade:duration=${x}:offset=${offset}[vout]`;
         } else if (loopMode === 'Ping-Pong Boomerang') {
-            filter = `[0:v]reverse[r];[0:v][r]concat=n=2:v=1[vout]`;
+            filter = `[0:v]split=2[v1][v2];[v2]reverse[r];[v1][r]concat=n=2:v=1[vout]`;
         }
 
         const pArgs = [
@@ -72,7 +72,7 @@ const m4Jobs = new Map();
 
 function getDuration(filePath) {
     return new Promise((resolve, reject) => {
-        exec(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`, (error, stdout) => {
+        exec(`"${AppPaths.getFFprobePath()}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`, (error, stdout) => {
             if (error) return reject(error);
             const dur = parseFloat(stdout);
             resolve(isNaN(dur) ? 0 : dur);

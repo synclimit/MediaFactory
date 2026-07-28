@@ -16,6 +16,11 @@ export default function M4LivePreview({ m4BgVideo, m4AmbientAudio, m4RelaxMusic,
   const [durationDisplay, setDurationDisplay] = useState('00:00 / 00:00');
   const [previewMuted, setPreviewMuted] = useState(false);
 
+  useEffect(() => {
+    // Clean up unmounted audio element references
+    audioRefs.current.clear();
+  }, [m4AmbientAudio, m4RelaxMusic]);
+
 
 
   const togglePlay = () => {

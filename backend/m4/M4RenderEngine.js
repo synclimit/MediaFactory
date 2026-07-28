@@ -31,8 +31,14 @@ class M4RenderEngine {
                 return onError(new Error("Background video is missing."));
             }
 
-            const outputFilename = job.outputFiles[0] || `M4_Ambient_${Date.now()}.mp4`;
-            const outDir = AppPaths.getAmbientOutputDir();
+            const outputFilename = job.outputFiles?.[0] || `M4_Ambient_${Date.now()}.mp4`;
+            let outDir = AppPaths.getAmbientOutputDir();
+            if (job.outputFolder) {
+                outDir = path.isAbsolute(job.outputFolder) ? job.outputFolder : path.join(process.cwd(), job.outputFolder);
+            }
+            if (!fs.existsSync(outDir)) {
+                fs.mkdirSync(outDir, { recursive: true });
+            }
             
             const outPath = path.join(outDir, outputFilename);
             let finalBgVideoPath = bgVideo.path;
@@ -50,7 +56,7 @@ class M4RenderEngine {
                         const offset = dur - 2 * x;
                         filter = `[0:v]trim=start=0:end=${x},setpts=PTS-STARTPTS[v1];[0:v]trim=start=${x}:end=${dur},setpts=PTS-STARTPTS[v2];[v2][v1]xfade=transition=fade:duration=${x}:offset=${offset}[vout]`;
                     } else if (loopMode === 'Ping-Pong Boomerang') {
-                        filter = `[0:v]reverse[r];[0:v][r]concat=n=2:v=1[vout]`;
+                        filter = `[0:v]split=2[v1][v2];[v2]reverse[r];[v1][r]concat=n=2:v=1[vout]`;
                     }
                     
                     const pArgs = [
@@ -62,12 +68,20 @@ class M4RenderEngine {
                     ];
                     
                     const p = spawn(AppPaths.getFFmpegPath(), pArgs);
+                    p.tempPathToClean = tempPath;
                     this.activeProcesses.set(job.id + '_temp', p);
                     
                     p.on('close', (code) => {
                         this.activeProcesses.delete(job.id + '_temp');
                         if (code === 0) resolve();
-                        else reject(new Error('Failed to generate seamless intermediate file'));
+                        else {
+                            if (p.isCancelled) {
+                                try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (e) {}
+                                reject(new Error('Job cancelled'));
+                            } else {
+                                reject(new Error('Failed to generate seamless intermediate file'));
+                            }
+                        }
                     });
                 });
                 
@@ -82,11 +96,9 @@ class M4RenderEngine {
                 '-i', finalBgVideoPath
             ];
 
-            let filterComplex = '';
             let audioCount = 0;
             let audioInputs = [];
 
-            const fs = require('fs');
             const resolveAudioPath = (p) => {
                 if (!p) return null;
                 if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
@@ -128,27 +140,36 @@ class M4RenderEngine {
             
             this.tempFiles.set(job.id, jobTempFiles);
 
-
             let videoFilterStr = '';
             let vMap = '0:v';
             
             if (bgVideo.cropWatermark) {
-                videoFilterStr = '[0:v]crop=trunc(iw/1.15/2)*2:trunc(ih/1.15/2)*2:iw/2:ih/2,scale=trunc(iw*1.15/2)*2:trunc(ih*1.15/2)*2[vout]';
+                videoFilterStr = '[0:v]crop=trunc(iw/1.15/2)*2:trunc(ih/1.15/2)*2:(in_w-out_w)/2:(in_h-out_h)/2,scale=trunc(iw*1.15/2)*2:trunc(ih*1.15/2)*2[vout]';
                 vMap = '[vout]';
             }
 
-            if (audioCount > 0) {
+            const includeOriginalAudio = bgVideo.isMuted === false && finalBgVideoPath === bgVideo.path;
+            const totalAudioInputs = audioCount + (includeOriginalAudio ? 1 : 0);
+
+            if (totalAudioInputs > 0) {
                 let audioFilterStr = '';
-                if (audioCount === 1) {
-                    const a = audioInputs[0];
-                    audioFilterStr = `[${a.index}:a]volume=${a.volume.toFixed(2)}[aout]`;
+                let allAudioInputs = [...audioInputs];
+                if (includeOriginalAudio) {
+                    allAudioInputs.unshift({ index: '0', isZeroStream: true, volume: 1.0 });
+                }
+
+                if (totalAudioInputs === 1) {
+                    const a = allAudioInputs[0];
+                    const streamTag = a.isZeroStream ? '0:a' : `${a.index}:a`;
+                    audioFilterStr = `[${streamTag}]volume=${a.volume.toFixed(2)}[aout]`;
                 } else {
                     let mixInputs = '';
-                    audioInputs.forEach((a, i) => {
-                        audioFilterStr += `[${a.index}:a]volume=${a.volume.toFixed(2)}[a${i}];`;
+                    allAudioInputs.forEach((a, i) => {
+                        const streamTag = a.isZeroStream ? '0:a' : `${a.index}:a`;
+                        audioFilterStr += `[${streamTag}]volume=${a.volume.toFixed(2)}[a${i}];`;
                         mixInputs += `[a${i}]`;
                     });
-                    audioFilterStr += `${mixInputs}amix=inputs=${audioCount}:duration=first:dropout_transition=2[aout]`;
+                    audioFilterStr += `${mixInputs}amix=inputs=${totalAudioInputs}:duration=first:dropout_transition=2:normalize=0[aout]`;
                 }
                 
                 if (videoFilterStr) {
@@ -163,12 +184,7 @@ class M4RenderEngine {
                     args.push('-filter_complex', videoFilterStr);
                 }
                 args.push('-map', vMap);
-                
-                if (bgVideo.isMuted !== false || finalBgVideoPath !== bgVideo.path) {
-                    args.push('-an'); // No audio (temp videos are generated with -an)
-                } else {
-                    args.push('-map', '0:a'); // Include original audio
-                }
+                args.push('-an');
             }
 
             // Target Duration and Output Format
@@ -177,11 +193,12 @@ class M4RenderEngine {
                 '-c:v', 'libx264',
                 '-preset', 'veryfast',
                 '-crf', '23',
-                '-c:a', 'aac',
-                '-b:a', '256k',
-                '-pix_fmt', 'yuv420p',
-                outPath
+                '-pix_fmt', 'yuv420p'
             );
+            if (totalAudioInputs > 0) {
+                args.push('-c:a', 'aac', '-b:a', '256k');
+            }
+            args.push(outPath);
 
             console.log('[M4RenderEngine] Spawning FFmpeg with args:', args.join(' '));
 
@@ -221,11 +238,15 @@ class M4RenderEngine {
                 });
                 this.tempFiles.delete(job.id);
 
+                if (ffmpeg.isCancelled) {
+                    return; // Explicitly cancelled, do not output error callback
+                }
+
                 if (code === 0) {
                     onComplete(outPath);
                 } else {
                     const crashMsg = `FFmpeg exited with code ${code}.\nLog: ${ffmpegLog.split('\n').slice(-5).join('\n')}`;
-                    try { require('fs').writeFileSync('D:/MediaFactory/ffmpeg_crash_log.txt', ffmpegLog); } catch(e){}
+                    try { fs.writeFileSync('D:/MediaFactory/ffmpeg_crash_log.txt', ffmpegLog); } catch(e){}
                     onError(new Error(crashMsg));
                 }
             });
@@ -239,13 +260,18 @@ class M4RenderEngine {
         let killed = false;
         const process1 = this.activeProcesses.get(jobId);
         if (process1) {
+            process1.isCancelled = true;
             process1.kill('SIGKILL');
             this.activeProcesses.delete(jobId);
             killed = true;
         }
         const processTemp = this.activeProcesses.get(jobId + '_temp');
         if (processTemp) {
+            processTemp.isCancelled = true;
             processTemp.kill('SIGKILL');
+            if (processTemp.tempPathToClean) {
+                try { if (fs.existsSync(processTemp.tempPathToClean)) fs.unlinkSync(processTemp.tempPathToClean); } catch(e){}
+            }
             this.activeProcesses.delete(jobId + '_temp');
             killed = true;
         }
@@ -253,6 +279,7 @@ class M4RenderEngine {
         // Find any audio generation processes for this job
         for (const [key, p] of this.activeProcesses.entries()) {
             if (key.startsWith(jobId + '_audio_')) {
+                p.isCancelled = true;
                 p.kill('SIGKILL');
                 this.activeProcesses.delete(key);
                 killed = true;
@@ -261,7 +288,7 @@ class M4RenderEngine {
 
         const jobTemps = this.tempFiles.get(jobId) || [];
         jobTemps.forEach(t => {
-            try { require('fs').unlinkSync(t); } catch (e) {}
+            try { fs.unlinkSync(t); } catch (e) {}
         });
         this.tempFiles.delete(jobId);
 

@@ -42,7 +42,11 @@ export function deriveRenderName(tracks, namingPattern, customPattern = '') {
     return 'Untitled Mix';
   }
 
-  const clean = (t) => (t?.cleanTitle || t?.title || 'Unknown').replace(/\.[^/.]+$/, '').trim();
+  const clean = (t) => (t?.cleanTitle || t?.title || 'Unknown')
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[<>:"/\\|?*]+/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim();
 
   let renderName = clean(tracks[0]);
 

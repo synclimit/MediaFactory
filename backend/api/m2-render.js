@@ -49,6 +49,8 @@ async function processJob(job) {
             const track = job.tracks[i];
             let uri = '';
             if (typeof track === 'string') uri = track;
+            else if (track.localPath) uri = track.localPath;
+            else if (track.youtubeUrl) uri = track.youtubeUrl;
             else if (track.uri) uri = track.uri;
             else if (track.title) uri = track.title;
             else uri = 'unknown';
@@ -152,7 +154,7 @@ async function processJob(job) {
                 const totalDur = job.totalDurationSec || 600;
                 const mainChain = filters.length > 0 ? filters.join(',') : 'anull';
                 // [0:a] = concat input, [1:a] = generated pink noise
-                const fc = `[0:a]${mainChain}[main];[1:a]lowpass=f=3500,volume=${noiseVol}[noise];[main][noise]amix=inputs=2:duration=first:dropout_transition=2[out]`;
+                const fc = `[0:a]${mainChain},aformat=sample_rates=44100:channel_layouts=stereo[main];[1:a]lowpass=f=3500,aformat=sample_rates=44100:channel_layouts=stereo,volume=${noiseVol}[noise];[main][noise]amix=inputs=2:duration=first:dropout_transition=2[out]`;
                 ffmpegCmd += ` -f lavfi -t ${totalDur} -i "anoisesrc=c=pink:r=44100"`;
                 ffmpegCmd += ` -filter_complex "${fc}" -map "[out]" -c:a libmp3lame -b:a 320k`;
             } else if (filters.length > 0) {

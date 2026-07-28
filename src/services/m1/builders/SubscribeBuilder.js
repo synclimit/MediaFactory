@@ -5,18 +5,15 @@ export class SubscribeBuilder {
     const subscribeEffect = job.effects?.subscribe;
     if (!subscribeEffect || !subscribeEffect.enabled) return null;
     
-    // Resolve asset path
-    const assetPath = await AssetResolver.resolve(subscribeEffect.asset || 'subscribe.webm');
+    let assetPath;
+    try {
+      assetPath = await AssetResolver.resolve(subscribeEffect.asset || 'subscribe.webm');
+    } catch (err) {
+      console.warn(`[SubscribeBuilder] Warning: ${err.message}. Skipping subscribe effect.`);
+      return null;
+    }
     
-    // Default config or consume from payload
-    const minDelay = subscribeEffect.minDelay || 10;
-    const maxDelay = subscribeEffect.maxDelay || 30;
-    const duration = subscribeEffect.duration || 10;
-    const position = subscribeEffect.position || 'bottom-center';
-    
-    // Generate random appearance timing (e.g. interval)
-    // We'll calculate a fixed interval for this render job based on random delay
-    const interval = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+    const position = subscribeEffect.position || 'center';
     
     // Position parsing
     let xStr = '(W-w)/2';
@@ -26,11 +23,13 @@ export class SubscribeBuilder {
     if (position === 'top-right') { xStr = 'W-w-50'; yStr = '50'; }
     if (position === 'bottom-left') { xStr = '50'; yStr = 'H-h-50'; }
     if (position === 'bottom-right') { xStr = 'W-w-50'; yStr = 'H-h-50'; }
+    if (position === 'center') { xStr = '(W-w)/2'; yStr = '(H-h)/2'; }
     
     return { 
-      inputs: [{ path: assetPath, args: [['-stream_loop', '-1']] }],
-      // mod(t, interval+duration) < duration shows it for 'duration' secs every 'interval+duration' secs
-      filter: `overlay=x=${xStr}:y=${yStr}:enable='lt(mod(t\\,${interval+duration})\\,${duration})'`
+      // Removed -stream_loop -1 so it only plays once
+      inputs: [{ path: assetPath, args: [] }],
+      // Use eof_action=pass so the overlay disappears when the short animation finishes
+      filter: `overlay=x=${xStr}:y=${yStr}:eof_action=pass`
     };
   }
 }

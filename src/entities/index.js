@@ -198,13 +198,23 @@ export function createActivityLog(overrides = {}) {
  * @property {string} createdAt
  * @property {string} updatedAt
  * @property {'local'|'pending'|'synced'|'failed'} syncStatus
+ * @property {string|null} plannerStatus
+ * @property {string|null} plannerStartedAt
+ * @property {string|null} plannerFinishedAt
+ * @property {string|null} renderPlanVersion
+ * @property {string|null} renderPlanSummary
+ * @property {Array<string>} plannerWarnings
+ * @property {Array<string>} plannerErrors
  */
 
 export const QUEUE_JOB_STATUS = Object.freeze({
   PENDING: 'Pending',
+  PLANNING: 'Planning',
+  READY_FOR_SCHEDULER: 'ReadyForScheduler',
   RUNNING: 'Running',
   COMPLETED: 'Completed',
   FAILED: 'Failed',
+  PLANNER_FAILED: 'PlannerFailed',
   RETRYING: 'Retrying',
 });
 
@@ -222,6 +232,13 @@ export function createQueueJob(overrides = {}) {
     mode: 'Mode 1',
     status: QUEUE_JOB_STATUS.PENDING,
     payload: {},
+    plannerStatus: null,
+    plannerStartedAt: null,
+    plannerFinishedAt: null,
+    renderPlanVersion: null,
+    renderPlanSummary: null,
+    plannerWarnings: [],
+    plannerErrors: [],
     ...overrides,
   };
 }

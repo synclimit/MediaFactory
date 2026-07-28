@@ -168,7 +168,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                 ]}
               />
 
-              <div className="flex gap-6 mt-1">
+              <div className="flex gap-6 mt-1 flex-wrap">
                 <label className="flex items-center gap-2 text-[11px] font-['Rajdhani'] font-bold uppercase tracking-wider text-gray-300 cursor-pointer hover:text-white transition-colors">
                   <input type="checkbox" checked={slot?.useSubscribe || false} onChange={(e) => updateM1Slot(idx, 'useSubscribe', e.target.checked)} className="accent-orange-500 w-3.5 h-3.5 cursor-pointer" />
                   SUBSCRIBE
@@ -180,6 +180,10 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                 <label className="flex items-center gap-2 text-[11px] font-['Rajdhani'] font-bold uppercase tracking-wider text-gray-300 cursor-pointer hover:text-white transition-colors">
                   <input type="checkbox" checked={slot?.useLogoChannel || false} onChange={(e) => updateM1Slot(idx, 'useLogoChannel', e.target.checked)} className="accent-orange-500 w-3.5 h-3.5 cursor-pointer" />
                   LOGO CHANNEL
+                </label>
+                <label className="flex items-center gap-2 text-[11px] font-['Rajdhani'] font-bold uppercase tracking-wider text-gray-300 cursor-pointer hover:text-white transition-colors">
+                  <input type="checkbox" checked={slot?.useWatermark || false} onChange={(e) => updateM1Slot(idx, 'useWatermark', e.target.checked)} className="accent-orange-500 w-3.5 h-3.5 cursor-pointer" />
+                  WATERMARK
                 </label>
               </div>
 

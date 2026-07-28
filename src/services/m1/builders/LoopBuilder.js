@@ -3,23 +3,21 @@ import path from 'path';
 
 export class LoopBuilder {
   static async build(job) {
-    const finalTargetDuration = job.audioDurationSec + (job.bufferSec || 300);
+    const finalTargetDuration = job.audioDurationSec || job.computedTargetDuration || 300;
     job.computedTargetDuration = finalTargetDuration; // Expose for Render Engine tracking
 
     const tempSegmentDuration = job.tempSegmentDuration || 1; 
     const repeats = Math.ceil(finalTargetDuration / tempSegmentDuration);
 
+    const jobIdClean = (job.id || 'temp').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
     const cacheDir = path.resolve('Workspace/Cache/M1');
     await fs.mkdir(cacheDir, { recursive: true });
-    const concatTxtPath = path.join(cacheDir, 'concat.txt');
+    const concatTxtPath = path.join(cacheDir, `concat_${jobIdClean}.txt`).replace(/\\/g, '/');
 
     // Generate concat.txt content
-    // We assume temp_segment.mp4 is located in the same directory
-    // Format: file 'temp_segment.mp4'
     let concatContent = '';
     for (let i = 0; i < repeats; i++) {
-      // Must use absolute path or relative to concat.txt. Let's use absolute with forward slashes for FFmpeg safety.
-      const tempPath = path.join(cacheDir, 'temp_segment.mp4').replace(/\\/g, '/');
+      const tempPath = path.join(cacheDir, `temp_segment_${jobIdClean}.mp4`).replace(/\\/g, '/');
       concatContent += `file '${tempPath}'\n`;
     }
 

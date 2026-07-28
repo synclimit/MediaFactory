@@ -313,6 +313,15 @@ export function sumTotalDuration(sources) {
       return acc + (parseInt(match[1]) * 60) + parseFloat(match[2]);
     }
 
+    // Handle "HH:MM:SS" or "MM:SS" (e.g. "03:45" or "01:15:30")
+    const timeMatch = src.duration.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})$/);
+    if (timeMatch) {
+      const hrs = parseInt(timeMatch[1] || '0', 10);
+      const mins = parseInt(timeMatch[2], 10);
+      const secs = parseInt(timeMatch[3], 10);
+      return acc + (hrs * 3600) + (mins * 60) + secs;
+    }
+
     // Handle plain numeric strings (e.g. "212.5" from older metadata versions)
     const floatMatch = src.duration.match(/^[\d.]+$/);
     if (floatMatch) {

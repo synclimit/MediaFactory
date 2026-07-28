@@ -160,11 +160,11 @@ export class SourceService extends EventTarget {
     let skipped = 0;
 
     const getAudioDuration = (filePath) => new Promise(resolve => {
-        const fileUrl = `file:///${filePath.replace(/\\/g, '/')}`;
-        const audio = new Audio(fileUrl);
-        audio.addEventListener('loadedmetadata', () => resolve(audio.duration));
+        const streamUrl = `/api/m2/stream?uri=${encodeURIComponent(filePath)}`;
+        const audio = new Audio(streamUrl);
+        audio.addEventListener('loadedmetadata', () => resolve(audio.duration || 0));
         audio.addEventListener('error', () => resolve(0));
-        setTimeout(() => resolve(0), 1000);
+        setTimeout(() => resolve(0), 2000);
     });
 
     for (const filePath of filePaths) {

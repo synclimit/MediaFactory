@@ -68,31 +68,33 @@ export function generateOutputName(cleanTitle, pattern, settings = {}) {
   const { djPrefix = true, customPrefix = '', customSuffix = '' } = settings;
   const base = applyDjPrefix(cleanTitle || 'Unknown', djPrefix);
 
+  const sanitize = (name) => name.replace(/[<>:"/\\|?*]+/g, '_').replace(/\s+/g, ' ').trim();
+
   switch (pattern) {
     case NAMING_PATTERN.CLEAN_TITLE:
-      return base;
+      return sanitize(base);
 
     case NAMING_PATTERN.TITLE_A:
-      return `${base} A`;
+      return sanitize(`${base} A`);
 
     case NAMING_PATTERN.TITLE_B:
-      return `${base} B`;
+      return sanitize(`${base} B`);
 
     case NAMING_PATTERN.TITLE_C:
-      return `${base} C`;
+      return sanitize(`${base} C`);
 
     case NAMING_PATTERN.CUSTOM_PREFIX:
-      return customPrefix
+      return sanitize(customPrefix
         ? `${customPrefix.trim()} - ${base}`
-        : base;
+        : base);
 
     case NAMING_PATTERN.CUSTOM_SUFFIX:
-      return customSuffix
+      return sanitize(customSuffix
         ? `${base} - ${customSuffix.trim()}`
-        : base;
+        : base);
 
     default:
-      return base;
+      return sanitize(base);
   }
 }
 

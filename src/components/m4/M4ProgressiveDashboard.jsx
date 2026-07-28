@@ -305,6 +305,19 @@ export default function M4ProgressiveDashboard({
                                         <X size={12} />
                                       </button>
                                   </div>
+                                  <div className="flex items-center gap-2 mt-1 px-1">
+                                     <Volume2 size={12} className="text-gray-500 shrink-0" />
+                                     <input 
+                                       type="range" min="0" max="100" 
+                                       value={ambient.volume !== undefined ? ambient.volume : 60} 
+                                       onChange={(e) => {
+                                         const val = Number(e.target.value);
+                                         setM4AmbientAudio(prev => prev.map(a => a.id === ambient.id ? { ...a, volume: val } : a));
+                                       }}
+                                       className="w-full accent-orange-500 h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
+                                     />
+                                     <span className="text-[10px] text-gray-400 font-mono w-7 text-right">{ambient.volume !== undefined ? ambient.volume : 60}%</span>
+                                  </div>
                               </div>
                           ))}
                         </div>
@@ -340,6 +353,19 @@ export default function M4ProgressiveDashboard({
                                       >
                                         <X size={12} />
                                       </button>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1 px-1">
+                                     <Volume2 size={12} className="text-gray-500 shrink-0" />
+                                     <input 
+                                       type="range" min="0" max="100" 
+                                       value={music.volume !== undefined ? music.volume : 35} 
+                                       onChange={(e) => {
+                                         const val = Number(e.target.value);
+                                         setM4RelaxMusic(prev => prev.map(m => m.id === music.id ? { ...m, volume: val } : m));
+                                       }}
+                                       className="w-full accent-orange-500 h-1 bg-white/20 rounded-full appearance-none cursor-pointer"
+                                     />
+                                     <span className="text-[10px] text-gray-400 font-mono w-7 text-right">{music.volume !== undefined ? music.volume : 35}%</span>
                                   </div>
                               </div>
                           ))}

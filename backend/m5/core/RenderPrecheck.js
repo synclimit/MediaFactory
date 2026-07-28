@@ -209,7 +209,9 @@ class RenderPrecheck extends Engine {
             if (asset && asset.absolutePath) {
                 try {
                     const execSync = require('child_process').execSync;
-                    const out = execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${asset.absolutePath}"`);
+                    const AppPaths = require('../../system/AppPaths');
+                    const ffprobeBin = AppPaths.getFFprobePath();
+                    const out = execSync(`"${ffprobeBin}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${asset.absolutePath}"`);
                     srcDur = parseFloat(out.toString().trim()) || srcDur;
                 } catch (e) { /* ignore */ }
             }

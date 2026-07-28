@@ -30,6 +30,7 @@ class AppPaths {
         this.workspaceDir = path.join(userDataPath, 'Workspaces');
         this.diagnosticsDir = path.join(userDataPath, 'Diagnostics');
         this.cacheDir = path.join(userDataPath, 'Cache');
+        this.cacheCleanupMode = 'never'; // Default
         this.outputDir = documentsPath;
         this.settingsFile = path.join(userDataPath, 'system_settings.json');
 
@@ -38,6 +39,9 @@ class AppPaths {
                 const settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8'));
                 if (settings.cacheDir) {
                     this.cacheDir = settings.cacheDir;
+                }
+                if (settings.cacheCleanupMode) {
+                    this.cacheCleanupMode = settings.cacheCleanupMode;
                 }
             } catch (e) { console.error('Failed to load system settings:', e); }
         }
@@ -56,11 +60,13 @@ class AppPaths {
     getWorkspaceBase() { return this.workspaceDir; }
     getDiagnosticsBase() { return this.diagnosticsDir; }
     getCacheBase() { return this.cacheDir; }
+    getCacheCleanupMode() { return this.cacheCleanupMode; }
     getOutputBase() { return this.outputDir; }
 
-    setCacheBase(newPath) {
+    setCacheBase(newPath, cleanupMode = 'never') {
         if (!newPath) return false;
         this.cacheDir = newPath;
+        this.cacheCleanupMode = cleanupMode;
         if (!fs.existsSync(this.cacheDir)) {
             fs.mkdirSync(this.cacheDir, { recursive: true });
         }
@@ -70,6 +76,7 @@ class AppPaths {
                 settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8'));
             }
             settings.cacheDir = newPath;
+            settings.cacheCleanupMode = cleanupMode;
             fs.writeFileSync(this.settingsFile, JSON.stringify(settings, null, 2));
             return true;
         } catch (e) {

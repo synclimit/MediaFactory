@@ -29,11 +29,20 @@ export default function M4StudioPanel({
     if (durationMode === '1x Loop' && m4BgVideo) totalSec = m4BgVideo.durationSec;
     else if (durationMode === '2x Loop' && m4BgVideo) totalSec = m4BgVideo.durationSec * 2;
     else if (durationMode === '3x Loop' && m4BgVideo) totalSec = m4BgVideo.durationSec * 3;
+    else if (durationMode === 'Match Audio') {
+      const maxAudioDur = Math.max(
+        0,
+        ...(m4AmbientAudio || []).map(a => a.durationSec || 0),
+        ...(m4RelaxMusic || []).map(m => m.durationSec || 0)
+      );
+      if (maxAudioDur > 0) totalSec = maxAudioDur;
+    }
     
     const uuid = crypto.randomUUID().slice(0,6).toUpperCase();
     const d = new Date();
     const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-    const safeTitle = m4BgVideo.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, '_').trim();
+    const videoName = m4BgVideo?.name || m4BgVideo?.filename || 'Video';
+    const safeTitle = videoName.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, '_').trim();
     const outFolder = `Output/M4/${dateStr}_${uuid}_${safeTitle}/`;
 
     const jobPayload = {

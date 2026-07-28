@@ -625,7 +625,7 @@ export class ParticleEngineCore {
              ctx.globalCompositeOperation = 'screen';
              ctx.lineWidth = p.size * p.scale;
         } else if (config.trail === 'trail_rainbow') {
-             const hue = (p.id * 10 + Date.now() * 0.1) % 360;
+             const hue = (p.id * 10 + this.time * 100) % 360;
              ctx.strokeStyle = `hsla(${hue}, 100%, 60%, ${alpha})`;
         } else if (config.trail === 'trail_smoke') {
              ctx.lineWidth = p.size * p.scale * 1.5;
@@ -655,6 +655,11 @@ export class ParticleEngineCore {
     render(configArray) {
         if (!this.ctx || !configArray || !configArray.length) return;
 
+        // FEATURE FLAG: Particle Object Pool
+        // Jika aktif, sistem tidak akan menggunakan array.length = count (yang memicu GC),
+        // melainkan menggunakan array pra-alokasi (Object Pool) dan index activeCount.
+        const useObjectPool = window.__M3_FEATURE_FLAGS?.enableParticlePool ?? true;
+
         configArray.forEach(config => {
             if (config.visible === false) return;
 
@@ -673,14 +678,41 @@ export class ParticleEngineCore {
 
             const targetCount = config.count || 50;
             
-            // Spawn missing particles
-            while (system.length < targetCount) {
-                system.push(this.spawnParticle(config, this.width, this.height, initialSpawn));
-            }
-            
-            // Trim excess particles if count was reduced
-            if (system.length > targetCount) {
-                system.length = targetCount;
+            if (useObjectPool) {
+                // 1. PRE-ALLOCATION (OBJECT POOL)
+                // Alokasikan batas memori di awal (misalnya 2000 partikel per config).
+                if (initialSpawn) {
+                    const poolLimit = Math.max(targetCount, 2000);
+                    while (system.length < poolLimit) {
+                        // Alokasi dummy yang dimatikan (life = 0) agar tidak terlihat
+                        let p = this.spawnParticle(config, this.width, this.height, true);
+                        p.life = 0; 
+                        p.isDummy = true;
+                        system.push(p);
+                    }
+                }
+                
+                // 2. DYNAMIC FALLBACK
+                // Jika targetCount melampaui poolLimit yang ada, buat objek baru (fallback aman)
+                while (system.length < targetCount) {
+                    let p = this.spawnParticle(config, this.width, this.height, false);
+                    p.life = 0;
+                    p.isDummy = true;
+                    system.push(p);
+                }
+
+                system.activeCount = targetCount;
+            } else {
+                // LEGACY MODE (Fallback)
+                // Spawn missing particles
+                while (system.length < targetCount) {
+                    system.push(this.spawnParticle(config, this.width, this.height, initialSpawn));
+                }
+                
+                // Trim excess particles if count was reduced (GC SPIKE TRIGGER)
+                if (system.length > targetCount) {
+                    system.length = targetCount;
+                }
             }
 
             this.ctx.save();
@@ -693,11 +725,20 @@ export class ParticleEngineCore {
             this.ctx.globalCompositeOperation = globalComp;
 
             // Update & Draw
-            for (let i = system.length - 1; i >= 0; i--) {
+            const loopLimit = useObjectPool ? system.activeCount : system.length;
+            
+            for (let i = loopLimit - 1; i >= 0; i--) {
                 let p = system[i];
                 
+                // Jika partikel baru diambil dari pool (life <= 0), hidupkan kembali
+                if (p.life <= 0) {
+                    this.spawnParticle(config, this.width, this.height, initialSpawn || p.isDummy, p);
+                    p.isDummy = false;
+                }
+
                 this.updateParticle(p, config, this.width, this.height, reactiveValue);
                 
+                // Cek lagi setelah update, bila life habis, respawn
                 if (p.life <= 0) {
                     this.spawnParticle(config, this.width, this.height, false, p);
                 }

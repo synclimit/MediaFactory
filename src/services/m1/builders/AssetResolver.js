@@ -11,6 +11,15 @@ export class AssetResolver {
    * Fails fast if the file does not exist.
    */
   static async resolve(assetName) {
+    if (path.isAbsolute(assetName)) {
+      try {
+        await fs.access(assetName);
+        return assetName;
+      } catch (e) {
+        throw new Error(`AssetResolver: Missing required absolute asset. Path not found: ${assetName}`);
+      }
+    }
+    
     // For Sprint 4, we use a central assets folder in the repository.
     // In production, this would bridge to WorkspaceService for specific user uploads.
     const assetPath = path.resolve(process.cwd(), '.mediafactory', 'assets', assetName);
