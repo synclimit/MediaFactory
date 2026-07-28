@@ -93,3 +93,7 @@ autoUpdater.on('download-progress', (progressObj) => {
 autoUpdater.on('update-downloaded', (info) => {
     if (mainWindow) mainWindow.webContents.send('update-status', { status: 'ready', version: info.version });
 });
+
+autoUpdater.on('error', (err) => {
+    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'error', message: err.message });
+});

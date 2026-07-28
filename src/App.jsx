@@ -633,7 +633,12 @@ export default function App() {
     if (window.require) {
       try {
         const { ipcRenderer } = window.require('electron');
-        const handleUpdateStatus = (event, data) => setUpdateState(data);
+        const handleUpdateStatus = (event, data) => {
+          setUpdateState(data);
+          if (data.status === 'not-available' || data.status === 'error') {
+            setTimeout(() => setUpdateState({ status: 'idle', progress: 0, version: '' }), 3000);
+          }
+        };
         ipcRenderer.on('update-status', handleUpdateStatus);
         return () => ipcRenderer.removeAllListeners('update-status');
       } catch (e) {}
@@ -2271,6 +2276,7 @@ export default function App() {
                         <span className="text-orange-500 text-sm drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]">🔄</span> 
                         {updateState.status === 'idle' && "Check for Updates"}
                         {updateState.status === 'checking' && "Checking..."}
+                        {updateState.status === 'not-available' && "Up to date ✓"}
                         {updateState.status === 'downloading' && `Downloading (${Math.round(updateState.progress)}%)`}
                         {updateState.status === 'ready' && "Restart to Update"}
                         {updateState.status === 'error' && "Update Failed"}
