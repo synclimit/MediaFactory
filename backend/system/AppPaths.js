@@ -120,6 +120,25 @@ class AppPaths {
         }
         return 'ffprobe';
     }
+
+    getYtDlpPath() {
+        const candidatePaths = [
+            path.join(__dirname, '..', 'bin', 'yt-dlp.exe'),
+            path.join(__dirname, '..', 'ffmpeg', 'yt-dlp.exe'),
+            path.join(__dirname, '..', '..', 'backend', 'bin', 'yt-dlp.exe'),
+            path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'yt-dlp.exe'),
+            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'yt-dlp.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'yt-dlp.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'yt-dlp.exe') : '',
+            path.join(process.cwd(), 'backend', 'bin', 'yt-dlp.exe'),
+            path.join(process.cwd(), 'backend', 'ffmpeg', 'yt-dlp.exe'),
+            path.join(process.cwd(), 'bin', 'yt-dlp.exe')
+        ];
+        for (const p of candidatePaths) {
+            if (p && fs.existsSync(p)) return p;
+        }
+        return 'yt-dlp';
+    }
 }
 
 module.exports = new AppPaths();

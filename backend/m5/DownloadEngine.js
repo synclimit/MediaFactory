@@ -42,7 +42,7 @@ class DownloadEngine {
             if (isSocial) {
                 // Using yt-dlp, preferring video+audio mp4 without watermark if possible
                 const ytArgs = ['-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]', '--no-playlist', '-o', outputPath, '--', url];
-                const ytProc = spawn('yt-dlp', ytArgs);
+                const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs);
                 
                 ytProc.stdout.on('data', (data) => {
                     const output = data.toString();
@@ -88,7 +88,7 @@ class DownloadEngine {
     async getMetadata(url) {
         return new Promise((resolve) => {
             const ytArgs = ['--dump-json', '--no-playlist', '--no-warnings', url];
-            const ytProc = spawn('yt-dlp', ytArgs);
+            const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs);
             let stdout = '';
             
             ytProc.stdout.on('data', data => stdout += data.toString());
