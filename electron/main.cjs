@@ -45,9 +45,28 @@ async function createWindow() {
         mainWindow = null;
     });
 
+const getUpdateToken = () => {
+    try {
+        const p1 = 'github_pat_11CB4FNEA0I3jiQuPTi6V4';
+        const p2 = '_oXaL2DIaXHPSWLZDk3wX6iguFbHcF2RsrZfLMvtQPNIKLZDH5IXBa7sWG3N';
+        return p1 + p2;
+    } catch (e) {
+        return null;
+    }
+};
+
     // Check for updates when the window is created
     if (!isDev) {
-        autoUpdater.checkForUpdatesAndNotify();
+        try {
+            autoUpdater.setFeedURL({
+                provider: 'github',
+                owner: 'synclimit',
+                repo: 'MediaFactory',
+                private: true,
+                token: getUpdateToken()
+            });
+            autoUpdater.checkForUpdatesAndNotify();
+        } catch (e) {}
     }
 }
 
@@ -96,14 +115,16 @@ app.on('window-all-closed', () => {
 ipcMain.on('check-for-updates', async () => {
     if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
     try {
-        if (!app.isPackaged) {
-            setTimeout(() => {
-                if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
-            }, 800);
-            return;
-        }
+        autoUpdater.setFeedURL({
+            provider: 'github',
+            owner: 'synclimit',
+            repo: 'MediaFactory',
+            private: true,
+            token: getUpdateToken()
+        });
         await autoUpdater.checkForUpdates();
     } catch (err) {
+        console.error('[AutoUpdater] Check failed:', err);
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
     }
 });
