@@ -26,6 +26,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       external: ['canvaskit-wasm']
+    },
+    rolldownOptions: {
+      external: ['canvaskit-wasm']
     }
   }
 })

@@ -4,9 +4,6 @@
  * Encapsulates Google Skia WebAssembly (CanvasKit) runtime lifecycle and 1080p frame rasterization.
  */
 
-import CanvasKitInit from 'canvaskit-wasm';
-import crypto from 'crypto';
-
 let canvasKitInstance = null;
 let initPromise = null;
 
@@ -23,6 +20,17 @@ export async function initCanvasKit() {
   if (!initPromise) {
     initPromise = (async () => {
       const startTime = Date.now();
+      let CanvasKitInit;
+      try {
+        const mod = await import('canvaskit-wasm');
+        CanvasKitInit = mod.default || mod;
+      } catch (e) {
+        if (typeof window !== 'undefined' && window.CanvasKitInit) {
+          CanvasKitInit = window.CanvasKitInit;
+        } else {
+          CanvasKitInit = require('canvaskit-wasm');
+        }
+      }
       const instance = await CanvasKitInit();
       canvasKitInstance = instance;
       const durationMs = Date.now() - startTime;
