@@ -1,9 +1,9 @@
-import { RenderPipeline } from './RenderPipeline';
-import { TimelineProvider } from './providers/TimelineProvider';
-import { PlaybackMode } from './providers/PlaybackMode';
-import { FrameInputProvider } from './providers/FrameInputProvider';
-import { outputManager } from './output/OutputManager';
-import { ReactPreviewAdapter } from './output/adapters/ReactPreviewAdapter';
+import { RenderPipeline } from './RenderPipeline.js';
+import { TimelineProvider } from './providers/TimelineProvider.js';
+import { PlaybackMode } from './providers/PlaybackMode.js';
+import { FrameInputProvider } from './providers/FrameInputProvider.js';
+import { outputManager } from './output/OutputManager.js';
+import { ReactPreviewAdapter } from './output/adapters/ReactPreviewAdapter.js';
 
 /**
  * Bootstraps the complete Render Pipeline infrastructure.
