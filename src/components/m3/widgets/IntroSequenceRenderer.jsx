@@ -90,7 +90,7 @@ const IntroSequenceRenderer = ({ el, currentTime, isOutro }) => {
         const pProgress = localT / paragraphDuration;
         const timeRemaining = totalDuration - t;
         
-        const introText = el[`introText${pIndex + 1}`] || '';
+        const introText = el[`introText${pIndex + 1}`] || (pIndex === 0 ? (el.introText1 || 'WELCOME TO MY CHANNEL') : (pIndex === 1 ? (el.introText2 || 'RELAX & CHILL WITH LOFI SOUNDS') : (el.introText3 || 'SUBSCRIBE FOR MORE AMBIENT VIDEOS')));
         const textColor = el.introTextColor || '#ffffff';
         const fontSize = el.introFontSize !== undefined ? el.introFontSize : 32;
         const fontFamily = el.introFontFamily || 'Inter';

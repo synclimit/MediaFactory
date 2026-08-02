@@ -32,6 +32,10 @@ export default function WorkspaceSettingsModal({ workspaceName, isOpen, onClose 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
             });
+            if (settings?.output?.main) {
+                localStorage.setItem(`mf_workspace_output_${workspaceName}`, settings.output.main);
+            }
+            window.dispatchEvent(new CustomEvent('workspace_settings_updated', { detail: { workspaceName, settings } }));
             onClose();
         } catch (e) {
             console.error(e);

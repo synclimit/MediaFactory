@@ -9,7 +9,6 @@ import OverlayPanel from './panels/OverlayPanel';
 import TextPanel from './panels/TextPanel';
 import ReactivePanel from './panels/ReactivePanel';
 import BrandingPanel from './panels/BrandingPanel';
-import M3FXPresetPanel from './panels/M3FXPresetPanel';
 import ParticlesPanel from './panels/ParticlesPanel';
 import LyricsPanel from './panels/LyricsPanel';
 import { ThumbnailCard, GridThumbnail } from '../ui/Thumbnails';
@@ -23,12 +22,13 @@ export default function M3DynamicContentPanel({
   m3Objects, setM3Objects, 
   m3SelectedObjectId, setM3SelectedObjectId, 
   canvasMode, 
+  editorMode,
   activeContextCategory 
 }) {
   // Generic Object Adder
   const addObject = (props) => {
     const id = props.type + '-' + Date.now();
-    setM3Objects([...m3Objects, { id, canvasMode, visible: true, locked: false, layer: m3Objects.length, ...props }]);
+    setM3Objects([...m3Objects, { id, canvasMode: editorMode === 'Thumbnail' ? 'thumbnail' : 'composer', visible: true, locked: false, layer: m3Objects.length, ...props }]);
     setM3SelectedObjectId(id);
   };
 
@@ -52,10 +52,9 @@ export default function M3DynamicContentPanel({
   const renderParticle = () => <ParticlesPanel addObject={addObject} m3Objects={m3Objects || []} setM3Objects={setM3Objects} m3SelectedObjectId={m3SelectedObjectId} setM3SelectedObjectId={setM3SelectedObjectId} />;
   const renderEffects = () => <EffectsPanel m3Objects={m3Objects || []} setM3Objects={setM3Objects} m3SelectedObjectId={m3SelectedObjectId} setM3SelectedObjectId={setM3SelectedObjectId} />;
   const renderOverlay = () => <OverlayPanel addObject={addObject} />;
-  const renderTextObjects = () => <TextPanel addObject={addObject} />;
+  const renderTextObjects = () => <TextPanel addObject={addObject} editorMode={editorMode} />;
   const renderReactive = () => <ReactivePanel addObject={addObject} />;
   const renderBranding = () => <BrandingPanel addObject={addObject} />;
-  const renderFXPreset = () => <M3FXPresetPanel />;
   const renderLyrics = () => <LyricsPanel addObject={addObject} m3Objects={m3Objects || []} setM3Objects={setM3Objects} m3SelectedObjectId={m3SelectedObjectId} setM3SelectedObjectId={setM3SelectedObjectId} />;
 
   const renderRenderPresets = () => (
@@ -78,7 +77,6 @@ export default function M3DynamicContentPanel({
     case 'Text Objects': content = renderTextObjects(); break;
     case 'Audio Reactive': content = renderReactive(); break;
     case 'Branding': content = renderBranding(); break;
-    case 'FX Preset': content = renderFXPreset(); break;
     case 'Render': content = renderRenderPresets(); break;
     default: content = <div className="text-gray-500 text-[11px] italic p-2 text-center">Browse assets for {activeContextCategory} here.</div>;
   }

@@ -221,6 +221,22 @@ export function createFolderAudioSource(filePath, folderPath, durationSec = 0) {
   });
 }
 
+export function cleanYoutubeUrl(url) {
+  if (!url) return '';
+  const trimmed = String(url).trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
+      parsed.searchParams.delete('list');
+      parsed.searchParams.delete('start_radio');
+      parsed.searchParams.delete('index');
+      parsed.searchParams.delete('pp');
+      return parsed.toString();
+    }
+  } catch(e) {}
+  return trimmed;
+}
+
 /**
  * Create a YouTube URL source.
  * Task 01: Store URL only. No download. No metadata fetch. Status = pending.
@@ -228,7 +244,7 @@ export function createFolderAudioSource(filePath, folderPath, durationSec = 0) {
  * @returns {SourceEntity}
  */
 export function createYouTubeSource(url) {
-  const trimmedUrl = url?.trim() || '';
+  const trimmedUrl = cleanYoutubeUrl(url);
   const errors = [];
 
   if (!trimmedUrl) {

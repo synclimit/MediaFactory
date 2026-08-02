@@ -14,7 +14,7 @@ export default function M4StudioPanel({
 }) {
   const [activeStep, setActiveStep] = useState(1);
   const [m4LoopMode, setM4LoopMode] = useState('Crossfade Blend');
-  const [durationMode, setDurationMode] = useState('2x Loop');
+  const [durationMode, setDurationMode] = useState('Match Audio');
   const [targetDuration, setTargetDuration] = useState(60);
   const [m4PreviewVideo, setM4PreviewVideo] = useState(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
@@ -25,17 +25,25 @@ export default function M4StudioPanel({
       return;
     }
     
+    // Calculate max audio duration from ambient audio and relax music
+    const maxAudioDur = Math.max(
+      0,
+      ...(m4AmbientAudio || []).map(a => a.durationSec || 0),
+      ...(m4RelaxMusic || []).map(m => m.durationSec || 0)
+    );
+
     let totalSec = targetDuration * 60; // Default if Custom Duration
-    if (durationMode === '1x Loop' && m4BgVideo) totalSec = m4BgVideo.durationSec;
-    else if (durationMode === '2x Loop' && m4BgVideo) totalSec = m4BgVideo.durationSec * 2;
-    else if (durationMode === '3x Loop' && m4BgVideo) totalSec = m4BgVideo.durationSec * 3;
-    else if (durationMode === 'Match Audio') {
-      const maxAudioDur = Math.max(
-        0,
-        ...(m4AmbientAudio || []).map(a => a.durationSec || 0),
-        ...(m4RelaxMusic || []).map(m => m.durationSec || 0)
-      );
+    if (maxAudioDur > 0 && (durationMode === 'Match Audio' || durationMode === '2x Loop' || durationMode === '1x Loop')) {
+      totalSec = maxAudioDur; // Strictly lock to audio duration when audio exists
+    } else if (durationMode === '1x Loop' && m4BgVideo) {
+      totalSec = m4BgVideo.durationSec;
+    } else if (durationMode === '2x Loop' && m4BgVideo) {
+      totalSec = m4BgVideo.durationSec * 2;
+    } else if (durationMode === '3x Loop' && m4BgVideo) {
+      totalSec = m4BgVideo.durationSec * 3;
+    } else if (durationMode === 'Match Audio') {
       if (maxAudioDur > 0) totalSec = maxAudioDur;
+      else if (m4BgVideo) totalSec = m4BgVideo.durationSec * 2;
     }
     
     const uuid = crypto.randomUUID().slice(0,6).toUpperCase();
@@ -53,6 +61,7 @@ export default function M4StudioPanel({
         bgVideo: m4BgVideo,
         ambientAudio: m4AmbientAudio,
         relaxMusic: m4RelaxMusic,
+        m4Objects: m4Objects,
         objects: m4Objects,
         loopMode: m4LoopMode,
         durationMode: durationMode
@@ -64,7 +73,7 @@ export default function M4StudioPanel({
   };
 
   return (
-    <div className="flex flex-1 min-h-0 bg-gradient-to-br from-[#1b1d22] via-[#14151a] to-[#0d0e12] border border-[#2a2c33] rounded-xl overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05),inset_0_-1px_2px_rgba(0,0,0,0.5)] mb-2 relative group">
+    <div className="flex flex-1 min-h-0 bg-gradient-to-br from-[#1b1d22] via-[#14151a] to-[#0d0e12] border border-[#2a2c33] rounded-xl overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05),inset_0_-1px_2px_rgba(0,0,0,0.5)] mb-2 relative">
       
       {/* Orange Top Mechanical Line */}
       <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-orange-600/50 via-orange-500 to-orange-600/50 shadow-[0_0_15px_rgba(249,115,22,0.6)] z-50 pointer-events-none"></div>

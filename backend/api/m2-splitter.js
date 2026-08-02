@@ -20,13 +20,15 @@ fs.mkdir(cacheDir, { recursive: true }).catch(() => {});
 
 // 1. Metadata Extractor
 router.post('/api/m2/splitter/metadata', async (req, res) => {
-    const url = req.body.url;
+    let url = req.body.url;
     if (!url) return res.status(400).json({ error: 'URL required' });
+
+    url = url.trim().replace(/([?&])(list|start_radio|index|pp)=[^&]*/gi, '$1').replace(/[?&]$/, '').replace(/\?&/, '?');
 
     try {
         const ytData = await new Promise((resolve, reject) => {
             const ytArgs = ['--dump-json', '--no-playlist', '--js-runtimes', 'node', '--', url];
-            const ytProc = spawn('yt-dlp', ytArgs, { shell: true });
+            const ytProc = spawn('yt-dlp', ytArgs);
             let stdoutData = '';
             let stderrData = '';
 
@@ -228,7 +230,7 @@ async function processSplitterJob(jobId, url, outputFolder, songs, videoId, vide
         
         await new Promise((resolve, reject) => {
             const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--audio-quality', '0', '--js-runtimes', 'node', '-o', downloadPathTemplate, '--', url];
-            const ytProc = spawn('yt-dlp', ytArgs, { shell: true });
+            const ytProc = spawn('yt-dlp', ytArgs);
             
             ytProc.stdout.on('data', chunk => {
                 const out = chunk.toString();

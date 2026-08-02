@@ -27,17 +27,20 @@
         document.body.appendChild(errorDiv);
       });
       window.addEventListener('unhandledrejection', function(event) {
+        if (!event || !event.reason || (typeof event.reason === 'object' && (event.reason.name === 'UnknownError' || event.reason.name === 'NotAllowedError' || event.reason.message === 'Internal error.'))) {
+          return;
+        }
         var errorDiv = document.createElement('div');
         errorDiv.style.position = 'fixed';
         errorDiv.style.top = '0';
         errorDiv.style.left = '0';
         errorDiv.style.width = '100%';
-        errorDiv.style.backgroundColor = 'red';
+        errorDiv.style.backgroundColor = 'rgba(220, 38, 38, 0.95)';
         errorDiv.style.color = 'white';
-        errorDiv.style.padding = '20px';
+        errorDiv.style.padding = '15px 20px';
         errorDiv.style.zIndex = '999999';
         errorDiv.style.fontFamily = 'monospace';
-        errorDiv.innerHTML = '<h2>UNHANDLED PROMISE REJECTION</h2><p>' + event.reason + '</p>';
+        errorDiv.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;"><h2 style="margin:0;font-size:16px;">UNHANDLED PROMISE REJECTION</h2><button onclick="this.parentElement.parentElement.remove()" style="background:#fff;color:#000;border:none;padding:4px 12px;cursor:pointer;border-radius:4px;font-weight:bold;">Close X</button></div><p style="margin:8px 0 0 0;">' + (event.reason ? (event.reason.message || event.reason) : 'Unknown') + '</p>';
         document.body.appendChild(errorDiv);
       });
     </script>

@@ -133,8 +133,8 @@ export default function VisualizerRenderer({ config }) {
     }, []);
 
     return (
-        <div className="w-full h-full relative pointer-events-none flex items-center justify-center overflow-hidden">
-            <canvas ref={canvasRef} width={config.width || 600} height={config.height || 200} className="pointer-events-none" style={{ maxWidth: '100%', maxHeight: '100%', width: '100%', height: '100%' }} />
+        <div className="relative flex items-center justify-center overflow-hidden" style={{ width: config.width || 1920, height: config.height || 200 }}>
+            <canvas ref={canvasRef} width={config.width || 1920} height={config.height || 200} style={{ display: 'block' }} />
         </div>
     );
 }

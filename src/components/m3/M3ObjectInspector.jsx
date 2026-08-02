@@ -8,6 +8,10 @@ import { fontLibrary } from '../../services/FontLibrary';
 import PlaylistParser from '../../services/playlist/PlaylistParser';
 import { TypographyThemes, getThemeById } from '../../services/typography/TypographyThemes';
 import { ALL_EFFECTS } from './panels/EffectsPanel';
+import { capabilityRegistry } from '../../services/pipeline/fastrender/registry/CapabilityRegistry.js';
+import { fastRenderState } from '../../services/pipeline/fastrender/core/FastRenderState.js';
+import { fastWorkspaceManager } from '../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
+
 
 const LiveAudioMeter = ({ source }) => {
   const canvasRef = useRef(null);
@@ -98,6 +102,91 @@ function ToggleRow({ label, checked, onChange, disabled }) {
     </div>
   );
 }
+
+function FastModeBadge({ label }) {
+  return (
+    <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-cyan-950/80 to-teal-950/80 border border-cyan-500/40 text-cyan-300 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider my-1 shadow-[0_0_8px_rgba(0,243,255,0.15)]">
+      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00f3ff]"></span>
+      <span>{label || '⚡ Fast Mode Adapted'}</span>
+    </div>
+  );
+}
+
+function ClassificationMetadataCard({ validationSummary }) {
+  if (!validationSummary) return null;
+  const { isFastWorkspace, classification, hasErrors, hasWarnings, errors, warnings, boundaryStatus, badge, reason } = validationSummary;
+  if (!isFastWorkspace || !classification) return null;
+
+  const getBadgeStyle = () => {
+    if (hasErrors || classification.classification === 'Unsupported') return 'from-red-950/80 to-orange-950/80 border-red-500/40 text-red-300';
+    if (hasWarnings) return 'from-amber-950/80 to-yellow-950/80 border-amber-500/40 text-amber-300';
+    if (classification.classification === 'LoopNative') return 'from-emerald-950/80 to-teal-950/80 border-emerald-500/40 text-emerald-300';
+    return 'from-cyan-950/80 to-blue-950/80 border-cyan-500/40 text-cyan-300';
+  };
+
+  return (
+    <div className={`p-2.5 mb-3 rounded-xl border bg-gradient-to-r ${getBadgeStyle()} shadow-md text-[10px] space-y-1 select-none`}>
+      <div className="flex items-center justify-between font-extrabold uppercase tracking-wider text-[10px]">
+        <span>{badge || `⚡ Classification: ${classification.classification}`}</span>
+        <span className="text-[9px] opacity-80">{classification.label}</span>
+      </div>
+      {classification.adaptationStrategy && (
+        <div className="flex justify-between text-gray-300">
+          <span className="opacity-70">Strategy:</span>
+          <span className="font-mono font-bold text-amber-300">{classification.adaptationStrategy}</span>
+        </div>
+      )}
+      {classification.loopContinuity && (
+        <div className="flex justify-between text-gray-300">
+          <span className="opacity-70">Loop Quality:</span>
+          <span className="font-mono font-bold text-cyan-300">{classification.loopContinuity}</span>
+        </div>
+      )}
+      {boundaryStatus && (
+        <div className="flex justify-between text-gray-300 border-t border-cyan-500/20 pt-1">
+          <span className="opacity-70">Boundary Status:</span>
+          <span className={`font-mono font-bold ${boundaryStatus.passed ? 'text-emerald-400' : 'text-red-400'}`}>
+            {boundaryStatus.passed ? '✓ PASSED' : `⚠️ DEV ${boundaryStatus.deviation}`}
+          </span>
+        </div>
+      )}
+      {reason && (
+        <div className="text-red-300 font-medium pt-0.5 border-t border-red-500/20">
+          Reason: {reason}
+        </div>
+      )}
+      {warnings && warnings.length > 0 && (
+        <div className="text-amber-300 text-[9px] pt-1">
+          ⚠️ {warnings[0].message}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UnsupportedGuidanceCard({ title, message, onSwitchToNormal }) {
+  return (
+    <div className="my-3 p-3 bg-gradient-to-r from-red-950/90 via-[#2d1215] to-orange-950/80 border border-orange-500/40 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.6)] flex flex-col gap-2 relative overflow-hidden group">
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500 via-orange-500 to-amber-500"></div>
+      <div className="flex items-center gap-2 text-orange-400 font-black text-[11px] tracking-wider uppercase">
+        <span className="text-amber-400 text-xs">⚠️</span>
+        <span>{title || 'Normal Render Mode Required'}</span>
+      </div>
+      <p className="text-[10px] text-gray-300 leading-relaxed font-medium">
+        {message || 'Feature ini memerlukan real-time frame rendering dan tidak kompatibel dengan Fast Render cache.'}
+      </p>
+      {onSwitchToNormal && (
+        <button
+          onClick={onSwitchToNormal}
+          className="mt-1 w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black font-extrabold text-[10px] py-1.5 px-3 rounded-lg shadow-[0_0_12px_rgba(249,115,22,0.4)] hover:shadow-[0_0_18px_rgba(249,115,22,0.6)] transition-all duration-200 uppercase tracking-widest flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+        >
+          <span>🎬</span> Pindah ke Normal Render Mode
+        </button>
+      )}
+    </div>
+  );
+}
+
 
 function SliderRow({ label, min = 0, max = 100, step, value = 50, onChange, disabled, checkbox }) {
   const [localValue, setLocalValue] = React.useState(value);
@@ -579,7 +668,7 @@ const INSPECTOR_MAP = {
     'scanline': InspectorScanline,
     'light-leak': InspectorLightLeak,
 };
-export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPool = [], setM3BgPool, m3SelectedObjectId, activeCategory, renderSettings = {}, setRenderSettings }) {
+export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPool = [], setM3BgPool, m3SelectedObjectId, activeCategory, renderSettings = {}, setRenderSettings, renderMode = 'FAST', setRenderMode }) {
   const [demoState, setDemoState] = React.useState({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   
@@ -1131,33 +1220,22 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
 
   const renderVisualFXInspector = () => {
     const activeEffects = m3Objects.filter(obj => obj.type === 'effect' || obj.type === 'reactive');
-    
+    const isFast = renderMode === 'FAST' || fastRenderState.isFastMode();
+
     const handleDelete = (id) => {
         setM3Objects(prev => prev.filter(obj => obj.id !== id));
     };
 
-    const handleAddEffect = (effectDef) => {
-        const newEffect = {
-            id: 'fx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-            type: 'effect',
-            presetId: effectDef.presetId,
-            name: effectDef.name,
-            category: 'effect',
-            enabled: true,
-            sensitivityMode: 'Normal',
-            amplitude: 100, threshold: 35, attack: 15, release: 180, smoothness: 60,
-            operation: 'multiply', curve: 'easeOut',
-            source: effectDef.defaultProps.source || 'energy',
-            props: { ...effectDef.defaultProps },
-        };
-        setM3Objects(prev => [...prev, newEffect]);
-        emitRuntimeEvent('Effect.Created', { id: newEffect.id, name: newEffect.name });
+    const handleSwitchToNormal = () => {
+        fastRenderState.setMode('NORMAL');
+        if (setRenderMode) setRenderMode('NORMAL');
     };
 
     return (
       <div className="flex flex-col gap-2 px-2">
         <div className="flex justify-between items-center mb-4 mt-2">
             <span className="text-[12px] text-gray-300 font-bold tracking-widest uppercase">Visual FX Layer</span>
+            {isFast && <FastModeBadge label="⚡ Fast Mode Active" />}
         </div>
 
         {activeEffects.length === 0 ? (
@@ -1167,6 +1245,10 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         ) : (
             activeEffects.map(obj => {
                 const InspectorComp = INSPECTOR_MAP[obj.presetId];
+                const rule = capabilityRegistry.getInspectorRule(obj.presetId);
+                const isUnsupported = isFast && rule.supported === false;
+                const isAdapted = isFast && rule.adapted === true;
+
                 return (
                     <div key={obj.id} className="relative group">
                         <SettingGroup 
@@ -1181,25 +1263,34 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
                                 </button>
                             }
                         >
+                            {isAdapted && <FastModeBadge label={rule.adaptLabel || '⚡ Fast Mode Periodic Curve'} />}
                             
-                            <div className="mt-1">
-                                {InspectorComp ? (
-                                    <InspectorComp 
-                                        props={obj.props || {}} 
-                                        update={(key, value) => {
-                                            const updated = m3Objects.map(o => {
-                                                if (o.id === obj.id) {
-                                                    return { ...o, props: { ...o.props, [key]: value } };
-                                                }
-                                                return o;
-                                            });
-                                            setM3Objects(updated);
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="text-[11px] text-gray-500 italic">No custom inspector for this effect.</div>
-                                )}
-                            </div>
+                            {isUnsupported ? (
+                                <UnsupportedGuidanceCard 
+                                    title={`${obj.name.toUpperCase()} — NORMAL RENDER MODE REQUIRED`}
+                                    message={rule.reason || 'Preset ini memerlukan real-time frame rendering dan tidak kompatibel dengan Fast Render Mode.'}
+                                    onSwitchToNormal={handleSwitchToNormal}
+                                />
+                            ) : (
+                                <div className="mt-1">
+                                    {InspectorComp ? (
+                                        <InspectorComp 
+                                            props={obj.props || {}} 
+                                            update={(key, value) => {
+                                                const updated = m3Objects.map(o => {
+                                                    if (o.id === obj.id) {
+                                                        return { ...o, props: { ...o.props, [key]: value } };
+                                                    }
+                                                    return o;
+                                                });
+                                                setM3Objects(updated);
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="text-[11px] text-gray-500 italic">No custom inspector for this effect.</div>
+                                    )}
+                                </div>
+                            )}
                         </SettingGroup>
                     </div>
                 );
@@ -1208,6 +1299,7 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
       </div>
     );
   };
+
 
 
   const handleLayerMove = (direction) => {
@@ -1810,11 +1902,18 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
 
 
 
-  const renderParticleInspector = () => (
+  const renderParticleInspector = () => {
+    const isFast = renderMode === 'FAST' || fastRenderState.isFastMode();
+    return (
     <>
+      {isFast && (
+        <div className="mb-2 px-1">
+          <FastModeBadge label="⚡ Seeded PRNG Particles (Fast Mode)" />
+        </div>
+      )}
       <SettingGroup title="Particle Settings">
         <SelectRow label="Shape" options={['shape_circle', 'shape_square', 'shape_triangle', 'shape_diamond', 'shape_hexagon', 'shape_star', 'shape_heart', 'shape_music_note', 'shape_lightning', 'shape_flame', 'shape_snowflake', 'shape_leaf', 'shape_feather', 'shape_bubble', 'shape_droplet', 'shape_crystal', 'shape_pixel', 'shape_ring']} value={getProp('shape', 'shape_circle')} onChange={e => updateProp('shape', e.target.value)} />
-        <SelectRow label="Flow" options={['flow_static', 'flow_drift', 'flow_float', 'flow_rain', 'flow_snow', 'flow_wind_left', 'flow_wind_right', 'flow_swirl', 'flow_spiral', 'flow_orbit', 'flow_explosion', 'flow_implosion', 'flow_pulse', 'flow_wave', 'flow_fountain']} value={getProp('flow', 'flow_float')} onChange={e => updateProp('flow', e.target.value)} />
+        <SelectRow label="Flow" options={['flow_static', 'flow_drift', 'flow_float', 'flow_rain', 'flow_snow', 'flow_wind_left', 'flow_wind_right', 'flow_swirl', 'flow_spiral', 'flow_orbit', 'flow_explosion', 'flow_implosion', 'flow_starfield', 'flow_pulse', 'flow_wave', 'flow_fountain']} value={getProp('flow', 'flow_float')} onChange={e => updateProp('flow', e.target.value)} />
         <SelectRow label="Trail" options={['trail_none', 'trail_fade', 'trail_glow', 'trail_light', 'trail_smoke', 'trail_fire', 'trail_energy', 'trail_rainbow', 'trail_dotted', 'trail_pixel']} value={getProp('trail', 'trail_none')} onChange={e => updateProp('trail', e.target.value)} />
       </SettingGroup>
       
@@ -1854,7 +1953,9 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         }} className="w-full bg-red-900/30 hover:bg-red-900/60 border border-red-500/50 text-red-400 text-[11px] py-2 rounded">Delete System</button>
       </div>
     </>
-  );
+    );
+  };
+
 
   const getInspectorCategory = () => {
     if (m3SelectedObjectId) {
@@ -1940,6 +2041,14 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
       </div>
       <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
         <div className="flex flex-col gap-1">
+          {(() => {
+            const selectedObj = isBgContext 
+              ? m3BgPool.find(b => b.id === effectiveId) 
+              : m3Objects.find(o => o.id === effectiveId);
+            const renderingContext = fastWorkspaceManager.getRenderingContext({ m3Objects, m3BgPool });
+            const valSummary = renderingContext.getInspectorValidationSummary(selectedObj);
+            return <ClassificationMetadataCard validationSummary={valSummary} />;
+          })()}
           {renderContent()}
         </div>
       </div>

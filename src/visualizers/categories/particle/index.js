@@ -8,6 +8,7 @@ import * as P05_DataStream from "./P05_DataStream";
 import * as P06_ConstellationNodes from "./P06_ConstellationNodes";
 import * as P07_WaveEmitter from "./P07_WaveEmitter";
 import * as P08_OrbitalDust from "./P08_OrbitalDust";
+import * as P09_StarfieldWarp from "./P09_StarfieldWarp";
 
 export function registerParticleCategory() {
     visualizerRegistry.register(P01_ExplosionBurst);
@@ -18,4 +19,5 @@ export function registerParticleCategory() {
     visualizerRegistry.register(P06_ConstellationNodes);
     visualizerRegistry.register(P07_WaveEmitter);
     visualizerRegistry.register(P08_OrbitalDust);
+    visualizerRegistry.register(P09_StarfieldWarp);
 }

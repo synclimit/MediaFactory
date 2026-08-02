@@ -31,6 +31,7 @@ import {
   METADATA_STATUS,
   sumTotalDuration,
   formatDuration,
+  cleanYoutubeUrl,
 } from '../../entities/m2/SourceEntity.js';
 
 import { cleanYoutubeTitle } from '../../entities/m2/CleanerRules.js';
@@ -428,10 +429,11 @@ export class SourceService extends EventTarget {
         }
       }, 2000);
 
+      const cleanedUrl = cleanYoutubeUrl(source.youtubeUrl);
       const res = await fetch('/api/m2/yt-metadata', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: source.youtubeUrl })
+        body: JSON.stringify({ url: cleanedUrl })
       });
       
       clearInterval(progressInterval);

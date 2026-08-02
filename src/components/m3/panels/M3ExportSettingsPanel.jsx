@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
-import { Play, CheckSquare, Square, Lock, ChevronDown, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, CheckSquare, Square, Layers, ChevronDown, HelpCircle } from 'lucide-react';
 
-export default function M3ExportSettingsPanel({ onAddToQueue }) {
-  const [resolution, setResolution] = useState('SD');
-  const [fps, setFps] = useState('30');
+export default function M3ExportSettingsPanel({ renderMode = 'FAST', onAddToQueue }) {
+  const [resolution, setResolution] = useState('1080p');
+  const [fps, setFps] = useState('60');
   const [codec, setCodec] = useState('H.264');
+  const [bitrate, setBitrate] = useState('auto');
+  const [audioBitrate, setAudioBitrate] = useState('192k');
   const [renderPerSong, setRenderPerSong] = useState(false);
   const [bFrame, setBFrame] = useState('Otomatis');
-  const [renderMode, setRenderMode] = useState('FAST'); // FAST or NORMAL
   
+  // Realtime logging or state dispatch could go here if needed for 'realtime' requirement
+  useEffect(() => {
+    // Notify parent of realtime changes if needed, but for now state is kept local until 'Add to Queue'
+  }, [resolution, fps, codec, bitrate, audioBitrate, bFrame, renderPerSong, renderMode]);
+
   return (
     <div className="w-full flex flex-col select-none px-5 py-2">
       
@@ -21,16 +27,22 @@ export default function M3ExportSettingsPanel({ onAddToQueue }) {
           <label className="text-[10px] text-gray-400 mb-1 font-bold uppercase tracking-wider">Resolution</label>
           <div className="flex rounded shadow-sm h-7">
             <button 
-              onClick={() => setResolution('SD')} 
-              className={`flex-1 text-[11px] font-bold border rounded-l transition-colors ${resolution === 'SD' ? 'bg-orange-500/20 border-orange-500 text-orange-500 z-10' : 'bg-[#12131a] border-[#2d3247] text-gray-400 hover:bg-[#1a1b26]'}`}
+              onClick={() => setResolution('480p')} 
+              className={`flex-1 text-[11px] font-bold border rounded-l transition-colors ${resolution === '480p' ? 'bg-orange-500/20 border-orange-500 text-orange-500 z-10' : 'bg-[#12131a] border-[#2d3247] text-gray-400 hover:bg-[#1a1b26]'}`}
             >
               480p
             </button>
-            <button className="flex-1 text-[11px] font-bold border-y border-r border-[#2d3247] bg-[#12131a] text-gray-600 flex justify-center items-center gap-1.5 cursor-not-allowed">
-              720p <Lock size={9} className="text-yellow-600/40" />
+            <button 
+              onClick={() => setResolution('720p')} 
+              className={`flex-1 text-[11px] font-bold border-y border-r transition-colors ${resolution === '720p' ? 'bg-orange-500/20 border-orange-500 text-orange-500 z-10' : 'bg-[#12131a] border-[#2d3247] text-gray-400 hover:bg-[#1a1b26]'}`}
+            >
+              720p
             </button>
-            <button className="flex-1 text-[11px] font-bold border-y border-r border-[#2d3247] rounded-r bg-[#12131a] text-gray-600 flex justify-center items-center gap-1.5 cursor-not-allowed">
-              1080p <Lock size={9} className="text-yellow-600/40" />
+            <button 
+              onClick={() => setResolution('1080p')} 
+              className={`flex-1 text-[11px] font-bold border-y border-r rounded-r transition-colors ${resolution === '1080p' ? 'bg-orange-500/20 border-orange-500 text-orange-500 z-10' : 'bg-[#12131a] border-[#2d3247] text-gray-400 hover:bg-[#1a1b26]'}`}
+            >
+              1080p
             </button>
           </div>
         </div>
@@ -51,8 +63,11 @@ export default function M3ExportSettingsPanel({ onAddToQueue }) {
             >
               30
             </button>
-            <button className="flex-1 text-[11px] font-bold border-y border-r border-[#2d3247] rounded-r bg-[#12131a] text-gray-600 flex justify-center items-center gap-1.5 cursor-not-allowed">
-              60 <Lock size={9} className="text-yellow-600/40" />
+            <button 
+              onClick={() => setFps('60')} 
+              className={`flex-1 text-[11px] font-bold border-y border-r rounded-r transition-colors ${fps === '60' ? 'bg-orange-500/20 border-orange-500 text-orange-500 z-10' : 'bg-[#12131a] border-[#2d3247] text-gray-400 hover:bg-[#1a1b26]'}`}
+            >
+              60
             </button>
           </div>
         </div>
@@ -67,8 +82,11 @@ export default function M3ExportSettingsPanel({ onAddToQueue }) {
             >
               H.264
             </button>
-            <button className="flex-1 text-[11px] font-bold border-y border-r border-[#2d3247] rounded-r bg-[#12131a] text-gray-600 flex justify-center items-center gap-1.5 cursor-not-allowed">
-              H.265 <Lock size={9} className="text-yellow-600/40" />
+            <button 
+              onClick={() => setCodec('H.265')} 
+              className={`flex-1 text-[11px] font-bold border-y border-r rounded-r transition-colors ${codec === 'H.265' ? 'bg-orange-500/20 border-orange-500 text-orange-500 z-10' : 'bg-[#12131a] border-[#2d3247] text-gray-400 hover:bg-[#1a1b26]'}`}
+            >
+              H.265
             </button>
           </div>
         </div>
@@ -77,26 +95,40 @@ export default function M3ExportSettingsPanel({ onAddToQueue }) {
         {/* Bitrate */}
         <div className="flex flex-col">
           <label className="flex items-center gap-1 text-[10px] text-gray-400 mb-1 font-bold uppercase tracking-wider">
-            Bitrate <Lock size={10} className="text-yellow-600/60" /> <HelpCircle size={10} className="text-gray-600" />
+            Bitrate <HelpCircle size={10} className="text-gray-600" />
           </label>
           <div className="relative h-7">
-            <select disabled className="w-full h-full bg-[#12131a] border border-[#2d3247] text-gray-500 text-[11px] font-medium rounded px-2 appearance-none outline-none opacity-70 cursor-not-allowed truncate pr-6">
-              <option>Auto (2.5M)</option>
+            <select 
+              value={bitrate}
+              onChange={(e) => setBitrate(e.target.value)}
+              className="w-full h-full bg-[#12131a] border border-[#2d3247] text-gray-300 hover:border-gray-500 text-[11px] font-medium rounded px-2 appearance-none outline-none focus:border-orange-500 transition-colors cursor-pointer truncate pr-6"
+            >
+              <option value="auto">Auto (2.5M)</option>
+              <option value="5M">5 Mbps</option>
+              <option value="8M">8 Mbps</option>
+              <option value="12M">12 Mbps</option>
             </select>
-            <ChevronDown size={12} className="absolute right-2 top-1.5 text-gray-600 pointer-events-none" />
+            <ChevronDown size={12} className="absolute right-2 top-1.5 text-gray-500 pointer-events-none" />
           </div>
         </div>
 
         {/* Audio Bitrate */}
         <div className="flex flex-col">
           <label className="flex items-center gap-1 text-[10px] text-gray-400 mb-1 font-bold uppercase tracking-wider">
-            Audio Bitrate <Lock size={10} className="text-yellow-600/60" /> <HelpCircle size={10} className="text-gray-600" />
+            Audio Bitrate <HelpCircle size={10} className="text-gray-600" />
           </label>
           <div className="relative h-7">
-            <select disabled className="w-full h-full bg-[#12131a] border border-[#2d3247] text-gray-500 text-[11px] font-medium rounded px-2 appearance-none outline-none opacity-70 cursor-not-allowed truncate pr-6">
-              <option>192 kbps</option>
+            <select 
+              value={audioBitrate}
+              onChange={(e) => setAudioBitrate(e.target.value)}
+              className="w-full h-full bg-[#12131a] border border-[#2d3247] text-gray-300 hover:border-gray-500 text-[11px] font-medium rounded px-2 appearance-none outline-none focus:border-orange-500 transition-colors cursor-pointer truncate pr-6"
+            >
+              <option value="128k">128 kbps</option>
+              <option value="192k">192 kbps (Standar)</option>
+              <option value="256k">256 kbps</option>
+              <option value="320k">320 kbps (Tinggi)</option>
             </select>
-            <ChevronDown size={12} className="absolute right-2 top-1.5 text-gray-600 pointer-events-none" />
+            <ChevronDown size={12} className="absolute right-2 top-1.5 text-gray-500 pointer-events-none" />
           </div>
         </div>
 
@@ -119,7 +151,7 @@ export default function M3ExportSettingsPanel({ onAddToQueue }) {
 
       </div>
 
-      {/* ROW 3: Checkbox, Render Mode & Button */}
+      {/* ROW 3: Checkbox & Button */}
       <div className="flex items-center justify-between border-t border-[#1a1b26] pt-2.5 mt-2.5">
         
         <div className="flex items-center gap-6">
@@ -129,33 +161,6 @@ export default function M3ExportSettingsPanel({ onAddToQueue }) {
             </div>
             Render per song (resumable)
           </label>
-
-          {/* RENDER MODE SELECTOR */}
-          <div className="flex items-center gap-3 bg-[#12131a] px-3 py-1 rounded border border-[#2d3247]">
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Mode</span>
-            <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-gray-300 hover:text-white transition-colors">
-              <input 
-                type="radio" 
-                name="renderMode" 
-                value="FAST"
-                checked={renderMode === 'FAST'}
-                onChange={() => setRenderMode('FAST')}
-                className="accent-orange-500 cursor-pointer"
-              />
-              Fast
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-gray-300 hover:text-white transition-colors">
-              <input 
-                type="radio" 
-                name="renderMode" 
-                value="NORMAL"
-                checked={renderMode === 'NORMAL'}
-                onChange={() => setRenderMode('NORMAL')}
-                className="accent-orange-500 cursor-pointer"
-              />
-              Normal
-            </label>
-          </div>
         </div>
 
         <button 
@@ -163,7 +168,7 @@ export default function M3ExportSettingsPanel({ onAddToQueue }) {
             if (onAddToQueue) {
               // Pass the render settings payload out
               onAddToQueue({
-                resolution, fps, codec, bFrame, renderPerSong, renderMode
+                resolution, fps, codec, bitrate, audioBitrate, bFrame, renderPerSong, renderMode
               });
             }
           }}

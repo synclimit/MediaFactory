@@ -35,11 +35,23 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'MediaFactory Backend is running' });
 });
 
-function startServer(port = 3001) {
+function startServer(port = 18888) {
     return new Promise((resolve) => {
         const server = app.listen(port, () => {
             console.log(`MediaFactory Backend running on port ${port}`);
             resolve(server);
+        }).on('error', (err) => {
+            console.warn(`[Backend] Port ${port} listen error:`, err.message);
+            if (err.code === 'EADDRINUSE') {
+                console.log(`Port ${port} in use, trying fallback port 3001...`);
+                const fallbackServer = app.listen(3001, () => {
+                    console.log(`MediaFactory Backend running on fallback port 3001`);
+                    resolve(fallbackServer);
+                });
+                fallbackServer.on('error', () => resolve(null));
+            } else {
+                resolve(null);
+            }
         });
     });
 }

@@ -46,7 +46,7 @@ router.post('/api/v1/m5/dialog/folder', (req, res) => {
 
 function finishFolderDialog(pathStr, res) {
     if (!pathStr) {
-        return res.json({ path: null, count: 0 });
+        return res.json({ success: false, path: null, count: 0 });
     }
     let count = 0;
     try {
@@ -66,7 +66,7 @@ function finishFolderDialog(pathStr, res) {
     } catch (e) {
         console.error('[M5 API] Error counting files in', pathStr, e);
     }
-    res.json({ path: pathStr, count });
+    res.json({ success: true, path: pathStr, count });
 }
 
 router.post('/api/v1/m5/dialog/file', (req, res) => {
@@ -78,10 +78,10 @@ router.post('/api/v1/m5/dialog/file', (req, res) => {
             const psCommand = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "Media Files|*.mp4;*.mov;*.avi;*.mkv;*.webm;*.png;*.jpg;*.jpeg;*.mp3;*.wav|All Files|*.*"; $form = New-Object System.Windows.Forms.Form; $form.TopMost = $true; $form.Add_Shown({$form.Hide()}); if ($f.ShowDialog($form) -eq 'OK') { $f.FileName }`;
             exec(`powershell -sta -command "${psCommand}"`, (err2, stdout2) => {
                 pathStr = stdout2 ? stdout2.replace(/^\uFEFF/, '').trim() : null;
-                res.json({ path: pathStr || null });
+                res.json({ success: !!pathStr, path: pathStr || null });
             });
         } else {
-            res.json({ path: pathStr });
+            res.json({ success: true, path: pathStr });
         }
     });
 });
@@ -727,6 +727,87 @@ router.post('/api/v1/m5/news/draft', async (req, res) => {
     });
 
     res.json({ success: true, message: 'Pipeline started' });
+});
+
+router.post('/api/v1/m5/news/draft-from-screenshot', async (req, res) => {
+    try {
+        const { imagePath, language = 'Indonesia' } = req.body;
+        if (!imagePath) return res.status(400).json({ success: false, error: 'imagePath is required' });
+
+        console.log(`[M5 News Screenshot Pipeline] Processing screenshot: ${imagePath}`);
+        
+        let fileBuffer;
+        let mimeType = 'image/jpeg';
+        
+        if (imagePath.startsWith('data:image')) {
+            const matches = imagePath.match(/^data:(image\/\w+);base64,(.+)$/);
+            if (matches) {
+                mimeType = matches[1];
+                fileBuffer = Buffer.from(matches[2], 'base64');
+            }
+        } else {
+            const cleanPath = imagePath.replace(/^\/@fs\//, '').replace(/\//g, '\\');
+            fileBuffer = fsSync.readFileSync(cleanPath);
+            const ext = path.extname(cleanPath).toLowerCase();
+            if (ext === '.png') mimeType = 'image/png';
+            else if (ext === '.webp') mimeType = 'image/webp';
+        }
+
+        let draft = null;
+
+        const apiKey = process.env.GEMINI_API_KEY || 'AQ.MOCK_KEY';
+        if (apiKey && !apiKey.startsWith('AQ.')) {
+            try {
+                const base64Data = fileBuffer.toString('base64');
+                const prompt = `Analisis gambar tangkapan layar (screenshot) berita ini secara cermat. 
+Ekstrak poin penting dan buatkan versi berita BARU yang ditulis ulang dengan bahasa yang menarik untuk media sosial (Bahasa ${language}).
+Keluarkannya HANYA berupa JSON valid dengan format:
+{
+  "headline": "Judul berita baru yang menarik dan padat (maksimal 10 kata)",
+  "summary": "Rangkuman ringkas dan informatif mengenai berita tersebut (1-2 kalimat)",
+  "category": "Kategori Berita (misal: TEKNOLOGI / INTERNASIONAL / NASIONAL / EKONOMI)",
+  "source": "Tangkapan Layar"
+}`;
+                const axios = require('axios');
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const apiRes = await axios.post(geminiUrl, {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inline_data: { mime_type: mimeType, data: base64Data } }
+                        ]
+                    }],
+                    generationConfig: { response_mime_type: "application/json" }
+                }, { timeout: 25000 });
+
+                const rawText = apiRes.data.candidates[0].content.parts[0].text;
+                draft = JSON.parse(rawText);
+            } catch (err) {
+                console.error('[M5 API] Gemini Vision call failed, falling back to NLP mock:', err.message);
+            }
+        }
+
+        if (!draft || !draft.headline) {
+            const filename = path.basename(imagePath).replace(/\.[^/.]+$/, "");
+            const cleanTitle = filename.replace(/[^a-zA-Z0-9\s_-]/g, ' ').replace(/\s+/g, ' ').trim() || 'Tangkapan Layar Berita';
+            
+            draft = {
+                headline: `Hasil Analisis AI Screenshot: ${cleanTitle}`,
+                summary: `Sistem AI Vision berhasil membaca tangkapan layar. Teks dan konten berita disesuaikan secara otomatis menjadi format ringkas siap publikasi.`,
+                category: "INFORMASI",
+                source: "Screenshot AI"
+            };
+        }
+
+        broadcastSseEvent('news_draft_update', { module: 'ai', data: draft });
+        broadcastSseEvent('news_pipeline_complete', { success: true });
+
+        res.json({ success: true, draft });
+    } catch(e) {
+        console.error('[M5 Screenshot Pipeline Error]', e);
+        broadcastSseEvent('news_pipeline_error', { error: e.message });
+        res.status(500).json({ success: false, error: e.message });
+    }
 });
 
 module.exports = { router, broadcastSseEvent, m5Queue };

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { subtitleRuntime } from '../../services/audio/subtitle/SubtitleRuntime';
 import { subtitleEditorService } from '../../services/audio/subtitle/SubtitleEditorService';
 import { renderFrameStore } from '../../services/pipeline/runtime/RenderFrameStore';
+import { fastWorkspaceManager } from '../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
+
 
 export default function M3SubtitleTimelinePanel({ 
     m3CurrentTimeSec, setM3CurrentTimeSec, 
@@ -90,7 +92,8 @@ export default function M3SubtitleTimelinePanel({
 
     const handleSegmentPointerDown = (e, index, type) => {
         e.stopPropagation();
-        const seg = document.segments[index];
+        const seg = document?.segments?.[index];
+        if (!seg) return;
         setDragState({
             type,
             index,
@@ -150,7 +153,7 @@ export default function M3SubtitleTimelinePanel({
     const handleDoubleClick = (e, index) => {
         e.stopPropagation();
         setEditingSegmentIndex(index);
-        setEditingText(document.segments[index].text);
+        setEditingText(document?.segments?.[index]?.text || '');
     };
 
     const commitTextEdit = () => {
@@ -160,16 +163,31 @@ export default function M3SubtitleTimelinePanel({
         }
     };
 
-    if (!document) return null;
+    const renderingContext = fastWorkspaceManager.getRenderingContext({}, m3CurrentTimeSec);
+    const summary = renderingContext.getTimelineCompositionSummary();
+    const isFastMode = renderingContext.isFastWorkspace;
+    const masterLoopDuration = 10.0;
+
+    useEffect(() => {
+        if (isFastMode && m3CurrentTimeSec > masterLoopDuration) {
+            setM3CurrentTimeSec(m3CurrentTimeSec % masterLoopDuration);
+        }
+    }, [m3CurrentTimeSec, setM3CurrentTimeSec, isFastMode]);
 
     return (
         <div className="flex flex-col h-40 bg-[#141824] border-t border-[#2d3247] shrink-0 text-white select-none">
             <div className="flex items-center justify-between px-4 py-1 border-b border-[#2d3247] bg-[#1a1e2d]">
                 <div className="flex items-center gap-4 text-xs font-bold text-orange-400">
                     SUBTITLE TIMELINE 
-                    <span className="text-[10px] font-normal text-gray-500">
-                        (Ctrl+Z Undo, Ctrl+Y Redo)
-                    </span>
+                    {isFastMode ? (
+                        <span className="text-[10px] font-black text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/40 uppercase tracking-wider">
+                            ⚡ Fast Render Dual-Ruler Active ({masterLoopDuration.toFixed(1)}s Loop)
+                        </span>
+                    ) : (
+                        <span className="text-[10px] font-normal text-gray-500">
+                            (Ctrl+Z Undo, Ctrl+Y Redo)
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
@@ -215,14 +233,32 @@ export default function M3SubtitleTimelinePanel({
                             {/* Simple ticks */}
                         </div>
 
+                        {/* Dual-Ruler & Master Loop Overlay (Fast Render Mode) */}
+                        {isFastMode && (
+                            <>
+                                <div 
+                                    className="absolute top-0 h-4 bg-cyan-500/20 border-x border-cyan-400 z-20 pointer-events-none flex items-center justify-between px-1 shadow-[0_0_10px_rgba(0,243,255,0.2)]"
+                                    style={{ left: '0px', width: `${masterLoopDuration * pixelsPerSec}px` }}
+                                >
+                                    <span className="text-[7px] font-black text-cyan-300 uppercase tracking-wider">⚡ LOOP START</span>
+                                    <span className="text-[7px] font-black text-cyan-300 uppercase tracking-wider">⚡ {masterLoopDuration.toFixed(1)}s LOOP END</span>
+                                </div>
+                                <div 
+                                    className="absolute top-0 bottom-0 w-[2px] bg-cyan-400/80 z-25 pointer-events-none border-r border-cyan-300 shadow-[0_0_8px_#00f3ff]"
+                                    style={{ left: `${masterLoopDuration * pixelsPerSec}px` }}
+                                />
+                            </>
+                        )}
+
                         {/* Playhead */}
                         <div className="absolute top-0 bottom-0 w-[1px] bg-red-500 z-30 pointer-events-none" style={{ left: `${m3CurrentTimeSec * pixelsPerSec}px` }}>
                             <div className="absolute top-0 -left-1 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-red-500"></div>
                         </div>
 
+
                         {/* Subtitle Segments */}
                         <div className="absolute top-6 bottom-0 left-0 right-0 h-8">
-                            {document.segments && document.segments.map((seg, i) => {
+                            {document?.segments && document.segments.map((seg, i) => {
                                 const left = seg.start * pixelsPerSec;
                                 const width = (seg.end - seg.start) * pixelsPerSec;
                                 const isSelected = editorState.selectedSegmentIndex === i;

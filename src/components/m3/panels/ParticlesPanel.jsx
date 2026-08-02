@@ -35,6 +35,7 @@ const FLOWS = [
     { id: 'flow_orbit', name: 'Orbit' },
     { id: 'flow_explosion', name: 'Explosion' },
     { id: 'flow_implosion', name: 'Implosion' },
+    { id: 'flow_starfield', name: 'Starfield Warp (Outward)' },
     { id: 'flow_pulse', name: 'Pulse' },
     { id: 'flow_wave', name: 'Wave' },
     { id: 'flow_fountain', name: 'Fountain' },
@@ -81,7 +82,6 @@ export default function ParticlesPanel({ addObject, m3Objects = [], setM3Objects
             shape: 'shape_circle',
             flow: 'flow_float',
             trail: 'trail_none',
-            // Default configuration based on specs
             fillColor: '#ffffff',
             strokeColor: '#000000',
             strokeWidth: 0,
@@ -95,12 +95,13 @@ export default function ParticlesPanel({ addObject, m3Objects = [], setM3Objects
             blendMode: 'Screen',
             beatReactive: false,
             beatReactLevel: 40,
-            x: window.innerWidth / 2 > 0 ? window.innerWidth / 2 : 600,
-            y: window.innerHeight / 2 > 0 ? window.innerHeight / 2 : 400,
-            width: 800,
-            height: 600,
+            x: 960,
+            y: 540,
+            width: 1920,
+            height: 1080,
             visible: true,
-            locked: false,
+            locked: true,
+            pointerEvents: 'none'
         });
     };
 

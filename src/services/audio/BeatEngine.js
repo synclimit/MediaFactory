@@ -750,6 +750,6 @@ window.startCalibrationLog = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(window.beatCalibrationLog)
-        }).then(() => console.log("✅ Data berhasil dikirim!"));
+        }).then(() => console.log("✅ Data berhasil dikirim!")).catch(() => {});
     }, 15000);
 };

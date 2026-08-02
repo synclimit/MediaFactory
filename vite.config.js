@@ -22,6 +22,14 @@ export default defineConfig({
     watch: {
       ignored: ['**/Output/**', '**/.mediafactory/**', '**/Workspace/**']
     }
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        harness: 'render-harness.html'
+      }
+    }
   }
 
 // force reload render engine

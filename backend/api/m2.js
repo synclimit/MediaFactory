@@ -95,9 +95,151 @@ router.post('/api/m2/folder/scan', async (req, res) => {
     }
 });
 
+function cleanYoutubeUrl(url) {
+    if (!url) return '';
+    const trimmed = String(url).trim();
+    try {
+        const parsed = new URL(trimmed);
+        if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
+            parsed.searchParams.delete('list');
+            parsed.searchParams.delete('start_radio');
+            parsed.searchParams.delete('index');
+            parsed.searchParams.delete('pp');
+            return parsed.toString();
+        }
+    } catch(e) {}
+    return trimmed;
+}
+
+function getCanonicalCacheKey(uri) {
+    if (!uri) return '';
+    let cleaned = String(uri).trim();
+    if (cleaned.startsWith('ytsearch:')) {
+        cleaned = cleaned.replace('ytsearch:', '').trim();
+    }
+    cleaned = cleanYoutubeUrl(cleaned);
+    return cleaned;
+}
+
+function hashUri(uri) {
+    const canonical = getCanonicalCacheKey(uri);
+    return crypto.createHash('md5').update(canonical).digest('hex').substring(0, 8);
+}
+
+const activeDownloads = new Map();
+
+async function ensureYoutubeAudioDownloaded(uri, onProgress) {
+    const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
+    await fs.mkdir(cacheDir, { recursive: true });
+    
+    const hash = hashUri(uri);
+    const cachePath = path.join(cacheDir, `${hash}.mp3`);
+    
+    try {
+        const stats = await fs.stat(cachePath);
+        if (stats.size > 1000 && !activeDownloads.has(hash)) {
+            if (onProgress) onProgress({ status: 'ready_cached', progress: 100 });
+            return cachePath;
+        }
+    } catch (e) {}
+
+    if (activeDownloads.has(hash)) {
+        const active = activeDownloads.get(hash);
+        if (onProgress) {
+            onProgress({ status: active.status, progress: active.progress });
+            active.listeners.add(onProgress);
+        }
+        try {
+            await active.promise;
+            return cachePath;
+        } finally {
+            if (onProgress) active.listeners.delete(onProgress);
+        }
+    }
+
+    let searchUrl = uri;
+    if (!uri.startsWith('http') && !uri.startsWith('ytsearch:')) {
+        searchUrl = `ytsearch:${uri}`;
+    }
+
+    const listeners = new Set();
+    if (onProgress) listeners.add(onProgress);
+
+    const activeState = {
+        status: 'downloading',
+        progress: 0,
+        listeners
+    };
+
+    const notify = (data) => {
+        activeState.status = data.status;
+        if (typeof data.progress === 'number') activeState.progress = data.progress;
+        
+        const canonical = getCanonicalCacheKey(uri);
+        ytDownloads[canonical] = { status: data.status, progress: activeState.progress };
+        ytDownloads[uri] = { status: data.status, progress: activeState.progress };
+
+        for (const cb of activeState.listeners) {
+            try { cb(data); } catch(e) {}
+        }
+    };
+
+    const downloadPromise = new Promise((resolve, reject) => {
+        const ytOut = path.join(cacheDir, hash + '.%(ext)s');
+        const dlArgs = ['--newline', '--no-playlist', '-f', 'bestaudio', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUrl];
+        const dlProc = spawn('yt-dlp', dlArgs);
+
+        dlProc.stdout.on('data', chunk => {
+            const out = chunk.toString();
+            const match = out.match(/\[download\]\s+([\d\.]+)\%/);
+            if (match) {
+                const pct = parseFloat(match[1]);
+                notify({ status: 'downloading', progress: pct });
+            } else if (out.includes('Extracting Audio') || out.includes('Destination:')) {
+                notify({ status: 'extracting', progress: 100 });
+            }
+        });
+
+        const timeoutId = setTimeout(() => {
+            dlProc.kill();
+            notify({ status: 'error', progress: 0 });
+            reject(new Error('Download timeout'));
+        }, 300000);
+
+        dlProc.on('close', code => {
+            clearTimeout(timeoutId);
+            if (code === 0) {
+                notify({ status: 'ready', progress: 100 });
+                resolve(cachePath);
+            } else {
+                notify({ status: 'error', progress: 0 });
+                reject(new Error(`yt-dlp failed with exit code ${code}`));
+            }
+        });
+
+        dlProc.on('error', (err) => {
+            clearTimeout(timeoutId);
+            notify({ status: 'error', progress: 0 });
+            reject(err);
+        });
+    });
+
+    activeState.promise = downloadPromise;
+    activeDownloads.set(hash, activeState);
+
+    try {
+        await downloadPromise;
+        return cachePath;
+    } finally {
+        activeDownloads.delete(hash);
+    }
+}
+
 router.post('/api/m2/yt-metadata', async (req, res) => {
     let url = req.body.url;
     if (!url) return res.status(400).json({ error: 'URL required' });
+
+    url = cleanYoutubeUrl(url);
 
     let searchUrl = url;
     if (!url.startsWith('http') && !url.startsWith('ytsearch:')) {
@@ -107,7 +249,7 @@ router.post('/api/m2/yt-metadata', async (req, res) => {
     try {
         const ytData = await new Promise((resolve, reject) => {
             const ytArgs = ['--dump-json', '--no-playlist', '--js-runtimes', 'node', '--', searchUrl];
-            const ytProc = spawn('yt-dlp', ytArgs, { shell: true });
+            const ytProc = spawn('yt-dlp', ytArgs);
             
             let stdoutData = '';
             let stderrData = '';
@@ -135,36 +277,9 @@ router.post('/api/m2/yt-metadata', async (req, res) => {
         });
         
         // Background audio download immediately so track is ready for instant playback
-        try {
-            const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
-            await fs.mkdir(cacheDir, { recursive: true });
-            const hash = hashUri(url);
-            const cachePath = path.join(cacheDir, `${hash}.mp3`);
-            const stats = await fs.stat(cachePath).catch(() => null);
-            if (!stats || stats.size < 1000) {
-                const ytOut = path.join(cacheDir, hash + '.%(ext)s');
-                const dlArgs = ['--newline', '--no-playlist', '-f', 'bestaudio', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUrl];
-                const dlProc = spawn('yt-dlp', dlArgs, { shell: true });
-                ytDownloads[url] = { status: 'downloading', progress: 0 };
-                
-                dlProc.stdout.on('data', chunk => {
-                    const out = chunk.toString();
-                    const match = out.match(/\[download\]\s+([\d\.]+)\%/);
-                    if (match) ytDownloads[url] = { status: 'downloading', progress: parseFloat(match[1]) };
-                    else if (out.includes('Extracting Audio') || out.includes('Destination:')) ytDownloads[url] = { status: 'extracting', progress: 100 };
-                });
-                
-                dlProc.on('close', code => {
-                    if (code === 0) ytDownloads[url] = { status: 'ready', progress: 100 };
-                    else ytDownloads[url] = { status: 'error', progress: 0 };
-                    
-                    // keep status around for a minute then clean up to avoid memory leak
-                    setTimeout(() => { delete ytDownloads[url]; }, 60000);
-                });
-            }
-        } catch (bgErr) {
+        ensureYoutubeAudioDownloaded(url).catch(bgErr => {
             console.error('[yt-metadata] Background download failed to start:', bgErr);
-        }
+        });
 
         const payload = {
             videoTitle: ytData.title,
@@ -327,10 +442,6 @@ router.get('/api/m2/prepare-stream', async (req, res) => {
 
     let localPath = uri;
     let isAsset = uri.startsWith('Assets/') || uri.startsWith('Assets\\');
-    let searchUri = uri;
-    if (!isAsset && !require('path').isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:')) {
-        searchUri = `ytsearch:${uri}`;
-    }
     if (isAsset || (!require('path').isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:'))) {
         try {
             const ServiceRegistry = require('../system/ServiceRegistry');
@@ -355,73 +466,32 @@ router.get('/api/m2/prepare-stream', async (req, res) => {
         return res.end();
     }
 
-    const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
-    const hashUri = (str) => require('crypto').createHash('md5').update(str).digest('hex').slice(0,8);
-    // Use the original uri for hashing to match yt-metadata
-    const cachePath = path.join(cacheDir, `${hashUri(uri)}.mp3`);
-
     res.write(`data: {"status": "loading"}\n\n`);
 
-    try {
-        const stats = await fs.stat(cachePath);
-        const files = await fs.readdir(cacheDir);
-        const hashStr = hashUri(uri);
-        const inProgress = files.some(f => f.startsWith(hashStr) && f !== `${hashStr}.mp3` && !f.endsWith('.json') && !f.endsWith('.lock'));
-        
-        if (stats.size > 1000 && !inProgress) {
-            res.write(`data: {"status": "ready_cached"}\n\n`);
-            return res.end();
-        }
-        if (!inProgress) {
-            await fs.unlink(cachePath).catch(() => {});
-        }
-    } catch (e) {
-        // file doesn't exist or not ready
-    }
+    let isEnded = false;
+    const onProgress = (data) => {
+        if (isEnded) return;
+        try {
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+            if (data.status === 'ready' || data.status === 'ready_cached' || data.status === 'error') {
+                isEnded = true;
+                res.end();
+            }
+        } catch(e) {}
+    };
+
+    req.on('close', () => {
+        isEnded = true;
+    });
 
     try {
-        await fs.mkdir(cacheDir, { recursive: true });
-        const ytOut = path.join(cacheDir, hashUri(uri) + '.%(ext)s');
-            // Adding --newline to force line-by-line output for easier parsing
-            const ytArgs = ['--newline', '-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUri];
-            const ytProc = spawn('yt-dlp', ytArgs, { shell: true });
-            
-            ytProc.stdout.on('data', chunk => {
-                const out = chunk.toString();
-                // match things like "[download]  50.0% of"
-                const match = out.match(/\[download\]\s+([\d\.]+)\%/);
-                if (match) {
-                    res.write(`data: {"status": "downloading", "progress": ${match[1]}}\n\n`);
-                }
-                else if (out.includes('Extracting Audio') || out.includes('Destination:')) {
-                    res.write(`data: {"status": "extracting"}\n\n`);
-                }
-            });
-            ytProc.stderr.on('data', (err) => {
-                console.error('[yt-dlp error]', err.toString());
-            });
-            
-            const timeoutId = setTimeout(() => {
-                ytProc.kill();
-                res.write(`data: {"status": "error"}\n\n`);
-                res.end();
-            }, 300000); // 5 minutes timeout
-            
-            ytProc.on('close', code => {
-                clearTimeout(timeoutId);
-                if (code === 0) res.write(`data: {"status": "ready"}\n\n`);
-                else res.write(`data: {"status": "error"}\n\n`);
-                res.end();
-            });
-            ytProc.on('error', () => {
-                clearTimeout(timeoutId);
-                res.write(`data: {"status": "error"}\n\n`);
-                res.end();
-            });
-        } catch (err) {
+        await ensureYoutubeAudioDownloaded(uri, onProgress);
+    } catch(err) {
+        if (!isEnded) {
             res.write(`data: {"status": "error"}\n\n`);
             res.end();
         }
+    }
 });
 
 router.get('/api/m2/stream', async (req, res) => {
@@ -487,46 +557,11 @@ router.get('/api/m2/stream', async (req, res) => {
 
     const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be') || uri.startsWith('ytsearch:') || (!isAsset && !require('path').isAbsolute(uri) && !require('fs').existsSync(localPath) && !uri.startsWith('http'));
     if (isYouTube) {
-        let searchUri = uri;
-        if (!require('path').isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:')) {
-            searchUri = `ytsearch:${uri}`;
-        }
-        const cacheDir = path.join(AppPaths.getCacheBase(), 'm2');
-        const hashUri = (str) => require('crypto').createHash('md5').update(str).digest('hex').slice(0,8);
-        const cachePath = require('path').join(cacheDir, `${hashUri(uri)}.mp3`);
-        
         try {
-            await require('fs').promises.stat(cachePath);
+            const cachePath = await ensureYoutubeAudioDownloaded(uri);
             streamFile(cachePath);
-        } catch (e) {
-            try {
-                await fs.mkdir(cacheDir, { recursive: true });
-                const ytOut = cachePath;
-                const ytArgs = ['--newline', '-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUri];
-                const { spawn } = require('child_process');
-                await new Promise((resolve, reject) => {
-                    const ytProc = spawn('yt-dlp', ytArgs, { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
-                    ytProc.stdout.on('data', () => {});
-                    ytProc.stderr.on('data', () => {});
-                    
-                    const timeoutId = setTimeout(() => {
-                        ytProc.kill();
-                        reject(new Error('Timeout'));
-                    }, 300000);
-                    
-                    ytProc.on('close', code => {
-                        clearTimeout(timeoutId);
-                        code === 0 ? resolve() : reject(new Error('Failed'))
-                    });
-                    ytProc.on('error', (err) => {
-                        clearTimeout(timeoutId);
-                        reject(err);
-                    });
-                });
-                streamFile(cachePath);
-            } catch (err) {
-                res.status(500).send('Failed to download');
-            }
+        } catch (err) {
+            res.status(500).send('Failed to download audio');
         }
     } else {
         streamFile(localPath);

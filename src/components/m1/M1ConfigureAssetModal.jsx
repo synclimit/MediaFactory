@@ -21,8 +21,11 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
   if (slot?.manualThumbnail) {
     activeThumbnail = slot.manualThumbnail;
     thumbSourceText = 'MANUAL OVERRIDE';
-  } else if (slot?.sourceType === 'YouTube URL' && slot?.isFetched) {
-    activeThumbnail = slot?.videoId ? `https://img.youtube.com/vi/${slot.videoId}/maxresdefault.jpg` : '/assets/dummy/youtube-thumbnail.svg';
+  } else if (slot?.thumbnailUrl) {
+    activeThumbnail = slot.thumbnailUrl;
+    thumbSourceText = 'AUTO YOUTUBE';
+  } else if (slot?.sourceType === 'YouTube URL' && (slot?.videoId || slot?.isFetched)) {
+    activeThumbnail = slot?.videoId ? `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg` : '/assets/dummy/youtube-thumbnail.svg';
     thumbSourceText = 'AUTO YOUTUBE';
   } else if (slot?.sourceType === 'Audio File' && slot?.audio) {
     activeThumbnail = '/assets/dummy/master-frame.svg';
@@ -196,6 +199,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                     onClick={async () => {
                       if(!slot?.youtubeUrl) { alert('Please enter a YouTube URL first.'); return; }
                       updateM1Slot(idx, 'isFetching', true);
+                      updateM1Slot(idx, 'fetchStatusText', 'COMMUNICATING WITH SATELLITE...');
                       try {
                         const res = await fetch('/api/m1/youtube/fetch', { 
                           method: 'POST', 
@@ -215,22 +219,45 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                             if (line.startsWith('data: ')) {
                               try {
                                 const data = JSON.parse(line.substring(6));
-                                if (data.error) throw new Error(data.error);
-                                if (data.progress !== undefined) updateM1Slot(idx, 'fetchProgress', data.progress);
-                                if (data.done) {
-                                  updateM1Slot(idx, 'channelName', 'YouTube Source');
-                                  updateM1Slot(idx, 'videoTitle', data.title || 'Unknown Title');
-                                  updateM1Slot(idx, 'videoId', data.videoId);
-                                  updateM1Slot(idx, 'audio', data.audioPath);
-                                  updateM1Slot(idx, 'originalDesc', data.description || "Metadata Fetched automatically via backend integration.\n\nDescription content will appear here.");
-                                  updateM1Slot(idx, 'cleanedDesc', data.description || "Metadata Fetched automatically via backend integration.\n\nDescription content will appear here.");
-                                  updateM1Slot(idx, 'duration', data.durationDisplay || "0m 00s");
-                                  let base = data.title ? data.title.replace(/[^a-zA-Z0-9 ]/g, '') : 'YouTube_Audio';
-                                  if (slot?.titleStrategy === 'Original + Suffix') base += slot?.titleSuffix || '';
-                                  if (slot?.titleStrategy !== 'Custom') updateM1Slot(idx, 'outputName', `${base}.mp4`);
-                                  updateM1Slot(idx, 'isFetched', true);
+                                if (data.error) {
+                                  alert('Fetch Error: ' + data.error);
+                                  break;
                                 }
-                              } catch (e) {}
+                                if (data.statusText) updateM1Slot(idx, 'fetchStatusText', data.statusText);
+                                if (data.progress !== undefined) updateM1Slot(idx, 'fetchProgress', data.progress);
+                                if (data.metadata || data.done || data.videoId || data.title) {
+                                  const meta = data.metadata || data;
+                                  const vId = meta.videoId || data.videoId || slot?.videoId;
+                                  const rawTitle = meta.title || data.title || vId || 'YouTube_Audio';
+                                  const cleanTitle = rawTitle.replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, ' ').trim();
+                                  let base = cleanTitle;
+                                  if (slot?.titleStrategy === 'Original + Suffix') base += slot?.titleSuffix || '';
+
+                                  const allUpdates = {
+                                    videoTitle: rawTitle,
+                                    channelName: meta.channelName || meta.uploader || meta.channel || 'YouTube Source',
+                                    videoId: vId,
+                                    thumbnailUrl: meta.thumbnailUrl || (vId ? `https://i.ytimg.com/vi/${vId}/hqdefault.jpg` : null),
+                                    originalDesc: meta.description || data.description || "Metadata Fetched automatically via backend integration.\n\nDescription content will appear here.",
+                                    cleanedDesc: meta.description || data.description || "Metadata Fetched automatically via backend integration.\n\nDescription content will appear here.",
+                                    duration: meta.durationDisplay || data.durationDisplay || "0m 00s",
+                                    isFetched: true
+                                  };
+
+                                  if (slot?.titleStrategy !== 'Custom') {
+                                    allUpdates.outputName = `${base}.mp4`;
+                                  }
+                                  if (data.audioPath || meta.audioPath) {
+                                    allUpdates.audio = data.audioPath || meta.audioPath;
+                                  }
+
+                                  updateM1Slot(idx, allUpdates);
+                                }
+                              } catch (e) {
+                                if (e.message && !e.message.startsWith('Unexpected end')) {
+                                  console.error(e);
+                                }
+                              }
                             }
                           }
                         }
@@ -239,6 +266,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                       } finally {
                         updateM1Slot(idx, 'isFetching', false);
                         updateM1Slot(idx, 'fetchProgress', 0);
+                        updateM1Slot(idx, 'fetchStatusText', '');
                       }
                     }}
                   >
@@ -246,7 +274,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                       <>
                         <div className="absolute left-0 top-0 bottom-0 bg-orange-500/20 transition-all duration-300" style={{ width: `${slot.fetchProgress || 0}%` }}></div>
                         <svg className="animate-spin h-4 w-4 relative z-10" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        <span className="relative z-10">COMMUNICATING WITH SATELLITE... {slot.fetchProgress ? `${slot.fetchProgress}%` : ''}</span>
+                        <span className="relative z-10">{slot?.fetchStatusText || 'COMMUNICATING WITH SATELLITE...'}</span>
                       </>
                     ) : (
                       <>
@@ -275,7 +303,18 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                 {/* 260px Fixed 16:9 Thumbnail */}
                 <div className="w-[260px] h-full shrink-0 bg-[#20222a] border border-[#3b3e4f] relative overflow-hidden flex items-center justify-center shadow-[inset_0_5px_15px_rgba(0,0,0,0.5)] rounded-sm">
                   {activeThumbnail ? (
-                    <img src={activeThumbnail} className="w-full h-full object-cover relative z-10" alt="Thumbnail" />
+                    <img 
+                      src={activeThumbnail} 
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      onError={(e) => {
+                        if (slot?.videoId && !e.target.src.includes('hqdefault')) {
+                          e.target.src = `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg`;
+                        }
+                      }}
+                      className="w-full h-full object-cover relative z-10" 
+                      alt="Thumbnail" 
+                    />
                   ) : (
                     <div className="flex flex-col items-center opacity-30 relative z-10">
                       <svg className="w-6 h-6 text-orange-500 mb-2" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="square" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -290,7 +329,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                 <div className="flex flex-col justify-center min-w-0 flex-1 gap-2">
                   <span className="font-['Rajdhani'] block text-[10px] text-gray-400 font-bold tracking-widest uppercase -mb-1">VIDEO TITLE</span>
                   <span className={`font-['Rajdhani'] font-bold text-2xl leading-tight line-clamp-2 uppercase ${isReady ? 'text-white' : 'text-gray-500'}`}>
-                    {isReady ? (slot?.sourceType === 'Audio File' ? slot.audio.split('\\').pop() : slot?.videoTitle) : 'WAITING FOR METADATA...'}
+                    {isReady ? (slot?.sourceType === 'Audio File' ? slot.audio.split('\\').pop() : (slot?.videoTitle || slot?.outputName || 'YouTube Video')) : 'WAITING FOR METADATA...'}
                   </span>
                   
                   <div className="flex flex-col gap-1 mt-2">

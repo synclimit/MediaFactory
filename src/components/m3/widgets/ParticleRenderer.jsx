@@ -67,6 +67,20 @@ export default function ParticleRenderer({ config, id }) {
                 const speed = (Math.random() * 3 + 1) * speedMult * (flow === 'flow_explosion' ? 1 : -1);
                 vx = Math.cos(angle) * speed;
                 vy = Math.sin(angle) * speed;
+            } else if (flow === 'flow_starfield') {
+                const angle = Math.random() * Math.PI * 2;
+                const spread = Math.random() * 0.8 + 0.2;
+                const speed = (Math.random() * 0.4 + 0.3) * speedMult;
+                const progress = reset ? 0 : Math.random();
+                return {
+                    x: canvas.width / 2, y: canvas.height / 2, vx: 0, vy: 0, size,
+                    starAngle: angle, starSpread: spread, speed,
+                    progress,
+                    angle: config.randomRotation ? Math.random() * Math.PI * 2 : (config.rotation || 0) * Math.PI / 180,
+                    rotSpeed: (Math.random() - 0.5) * 0.1 * speedMult,
+                    life: 1.0,
+                    decay: 0
+                };
             } else if (flow === 'flow_orbit') {
                 const angle = Math.random() * Math.PI * 2;
                 const radius = Math.random() * Math.min(canvas.width, canvas.height) / 2;
@@ -92,12 +106,14 @@ export default function ParticleRenderer({ config, id }) {
         const render = () => {
             animId = requestAnimationFrame(render);
             
-            // Adjust canvas size to match container
+            // Adjust canvas size to match container safely
             const parent = canvas.parentElement;
             if (parent) {
-                if (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
-                    canvas.width = parent.clientWidth;
-                    canvas.height = parent.clientHeight;
+                const targetW = Math.max(100, parent.clientWidth || parent.offsetWidth || 1920);
+                const targetH = Math.max(100, parent.clientHeight || parent.offsetHeight || 1080);
+                if (canvas.width !== targetW || canvas.height !== targetH) {
+                    canvas.width = targetW;
+                    canvas.height = targetH;
                 }
             }
 
@@ -119,13 +135,28 @@ export default function ParticleRenderer({ config, id }) {
                 beatScale = 1.0 + (frame.debug.beat.bass * (config.beatReactLevel || 40) / 100);
             }
 
-            // Draw particles
+            // Draw particles using solid composite mode for maximum visibility
             ctx.globalAlpha = globalOpacity;
-            ctx.globalCompositeOperation = (config.blendMode || 'Screen').toLowerCase() === 'normal' ? 'source-over' : 'screen';
+            const blendModeLower = (config.blendMode || 'Screen').toLowerCase();
+            ctx.globalCompositeOperation = blendModeLower === 'screen' ? 'screen' : (blendModeLower === 'additive' ? 'lighter' : 'source-over');
 
             particles.forEach((p, index) => {
                 // Update Physics
-                if (flow === 'flow_orbit') {
+                if (flow === 'flow_starfield') {
+                    p.progress += (p.speed || 0.4) * 0.016;
+                    if (p.progress >= 1.0) {
+                        p.progress = 0;
+                        p.starAngle = Math.random() * Math.PI * 2;
+                        p.starSpread = Math.random() * 0.8 + 0.2;
+                    }
+                    const cw = canvas.width || 1920;
+                    const ch = canvas.height || 1080;
+                    const maxR = Math.sqrt(cw * cw + ch * ch) / 2;
+                    const r = p.progress * maxR * (p.starSpread || 0.5);
+                    p.x = (cw / 2) + Math.cos(p.starAngle || 0) * r;
+                    p.y = (ch / 2) + Math.sin(p.starAngle || 0) * r;
+                    p.starScale = 0.4 + (p.progress * 2.2);
+                } else if (flow === 'flow_orbit') {
                     p.orbitAngle += p.rotSpeed;
                     p.x = canvas.width/2 + Math.cos(p.orbitAngle) * p.orbitRadius;
                     p.y = canvas.height/2 + Math.sin(p.orbitAngle) * p.orbitRadius;
@@ -140,7 +171,7 @@ export default function ParticleRenderer({ config, id }) {
                 }
 
                 p.angle += p.rotSpeed;
-                p.life -= p.decay;
+                if (flow !== 'flow_starfield') p.life -= p.decay;
 
                 // Reset out of bounds
                 let isDead = p.life <= 0;
@@ -148,11 +179,11 @@ export default function ParticleRenderer({ config, id }) {
                 if ((flow === 'flow_rain' || flow === 'flow_snow') && p.y > canvas.height + p.size) isDead = true;
                 if (flow === 'flow_wind_left' && p.x < -p.size) isDead = true;
                 if (flow === 'flow_wind_right' && p.x > canvas.width + p.size) isDead = true;
-                if (p.x < -p.size * 5 || p.x > canvas.width + p.size * 5 || p.y < -p.size * 5 || p.y > canvas.height + p.size * 5) isDead = true;
+                if (flow !== 'flow_starfield' && (p.x < -p.size * 5 || p.x > canvas.width + p.size * 5 || p.y < -p.size * 5 || p.y > canvas.height + p.size * 5)) isDead = true;
 
                 if (isDead) {
                     Object.assign(p, createParticle(true));
-                    p.life = 1.0;
+                    if (flow !== 'flow_starfield') p.life = 1.0;
                 }
 
                 // Render Shape
@@ -160,18 +191,24 @@ export default function ParticleRenderer({ config, id }) {
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.angle);
                 
-                // Opacity based on life
+                // Opacity based on life or radial progress
                 let alpha = p.life;
-                if (p.life > 0.8) alpha = (1.0 - p.life) * 5; // Fade in
+                if (flow === 'flow_starfield') {
+                    alpha = Math.max(0.35, Math.min(1.0, 0.2 + (p.progress || 0) * 1.2));
+                } else if (p.life > 0.8) {
+                    alpha = (1.0 - p.life) * 5; // Fade in
+                }
 
                 ctx.globalAlpha = globalOpacity * alpha;
-                ctx.fillStyle = fillColor;
+                ctx.fillStyle = fillColor || '#ffffff';
                 if (strokeWidth > 0) {
-                    ctx.strokeStyle = strokeColor;
+                    ctx.strokeStyle = strokeColor || '#000000';
                     ctx.lineWidth = strokeWidth;
                 }
 
-                const s = p.size * beatScale;
+                // Enforce minimum draw size 6px for 1080p canvas so browser CSS scale-down never filters particles to sub-pixel invisibility
+                const baseSize = (p.size && p.size > 0) ? p.size : 10;
+                const s = Math.max(6, baseSize * beatScale * (flow === 'flow_starfield' ? (p.starScale || 1) : 1));
 
                 ctx.beginPath();
                 if (shape === 'shape_circle') {

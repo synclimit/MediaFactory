@@ -14,6 +14,8 @@ import M3Statistics from './M3Statistics.jsx';
 import BeatDebugOverlay from './debug/BeatDebugOverlay.jsx';
 import M3SubtitleTimelinePanel from './M3SubtitleTimelinePanel.jsx';
 import { projectManager } from '../../services/pipeline/project/ProjectManager';
+import { fastWorkspaceManager } from '../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
+import { fastRenderState } from '../../services/pipeline/fastrender/core/FastRenderState.js';
 
 export default function M3StudioPanel({
   m3ProfileId, setM3ProfileId,
@@ -41,6 +43,36 @@ export default function M3StudioPanel({
   const [m3CurrentTrackIndex, setM3CurrentTrackIndex] = useState(0);
   const [activeContextCategory, setActiveContextCategory] = useState('Background');
   const [analyser, setAnalyser] = useState(null);
+  const [renderMode, setRenderModeState] = useState(() => {
+    try {
+      return fastRenderState ? fastRenderState.getMode() : 'FAST';
+    } catch(e) {
+      return 'FAST';
+    }
+  });
+
+  const setRenderMode = (mode) => {
+    try {
+      const projectState = { m3BgPool, m3AudioTracks, m3Objects, m3RenderSettings };
+      const result = fastWorkspaceManager.switchWorkspace(mode, projectState);
+      if (result && result.adaptedState) {
+        if (result.adaptedState.m3Objects) setM3Objects(result.adaptedState.m3Objects);
+        if (result.adaptedState.m3BgPool) setM3BgPool(result.adaptedState.m3BgPool);
+      }
+    } catch(e) {
+      console.error('Error switching workspace mode:', e);
+    }
+    setRenderModeState(mode);
+  };
+
+  useEffect(() => {
+    const unsubscribe = fastWorkspaceManager.subscribe((event) => {
+      if (event.type === 'WORKSPACE_SWITCH') {
+        setRenderModeState(event.mode);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Simple Undo/Redo for m3Objects
   const [history, setHistory] = useState([]);
@@ -114,13 +146,15 @@ export default function M3StudioPanel({
     }
   };
 
-  const handleExport = (format) => {
+  const handleExport = async (exportOptions = {}) => {
+    const targetMode = exportOptions.renderMode || renderMode || 'FAST';
     if (onExportQueue) {
-      onExportQueue();
-    } else {
-      addNotification(`Exporting as ${format}...`);
+      onExportQueue({ ...exportOptions, renderMode: targetMode });
+    } else if (addNotification) {
+      addNotification(`⚡ Render Job Added to Queue Manager!`);
     }
   };
+
 
   const handleSetM3SelectedObjectId = (id) => {
     setM3SelectedObjectId(id);
@@ -141,12 +175,57 @@ export default function M3StudioPanel({
   };
 
   return (
-    <>
+    <div className="flex flex-col h-full relative pt-0">
+      {/* RENDER MODE (M5 Cyberpunk Tab Style) */}
+      <div className="flex items-center justify-center shrink-0 mb-1 mt-0 relative z-50">
+        <div className="flex items-center gap-4 relative z-10">
+          <button 
+            onClick={() => setRenderMode('NORMAL')} 
+            className={`relative flex items-center justify-center pt-0.5 pb-1 transition-all duration-300 group ${
+              renderMode === 'NORMAL' ? 'text-orange-400' : 'text-gray-600 hover:text-gray-400'
+            }`}
+          >
+            <div className="relative z-10 flex items-center">
+              <span className={`font-black text-[13px] tracking-[0.2em] uppercase transition-all ${renderMode === 'NORMAL' ? 'drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] text-white' : ''}`}>
+                NORMAL
+              </span>
+            </div>
+            {renderMode === 'NORMAL' && (
+              <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,1)] z-10"></div>
+            )}
+          </button>
+
+          {/* Futuristic Separator */}
+          <div className="flex items-center gap-1 pt-0.5 pb-1 opacity-50">
+            <div className="w-1 h-1 bg-[#444] rotate-45"></div>
+            <div className="w-1 h-1 bg-[#444] rotate-45"></div>
+          </div>
+
+          <button 
+            onClick={() => setRenderMode('FAST')} 
+            className={`relative flex items-center justify-center pt-0.5 pb-1 transition-all duration-300 group ${
+              renderMode === 'FAST' ? 'text-orange-400' : 'text-gray-600 hover:text-gray-400'
+            }`}
+          >
+            <div className="relative z-10 flex items-center">
+              <span className={`font-black text-[13px] tracking-[0.2em] uppercase transition-all ${renderMode === 'FAST' ? 'drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] text-white' : ''}`}>
+                FAST
+              </span>
+            </div>
+            {renderMode === 'FAST' && (
+              <div className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,1)] z-10"></div>
+            )}
+          </button>
+        </div>
+      </div>
+
       <Surface variant={BackgroundVariants.Default} className="flex flex-col flex-1 min-h-0 border border-[#21232d] rounded overflow-hidden shadow-2xl mb-2">
         {/* Top File Menu removed to save vertical space */}        {/* Top Toolbar */}
         <M3Toolbar 
           mode={editorMode} 
           setMode={setEditorMode} 
+          renderMode={renderMode}
+          setRenderMode={setRenderMode}
           m3BgPool={m3BgPool} 
           m3AudioTracks={m3AudioTracks} 
           m3ThumbnailSaved={m3ThumbnailSaved}
@@ -172,29 +251,29 @@ export default function M3StudioPanel({
             m3CurrentTrackIndex={m3CurrentTrackIndex}
             m3Objects={m3Objects} setM3Objects={setM3Objects}
             setM3SelectedObjectId={handleSetM3SelectedObjectId}
-            canvasMode={editorMode === 'Composer' ? 'thumbnail' : 'thumbnail'} // actually, let's keep original code
+            canvasMode={editorMode === 'Composer' ? 'composer' : 'thumbnail'}
+            editorMode={editorMode}
             activeContextCategory={activeContextCategory}
           />
           
           {/* Left-Middle Panel: Object Inspector */}
-          {editorMode === 'Composer' && (
-            <M3ObjectInspector 
-              m3Objects={m3Objects}
-              setM3Objects={setM3Objects}
-              m3BgPool={m3BgPool}
-              setM3BgPool={setM3BgPool}
-              m3SelectedObjectId={m3SelectedObjectId}
-              activeCategory={activeContextCategory}
-              renderSettings={m3RenderSettings}
-              setRenderSettings={setM3RenderSettings}
-            />
-          )}
+          <M3ObjectInspector 
+            m3Objects={m3Objects}
+            setM3Objects={setM3Objects}
+            m3BgPool={m3BgPool}
+            setM3BgPool={setM3BgPool}
+            m3SelectedObjectId={m3SelectedObjectId}
+            activeCategory={activeContextCategory}
+            renderSettings={m3RenderSettings}
+            setRenderSettings={setM3RenderSettings}
+          />
           
           {/* Right Panel: Live Preview */}
           <div className="flex-1 flex flex-col min-w-0 bg-[#0a0a0a]">
             {editorMode === 'Composer' ? (
-              <M3PreviewCanvas 
-                m3BgPool={m3BgPool} 
+              <>
+                <M3PreviewCanvas 
+                  m3BgPool={m3BgPool} 
                 m3AudioTracks={m3AudioTracks}
                 m3Objects={m3Objects} 
                 setM3Objects={setM3Objects}
@@ -221,8 +300,10 @@ export default function M3StudioPanel({
                 </div>
                 
                 {/* Export Settings added directly under playback bar */}
-                <M3ExportSettingsPanel onAddToQueue={onExportQueue} />
+                <M3ExportSettingsPanel renderMode={renderMode} onAddToQueue={(opts) => handleExport(opts)} />
+
               </M3PreviewCanvas>
+              </>
             ) : (
               <M3ThumbnailEditor 
                 m3BgPool={m3BgPool} 
@@ -242,7 +323,7 @@ export default function M3StudioPanel({
 
         </div>
         
-        {editorMode === 'Composer' && (
+        {editorMode === 'Composer' && (activeContextCategory === 'Lyrics' || m3Objects.some(o => o.type === 'subtitle' || o.type === 'lyrics')) && (
           <M3SubtitleTimelinePanel 
             m3CurrentTimeSec={m3CurrentTimeSec}
             setM3CurrentTimeSec={setM3CurrentTimeSec}
@@ -253,6 +334,6 @@ export default function M3StudioPanel({
 
       {/* Global Debug HUD - Moved OUTSIDE of Surface to avoid overflow-hidden clipping */}
       <BeatDebugOverlay />
-    </>
+    </div>
   );
 }

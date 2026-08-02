@@ -9,6 +9,32 @@ const getPanelService = (panelName) => {
     return ServiceRegistry.resolve(name);
 };
 
+const fs = require('fs');
+const path = require('path');
+const saveFilePath = path.join(__dirname, '..', 'data', 'm3_autosave_state.json');
+
+router.get('/api/v1/m3/autosave/state', (req, res) => {
+    try {
+        if (fs.existsSync(saveFilePath)) {
+            const content = fs.readFileSync(saveFilePath, 'utf8');
+            return res.json({ success: true, data: JSON.parse(content) });
+        }
+    } catch(e) {}
+    res.json({ success: true, data: null });
+});
+
+router.post('/api/v1/m3/autosave/state', (req, res) => {
+    try {
+        const body = req.body || {};
+        const dir = path.dirname(saveFilePath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(saveFilePath, JSON.stringify(body, null, 2), 'utf8');
+        return res.json({ success: true });
+    } catch(e) {
+        return res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 // Middleware to catch panel service resolution errors
 router.use('/api/v1/m3/:panel', (req, res, next) => {
     try {
@@ -122,37 +148,54 @@ router.post('/api/v1/m3/:panel/refresh', async (req, res) => {
     }
 });
 
-const { jobs, processM3Job } = require('./m3-render');
+const { jobs, processM3Job, cancelM3Job } = require('./m3-render');
 let { jobCounterM3 } = require('./m3-render');
-const fs = require('fs/promises');
-const path = require('path');
 
 router.post('/api/m3/render', async (req, res) => {
     try {
-        const payload = req.body;
+        const rawBody = req.body || {};
+        const payload = rawBody.m3Payload || rawBody;
         jobCounterM3++;
-        const queueId = `M3_${Date.now()}_${jobCounterM3}`;
+        const queueId = rawBody.id || rawBody.queueId || `M3_${Date.now()}_${jobCounterM3}`;
         
-        jobs[queueId] = {
+        const jobObj = {
             queueId,
+            id: queueId,
             status: 'WAITING',
-            progress: 0,
+            progress: 1,
+            outputFolder: rawBody.outputFolder || payload.outputFolder,
+            totalDurationSec: rawBody.totalDurationSec || payload.totalDurationSec,
             m3Payload: payload
         };
+
+        jobs[queueId] = jobObj;
+        if (rawBody.id) jobs[rawBody.id] = jobObj;
         
-        processM3Job(jobs[queueId]);
+        processM3Job(jobObj);
         res.json({ queueId, jobId: queueId, id: queueId, status: 'QUEUED' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+router.post('/api/m3/cancel', (req, res) => {
+    const { id, queueId, jobId } = req.body || {};
+    const targetId = id || queueId || jobId;
+    if (targetId) {
+        cancelM3Job(targetId);
+    } else {
+        cancelM3Job();
+    }
+    res.json({ success: true, message: 'M3 Render cancelled and FFmpeg process terminated' });
+});
+
 router.get('/api/m3/render/:id', (req, res) => {
     const id = req.params.id;
-    if (!jobs[id]) {
+    const targetJob = jobs[id];
+    if (!targetJob) {
         return res.status(404).json({ error: 'Job not found' });
     }
-    res.json(jobs[id]);
+    res.json(targetJob);
 });
 
 router.post('/api/m3/font/upload', async (req, res) => {

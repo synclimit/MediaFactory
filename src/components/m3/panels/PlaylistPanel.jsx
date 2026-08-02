@@ -15,12 +15,16 @@ export default function PlaylistPanel({ m3AudioTracks, setM3AudioTracks, m3Curre
     const [playlistHistory, setPlaylistHistory] = useState(new Set());
     const [draggedIdx, setDraggedIdx] = useState(null);
 
-    // Initial sync from backend to frontend
+    // Initial sync between backend and frontend
     useEffect(() => {
-        if (initialized && settings.tracks && m3AudioTracks.length === 0) {
-            setM3AudioTracks(settings.tracks);
+        if (initialized) {
+            if (settings.tracks && settings.tracks.length > 0 && m3AudioTracks.length === 0) {
+                setM3AudioTracks(settings.tracks);
+            } else if (m3AudioTracks.length > 0 && (!settings.tracks || settings.tracks.length === 0)) {
+                syncToBackend(m3AudioTracks);
+            }
         }
-    }, [initialized, settings.tracks]);
+    }, [initialized]);
 
     const localTracksRef = useRef(m3AudioTracks);
     useEffect(() => { localTracksRef.current = m3AudioTracks; }, [m3AudioTracks]);

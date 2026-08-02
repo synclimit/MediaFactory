@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { beatEngine } from "../../../services/audio/BeatEngine";
+import { fastWorkspaceManager } from "../../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js";
 
 export function ProceduralSpeaker({ 
   opacity = 1, 
@@ -161,8 +162,9 @@ export function ProceduralSpeaker({
       const maxR = Math.min(canvas.width, canvas.height) * 0.46;
       const theme = getModelTheme(model);
 
-      // 1. Ambil Data Analisis Audio Real-Time
-      const audioState = beatEngine ? beatEngine.getState() : null;
+      // 1. Ambil Data Analisis Audio Real-Time (Disabled in Fast Workspace Mode)
+      const isFastWorkspace = fastWorkspaceManager ? fastWorkspaceManager.isFastWorkspaceActive() : false;
+      const audioState = isFastWorkspace ? null : (beatEngine ? beatEngine.getState() : null);
       const isAudioActive = audioReactive && audioState && audioState.isPlaying && audioState.energy > 0.005;
 
       let bass = 0, mid = 0, treble = 0, kick = 0, beatStrength = 0;

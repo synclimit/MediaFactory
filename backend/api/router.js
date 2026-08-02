@@ -24,7 +24,19 @@ router.post('/api/v1/system/runtime/event', (req, res) => {
         res.standardResponse(null, { status: "error", message: e.message }, false);
     }
 });
-router.get('/api/v1/system/services', (req, res) => res.standardResponse({ services: Array.from(ServiceRegistry.services.keys()) }));
+router.post('/api/v1/system/kill-ffmpeg', (req, res) => {
+    try {
+        const { killAllFFmpegProcesses } = require('./m3-render');
+        killAllFFmpegProcesses();
+    } catch (e) {}
+    if (process.platform === 'win32') {
+        try {
+            const { execSync } = require('child_process');
+            execSync('taskkill /F /IM ffmpeg.exe /T');
+        } catch (e) {}
+    }
+    res.standardResponse({ killed: true, message: 'All FFmpeg processes forcefully terminated' });
+});
 router.get('/api/v1/system/workers', (req, res) => res.standardResponse({ activeWorkers: 0 }));
 router.get('/api/v1/system/telemetry', (req, res) => {
     const hwService = ServiceRegistry.resolve('HardwareService');
@@ -156,20 +168,49 @@ router.post('/api/v1/system/workspace/create', async (req, res) => {
     }
 });
 
-router.post('/api/v1/system/open-folder', (req, res) => {
+router.post('/api/v1/system/open-folder', async (req, res) => {
     try {
         const { exec } = require('child_process');
         const os = require('os');
-        const folderPath = req.body.path;
-        if (!folderPath) return res.json({ success: false });
-        
-        let command;
-        if (os.platform() === 'win32') command = `explorer "${folderPath}"`;
-        else if (os.platform() === 'darwin') command = `open "${folderPath}"`;
-        else command = `xdg-open "${folderPath}"`;
-        
-        exec(command);
-        res.json({ success: true });
+        const fs = require('fs');
+        const path = require('path');
+        let folderPath = req.body.path;
+        if (!folderPath) return res.json({ success: false, error: 'No path provided' });
+
+        folderPath = String(folderPath).trim();
+
+        if (os.platform() === 'win32') {
+            let winPath = path.normalize(folderPath).replace(/\//g, '\\');
+            let cleanWinPath = winPath.replace(/[\/\\]+$/, '');
+
+            let command;
+            try {
+                const stat = fs.statSync(cleanWinPath);
+                if (stat.isFile()) {
+                    command = `explorer /select,"${cleanWinPath}"`;
+                } else {
+                    command = `explorer "${cleanWinPath}"`;
+                }
+            } catch (e) {
+                let dirToCreate = cleanWinPath;
+                if (path.extname(cleanWinPath)) {
+                    dirToCreate = path.dirname(cleanWinPath);
+                }
+                try { fs.mkdirSync(dirToCreate, { recursive: true }); } catch (err) {}
+                let cleanDir = dirToCreate.replace(/[\/\\]+$/, '');
+                command = `explorer "${cleanDir}"`;
+            }
+            exec(command);
+            return res.json({ success: true, commandExecuted: command });
+        } else if (os.platform() === 'darwin') {
+            const command = `open "${folderPath}"`;
+            exec(command);
+            return res.json({ success: true, commandExecuted: command });
+        } else {
+            const command = `xdg-open "${folderPath}"`;
+            exec(command);
+            return res.json({ success: true, commandExecuted: command });
+        }
     } catch(e) {
         res.json({ success: false, error: e.message });
     }

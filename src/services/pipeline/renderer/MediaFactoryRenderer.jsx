@@ -9,6 +9,8 @@ import IntroSequenceRenderer from '../../../components/m3/widgets/IntroSequenceR
 import ProceduralSpeaker from '../../../components/m3/overlays/ProceduralSpeaker';
 import { renderFrameStore } from '../runtime/RenderFrameStore';
 import { beatEngine } from '../../audio/BeatEngine';
+import { fastWorkspaceManager } from '../fastrender/workspace/FastWorkspaceManager.js';
+import { seededNoiseAdapter } from '../fastrender/core/SeededNoiseAdapter.js';
 
 export default function MediaFactoryRenderer({ 
     frame: propFrame, 
@@ -87,6 +89,7 @@ export default function MediaFactoryRenderer({
 
                 // --- Audio Reactivity Math ---
                 let mScale = 0, mSwayX = 0, mSwayY = 0, mRotate = 0;
+                const isFastMode = fastWorkspaceManager.isFastWorkspaceActive();
                 if (el.beatZoom && el.type !== 'procedural-speaker' && el.mediaType !== 'procedural') {
                     const b = beatEngine.getState() || { bass: 0, mid: 0, treble: 0, energy: 0 };
                     let danceStyle = el.danceStyle || 'Calm Pulse';
@@ -100,10 +103,17 @@ export default function MediaFactoryRenderer({
                     const intensity = (el.danceIntensity !== undefined ? el.danceIntensity : 100) / 100;
                     const reactsTo = el.danceReactsTo || 'Bass (Low)';
                     
-                    const rawVal = reactsTo === 'Bass (Low)' ? b.bass :
-                                   reactsTo === 'Mid' ? b.mid :
-                                   reactsTo === 'Treble (High)' ? b.treble :
-                                   b.energy;
+                    let rawVal = 0;
+                    if (isFastMode) {
+                        const loopTime = currentTime % 10.0;
+                        const seed = el.id ? String(el.id).charCodeAt(0) : 1337;
+                        rawVal = Math.abs(seededNoiseAdapter.getPeriodicNoise(loopTime, 10.0, 1.0, seed));
+                    } else {
+                        rawVal = reactsTo === 'Bass (Low)' ? b.bass :
+                                 reactsTo === 'Mid' ? b.mid :
+                                 reactsTo === 'Treble (High)' ? b.treble :
+                                 b.energy;
+                    }
                     
                     const power = (rawVal || 0) * (reactLevel / 50) * intensity;
                     let cfg = { zoom: 0, swayX: 0, swayY: 0, rotate: 0, shake: 0 };
@@ -152,8 +162,14 @@ export default function MediaFactoryRenderer({
                 }
                 
                 if (el.beatPump && el.type !== 'procedural-speaker' && el.mediaType !== 'procedural') {
-                    const b = beatEngine.getState() || { bass: 0, kick: 0, beatStrength: 0 };
-                    const pumpVal = (b.kick || 0) * 0.4 + (b.bass || 0) * 0.3 + (b.beatStrength || 0) * 0.15;
+                    let pumpVal = 0;
+                    if (isFastMode) {
+                        const loopTime = currentTime % 10.0;
+                        pumpVal = Math.abs(seededNoiseAdapter.getPeriodicNoise(loopTime, 10.0, 1.0, 1337));
+                    } else {
+                        const b = beatEngine.getState() || { bass: 0, kick: 0, beatStrength: 0 };
+                        pumpVal = (b.kick || 0) * 0.4 + (b.bass || 0) * 0.3 + (b.beatStrength || 0) * 0.15;
+                    }
                     const intensity = el.pumpIntensity !== undefined ? el.pumpIntensity : 1.5;
                     mScale += pumpVal * 0.04 * intensity;
                 }
@@ -161,17 +177,27 @@ export default function MediaFactoryRenderer({
                 const finalScale = (el.scale !== undefined ? el.scale : 1) + mScale;
                 const finalRotate = (el.rotation || 0) + mRotate;
 
+                const isParticle = el.type === 'particle';
+                const isParticleOrEffect = isParticle || el.type === 'effect' || el.pointerEvents === 'none';
+                const isSelected = m3SelectedObjectId === el.id;
+                const isInteractive = !isParticleOrEffect && !el.locked;
+
+                const isVisualizerObj = el.type === 'visualizer';
+                const computedLeft = isVisualizerObj && (el.x === 0 || !el.x || el.x === '0' || el.x === '0px')
+                    ? '50%'
+                    : (typeof el.x === 'string' && el.x.includes('%') ? el.x : (el.x || 0) + 'px');
+
                 return (
                     <React.Fragment key={el.id}>
                         <div
                             id={`canvas-obj-${el.id}`}
-                            onPointerDown={onPointerDown ? (e) => onPointerDown(e, el.id) : undefined}
-                            className={`absolute pointer-events-auto transition-shadow ${el.locked ? 'cursor-default' : 'cursor-move'} ${m3SelectedObjectId === el.id ? 'ring-2 ring-blue-500 ring-offset-1 ring-offset-transparent z-40' : 'hover:ring-1 hover:ring-white/50 z-30'}`}
+                            onPointerDown={isInteractive && onPointerDown ? (e) => onPointerDown(e, el.id) : undefined}
+                            className={`absolute pointer-events-none ${isInteractive ? 'cursor-move' : 'cursor-default'} transition-shadow ${isSelected && !isParticle ? 'ring-2 ring-blue-500 ring-offset-1 ring-offset-transparent z-40' : (isInteractive ? 'hover:ring-1 hover:ring-white/50 z-30' : 'z-10')}`}
                             style={{
-                                left: typeof el.x === 'string' && el.x.includes('%') ? el.x : (el.x || 0) + 'px',
+                                left: computedLeft,
                                 top: typeof el.y === 'string' && el.y.includes('%') ? el.y : (el.y || 0) + 'px',
-                                width: (el.type === 'text' || el.type === 'playlist' || el.type === 'track_list_column') ? 'max-content' : (el.width ? (typeof el.width === 'string' && el.width.includes('%') ? el.width : el.width + 'px') : 'auto'),
-                                height: (el.type === 'text' || el.type === 'playlist' || el.type === 'track_list_column') ? 'max-content' : (el.height ? (typeof el.height === 'string' && el.height.includes('%') ? el.height : el.height + 'px') : 'auto'),
+                                width: (el.type === 'text' || el.type === 'playlist' || el.type === 'track_list_column' || el.type === 'visualizer') ? 'max-content' : (el.width ? (typeof el.width === 'string' && el.width.includes('%') ? el.width : el.width + 'px') : 'auto'),
+                                height: (el.type === 'text' || el.type === 'playlist' || el.type === 'track_list_column' || el.type === 'visualizer') ? 'max-content' : (el.height ? (typeof el.height === 'string' && el.height.includes('%') ? el.height : el.height + 'px') : 'auto'),
                                 opacity: (el.opacity !== undefined ? el.opacity : 100) / 100,
                                 transform: `translate(calc(-50% + ${mSwayX}px), calc(-50% + ${mSwayY}px)) rotate(${finalRotate}deg) scale(${finalScale})`,
                                 transformOrigin: 'center',
@@ -179,7 +205,8 @@ export default function MediaFactoryRenderer({
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 color: 'white',
-                                zIndex: el.layer || 10
+                                zIndex: el.layer || (el.type === 'particle' ? 2 : 10),
+                                pointerEvents: isInteractive ? 'auto' : 'none'
                             }}
                         >
                             {el.type === 'text' && (() => {

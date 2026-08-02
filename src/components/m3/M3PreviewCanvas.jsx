@@ -17,11 +17,15 @@ import { subtitleReactiveAdapter } from '../../services/subtitle/SubtitleReactiv
 import { subtitleEffectEngine } from '../../services/subtitle/SubtitleEffectEngine';
 import { subtitlePlaybackEngine } from '../../services/subtitle/SubtitlePlaybackEngine';
 import { subtitleAnimationEngine } from '../../services/subtitle/animation/SubtitleAnimationEngine';
+import { requestFrame } from '../../services/pipeline/scheduler/RenderScheduler.js';
 import ProductionQAToolkit from './ProductionQAToolkit.jsx';
 import MediaFactoryRenderer from '../../services/pipeline/renderer/MediaFactoryRenderer';
 
 import { emitRuntimeEvent } from '../../services/RuntimeClient';
 import { bootstrapPipeline } from '../../services/pipeline/PipelineBootstrap';
+import { fastWorkspaceManager } from '../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
+import { fastRenderState } from '../../services/pipeline/fastrender/core/FastRenderState.js';
+
 
 // New FX Engines
 import FilmFXEngine from './engines/FilmFXEngine';
@@ -29,268 +33,75 @@ import AtmosphereEngine from './engines/AtmosphereEngine';
 import LightPulseEngine from './engines/LightPulseEngine';
 import StageLightEngine from './engines/StageLightEngine';
 import LaserEngine from './engines/LaserEngine';
+import { createScheduler } from '../../services/pipeline/scheduler/RenderScheduler.js';
 
-const RealtimeVisualizer = ({ config }) => {
+export const previewScheduler = createScheduler({ fps: 30, frameCount: 300, width: 1920, height: 1080 });
+
+const CanvasKitPreviewAdapter = ({
+  config,
+  currentTimeSec = 0,
+  fps = 30,
+  frameCount = 300,
+  width = 1920,
+  height = 1080
+}) => {
   const canvasRef = useRef(null);
+  const imageDataRef = useRef(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
-    const resizeObserver = new ResizeObserver(() => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    });
-    resizeObserver.observe(canvas.parentElement);
-
-    const geometry = {
-      shape: config?.shape ?? config?.geometry?.shape ?? 'bar',
-      thickness: config?.thickness ?? config?.geometry?.thickness ?? 4,
-      spacing: config?.spacing ?? config?.geometry?.spacing ?? 2,
-      rounded: config?.rounded ?? config?.geometry?.rounded ?? false,
-      center: config?.center ?? config?.geometry?.center ?? false,
-      mirror: config?.mirror ?? config?.geometry?.mirror ?? false,
-      radius: config?.radius ?? config?.geometry?.radius ?? 100,
-      particles: config?.particles ?? config?.geometry?.particles ?? false
-    };
-    const appearance = {
-      color: config?.color ?? config?.appearance?.color ?? '#ffffff',
-      glow: config?.glow ?? config?.appearance?.glow ?? 50,
-      glassmorphism: config?.glassmorphism ?? config?.appearance?.glassmorphism ?? false,
-      gradient: config?.gradient ?? config?.appearance?.gradient ?? 'None',
-      fill: config?.fill ?? config?.appearance?.fill ?? false,
-      innerCover: config?.innerCover ?? config?.appearance?.innerCover ?? false
-    };
-    const audioConf = {
-      fftGain: config?.fftGain ?? config?.audio?.fftGain ?? 100
-    };
-
-    // audio systems handled in loop
 
     let animationId;
-    const draw = () => {
-      animationId = requestAnimationFrame(draw);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      const width = canvas.width;
-      const height = canvas.height;
-      if (width === 0 || height === 0) return;
+    let isRendering = false;
 
-      const cx = width / 2;
-      const cy = height / 2;
+    const renderLoop = async () => {
+      if (isRendering) return;
+      isRendering = true;
 
-      const time = performance.now() / 1000;
-      let baseColor = appearance.color || '#fff';
-      
-      if (appearance.gradient === 'Linear') {
-          const grad = ctx.createLinearGradient(0, height, 0, 0);
-          grad.addColorStop(0, appearance.color || '#00d2ff');
-          grad.addColorStop(1, '#3a7bd5');
-          baseColor = grad;
-      } else if (appearance.gradient === 'Aurora') {
-          const grad = ctx.createLinearGradient(0, height, width, 0);
-          const phase = Math.sin(time) * 0.5 + 0.5;
-          grad.addColorStop(0, '#c471ed');
-          grad.addColorStop(phase, '#f64f59');
-          grad.addColorStop(1, '#12c2e9');
-          baseColor = grad;
-      }
+      try {
+        const frameWidth = width || canvas.width || 1920;
+        const frameHeight = height || canvas.height || 1080;
 
-      ctx.shadowBlur = appearance.glow || 0;
-      ctx.shadowColor = typeof baseColor === 'string' ? baseColor : '#c471ed';
-      ctx.fillStyle = baseColor;
-      ctx.strokeStyle = baseColor;
-      ctx.lineWidth = geometry.thickness || 2;
-      ctx.lineCap = geometry.rounded ? 'round' : 'butt';
+        // Frame index supplied strictly by playback clock prop
+        const frameIndex = Math.floor((currentTimeSec || 0) * fps);
 
-      if (appearance.glassmorphism) {
-          ctx.globalCompositeOperation = 'screen';
-      } else {
-          ctx.globalCompositeOperation = 'source-over';
-      }
+        // Request frame exclusively through instance-based previewScheduler
+        const res = await previewScheduler.requestFrame(frameIndex, {
+          frameCount,
+          width: frameWidth,
+          height: frameHeight,
+          visualizerConfig: config
+        });
 
-      let dataArray = beatEngine.getSpectrum();
-
-      const gain = (audioConf.fftGain || 100) / 100;
-
-      if (geometry.shape === 'bar') {
-        const barWidth = geometry.thickness || 4;
-        const spacing = geometry.spacing || 2;
-        const step = barWidth + spacing;
-        const totalWidth = dataArray.length * step;
-        
-        let startX = geometry.center ? (width - totalWidth) / 2 : 0;
-        if (geometry.mirror) {
-           startX = cx - totalWidth;
-        }
-
-        for (let i = 0; i < dataArray.length; i++) {
-          const h = Math.max(2, (dataArray[i] / 255) * height * gain);
-          const x = startX + i * step;
-          
-          if (geometry.center) {
-              const y = cy - h / 2;
-              if (geometry.rounded) {
-                  ctx.beginPath(); ctx.roundRect(x, y, barWidth, h, barWidth/2); ctx.fill();
-              } else {
-                  ctx.fillRect(x, y, barWidth, h);
-              }
-              if (geometry.mirror) {
-                  const mx = width - (x - cx) - barWidth;
-                  if (geometry.rounded) {
-                      ctx.beginPath(); ctx.roundRect(mx, y, barWidth, h, barWidth/2); ctx.fill();
-                  } else {
-                      ctx.fillRect(mx, y, barWidth, h);
-                  }
-              }
-          } else {
-              const y = height - h;
-              if (geometry.rounded) {
-                  ctx.beginPath(); ctx.roundRect(x, y, barWidth, h, [barWidth/2, barWidth/2, 0, 0]); ctx.fill();
-              } else {
-                  ctx.fillRect(x, y, barWidth, h);
-              }
-              if (geometry.mirror) {
-                  const mx = width - x - barWidth;
-                  if (geometry.rounded) {
-                      ctx.beginPath(); ctx.roundRect(mx, y, barWidth, h, [barWidth/2, barWidth/2, 0, 0]); ctx.fill();
-                  } else {
-                      ctx.fillRect(mx, y, barWidth, h);
-                  }
-              }
+        if (res && res.rgbaBuffer) {
+          // Reuse persistent ImageData buffer to eliminate V8 GC allocation pressure
+          if (!imageDataRef.current || imageDataRef.current.width !== frameWidth || imageDataRef.current.height !== frameHeight) {
+            imageDataRef.current = ctx.createImageData(frameWidth, frameHeight);
           }
+
+          imageDataRef.current.data.set(res.rgbaBuffer);
+          ctx.putImageData(imageDataRef.current, 0, 0);
         }
-      } else if (geometry.shape === 'circle' || geometry.shape === 'double-ring') {
-        const radius = geometry.radius || Math.min(cx, cy) - 50;
-        const bars = dataArray.length;
-        const angleStep = (Math.PI * 2) / bars;
-        
-        const drawRing = (r, mirrorInner) => {
-            for (let i = 0; i < bars; i++) {
-              const h = Math.max(2, (dataArray[i] / 255) * (height / 3) * gain);
-              const angle = i * angleStep;
-              const x1 = cx + Math.cos(angle) * r;
-              const y1 = cy + Math.sin(angle) * r;
-              const x2 = cx + Math.cos(angle) * (r + (mirrorInner ? -h : h));
-              const y2 = cy + Math.sin(angle) * (r + (mirrorInner ? -h : h));
-              
-              ctx.beginPath();
-              ctx.moveTo(x1, y1);
-              ctx.lineTo(x2, y2);
-              ctx.stroke();
-            }
-        };
-
-        drawRing(radius, false);
-        if (geometry.shape === 'double-ring') {
-            drawRing(radius - (geometry.spacing || 10) * 5, true);
-        }
-      } else if (geometry.shape === 'line' || geometry.shape === 'spline' || geometry.shape === 'ribbon') {
-         const step = width / (dataArray.length - 1);
-         const points = [];
-         for (let i = 0; i < dataArray.length; i++) {
-            const h = (dataArray[i] / 255) * height * gain;
-            const x = i * step;
-            const y = geometry.center ? cy - h/2 : height - h;
-            points.push({x, y, h});
-         }
-
-         ctx.beginPath();
-         ctx.moveTo(points[0].x, points[0].y);
-
-         if (geometry.shape === 'spline' || geometry.shape === 'ribbon') {
-             for (let i = 0; i < points.length - 1; i++) {
-                 const xMid = (points[i].x + points[i + 1].x) / 2;
-                 const yMid = (points[i].y + points[i + 1].y) / 2;
-                 const cpX1 = (xMid + points[i].x) / 2;
-                 const cpX2 = (xMid + points[i + 1].x) / 2;
-                 ctx.quadraticCurveTo(points[i].x, points[i].y, xMid, yMid);
-             }
-             ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-         } else {
-             for (let i = 1; i < points.length; i++) {
-                 ctx.lineTo(points[i].x, points[i].y);
-             }
-         }
-
-         if (appearance.fill && geometry.shape !== 'ribbon') {
-             ctx.lineTo(width, height);
-             ctx.lineTo(0, height);
-             ctx.closePath();
-             ctx.fill();
-         } else {
-             ctx.stroke();
-         }
-
-         if (geometry.shape === 'ribbon') {
-             // Draw a secondary overlapping path for ribbon 3D effect
-             ctx.beginPath();
-             ctx.moveTo(points[0].x, points[0].y + 10);
-             for (let i = 0; i < points.length - 1; i++) {
-                 const xMid = (points[i].x + points[i + 1].x) / 2;
-                 const yMid = ((points[i].y + points[i + 1].y) / 2) + Math.sin(time * 2 + i) * 10;
-                 ctx.quadraticCurveTo(points[i].x, points[i].y + 10, xMid, yMid);
-             }
-             ctx.strokeStyle = '#ff9a9e';
-             ctx.stroke();
-         }
-
-         if (geometry.mirror && geometry.center) {
-             ctx.beginPath();
-             ctx.moveTo(points[0].x, cy + points[0].h/2);
-             for (let i = 0; i < points.length - 1; i++) {
-                 const xMid = (points[i].x + points[i + 1].x) / 2;
-                 const yMid = cy + ((points[i].h + points[i+1].h) / 4);
-                 ctx.quadraticCurveTo(points[i].x, cy + points[i].h/2, xMid, yMid);
-             }
-             ctx.stroke();
-         }
-      } else if (geometry.shape === 'grid') {
-         const cols = Math.floor(width / (geometry.spacing || 10));
-         const rows = Math.floor(height / (geometry.spacing || 10));
-         for (let i = 0; i < dataArray.length; i++) {
-             const h = Math.floor((dataArray[i] / 255) * rows * gain);
-             const x = i * (geometry.spacing || 10);
-             for (let j = 0; j < h; j++) {
-                 const y = height - j * (geometry.spacing || 10);
-                 ctx.fillRect(x, y, geometry.thickness || 2, geometry.thickness || 2);
-             }
-         }
-      }
-      
-      if (geometry.particles) {
-          // Fake particles overlay
-          const pCount = Math.floor(dataArray[0] / 10); // Reacts to bass
-          ctx.fillStyle = appearance.color || '#fff';
-          for(let i=0; i<pCount; i++) {
-              ctx.beginPath();
-              ctx.arc(cx + (Math.random()-0.5)*width, cy + (Math.random()-0.5)*height, Math.random()*3, 0, Math.PI*2);
-              ctx.fill();
-          }
-      }
-      
-      if (appearance.innerCover) {
-          ctx.beginPath();
-          ctx.arc(cx, cy, (geometry.radius || 100) - 10, 0, Math.PI*2);
-          ctx.fillStyle = '#111';
-          ctx.fill();
-          ctx.lineWidth = 1;
-          ctx.strokeStyle = '#333';
-          ctx.stroke();
+      } catch (err) {
+        console.error('[CanvasKitPreviewAdapter Error]', err);
+      } finally {
+        isRendering = false;
+        animationId = requestAnimationFrame(renderLoop);
       }
     };
-    
-    draw();
+
+    renderLoop();
+
     return () => {
-      cancelAnimationFrame(animationId);
-      resizeObserver.disconnect();
+      if (animationId) cancelAnimationFrame(animationId);
     };
-  }, [config]);
+  }, [config, currentTimeSec, fps, frameCount, width, height]);
 
   return (
     <div className="w-full h-full pointer-events-none">
-      <canvas ref={canvasRef} className="w-full h-full block" />
+      <canvas ref={canvasRef} width={width} height={height} className="w-full h-full block" />
     </div>
   );
 };
@@ -393,7 +204,20 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
                 let currentVPos = s.verticalPosition || 0;
                 let currentRotation = 0;
 
-                if (danceMode !== 'Off') {
+                const renderingContext = fastWorkspaceManager.getRenderingContext({
+                    m3BgPool: latestBgPoolRef.current,
+                    m3AudioTracks: audioTracksRef.current,
+                    m3Objects: latestObjectsRef.current
+                }, currentTimeSecRef.current);
+
+                if (renderingContext.isFastWorkspace) {
+                    const adaptedBg = renderingContext.adaptObject(bg, currentTimeSecRef.current);
+                    const shake = adaptedBg.adaptedObject?._shake || { x: 0, y: 0, rotation: 0 };
+                    baseScale += (adaptedBg.adaptedObject?._pulseScale || 0);
+                    currentHPos += shake.x;
+                    currentVPos += shake.y;
+                    currentRotation += shake.rotation;
+                } else if (danceMode !== 'Off') {
                     const bs = beatEngine.getState();
                     const reactsTo = s.danceReactsTo || 'Whole song';
                     
@@ -788,6 +612,15 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
 
         <ProductionQAToolkit />
 
+        {/* Fast Render Preview Mode Badge Overlay */}
+        {fastRenderState.isFastMode() && (
+          <div className="absolute top-4 left-4 z-50 flex items-center gap-2 bg-[#090b10]/85 border border-cyan-500/50 backdrop-blur-md px-3 py-1.5 rounded-full shadow-[0_0_20px_rgba(0,243,255,0.3)] pointer-events-none select-none">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f3ff]"></span>
+            <span className="text-[10px] font-black tracking-widest text-cyan-300 uppercase">⚡ FAST RENDER PREVIEW ({fastRenderState.getMasterLoopDuration().toFixed(1)}s MASTER LOOP)</span>
+          </div>
+        )}
+
+
         {/* Global Effect Engine Overlay */}
         <RealtimeEffectRenderer 
             effects={m3Objects.filter(o => (o.type === 'effect' || o.type === 'reactive') && o.enabled !== false)} 
@@ -863,10 +696,19 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
 
         {/* Preview Time Indicator */}
         {canvasMode === 'composer' && (
-          <div className="absolute bottom-4 left-4 bg-black/80 px-2 py-1 rounded text-[10px] text-gray-300 font-mono border border-white/10 shadow-md select-none pointer-events-none z-50">
-            {formatTime(m3CurrentTimeSec)} / {formatTime(m3TotalDurationSec)}
+          <div className="absolute bottom-4 left-4 flex items-center gap-2 z-50 pointer-events-none select-none">
+            <div className="bg-black/80 px-2.5 py-1 rounded text-[10px] text-gray-300 font-mono border border-white/10 shadow-md">
+              {formatTime(m3CurrentTimeSec)} / {formatTime(m3TotalDurationSec)}
+            </div>
+            {fastRenderState.isFastMode() && (
+              <div className="bg-[#00f3ff]/15 border border-[#00f3ff]/50 px-2.5 py-1 rounded text-[10px] font-bold text-[#00f3ff] shadow-[0_0_12px_rgba(0,243,255,0.3)] flex items-center gap-1.5">
+                <span>⚡ FAST RENDER PREVIEW</span>
+                <span className="opacity-80 font-mono font-semibold">({(m3CurrentTimeSec % 10.0).toFixed(1)}s / 10.0s MASTER LOOP)</span>
+              </div>
+            )}
           </div>
         )}
+
       </div>
       </div>
       

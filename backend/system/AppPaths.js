@@ -62,6 +62,7 @@ class AppPaths {
     getCacheBase() { return this.cacheDir; }
     getCacheCleanupMode() { return this.cacheCleanupMode; }
     getOutputBase() { return this.outputDir; }
+    getMediaFactoryDataDir() { return path.dirname(this.cacheDir); }
 
     setCacheBase(newPath, cleanupMode = 'never') {
         if (!newPath) return false;
@@ -93,23 +94,31 @@ class AppPaths {
     }
 
     getFFmpegPath() {
-        let p;
-        if (this.isElectron) {
-            p = path.join(__dirname, '..', 'ffmpeg', 'ffmpeg.exe');
-        } else {
-            p = path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe');
+        const candidatePaths = [
+            path.join(__dirname, '..', 'ffmpeg', 'ffmpeg.exe'),
+            path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'ffmpeg.exe'),
+            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'ffmpeg.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'ffmpeg', 'ffmpeg.exe') : '',
+            path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe')
+        ];
+        for (const p of candidatePaths) {
+            if (p && fs.existsSync(p)) return p;
         }
-        return require('fs').existsSync(p) ? p : 'ffmpeg';
+        return 'ffmpeg';
     }
 
     getFFprobePath() {
-        let p;
-        if (this.isElectron) {
-            p = path.join(__dirname, '..', 'ffmpeg', 'ffprobe.exe');
-        } else {
-            p = path.join(process.cwd(), 'backend', 'ffmpeg', 'ffprobe.exe');
+        const candidatePaths = [
+            path.join(__dirname, '..', 'ffmpeg', 'ffprobe.exe'),
+            path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'ffprobe.exe'),
+            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'ffprobe.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'ffmpeg', 'ffprobe.exe') : '',
+            path.join(process.cwd(), 'backend', 'ffmpeg', 'ffprobe.exe')
+        ];
+        for (const p of candidatePaths) {
+            if (p && fs.existsSync(p)) return p;
         }
-        return require('fs').existsSync(p) ? p : 'ffprobe';
+        return 'ffprobe';
     }
 }
 

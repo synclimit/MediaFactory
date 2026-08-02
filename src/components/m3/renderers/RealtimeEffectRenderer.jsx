@@ -6,6 +6,10 @@ import { renderDepthScan } from '../effects/DepthScanRenderer';
 import { renderFogDepth } from '../effects/FogDepthRenderer';
 import { renderBokehDepth } from '../effects/BokehDepthRenderer';
 import { renderFrameStore } from '../../../services/pipeline/runtime/RenderFrameStore';
+import { fastRenderState } from '../../../services/pipeline/fastrender/core/FastRenderState.js';
+import { seededNoiseAdapter } from '../../../services/pipeline/fastrender/core/SeededNoiseAdapter.js';
+import { fastWorkspaceManager } from '../../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
+
 
 // ============================================================
 // RealtimeEffectRenderer — BSPLabs 18 Effects Canvas Engine
@@ -153,18 +157,26 @@ export default function RealtimeEffectRenderer({ effects, targetRef }) {
             reactiveObjectProcessor.update(effectsRef.current, dt / 1000, window.m3IsPlaying === true);
 
             effectsRef.current.forEach(eff => {
-                if (eff.enabled === false) return;
+                const isFastMode = fastRenderState.isFastMode() || fastWorkspaceManager.isFastWorkspaceActive();
 
                 const source = eff.source || eff.props?.source || 'kick';
                 const isAudioDriven = source !== 'none' && source !== 'Selalu tampil';
-                let rawValue = source === 'none' ? 1.0 : reactiveObjectProcessor.getValue(eff.id);
-                if (window.m3IsPlaying !== true && isAudioDriven) {
-                    rawValue = 0;
+                
+                let rawValue = 0;
+                if (isFastMode) {
+                    const loopTime = (time / 1000) % 10.0;
+                    const seed = (eff.id ? String(eff.id).charCodeAt(0) : 1337);
+                    rawValue = Math.abs(seededNoiseAdapter.getPeriodicNoise(loopTime, 10.0, 1.0, seed));
+                } else {
+                    rawValue = source === 'none' ? 1.0 : reactiveObjectProcessor.getValue(eff.id);
+                    if (window.m3IsPlaying !== true && isAudioDriven) {
+                        rawValue = 0;
+                    }
                 }
 
                 // Smooth interpolation
                 let prev = smoothVals.get(eff.id) || 0;
-                if (window.m3IsPlaying !== true && isAudioDriven) {
+                if (!isFastMode && window.m3IsPlaying !== true && isAudioDriven) {
                     prev = 0;
                 }
                 const smoothVal = prev + (rawValue - prev) * 0.6;
@@ -174,7 +186,7 @@ export default function RealtimeEffectRenderer({ effects, targetRef }) {
                 const p = eff.props || {};
                 const speed = p.speed !== undefined ? p.speed : 1.0;
 
-                if (window.m3IsPlaying !== true && ['camera-shake', 'zoom-hentak', 'strobe-light', 'red-alert', 'rgb-impact', 'glitch-digital', 'old-film-dust'].includes(type)) {
+                if (!isFastMode && window.m3IsPlaying !== true && ['camera-shake', 'zoom-hentak', 'strobe-light', 'red-alert', 'rgb-impact', 'glitch-digital', 'old-film-dust'].includes(type)) {
                     return;
                 }
 
@@ -183,19 +195,26 @@ export default function RealtimeEffectRenderer({ effects, targetRef }) {
                 // ========================================
                 if (type === 'camera-shake') {
                     const strength = (p.strength ?? 23) / 100;
-                    const size = (p.size ?? 27) / 100;
-                    const mode = p.mode || 'Ringan — cepat (disarankan)';
-                    const shape = p.shape || 'Semua arah';
+                    if (isFastMode) {
+                        const loopTime = (time / 1000) % 10.0;
+                        const shake = seededNoiseAdapter.getSeededCameraShake(loopTime, 10.0, strength * 30, 1337);
+                        translateX += shake.x;
+                        translateY += shake.y;
+                    } else {
+                        const size = (p.size ?? 27) / 100;
+                        const mode = p.mode || 'Ringan — cepat (disarankan)';
+                        const shape = p.shape || 'Semua arah';
 
-                    let amp = 40 * rawValue * strength * (0.5 + size);
-                    if (mode.includes('Kasar')) amp *= 2.0;
-                    if (mode.includes('Halus')) amp *= 0.4;
+                        let amp = 40 * rawValue * strength * (0.5 + size);
+                        if (mode.includes('Kasar')) amp *= 2.0;
+                        if (mode.includes('Halus')) amp *= 0.4;
 
-                    if (shape === 'Horizontal' || shape === 'Semua arah') {
-                        translateX += (Math.random() - 0.5) * amp;
-                    }
-                    if (shape === 'Vertikal' || shape === 'Semua arah') {
-                        translateY += (Math.random() - 0.5) * amp;
+                        if (shape === 'Horizontal' || shape === 'Semua arah') {
+                            translateX += (Math.random() - 0.5) * amp;
+                        }
+                        if (shape === 'Vertikal' || shape === 'Semua arah') {
+                            translateY += (Math.random() - 0.5) * amp;
+                        }
                     }
                 }
 
@@ -203,44 +222,48 @@ export default function RealtimeEffectRenderer({ effects, targetRef }) {
                 // 2. ZOOM HENTAK (zoom-hentak)
                 // ========================================
                 else if (type === 'zoom-hentak') {
-                    // Skala amplitudo dikembalikan ke /400 untuk pengujian terisolasi
                     const depth = (p.depth ?? 50) / 400;
-                    const shape = p.shape || 'Masuk';
-                    
-                    let currentZoom = 0;
-                    if (source === 'metronom') {
-                        // M3: Use tempo-locked beat phase for a consistent clock-like pulse
-                        const beatPhase = debugState.beat?.beatPhase || 0;
-                        currentZoom = depth * Math.exp(-beatPhase * 4); // exponential decay over the beat
+                    if (isFastMode) {
+                        const loopTime = (time / 1000) % 10.0;
+                        const periodicZoom = Math.abs(seededNoiseAdapter.getPeriodicNoise(loopTime, 10.0, 1.0, 1337)) * depth * 3.0;
+                        transformScale += periodicZoom;
                     } else {
-                        // Legacy: Use envelope trigger
-                        if (!effectStatesRef.current.has(eff.id)) {
-                            effectStatesRef.current.set(eff.id, { val: 0, time: 0 });
+                        const shape = p.shape || 'Masuk';
+                        let currentZoom = 0;
+                        if (source === 'metronom') {
+                            const beatPhase = debugState.beat?.beatPhase || 0;
+                            currentZoom = depth * Math.exp(-beatPhase * 4);
+                        } else {
+                            if (!effectStatesRef.current.has(eff.id)) {
+                                effectStatesRef.current.set(eff.id, { val: 0, time: 0 });
+                            }
+                            const env = effectStatesRef.current.get(eff.id);
+                            
+                            if (audioDrivenBeat && env.time > 0.1) {
+                                env.val = depth;
+                                env.time = 0;
+                            }
+                            
+                            env.time += dt / 1000;
+                            const decayProgress = Math.min(1.0, env.time / 0.25);
+                            currentZoom = env.val * (1 - decayProgress);
                         }
-                        const env = effectStatesRef.current.get(eff.id);
                         
-                        // Trigger envelope using beat detector
-                        if (audioDrivenBeat && env.time > 0.1) {
-                            env.val = depth;
-                            env.time = 0;
-                        }
-                        
-                        env.time += dt / 1000;
-                        const decayProgress = Math.min(1.0, env.time / 0.25);
-                        currentZoom = env.val * (1 - decayProgress);
+                        if (shape === 'Masuk') transformScale += currentZoom;
+                        else if (shape === 'Keluar') transformScale -= currentZoom;
+                        else transformScale += (Math.sin(time / 200) > 0 ? currentZoom : -currentZoom);
                     }
-                    
-                    if (shape === 'Masuk') transformScale += currentZoom;
-                    else if (shape === 'Keluar') transformScale -= currentZoom;
-                    else transformScale += (Math.sin(time / 200) > 0 ? currentZoom : -currentZoom);
                 }
 
                 // ========================================
                 // 3. KILAT / STROBE (strobe-flash)
                 // ========================================
                 else if (type === 'strobe-flash') {
+                    if (isFastMode) {
+                        // Category D unsupported: suspended in Fast Render Mode to preserve deterministic loop cache
+                        return;
+                    }
                     const bright = (p.brightness ?? 50) / 100;
-                    // Square rawValue for a sharp peak (flash effect)
                     const flashIntensity = Math.pow(rawValue, 2) * bright * 2.5;
                     
                     if (flashIntensity > 0.02) {
@@ -248,7 +271,6 @@ export default function RealtimeEffectRenderer({ effects, targetRef }) {
                         const c = typeof color === 'string' && color.startsWith('#') ? color : '#ffffff';
                         
                         ctx.globalCompositeOperation = 'screen';
-                        // Gradient from top to bottom for a dramatic lightning strike lighting
                         const grad = ctx.createLinearGradient(0, 0, 0, height);
                         const alpha = Math.min(1.0, flashIntensity);
                         grad.addColorStop(0, hexToRgba(c, alpha));
@@ -260,11 +282,11 @@ export default function RealtimeEffectRenderer({ effects, targetRef }) {
                         ctx.globalAlpha = 1.0;
                         ctx.globalCompositeOperation = 'source-over';
                         
-                        // Boost CSS brightness and contrast for a blinding effect
                         brightness += 150 * flashIntensity;
                         contrast += 50 * flashIntensity;
                     }
                 }
+
 
                 // ========================================
                 // 4. LAMPU DISKO (disco-light)

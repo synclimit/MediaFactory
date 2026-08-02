@@ -39,6 +39,8 @@ export default function BackgroundPanel({
                             type: type,
                             url: url,
                             preview: url,
+                            sourcePath: json.data.path,
+                            uri: json.data.path,
                             filename: file.name,
                             settings: {
                                 overlayDarkness: 30,

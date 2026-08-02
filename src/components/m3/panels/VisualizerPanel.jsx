@@ -67,12 +67,13 @@ export default function VisualizerPanel({ addObject }) {
     const handleSelectStyle = (plugin) => {
         addObject({
             type: 'visualizer',
+            canvasMode: 'composer',
             name: `Visualizer (${plugin.metadata.displayName})`,
             visualizerId: plugin.metadata.id,
-            x: window.innerWidth / 2 - 300 > 0 ? window.innerWidth / 2 - 300 : 300, 
-            y: window.innerHeight / 2 - 100 > 0 ? window.innerHeight / 2 - 100 : 200, 
-            width: 600, 
-            height: 200,
+            x: 0, 
+            y: 900, 
+            width: 1920, 
+            height: 180,
             transform: { scale: 100, rotation: 0, opacity: 100 },
             colorMode: '2 Gradient',
             colorLeft: '#AB55F7',

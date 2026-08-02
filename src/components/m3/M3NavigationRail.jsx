@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Music, Settings2, Star, Wand2, MonitorPlay, Type, Layers, Zap, Subtitles } from 'lucide-react';
+import { Image, Music, Settings2, Star, MonitorPlay, Type, Layers, Zap, Subtitles } from 'lucide-react';
 
 const CATEGORIES = [
   { id: 'Background', icon: <Image size={20} strokeWidth={1.75} />, label: 'Background' },
@@ -8,7 +8,6 @@ const CATEGORIES = [
   { id: 'Visualizer', icon: <Settings2 size={20} strokeWidth={1.75} />, label: 'Visualizer' },
   { id: 'Particle', icon: <Star size={20} strokeWidth={1.75} />, label: 'Particle' },
   { id: 'Effects', icon: <Zap size={20} strokeWidth={1.75} />, label: 'Visual FX' },
-  { id: 'FX Preset', icon: <Wand2 size={20} strokeWidth={1.75} />, label: 'Presets' },
   { id: 'Overlay', icon: <MonitorPlay size={20} strokeWidth={1.75} />, label: 'Overlay' },
   { id: 'Text Objects', icon: <Type size={20} strokeWidth={1.75} />, label: 'Text' },
   { id: 'Branding', icon: <Layers size={20} strokeWidth={1.75} />, label: 'Branding' },

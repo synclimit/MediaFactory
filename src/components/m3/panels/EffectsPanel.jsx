@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useM3Panel } from '../../../hooks/useM3Panel';
 import { emitRuntimeEvent } from '../../../services/RuntimeClient';
+import { loopCapabilityRegistry } from '../../../services/pipeline/fastrender/workspace/registry/LoopCapabilityRegistry.js';
+import { fastRenderState } from '../../../services/pipeline/fastrender/core/FastRenderState.js';
 
 // ============================================================
 // BSPLabs-Style FX Panel — 18 Effects with Inline Inspector
@@ -264,23 +266,36 @@ export default function EffectsPanel({ m3Objects, setM3Objects, m3SelectedObject
                             {isOpen && (
                                 <div className="p-3 bg-black/20 relative z-10 border-t border-white/5">
                                     <div className="grid grid-cols-2 gap-2">
-                                        {catEffects.map(eff => (
-                                            <button 
-                                                key={eff.id}
-                                                onClick={() => handleAddEffect(eff)}
-                                                className="flex flex-col items-center gap-1.5 p-2 rounded-lg border border-white/5 bg-[#161822]/50 hover:bg-[#1a1c25] hover:border-orange-500/50 transition-all duration-300 group text-left shadow-inner relative"
-                                            >
-                                                <div className="w-full h-10 bg-black/40 rounded border border-black/50 group-hover:border-orange-500/40 flex items-center justify-center overflow-hidden">
-                                                    <span className="text-xl opacity-30 group-hover:opacity-100 group-hover:scale-125 transition-all duration-500 group-hover:text-orange-400">{cat.icon}</span>
-                                                </div>
-                                                {eff.tier === 'pro' && (
-                                                    <span className="absolute top-1 right-1 text-[7px] bg-orange-600 text-white px-1 py-0.5 rounded font-black tracking-wider shadow-md z-20">PRO</span>
-                                                )}
-                                                <span className="text-[9px] font-bold text-gray-400 group-hover:text-white truncate w-full text-center tracking-wide transition-colors">
-                                                    {eff.name}
-                                                </span>
-                                            </button>
-                                        ))}
+                                        {catEffects.map(eff => {
+                                            const isFastMode = fastRenderState.isFastMode();
+                                            const cap = loopCapabilityRegistry.getClassification(eff.presetId || eff.id);
+                                            const isUnsupported = isFastMode && (cap.classification === 'Unsupported');
+
+                                            return (
+                                                <button 
+                                                    key={eff.id}
+                                                    disabled={isUnsupported}
+                                                    onClick={() => !isUnsupported && handleAddEffect(eff)}
+                                                    className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border border-white/5 transition-all duration-300 group text-left shadow-inner relative ${
+                                                        isUnsupported 
+                                                            ? 'bg-[#12131a]/80 opacity-40 border-red-500/20 cursor-not-allowed' 
+                                                            : 'bg-[#161822]/50 hover:bg-[#1a1c25] hover:border-orange-500/50'
+                                                    }`}
+                                                >
+                                                    <div className="w-full h-10 bg-black/40 rounded border border-black/50 group-hover:border-orange-500/40 flex items-center justify-center overflow-hidden">
+                                                        <span className="text-xl opacity-30 group-hover:opacity-100 group-hover:scale-125 transition-all duration-500 group-hover:text-orange-400">{cat.icon}</span>
+                                                    </div>
+                                                    {isUnsupported ? (
+                                                        <span className="absolute top-1 right-1 text-[6px] bg-red-900/90 border border-red-500/40 text-red-200 px-1 py-0.5 rounded font-black tracking-widest shadow-md z-20 uppercase">NORMAL MODE ONLY</span>
+                                                    ) : (eff.tier === 'pro' && (
+                                                        <span className="absolute top-1 right-1 text-[7px] bg-orange-600 text-white px-1 py-0.5 rounded font-black tracking-wider shadow-md z-20">PRO</span>
+                                                    ))}
+                                                    <span className="text-[9px] font-bold text-gray-400 group-hover:text-white truncate w-full text-center tracking-wide transition-colors">
+                                                        {eff.name}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}

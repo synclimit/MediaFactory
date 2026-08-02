@@ -1,5 +1,3 @@
-import os from 'os';
-
 export class HardwareProfile {
     constructor(overrideData = null) {
         this.cache = null;
@@ -11,8 +9,18 @@ export class HardwareProfile {
     }
 
     detect() {
-        const cpus = os.cpus() || [];
-        const totalMemMb = Math.round((os.totalmem() || 8 * 1024 * 1024 * 1024) / (1024 * 1024));
+        let cpus = [];
+        let totalMemMb = 8192;
+
+        try {
+            if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+                const osModule = typeof require !== 'undefined' ? require('os') : null;
+                if (osModule) {
+                    cpus = osModule.cpus() || [];
+                    totalMemMb = Math.round((osModule.totalmem() || 8 * 1024 * 1024 * 1024) / (1024 * 1024));
+                }
+            }
+        } catch(e) {}
 
         this.cache = {
             cpuCores: cpus.length || 4,

@@ -199,7 +199,7 @@ export default function M4LivePreview({ m4BgVideo, m4AmbientAudio, m4RelaxMusic,
                  <div className="flex items-center gap-2">
                     <span className="text-[10px] text-orange-400 font-mono tracking-widest uppercase">Preview Mode:</span>
                     <select 
-                      value={durationMode || '2x Loop'}
+                      value={durationMode || 'Match Audio'}
                       onChange={(e) => {
                         setDurationMode(e.target.value);
                         setLoopCount(0);

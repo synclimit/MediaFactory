@@ -33,6 +33,10 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
             });
+            if (settings?.output?.main) {
+                localStorage.setItem(`mf_workspace_output_${activeWorkspace}`, settings.output.main);
+            }
+            window.dispatchEvent(new CustomEvent('workspace_settings_updated', { detail: { activeWorkspace, settings } }));
             onClose();
         } catch (e) {
             console.error(e);
@@ -46,7 +50,7 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
             const endpoint = isFolder ? '/api/v1/m5/dialog/folder' : '/api/v1/m5/dialog/file';
             const res = await fetch(endpoint, { method: 'POST' });
             const data = await res.json();
-            if (data.success && data.path) {
+            if (data && data.path) {
                 callback(data.path);
             }
         } catch (e) {

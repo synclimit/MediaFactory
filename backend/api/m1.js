@@ -159,69 +159,127 @@ router.post('/api/m1/audio/probe', (req, res) => {
 router.post('/api/m1/youtube/fetch', async (req, res) => {
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive'
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
     });
+
+    const sendSSE = (data) => {
+        try {
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+            if (typeof res.flush === 'function') res.flush();
+        } catch (e) {}
+    };
 
     const url = req.body?.url;
     if (!url) {
-        res.write(`data: {"error": "Missing URL"}\n\n`);
+        sendSSE({ error: "Missing URL" });
         return res.end();
     }
 
-    const cacheDir = path.join(AppPaths.getCacheBase(), 'm1');
-    await fs.mkdir(cacheDir, { recursive: true });
+    sendSSE({ stage: "FETCHING_INFO", statusText: "FETCHING METADATA...", progress: 0 });
 
-    const ytIdCmd = `yt-dlp --no-warnings --no-playlist --get-id "${url}"`;
-    exec(ytIdCmd, (idErr, idOut) => {
-        if (idErr) {
-            res.write(`data: {"error": "Failed to get video ID"}\n\n`);
+    try {
+        const cacheDir = path.join(AppPaths.getCacheBase(), 'm1');
+        await fs.mkdir(cacheDir, { recursive: true });
+
+        // Step 1: Fetch video metadata via --dump-json using spawn without shell:true
+        const info = await new Promise((resolve, reject) => {
+            const dumpArgs = ['--dump-json', '--no-playlist', '--js-runtimes', 'node', '--', url];
+            const dumpProc = spawn('yt-dlp', dumpArgs);
+            let stdoutData = '';
+            let stderrData = '';
+            dumpProc.stdout.on('data', d => stdoutData += d.toString());
+            dumpProc.stderr.on('data', d => stderrData += d.toString());
+            dumpProc.on('close', code => {
+                if (code === 0) {
+                    try { resolve(JSON.parse(stdoutData.trim())); }
+                    catch (e) { reject(new Error('Failed to parse metadata JSON')); }
+                } else {
+                    reject(new Error(`yt-dlp failed with code ${code}: ${stderrData.substring(0, 150)}`));
+                }
+            });
+            dumpProc.on('error', err => reject(err));
+        });
+
+        const videoId = info.id;
+        if (!videoId) {
+            sendSSE({ error: "Failed to get video ID" });
             return res.end();
         }
-        const videoId = idOut.trim().split('\n').pop();
+
+        const durationSec = info.duration || 0;
+        const mins = Math.floor(durationSec / 60);
+        const secs = Math.floor(durationSec % 60);
+        const durationDisplay = `${mins}m ${String(secs).padStart(2, '0')}s`;
+        const description = info.description || "";
+        const title = info.title || info.fulltitle || "Unknown Title";
+        const channelName = info.uploader || info.channel || info.uploader_id || "YouTube Source";
+        const thumbnailUrl = info.thumbnail || (info.thumbnails && info.thumbnails.length > 0 ? info.thumbnails[info.thumbnails.length - 1].url : null) || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+        // Instantly stream metadata to client so UI updates immediately
+        sendSSE({
+            stage: "DOWNLOADING_AUDIO",
+            statusText: "DOWNLOADING AUDIO... 0%",
+            progress: 0,
+            metadata: {
+                videoId,
+                title,
+                description,
+                durationDisplay,
+                channelName,
+                thumbnailUrl
+            }
+        });
+
         const outTemplate = path.join(cacheDir, `${videoId}.%(ext)s`);
-        
-        const ytArgs = ['--no-warnings', '--no-playlist', '-x', '--audio-format', 'mp3', '--write-thumbnail', '--write-info-json', '--js-runtimes', 'node', '-o', outTemplate, '--', url];
-        const ytProc = spawn('yt-dlp', ytArgs, { shell: true });
-        
+        const audioPath = path.join(cacheDir, `${videoId}.mp3`).replace(/\\/g, '/');
+
+        // Step 2: Download audio using spawn with ffmpeg location
+        const ffmpegBin = AppPaths.getFFmpegPath();
+        const ytArgs = ['--no-warnings', '--no-playlist', '-x', '--audio-format', 'mp3', '--ffmpeg-location', ffmpegBin, '--write-thumbnail', '--js-runtimes', 'node', '-o', outTemplate, '--', url];
+        const ytProc = spawn('yt-dlp', ytArgs);
+
         ytProc.stdout.on('data', (data) => {
             const output = data.toString();
             const match = output.match(/\[download\]\s+([\d.]+)%/);
-            if (match) res.write(`data: {"progress": ${parseFloat(match[1])}}\n\n`);
+            if (match) {
+                const pct = parseFloat(match[1]);
+                sendSSE({ stage: "DOWNLOADING_AUDIO", statusText: `DOWNLOADING AUDIO... ${pct}%`, progress: pct });
+            }
         });
-        
+
         let stderrOutput = '';
         ytProc.stderr.on('data', (data) => { stderrOutput += data.toString(); });
-        
+
         ytProc.on('close', (code) => {
             if (code !== 0) {
-                res.write(`data: {"error": "yt-dlp exited with code ${code}. ${stderrOutput.substring(0, 100)}"}\n\n`);
+                sendSSE({ error: `yt-dlp audio download failed (code ${code}). ${stderrOutput.substring(0, 100)}` });
                 return res.end();
             }
             
-            exec(`yt-dlp --no-warnings --no-playlist --dump-json "${url}"`, (err2, stdout2) => {
-                if (err2) {
-                    res.write(`data: {"error": "Failed to read metadata: ${err2.message}"}\n\n`);
-                    return res.end();
-                }
-                try {
-                    const info = JSON.parse(stdout2);
-                    const durationSec = info.duration || 0;
-                    const mins = Math.floor(durationSec / 60);
-                    const secs = Math.floor(durationSec % 60);
-                    const audioPath = path.join(cacheDir, `${videoId}.mp3`).replace(/\\/g, '/');
-                    const description = info.description || "";
-                    res.write(`data: {"done": true, "videoId": "${videoId}", "title": ${JSON.stringify(info.title)}, "description": ${JSON.stringify(description)}, "durationDisplay": "${mins}m ${String(secs).padStart(2, '0')}s", "audioPath": ${JSON.stringify(audioPath)}}\n\n`);
-                    res.end();
-                } catch (e) {
-                    res.write(`data: {"error": "Failed to parse metadata JSON"}\n\n`);
-                    res.end();
-                }
+            sendSSE({
+                done: true,
+                stage: "COMPLETED",
+                statusText: "COMPLETE",
+                videoId,
+                title,
+                description,
+                durationDisplay,
+                audioPath
             });
+            res.end();
         });
-    });
+
+        ytProc.on('error', (err) => {
+            sendSSE({ error: `yt-dlp process error: ${err.message}` });
+            res.end();
+        });
+
+    } catch (err) {
+        sendSSE({ error: err.message.replace(/"/g, '\\"') });
+        res.end();
+    }
 });
 
 module.exports = { router, jobs };
-
-

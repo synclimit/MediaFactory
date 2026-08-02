@@ -6,6 +6,30 @@ const { exec } = require('child_process');
 const M4RenderEngine = require('../m4/M4RenderEngine');
 const AppPaths = require('../system/AppPaths');
 
+const m4SaveFilePath = path.join(__dirname, '..', 'data', 'm4_autosave_state.json');
+
+router.get('/api/v1/m4/autosave/state', (req, res) => {
+    try {
+        if (fsSync.existsSync(m4SaveFilePath)) {
+            const content = fsSync.readFileSync(m4SaveFilePath, 'utf8');
+            return res.json({ success: true, data: JSON.parse(content) });
+        }
+    } catch(e) {}
+    res.json({ success: true, data: null });
+});
+
+router.post('/api/v1/m4/autosave/state', (req, res) => {
+    try {
+        const body = req.body || {};
+        const dir = path.dirname(m4SaveFilePath);
+        if (!fsSync.existsSync(dir)) fsSync.mkdirSync(dir, { recursive: true });
+        fsSync.writeFileSync(m4SaveFilePath, JSON.stringify(body, null, 2), 'utf8');
+        return res.json({ success: true });
+    } catch(e) {
+        return res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 router.get('/api/m4/stream', (req, res) => {
     let filePath = req.query.path;
     if (filePath && fsSync.existsSync(filePath)) {
@@ -158,37 +182,59 @@ router.get('/api/m4/ambients', (req, res) => {
 });
 
 router.post('/api/m4/dialog/audio', (req, res) => {
-    const pyScript = `import tkinter as tk\nfrom tkinter import filedialog\nroot = tk.Tk()\nroot.attributes('-topmost', True)\nroot.withdraw()\nfile_path = filedialog.askopenfilename(parent=root, title='Select Audio File', filetypes=[('Audio Files', '*.mp3;*.wav;*.flac;*.m4a'), ('All Files', '*.*')])\nif file_path:\n    print(file_path)`;
-    const encoded = Buffer.from(pyScript).toString('base64');
-    exec(`python -c "import base64; exec(base64.b64decode('${encoded}').decode('utf-8'))"`, (err, stdout) => {
-        let pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
-        if (!pathStr || err) {
-            const psCommand = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "Audio Files|*.mp3;*.wav;*.flac;*.m4a|All Files|*.*"; $form = New-Object System.Windows.Forms.Form; $form.TopMost = $true; $form.Add_Shown({$form.Hide()}); if ($f.ShowDialog($form) -eq 'OK') { $f.FileName }`;
-            exec(`powershell -sta -command "${psCommand}"`, (err2, stdout2) => {
-                pathStr = stdout2 ? stdout2.replace(/^\uFEFF/, '').trim() : null;
-                res.json({ path: pathStr || null });
-            });
-        } else {
-            res.json({ path: pathStr });
-        }
-    });
+    try {
+        const { dialog } = require('electron');
+        const result = dialog.showOpenDialogSync({
+            properties: ['openFile'],
+            filters: [
+                { name: 'Audio Files', extensions: ['mp3', 'wav', 'flac', 'm4a', 'aac', 'ogg'] },
+                { name: 'All Files', extensions: ['*'] }
+            ]
+        });
+        if (result && result.length > 0) return res.json({ path: result[0] });
+        return res.json({ path: null });
+    } catch(e) {
+        const pyScript = `import tkinter as tk\nfrom tkinter import filedialog\nroot = tk.Tk()\nroot.attributes('-topmost', True)\nroot.withdraw()\nfile_path = filedialog.askopenfilename(parent=root, title='Select Audio File', filetypes=[('Audio Files', '*.mp3;*.wav;*.flac;*.m4a'), ('All Files', '*.*')])\nif file_path:\n    print(file_path)`;
+        const encoded = Buffer.from(pyScript).toString('base64');
+        exec(`python -c "import base64; exec(base64.b64decode('${encoded}').decode('utf-8'))"`, (err, stdout) => {
+            let pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
+            if (!pathStr || err) {
+                const psCommand = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "Audio Files|*.mp3;*.wav;*.flac;*.m4a|All Files|*.*"; $form = New-Object System.Windows.Forms.Form; $form.TopMost = $true; $form.Add_Shown({$form.Hide()}); if ($f.ShowDialog($form) -eq 'OK') { $f.FileName }`;
+                exec(`powershell -sta -command "${psCommand}"`, (err2, stdout2) => {
+                    pathStr = stdout2 ? stdout2.replace(/^\uFEFF/, '').trim() : null;
+                    res.json({ path: pathStr || null });
+                });
+            } else {
+                res.json({ path: pathStr });
+            }
+        });
+    }
 });
 
 router.post('/api/m4/dialog/folder', (req, res) => {
-    const pyScript = `import tkinter as tk\nfrom tkinter import filedialog\nroot = tk.Tk()\nroot.attributes('-topmost', True)\nroot.withdraw()\nfolder_path = filedialog.askdirectory(parent=root, title='Select Audio Folder')\nif folder_path:\n    print(folder_path)`;
-    const encoded = Buffer.from(pyScript).toString('base64');
-    exec(`python -c "import base64; exec(base64.b64decode('${encoded}').decode('utf-8'))"`, (err, stdout) => {
-        let pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
-        if (!pathStr || err) {
-            const psCommand = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; $f.Description = "Select Audio Folder"; $form = New-Object System.Windows.Forms.Form; $form.TopMost = $true; $form.Add_Shown({$form.Hide()}); if ($f.ShowDialog($form) -eq 'OK') { $f.SelectedPath }`;
-            exec(`powershell -sta -command "${psCommand}"`, (err2, stdout2) => {
-                pathStr = stdout2 ? stdout2.replace(/^\uFEFF/, '').trim() : null;
-                res.json({ path: pathStr || null });
-            });
-        } else {
-            res.json({ path: pathStr });
-        }
-    });
+    try {
+        const { dialog } = require('electron');
+        const result = dialog.showOpenDialogSync({
+            properties: ['openDirectory']
+        });
+        if (result && result.length > 0) return res.json({ path: result[0] });
+        return res.json({ path: null });
+    } catch(e) {
+        const pyScript = `import tkinter as tk\nfrom tkinter import filedialog\nroot = tk.Tk()\nroot.attributes('-topmost', True)\nroot.withdraw()\nfolder_path = filedialog.askdirectory(parent=root, title='Select Audio Folder')\nif folder_path:\n    print(folder_path)`;
+        const encoded = Buffer.from(pyScript).toString('base64');
+        exec(`python -c "import base64; exec(base64.b64decode('${encoded}').decode('utf-8'))"`, (err, stdout) => {
+            let pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
+            if (!pathStr || err) {
+                const psCommand = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; $f.Description = "Select Audio Folder"; $form = New-Object System.Windows.Forms.Form; $form.TopMost = $true; $form.Add_Shown({$form.Hide()}); if ($f.ShowDialog($form) -eq 'OK') { $f.SelectedPath }`;
+                exec(`powershell -sta -command "${psCommand}"`, (err2, stdout2) => {
+                    pathStr = stdout2 ? stdout2.replace(/^\uFEFF/, '').trim() : null;
+                    res.json({ path: pathStr || null });
+                });
+            } else {
+                res.json({ path: pathStr });
+            }
+        });
+    }
 });
 
 router.post('/api/m4/render', (req, res) => {

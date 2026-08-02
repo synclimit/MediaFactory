@@ -158,7 +158,7 @@ class PlaybackEngine {
     if (setStatus) setStatus('loading');
     
     try {
-      const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be') || uri.startsWith('ytsearch:') || !(/^[a-zA-Z]:\\|\//.test(uri));
+      const isYouTube = uri.includes('youtube.com') || uri.includes('youtu.be') || uri.startsWith('ytsearch:') || (!/^[a-zA-Z]:\\|\//.test(uri) && !uri.startsWith('Assets'));
       if (isYouTube) {
         await new Promise((resolve, reject) => {
           const es = new EventSource(`/api/m2/prepare-stream?uri=${encodeURIComponent(uri)}`);
@@ -166,10 +166,12 @@ class PlaybackEngine {
             try {
               const data = JSON.parse(e.data);
               if (data.status === 'downloading') {
-                if (setStatus) setStatus(`downloading ${data.progress || 0}%`);
+                const pct = Math.round(data.progress || 0);
+                if (setStatus) setStatus(`downloading ${pct}%`);
               } else if (data.status === 'extracting') {
                 if (setStatus) setStatus(`extracting...`);
               } else if (data.status === 'ready' || data.status === 'ready_cached') {
+                if (setStatus) setStatus('ready');
                 es.close();
                 resolve();
               } else if (data.status === 'error') {

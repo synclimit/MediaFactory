@@ -440,6 +440,14 @@ export class ParticleEngineCore {
                 p.x = width/2 + Math.cos(p.angle) * p.radius;
                 p.y = height/2 + Math.sin(p.angle) * p.radius;
                 break;
+            case 'flow_starfield':
+                p.starAngle = Math.random() * Math.PI * 2;
+                p.starSpread = Math.random() * 0.8 + 0.2;
+                p.speed = Math.random() * 0.4 + 0.3;
+                p.progress = initialSpawn ? Math.random() : 0;
+                p.x = width / 2;
+                p.y = height / 2;
+                break;
             case 'flow_pulse':
                 p.x = width/2;
                 p.y = height/2;
@@ -546,6 +554,19 @@ export class ParticleEngineCore {
                 p.x = width/2 + Math.cos(p.angle) * p.radius;
                 p.y = height/2 + Math.sin(p.angle) * p.radius;
                 break;
+            case 'flow_starfield':
+                p.progress = (p.progress || 0) + (p.speed || 0.4) * (this.dt / 1000 || 0.016) * speedMult;
+                if (p.progress >= 1.0) {
+                    p.progress = 0;
+                    p.starAngle = Math.random() * Math.PI * 2;
+                    p.starSpread = Math.random() * 0.8 + 0.2;
+                }
+                const maxR = Math.sqrt(width * width + height * height) / 2;
+                const r = p.progress * maxR * (p.starSpread || 0.5);
+                p.x = (width / 2) + Math.cos(p.starAngle || 0) * r;
+                p.y = (height / 2) + Math.sin(p.starAngle || 0) * r;
+                p.scale = 0.4 + (p.progress * 2.2);
+                break;
             case 'flow_pulse':
                 p.pulsePhase += 0.1 * speedMult;
                 const puScale = 1 + Math.sin(p.pulsePhase) * 0.5;
@@ -568,7 +589,7 @@ export class ParticleEngineCore {
         }
 
         // Lifetime bounds checking
-        if (p.x < -100 || p.x > width + 100 || p.y < -100 || p.y > height + 100) {
+        if (flow !== 'flow_starfield' && (p.x < -100 || p.x > width + 100 || p.y < -100 || p.y > height + 100)) {
             p.life = 0;
         }
         

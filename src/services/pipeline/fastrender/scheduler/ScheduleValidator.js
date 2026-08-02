@@ -5,7 +5,7 @@ export class ScheduleValidator {
         const warnings = [];
         
         // Missing Segment Rule
-        if (!renderPlan.segments || renderPlan.segments.length === 0) {
+        if (!renderPlan || !renderPlan.segments || renderPlan.segments.length === 0) {
             errors.push('RenderPlan contains no segments.');
         }
 

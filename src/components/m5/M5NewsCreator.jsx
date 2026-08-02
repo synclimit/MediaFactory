@@ -285,6 +285,47 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
     window.dispatchEvent(new CustomEvent('OPEN_QUEUE_DRAWER'));
   };
 
+  const [sourceMode, setSourceMode] = useState('LINK'); // 'LINK' | 'SCREENSHOT'
+  const [screenshotPath, setScreenshotPath] = useState('');
+
+  const handleBrowseScreenshot = async () => {
+    try {
+      const res = await fetch('/api/v1/m5/dialog/file', { method: 'POST' });
+      const data = await res.json();
+      if (data.path) {
+        setScreenshotPath(data.path);
+        setImage(`/@fs/${data.path.replace(/\\/g, '/')}`);
+      }
+    } catch(e) {}
+  };
+
+  const handleAnalyzeScreenshot = async () => {
+    if (!screenshotPath) return;
+    setIsProcessing(true);
+    setPipelineProgress('Reading Screenshot with AI Vision...');
+    try {
+      const res = await fetch('/api/v1/m5/news/draft-from-screenshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imagePath: screenshotPath, language: globalLang })
+      });
+      const data = await res.json();
+      if (data.success && data.draft) {
+        if (data.draft.headline) setHeadline(data.draft.headline);
+        if (data.draft.summary) setSummary(data.draft.summary);
+        if (data.draft.category) setCategory(data.draft.category.toUpperCase());
+        setImage(`/@fs/${screenshotPath.replace(/\\/g, '/')}`);
+        setPipelineProgress('Draft Ready from Screenshot');
+      } else {
+        setPipelineProgress('Failed to process screenshot');
+      }
+    } catch(e) {
+      setPipelineProgress('Error reading screenshot');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="flex gap-4 h-full font-sans text-white min-h-0 pb-2">
       <style>{`
@@ -304,29 +345,86 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
       {/* 40% LEFT: INPUT & SETTINGS */}
       <div className="w-[30%] min-w-[300px] flex flex-col gap-3 min-h-0 overflow-y-auto m5-scroll pr-1">
         
-        {/* INPUT */}
-        <div className="bg-[#111216] border border-[#2a2c33] rounded-xl p-4 flex flex-col gap-2 shadow-lg">
-          <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <Globe size={14} className="text-orange-500"/> News Source
-          </h3>
-          <p className="text-[10px] text-gray-500">Paste URL(s) or import from TXT.</p>
-          
-          <textarea 
-            className="w-full h-[100px] bg-[#1a1c23] border border-[#333] rounded-lg p-2 text-[11px] text-gray-300 font-mono resize-none focus:outline-none focus:border-orange-500 transition-colors"
-            value={links}
-            onChange={(e) => setLinks(e.target.value)}
-            placeholder="https://..."
-          />
-          
-          <div className="flex justify-between items-center mt-1">
-            <div className="flex gap-2">
-              <button className="text-[11px] text-gray-400 hover:text-white px-2 py-1 rounded transition-all">Import TXT</button>
-              <button className="text-[11px] text-red-400 hover:text-red-300 px-2 py-1 rounded transition-all">Clear</button>
-            </div>
-            <button onClick={handleStartPipeline} disabled={isProcessing} className="text-[11px] bg-orange-600 hover:bg-orange-500 text-white font-bold px-3 py-1.5 rounded transition-all disabled:opacity-50">
-              {isProcessing ? 'Processing...' : 'Add to Queue'}
+        {/* INPUT SOURCE WITH 2 OPTIONS */}
+        <div className="bg-[#111216] border border-[#2a2c33] rounded-xl p-4 flex flex-col gap-3 shadow-lg">
+          <div className="flex items-center justify-between">
+            <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <Globe size={14} className="text-orange-500"/> News Source
+            </h3>
+          </div>
+
+          {/* Mode Switcher Tabs */}
+          <div className="flex bg-[#1a1c23] p-1 rounded-lg border border-[#333]">
+            <button 
+              onClick={() => setSourceMode('LINK')}
+              className={`flex-1 py-1 text-[10px] font-bold rounded transition-all flex items-center justify-center gap-1.5 ${sourceMode === 'LINK' ? 'bg-orange-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+            >
+              <Globe size={12}/> From Link
+            </button>
+            <button 
+              onClick={() => setSourceMode('SCREENSHOT')}
+              className={`flex-1 py-1 text-[10px] font-bold rounded transition-all flex items-center justify-center gap-1.5 ${sourceMode === 'SCREENSHOT' ? 'bg-orange-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+            >
+              <ImageIcon size={12}/> From Screenshot
             </button>
           </div>
+
+          {sourceMode === 'LINK' ? (
+            <>
+              <p className="text-[10px] text-gray-500">Paste URL(s) or import from TXT.</p>
+              
+              <textarea 
+                className="w-full h-[90px] bg-[#1a1c23] border border-[#333] rounded-lg p-2 text-[11px] text-gray-300 font-mono resize-none focus:outline-none focus:border-orange-500 transition-colors"
+                value={links}
+                onChange={(e) => setLinks(e.target.value)}
+                placeholder="https://..."
+              />
+              
+              <div className="flex justify-between items-center mt-1">
+                <div className="flex gap-2">
+                  <button onClick={() => setLinks('')} className="text-[11px] text-red-400 hover:text-red-300 px-2 py-1 rounded transition-all">Clear</button>
+                </div>
+                <button onClick={handleStartPipeline} disabled={isProcessing} className="text-[11px] bg-orange-600 hover:bg-orange-500 text-white font-bold px-3 py-1.5 rounded transition-all disabled:opacity-50">
+                  {isProcessing ? 'Processing...' : 'Add to Queue'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-[10px] text-gray-500">Upload news screenshot. AI will extract & write fresh news text.</p>
+
+              {screenshotPath ? (
+                <div className="flex flex-col gap-2">
+                  <div className="relative rounded-lg overflow-hidden border border-[#333] max-h-[120px] bg-black flex items-center justify-center">
+                    <img src={`/@fs/${screenshotPath.replace(/\\/g, '/')}`} className="max-h-[120px] object-contain" />
+                    <button 
+                      onClick={() => setScreenshotPath('')}
+                      className="absolute top-2 right-2 bg-black/70 hover:bg-red-600 text-white p-1 rounded-full text-[10px] transition-colors"
+                    >
+                      <Trash2 size={12}/>
+                    </button>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <button onClick={handleBrowseScreenshot} className="text-[10px] bg-[#222] hover:bg-[#333] text-gray-300 font-bold px-2 py-1.5 rounded border border-[#333] flex-1">
+                      Change Screenshot
+                    </button>
+                    <button onClick={handleAnalyzeScreenshot} disabled={isProcessing} className="text-[10px] bg-orange-600 hover:bg-orange-500 text-white font-bold px-3 py-1.5 rounded flex-1 disabled:opacity-50 shadow">
+                      {isProcessing ? 'Reading AI...' : '✨ Analyze with AI'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  onClick={handleBrowseScreenshot}
+                  className="p-4 border-2 border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 hover:bg-white/5 transition-all gap-1.5"
+                >
+                  <ImageIcon size={24} className="text-gray-500" />
+                  <span className="text-[11px] text-gray-300 font-medium">Upload News Screenshot</span>
+                  <span className="text-[9px] text-gray-500">PNG, JPG, WEBP format</span>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* SETTINGS */}
@@ -340,6 +438,10 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
             <div>
               <label className="text-[9px] text-gray-400 uppercase font-bold">Duration</label>
               <select value={globalDuration} onChange={e => setGlobalDuration(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+                <option value="10s">10s</option>
+                <option value="15s">15s</option>
+                <option value="20s">20s</option>
+                <option value="25s">25s</option>
                 <option value="30s">30s</option>
                 <option value="60s">60s</option>
               </select>

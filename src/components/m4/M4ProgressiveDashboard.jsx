@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './m4-theme.css';
-import { Video, Music, Settings2, PlayCircle, Layers, CheckCircle2, ChevronRight, Clapperboard, CloudRain, Wind, Waves, Flame, Trees, Bug, Coffee, Building2, Car, Plane, Activity, X, Folder, Shuffle, Image, VolumeX, Eraser } from 'lucide-react';
+import Tooltip from '../ui/Tooltip.jsx';
+import { Video, Music, Settings2, PlayCircle, Layers, CheckCircle2, ChevronRight, Clapperboard, CloudRain, Wind, Waves, Flame, Trees, Bug, Coffee, Building2, Car, Plane, Activity, X, Folder, Shuffle, Image, VolumeX, Eraser, Volume2, MonitorPlay, HelpCircle } from 'lucide-react';
 
 export default function M4ProgressiveDashboard({ 
   m4BgVideo, setM4BgVideo,
@@ -15,7 +16,17 @@ export default function M4ProgressiveDashboard({
 }) {
   const [targetDuration, setTargetDuration] = useState(60);
   const [durationMode, setDurationMode] = useState('2x Loop');
+  const [loadingDialog, setLoadingDialog] = useState(null);
   const [ambientPresets, setAmbientPresets] = useState([]);
+  const [renderSettings, setRenderSettings] = useState({
+    resolution: '1080p',
+    fps: '60',
+    codec: 'H.264',
+    bitrate: 'Auto (2.5M)',
+    audioBitrate: '192 kbps (Standar)',
+    rateControl: 'VBR (Variable)',
+    keyframe: 'Standard Upload'
+  });
 
   useEffect(() => {
     fetch('/api/m4/ambients').then(res => res.json()).then(data => {
@@ -29,7 +40,8 @@ export default function M4ProgressiveDashboard({
     { id: 3, title: 'RELAX MUSIC', desc: 'Musik Pendamping', icon: Music, done: m4RelaxMusic && m4RelaxMusic.length > 0 },
     { id: 4, title: 'LOOP & FX', desc: 'Transisi & Efek', icon: Layers, completed: m4BgVideo },
     { id: 5, title: 'OVERLAY', desc: 'Tambahkan Overlay', icon: Image, completed: false },
-    { id: 6, title: 'INTRO SEQUENCE', desc: 'Tambahkan Intro', icon: Clapperboard, completed: false }
+    { id: 6, title: 'INTRO SEQUENCE', desc: 'Tambahkan Intro', icon: Clapperboard, completed: false },
+    { id: 7, title: 'OUTPUT SETTINGS', desc: 'Format & Kualitas Render', icon: MonitorPlay, completed: false }
   ];
 
   const fetchMetadata = async (path, setter, defaultVol = 100) => {
@@ -71,27 +83,35 @@ export default function M4ProgressiveDashboard({
   };
 
   const handleBrowseAmbientArray = async (type = 'audio') => {
-    const res = await fetch(`/api/m4/dialog/${type}`, { method: 'POST' });
-    const data = await res.json();
-    if (data.path) {
-        const metaRes = await fetch('/api/m4/metadata', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: data.path }) });
-        const meta = await metaRes.json();
-        if (meta.path) {
-            setM4AmbientAudio(prev => [...(Array.isArray(prev)?prev:[]), { id: Date.now().toString(), name: meta.name, path: meta.path, durationSec: meta.durationSec, volume: 80, isMuted: false, isShuffle: false }]);
-        }
-    }
+    if (loadingDialog) return;
+    setLoadingDialog(`ambient_${type}`);
+    try {
+      const res = await fetch(`/api/m4/dialog/${type}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.path) {
+          const metaRes = await fetch('/api/m4/metadata', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: data.path }) });
+          const meta = await metaRes.json();
+          if (meta.path) {
+              setM4AmbientAudio(prev => [...(Array.isArray(prev)?prev:[]), { id: Date.now().toString(), name: meta.name, path: meta.path, durationSec: meta.durationSec, volume: 80, isMuted: false, isShuffle: false }]);
+          }
+      }
+    } catch(e) { console.error(e); } finally { setLoadingDialog(null); }
   };
 
   const handleBrowseRelaxArray = async (type = 'audio') => {
-    const res = await fetch(`/api/m4/dialog/${type}`, { method: 'POST' });
-    const data = await res.json();
-    if (data.path) {
-        const metaRes = await fetch('/api/m4/metadata', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: data.path }) });
-        const meta = await metaRes.json();
-        if (meta.path) {
-            setM4RelaxMusic(prev => [...(Array.isArray(prev)?prev:[]), { id: Date.now().toString(), name: meta.name, path: meta.path, durationSec: meta.durationSec, volume: 35, isMuted: false, isShuffle: false }]);
-        }
-    }
+    if (loadingDialog) return;
+    setLoadingDialog(`relax_${type}`);
+    try {
+      const res = await fetch(`/api/m4/dialog/${type}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.path) {
+          const metaRes = await fetch('/api/m4/metadata', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: data.path }) });
+          const meta = await metaRes.json();
+          if (meta.path) {
+              setM4RelaxMusic(prev => [...(Array.isArray(prev)?prev:[]), { id: Date.now().toString(), name: meta.name, path: meta.path, durationSec: meta.durationSec, volume: 35, isMuted: false, isShuffle: false }]);
+          }
+      }
+    } catch(e) { console.error(e); } finally { setLoadingDialog(null); }
   };
 
   const getIntroProp = (key, defaultVal) => {
@@ -112,13 +132,19 @@ export default function M4ProgressiveDashboard({
           name: 'Intro Sequence',
           type: 'video',
           visible: true,
-          introStyle: 'Focus Pull (Blur)',
-          introDuration: '3s',
-          introText1: 'M4 INTRO',
+          introStyle: 'Paragraph (Text)',
+          introDuration: '5s',
+          introText1: 'WELCOME TO MY CHANNEL',
+          introText2: 'RELAX & CHILL WITH LOFI SOUNDS',
+          introText3: 'SUBSCRIBE FOR MORE AMBIENT VIDEOS',
           introTextColor: '#ffffff',
-          introFontSize: 32,
+          introFontSize: 36,
           introFontFamily: 'Inter',
           introTextAlign: 'center',
+          darkIntensity: 70,
+          blurIntensity: 30,
+          paragraphCount: 1,
+          paragraphDuration: 5,
           [key]: val
         });
       } else {
@@ -129,9 +155,13 @@ export default function M4ProgressiveDashboard({
   };
 
   const handleBrowseVideo = async () => {
-    const res = await fetch('/api/m4/dialog/video', { method: 'POST' });
-    const data = await res.json();
-    if (data.path) fetchMetadata(data.path, setM4BgVideo);
+    if (loadingDialog) return;
+    setLoadingDialog('bg_video');
+    try {
+      const res = await fetch('/api/m4/dialog/video', { method: 'POST' });
+      const data = await res.json();
+      if (data.path) fetchMetadata(data.path, setM4BgVideo);
+    } catch(e) { console.error(e); } finally { setLoadingDialog(null); }
   };
 
 
@@ -197,9 +227,15 @@ export default function M4ProgressiveDashboard({
                   
                   {step.id === 1 && (
                     <div className="flex flex-col gap-3">
-                      <div className="p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all" onClick={handleBrowseVideo}>
-                        <Video size={24} className="text-gray-500 mb-2" />
-                        <span className="text-[11px] text-gray-300 font-medium">Browse Background Video</span>
+                      <div className={`p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all ${loadingDialog === 'bg_video' ? 'opacity-50 pointer-events-none' : ''}`} onClick={handleBrowseVideo}>
+                        {loadingDialog === 'bg_video' ? (
+                          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                        ) : (
+                          <Video size={24} className="text-gray-500 mb-2" />
+                        )}
+                        <span className="text-[11px] text-gray-300 font-medium">
+                          {loadingDialog === 'bg_video' ? 'Membuka Explorer...' : 'Browse Background Video'}
+                        </span>
                         <span className="text-[9px] text-gray-600 mt-1">MP4, MOV up to 4K</span>
                       </div>
                       {m4BgVideo && (
@@ -279,13 +315,21 @@ export default function M4ProgressiveDashboard({
                       )}
                       
                       <div className="flex gap-2">
-                        <div className="flex-1 p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all" onClick={() => handleBrowseAmbientArray('audio')}>
-                          <Settings2 size={24} className="text-gray-500 mb-2" />
-                          <span className="text-[11px] text-gray-300 font-medium">File (MP3)</span>
+                        <div className={`flex-1 p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all ${loadingDialog === 'ambient_audio' ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => handleBrowseAmbientArray('audio')}>
+                          {loadingDialog === 'ambient_audio' ? (
+                            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                          ) : (
+                            <Settings2 size={24} className="text-gray-500 mb-2" />
+                          )}
+                          <span className="text-[11px] text-gray-300 font-medium">{loadingDialog === 'ambient_audio' ? 'Membuka...' : 'File (MP3)'}</span>
                         </div>
-                        <div className="flex-1 p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all" onClick={() => handleBrowseAmbientArray('folder')}>
-                          <Folder size={24} className="text-gray-500 mb-2" />
-                          <span className="text-[11px] text-gray-300 font-medium">Folder Audio</span>
+                        <div className={`flex-1 p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all ${loadingDialog === 'ambient_folder' ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => handleBrowseAmbientArray('folder')}>
+                          {loadingDialog === 'ambient_folder' ? (
+                            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                          ) : (
+                            <Folder size={24} className="text-gray-500 mb-2" />
+                          )}
+                          <span className="text-[11px] text-gray-300 font-medium">{loadingDialog === 'ambient_folder' ? 'Membuka...' : 'Folder Audio'}</span>
                         </div>
                       </div>
                       {m4AmbientAudio && m4AmbientAudio.length > 0 && (
@@ -328,13 +372,21 @@ export default function M4ProgressiveDashboard({
                   {step.id === 3 && (
                     <div className="flex flex-col gap-3">
                       <div className="flex gap-2">
-                        <div className="flex-1 p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all" onClick={() => handleBrowseRelaxArray('audio')}>
-                          <Music size={24} className="text-gray-500 mb-2" />
-                          <span className="text-[11px] text-gray-300 font-medium">File (MP3)</span>
+                        <div className={`flex-1 p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all ${loadingDialog === 'relax_audio' ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => handleBrowseRelaxArray('audio')}>
+                          {loadingDialog === 'relax_audio' ? (
+                            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                          ) : (
+                            <Music size={24} className="text-gray-500 mb-2" />
+                          )}
+                          <span className="text-[11px] text-gray-300 font-medium">{loadingDialog === 'relax_audio' ? 'Membuka...' : 'File (MP3)'}</span>
                         </div>
-                        <div className="flex-1 p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all" onClick={() => handleBrowseRelaxArray('folder')}>
-                          <Folder size={24} className="text-gray-500 mb-2" />
-                          <span className="text-[11px] text-gray-300 font-medium">Folder Audio</span>
+                        <div className={`flex-1 p-4 border border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 m4-btn-lift transition-all ${loadingDialog === 'relax_folder' ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => handleBrowseRelaxArray('folder')}>
+                          {loadingDialog === 'relax_folder' ? (
+                            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                          ) : (
+                            <Folder size={24} className="text-gray-500 mb-2" />
+                          )}
+                          <span className="text-[11px] text-gray-300 font-medium">{loadingDialog === 'relax_folder' ? 'Membuka...' : 'Folder Audio'}</span>
                         </div>
                       </div>
                       {m4RelaxMusic && m4RelaxMusic.length > 0 && (
@@ -377,7 +429,10 @@ export default function M4ProgressiveDashboard({
                   {step.id === 4 && (
                     <div className="flex flex-col gap-4">
                       <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Loop Mode</label>
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Loop Mode</label>
+                          <Tooltip text="Crossfade Blend menghaluskan transisi loop akhir-ke-awal. Ping-Pong memutar maju-mundur." />
+                        </div>
                         <select 
                           value={m4LoopMode}
                           onChange={(e) => {
@@ -497,7 +552,7 @@ export default function M4ProgressiveDashboard({
                                             key={i}
                                             className="w-full bg-[#11131a] border border-[#222] rounded p-2 text-[11px] text-gray-300 resize-none h-[50px] outline-none focus:border-orange-500 mb-2"
                                             placeholder={`Paragraf ${i + 1}...`}
-                                            value={getIntroProp(`introText${i+1}`, '')}
+                                            value={getIntroProp(`introText${i+1}`, i === 0 ? 'WELCOME TO MY CHANNEL' : i === 1 ? 'RELAX & CHILL WITH LOFI SOUNDS' : 'SUBSCRIBE FOR MORE AMBIENT VIDEOS')}
                                             onChange={e => updateIntroProp(`introText${i+1}`, e.target.value)}
                                           />
                                       ))}
@@ -530,6 +585,111 @@ export default function M4ProgressiveDashboard({
                           </div>
                         )}
 
+                      </div>
+                    </div>
+                  )}
+
+                  {step.id === 7 && (
+                    <div className="flex flex-col gap-4">
+                      {/* Toggles */}
+                      <div className="flex flex-col gap-3">
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">RESOLUTION</label>
+                              <Tooltip text="Resolusi video output. 1080p disarankan untuk kualitas HD terbaik." />
+                            </div>
+                            <div className="flex rounded border border-[#333] overflow-hidden bg-black/20">
+                               {['480p', '720p', '1080p'].map(res => (
+                                  <button key={res} 
+                                     onClick={() => setRenderSettings({...renderSettings, resolution: res})}
+                                     className={`flex-1 py-1.5 text-[11px] font-bold transition-colors ${renderSettings.resolution === res ? 'bg-[#3d1c00] text-[#f97316] border border-[#f97316]' : 'text-gray-400 hover:bg-white/5 border border-transparent'}`}>
+                                    {res}
+                                  </button>
+                               ))}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">FRAME RATE</label>
+                              <Tooltip text="Jumlah frame per detik. 60 FPS membuat gerakan video sangat halus." />
+                            </div>
+                            <div className="flex rounded border border-[#333] overflow-hidden bg-black/20">
+                               {['24', '30', '60'].map(fps => (
+                                  <button key={fps} 
+                                     onClick={() => setRenderSettings({...renderSettings, fps: fps})}
+                                     className={`flex-1 py-1.5 text-[11px] font-bold transition-colors ${renderSettings.fps === fps ? 'bg-[#3d1c00] text-[#f97316] border border-[#f97316]' : 'text-gray-400 hover:bg-white/5 border border-transparent'}`}>
+                                    {fps}
+                                  </button>
+                               ))}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">VIDEO CODEC</label>
+                              <Tooltip text="H.264 memiliki kompatibilitas paling luas. H.265 menghasilkan kompresi file lebih efisien." />
+                            </div>
+                            <div className="flex rounded border border-[#333] overflow-hidden bg-black/20">
+                               {['H.264', 'H.265'].map(c => (
+                                  <button key={c} 
+                                     onClick={() => setRenderSettings({...renderSettings, codec: c})}
+                                     className={`flex-1 py-1.5 text-[11px] font-bold transition-colors ${renderSettings.codec === c ? 'bg-[#3d1c00] text-[#f97316] border border-[#f97316]' : 'text-gray-400 hover:bg-white/5 border border-transparent'}`}>
+                                    {c}
+                                  </button>
+                               ))}
+                            </div>
+                          </div>
+                      </div>
+                      
+                      {/* Dropdowns */}
+                      <div className="grid grid-cols-1 gap-3 border-t border-white/5 pt-3">
+                        <div className="flex flex-col gap-1.5">
+                           <div className="flex items-center gap-1.5">
+                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">BITRATE</label>
+                             <Tooltip text="Kecepatan bit video. Semakin tinggi semakin bagus kualitasnya, namun ukuran file lebih besar." />
+                           </div>
+                           <select className="m4-input-glass h-8 text-[11px]" 
+                              value={renderSettings.bitrate} onChange={e => setRenderSettings({...renderSettings, bitrate: e.target.value})}>
+                              <option>Auto (2.5M)</option>
+                              <option>High (5M)</option>
+                              <option>Max (8M)</option>
+                           </select>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                           <div className="flex items-center gap-1.5">
+                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">AUDIO BITRATE</label>
+                             <Tooltip text="Kecepatan bit audio. 192 kbps disarankan untuk kualitas standar yang baik." />
+                           </div>
+                           <select className="m4-input-glass h-8 text-[11px]" 
+                              value={renderSettings.audioBitrate} onChange={e => setRenderSettings({...renderSettings, audioBitrate: e.target.value})}>
+                              <option>128 kbps (Low)</option>
+                              <option>192 kbps (Standar)</option>
+                              <option>320 kbps (High)</option>
+                           </select>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                           <div className="flex items-center gap-1.5">
+                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">RATE CONTROL</label>
+                             <Tooltip text="CBR (Constant) menjaga bitrate tetap sama, ukuran file besar. VBR (Variable) menyesuaikan bitrate sesuai gerakan, lebih efisien." />
+                           </div>
+                           <select className="m4-input-glass h-8 text-[11px]" 
+                              value={renderSettings.rateControl} onChange={e => setRenderSettings({...renderSettings, rateControl: e.target.value})}>
+                              <option>CBR (Constant)</option>
+                              <option>VBR (Variable)</option>
+                           </select>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                           <div className="flex items-center gap-1.5">
+                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">KEYFRAME</label>
+                             <Tooltip text="Jarak antar keyframe. Pilih Livestream (2s) agar buffering lebih lancar saat digunakan untuk Live." />
+                           </div>
+                           <select className="m4-input-glass h-8 text-[11px]" 
+                              value={renderSettings.keyframe} onChange={e => setRenderSettings({...renderSettings, keyframe: e.target.value})}>
+                              <option>Standard Upload</option>
+                              <option>Livestream (2s)</option>
+                           </select>
+                        </div>
                       </div>
                     </div>
                   )}

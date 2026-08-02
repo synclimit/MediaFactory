@@ -9,7 +9,7 @@ let backendServer;
 async function createWindow() {
     // Start backend server on fixed port so Chrome Extension can connect
     backendServer = await startServer(18888);
-    const port = backendServer.address().port;
+    const port = (backendServer && typeof backendServer.address === 'function' && backendServer.address()) ? backendServer.address().port : 18888;
 
     mainWindow = new BrowserWindow({
         width: 1366,
@@ -34,7 +34,11 @@ async function createWindow() {
         mainWindow.loadURL('http://localhost:5173');
         mainWindow.webContents.openDevTools();
     } else {
-        mainWindow.loadURL(`http://localhost:${port}`);
+        const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+        const targetUrl = port ? `http://localhost:${port}` : `file://${indexPath}`;
+        mainWindow.loadURL(targetUrl).catch(() => {
+            mainWindow.loadFile(indexPath);
+        });
     }
 
     mainWindow.on('closed', () => {
@@ -57,7 +61,31 @@ app.whenReady().then(() => {
     });
 });
 
+function cleanupFFmpegOnExit() {
+    console.log('[Electron Main] Cleaning up active and orphan FFmpeg processes...');
+    try {
+        const { killAllFFmpegProcesses } = require('../backend/api/m3-render');
+        killAllFFmpegProcesses();
+    } catch (e) {}
+
+    if (process.platform === 'win32') {
+        try {
+            const { execSync } = require('child_process');
+            execSync('taskkill /F /IM ffmpeg.exe /T');
+        } catch (e) {}
+    }
+}
+
+app.on('before-quit', () => {
+    cleanupFFmpegOnExit();
+});
+
+app.on('will-quit', () => {
+    cleanupFFmpegOnExit();
+});
+
 app.on('window-all-closed', () => {
+    cleanupFFmpegOnExit();
     if (process.platform !== 'darwin') {
         if (backendServer) backendServer.close();
         app.quit();
@@ -65,8 +93,19 @@ app.on('window-all-closed', () => {
 });
 
 // IPC Listeners for UI-triggered updates
-ipcMain.on('check-for-updates', () => {
-    autoUpdater.checkForUpdates();
+ipcMain.on('check-for-updates', async () => {
+    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
+    try {
+        if (!app.isPackaged) {
+            setTimeout(() => {
+                if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
+            }, 800);
+            return;
+        }
+        await autoUpdater.checkForUpdates();
+    } catch (err) {
+        if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
+    }
 });
 
 ipcMain.on('install-update', () => {
@@ -95,5 +134,7 @@ autoUpdater.on('update-downloaded', (info) => {
 });
 
 autoUpdater.on('error', (err) => {
-    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'error', message: err.message });
+    if (mainWindow) {
+        mainWindow.webContents.send('update-status', { status: 'not-available' });
+    }
 });

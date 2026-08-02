@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Eye, EyeOff, Lock, Unlock, Volume2, VolumeX, Mic2, MicOff, Search, Layers, ChevronRight, ChevronDown } from 'lucide-react';
+import { fastRenderState } from '../../services/pipeline/fastrender/core/FastRenderState.js';
+
 
 export default function M3TimelinePanel({
   m3Objects, setM3Objects,
@@ -276,6 +278,30 @@ export default function M3TimelinePanel({
             >
               {generateRulerTicks()}
             </div>
+
+            {/* Dual-Ruler & Master Loop Overlay (Fast Render Mode) */}
+            {fastRenderState.isFastMode() && (
+              <>
+                <div 
+                  className="absolute top-0 h-8 bg-gradient-to-r from-cyan-950/80 to-teal-950/80 border-x border-cyan-400 z-25 pointer-events-none flex items-center justify-between px-2 shadow-[0_0_12px_rgba(0,243,255,0.25)]"
+                  style={{ left: '0px', width: `${(fastRenderState.getMasterLoopDuration() || 10.0) * pixelsPerSec}px` }}
+                >
+                  <span className="text-[9px] font-black text-cyan-300 uppercase tracking-widest flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <span>⚡ LOOP START</span>
+                  </span>
+                  <span className="text-[9px] font-black text-cyan-300 uppercase tracking-widest">
+                    <span>⚡ {(fastRenderState.getMasterLoopDuration() || 10.0).toFixed(1)}s LOOP END</span>
+                  </span>
+                </div>
+                
+                <div 
+                  className="absolute top-0 bottom-0 w-[2px] bg-cyan-400 z-35 pointer-events-none border-r border-cyan-300 shadow-[0_0_10px_#00f3ff]"
+                  style={{ left: `${(fastRenderState.getMasterLoopDuration() || 10.0) * pixelsPerSec}px` }}
+                />
+              </>
+            )}
+
 
             {/* Playhead Line */}
             <div 

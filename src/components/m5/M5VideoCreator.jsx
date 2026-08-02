@@ -476,6 +476,8 @@ export default function M5VideoCreator({ m5Queue = [], setM5Queue, activeWorkspa
                <select className="bg-[#0a0c10]/80 border border-[#333] rounded px-2.5 py-1.5 text-[11px] font-mono font-bold text-white focus:outline-none focus:border-orange-500 transition-colors shadow-inner" value={duration} onChange={e=>setDuration(e.target.value)}>
                  <option>10 Detik (Short)</option>
                  <option>15 Detik (Short)</option>
+                 <option>20 Detik (Short)</option>
+                 <option>25 Detik (Short)</option>
                  <option>30 Detik (Short)</option>
                  <option>60 Detik (Short)</option>
                </select>

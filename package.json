@@ -1,7 +1,7 @@
 {
   "name": "mediafactory",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "MediaFactory Desktop App",
   "author": "MediaFactory",
   "repository": {
@@ -41,6 +41,10 @@
     "compression": "store",
     "win": {
       "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     },
     "extraResources": [
       {

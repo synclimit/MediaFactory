@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MediaFactory OSR Render Harness</title>
+  <style>
+    body, html { margin: 0; padding: 0; overflow: hidden; background: #000; width: 1920px; height: 1080px; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script type="module">
+    import { drawVisualizer } from './src/services/pipeline/renderer/drawVisualizer.js';
+    import { generateDeterministicFFT } from './src/services/pipeline/fastrender/workspace/adaptation/strategies/FFTCacheStrategy.js';
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let cachedBgImage = null;
+    let cachedBgVideo = null;
+
+    window.renderFrame = async (frameIndex, config = {}, bgImageUrl = null) => {
+      ctx.clearRect(0, 0, 1920, 1080);
+
+      // 1. Draw Background (Image or Video) on Canvas (Full 1920x1080 Frame)
+      if (bgImageUrl) {
+        const isVideo = bgImageUrl.match(/\.(mp4|webm|mov|mkv)$/i);
+        if (isVideo) {
+          if (!cachedBgVideo || cachedBgVideo.src !== bgImageUrl) {
+            cachedBgVideo = document.createElement('video');
+            cachedBgVideo.crossOrigin = 'anonymous';
+            cachedBgVideo.muted = true;
+            cachedBgVideo.loop = true;
+            cachedBgVideo.src = bgImageUrl;
+            await new Promise((resolve) => {
+              cachedBgVideo.onloadeddata = resolve;
+              cachedBgVideo.onerror = resolve;
+              cachedBgVideo.load();
+            });
+            try { await cachedBgVideo.play(); } catch(e){}
+          }
+          if (cachedBgVideo && cachedBgVideo.readyState >= 2) {
+            const dur = cachedBgVideo.duration || 10;
+            cachedBgVideo.currentTime = (frameIndex / 60) % dur;
+            ctx.drawImage(cachedBgVideo, 0, 0, 1920, 1080);
+          }
+        } else {
+          if (!cachedBgImage || cachedBgImage.src !== bgImageUrl) {
+            cachedBgImage = new Image();
+            cachedBgImage.crossOrigin = 'anonymous';
+            await new Promise((resolve) => {
+              cachedBgImage.onload = resolve;
+              cachedBgImage.onerror = resolve;
+              cachedBgImage.src = bgImageUrl;
+            });
+          }
+          if (cachedBgImage && cachedBgImage.complete && cachedBgImage.naturalWidth > 0) {
+            ctx.drawImage(cachedBgImage, 0, 0, 1920, 1080);
+          }
+        }
+
+        // Apply overlay darkness 30%
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillRect(0, 0, 1920, 1080);
+        
+        // Apply bottom/top gradient overlay matching M3PreviewCanvas line 698
+        const bgGrad = ctx.createLinearGradient(0, 1080, 0, 0);
+        bgGrad.addColorStop(0, 'rgba(0, 0, 0, 0.4)');
+        bgGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.0)');
+        bgGrad.addColorStop(1, 'rgba(0, 0, 0, 0.2)');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, 1920, 1080);
+        ctx.restore();
+      }
+
+      // 2. Draw Visualizer on Top of Background Image (Canvas2D Single Engine)
+      const normT = ((frameIndex / 60) % 10.0) / 10.0;
+      const barCount = Math.min(256, Math.max(16, parseInt(config.barCount) || 256));
+      const fftData = generateDeterministicFFT(normT, barCount);
+
+      ctx.save();
+      drawVisualizer(ctx, fftData, config, 1920, 1080, false);
+      ctx.restore();
+      
+      // Flush microtask queue and double rAF to commit frame to compositor
+      await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+    };
+  </script>
+</body>
+</html>

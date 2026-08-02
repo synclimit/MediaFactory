@@ -3,6 +3,7 @@ import { rendererRegistry } from '../registry/RendererRegistry';
 import { EffectPipeline } from '../effects/EffectPipeline';
 import { PerformanceManager } from '../performance/PerformanceManager';
 import { beatEngine } from '../../services/audio/BeatEngine';
+import { fastWorkspaceManager } from '../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
 
 /**
  * VisualizerRuntime.js
@@ -28,11 +29,13 @@ export class VisualizerRuntime {
             ctx: null, // Will be set by renderer
             audio: {
                 getSpectrum: () => {
+                    if (fastWorkspaceManager.isFastWorkspaceActive() || this.config?.fftCacheActive || this.config?._fastModeAdapted) {
+                        return this.processSpectrum(this.generateProceduralFFT());
+                    }
                     try { 
                         const spec = beatEngine.getSpectrum();
                         if (!spec || spec.length === 0) return this.processSpectrum(this.generateFakeData());
                         
-                        // Check if completely silent (all zeros)
                         let isSilent = true;
                         for(let i=0; i<Math.min(spec.length, 10); i++) {
                             if (spec[i] > 0) { isSilent = false; break; }
@@ -43,6 +46,9 @@ export class VisualizerRuntime {
                     catch(e) { return this.processSpectrum(this.generateFakeData()); }
                 },
                 getWaveform: () => {
+                    if (fastWorkspaceManager.isFastWorkspaceActive() || this.config?.fftCacheActive || this.config?._fastModeAdapted) {
+                        return this.generateProceduralWaveform();
+                    }
                     try { 
                         const wave = beatEngine.getTimeDomain();
                         if (!wave || wave.length === 0) return this.generateFakeData();
@@ -56,6 +62,10 @@ export class VisualizerRuntime {
                     catch(e) { return this.generateFakeData(); }
                 },
                 getBass: () => {
+                    if (fastWorkspaceManager.isFastWorkspaceActive() || this.config?.fftCacheActive || this.config?._fastModeAdapted) {
+                        const spec = this.generateProceduralFFT();
+                        return spec[2];
+                    }
                     try { const spec = beatEngine.getSpectrum(); return spec ? spec[2] : 0; }
                     catch(e) { return 0; }
                 }
@@ -82,6 +92,59 @@ export class VisualizerRuntime {
         for (let i = 0; i < 256; i++) {
             // Smooth wavy fake data
             data[i] = 20 + Math.abs(Math.sin(time * 2 + i * 0.1)) * 40 + Math.random() * 10;
+        }
+        return data;
+    }
+
+    generateProceduralFFT() {
+        const data = new Uint8Array(256);
+        const time = this.context?.realElapsedTime || (performance.now() / 1000);
+        const masterLoopDuration = 10.0;
+        const loopTime = time % masterLoopDuration;
+        const normTime = loopTime / masterLoopDuration;
+        const tAngle = normTime * Math.PI * 2;
+
+        for (let i = 0; i < 256; i++) {
+            const freqNorm = i / 256;
+            
+            // Per-bar unique seed phase for non-uniform organic movement
+            const barPhase = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
+            const barSeed = barPhase - Math.floor(barPhase);
+            
+            // Multi-octave incommensurable harmonic frequencies for high entropy (unpredictable random look)
+            const oct1 = Math.sin(tAngle * 3 + barSeed * 6.28);
+            const oct2 = Math.cos(tAngle * 7 + freqNorm * 18.84 + barSeed * 3.14);
+            const oct3 = Math.sin(tAngle * 13 + freqNorm * 31.42 + barSeed * 1.57);
+            const oct4 = Math.cos(tAngle * 23 + freqNorm * 47.12);
+            
+            // Sharp chaotic peak spikes
+            const spike = Math.pow(Math.max(0, Math.sin(tAngle * 19 + i * 3.14)), 8);
+            const fastJitter = Math.sin(tAngle * 41 + i * 7.89) * 25;
+            
+            // Exponential frequency band envelope (bass heavier, treble lighter)
+            const envelope = Math.exp(-freqNorm * 2.2);
+            
+            // Combine multi-octave chaotic noise
+            const rawVal = (0.35 * oct1 + 0.3 * oct2 + 0.2 * oct3 + 0.15 * oct4 + 0.4 * spike) * envelope;
+            
+            // Map to byte range [15, 255]
+            const baseHeight = 35 + Math.abs(rawVal) * 190 + fastJitter;
+            data[i] = Math.min(255, Math.max(15, Math.floor(baseHeight)));
+        }
+        return data;
+    }
+
+    generateProceduralWaveform() {
+        const data = new Uint8Array(256);
+        const time = this.context?.realElapsedTime || (performance.now() / 1000);
+        const masterLoopDuration = 10.0;
+        const loopTime = time % masterLoopDuration;
+        const phase = (loopTime / masterLoopDuration) * Math.PI * 2;
+
+        for (let i = 0; i < 256; i++) {
+            const tNorm = i / 256;
+            const wave = Math.sin(phase * 4 + tNorm * Math.PI * 8) * 0.4 + Math.cos(phase * 2 + tNorm * Math.PI * 4) * 0.3;
+            data[i] = Math.min(255, Math.max(0, Math.floor(128 + wave * 100)));
         }
         return data;
     }
