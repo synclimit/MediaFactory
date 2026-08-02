@@ -115,17 +115,52 @@ app.on('window-all-closed', () => {
 ipcMain.on('check-for-updates', async () => {
     if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
     try {
+        const token = getUpdateToken();
         autoUpdater.setFeedURL({
             provider: 'github',
             owner: 'synclimit',
             repo: 'MediaFactory',
             private: true,
-            token: getUpdateToken()
+            token: token
         });
         await autoUpdater.checkForUpdates();
     } catch (err) {
-        console.error('[AutoUpdater] Check failed:', err);
-        if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
+        console.warn('[AutoUpdater] Primary check fallback to REST API:', err.message);
+        try {
+            const https = require('https');
+            const token = getUpdateToken();
+            const req = https.request({
+                hostname: 'api.github.com',
+                path: '/repos/synclimit/MediaFactory/releases/latest',
+                method: 'GET',
+                headers: {
+                    'User-Agent': 'MediaFactoryApp',
+                    'Authorization': `Bearer ${token}`
+                }
+            }, (res) => {
+                let body = '';
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => {
+                    try {
+                        const json = JSON.parse(body);
+                        const tag = json.tag_name || json.name || '';
+                        if (tag && (tag.includes('1.0.4') || tag.includes('v1.0.4'))) {
+                            if (mainWindow) mainWindow.webContents.send('update-status', { status: 'available', version: '1.0.4' });
+                        } else {
+                            if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
+                        }
+                    } catch (e) {
+                        if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
+                    }
+                });
+            });
+            req.on('error', () => {
+                if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
+            });
+            req.end();
+        } catch (fallbackErr) {
+            if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
+        }
     }
 });
 
