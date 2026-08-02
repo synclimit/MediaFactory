@@ -186,8 +186,8 @@ async function ensureYoutubeAudioDownloaded(uri, onProgress) {
 
     const downloadPromise = new Promise((resolve, reject) => {
         const ytOut = path.join(cacheDir, hash + '.%(ext)s');
-        const dlArgs = ['--newline', '--no-playlist', '-f', 'bestaudio', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUrl];
-        const dlProc = spawn('yt-dlp', dlArgs);
+        const dlArgs = ['--newline', '--no-playlist', '-f', 'bestaudio', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', searchUrl];
+        const dlProc = spawn(AppPaths.getYtDlpPath(), dlArgs);
 
         dlProc.stdout.on('data', chunk => {
             const out = chunk.toString();
@@ -248,8 +248,8 @@ router.post('/api/m2/yt-metadata', async (req, res) => {
 
     try {
         const ytData = await new Promise((resolve, reject) => {
-            const ytArgs = ['--dump-json', '--no-playlist', '--js-runtimes', 'node', '--', searchUrl];
-            const ytProc = spawn('yt-dlp', ytArgs);
+            const ytArgs = ['--dump-json', '--no-playlist', '--', searchUrl];
+            const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs);
             
             let stdoutData = '';
             let stderrData = '';

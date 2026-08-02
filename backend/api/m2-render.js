@@ -69,9 +69,9 @@ async function processJob(job) {
                         searchUri = `ytsearch:${uri}`;
                     }
                     const ytOut = path.join(cacheDir, hashUri(uri) + '.%(ext)s');
-                    const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', searchUri];
+                    const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', searchUri];
                     await new Promise((resolve, reject) => {
-                        const ytProc = spawn('yt-dlp', ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+                        const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
                         ytProc.stdout.on('data', () => {});
                         ytProc.stderr.on('data', () => {});
                         

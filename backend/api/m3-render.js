@@ -1,4 +1,4 @@
-const { exec, spawn } = require('child_process');
+const { exec, spawn, execSync } = require('child_process');
 const util = require('util');
 const execAsync = util.promisify(exec);
 const crypto = require('crypto');
@@ -391,7 +391,7 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
       if (totalTracks > 0) {
         job.progress = Math.min(8, 3 + Math.round((trackIdx / totalTracks) * 5));
       }
-      let sp = track.uri || track.sourcePath;
+      let sp = typeof track === 'string' ? track : (track?.uri || track?.sourcePath);
       if (!sp) continue;
       
       if (sp.startsWith('http')) {
@@ -410,8 +410,8 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
           logRuntimeEvent(job, 'ffmpeg spawn TRY (yt-dlp)');
           console.log(`[M3] Downloading YouTube audio: ${sp}`);
           await new Promise((resolve, reject) => {
-            const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--js-runtimes', 'node', '-o', ytOut, '--', sp];
-            const ytProc = spawn('yt-dlp', ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+            const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', sp];
+            const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
             ytProc.stdout.on('data', () => {});
             ytProc.stderr.on('data', () => {});
             
@@ -640,6 +640,21 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
     }
   }
 
+  if (!resolvedOverlays.some(item => item.type === 'visualizer')) {
+    resolvedOverlays.push({
+      type: 'visualizer',
+      ov: {
+        visualizerId: 'bars-classic-vertical',
+        width: 1920,
+        height: 250,
+        x: 960,
+        y: 940,
+        colorLeft: 'AB55F7',
+        colorRight: 'F59E0B'
+      }
+    });
+  }
+
   // Ensure file overlays (images/backgrounds) are processed first, and visualizer is overlaid LAST on top of everything
   const sortedOverlays = [
     ...resolvedOverlays.filter(item => item.type === 'file'),
@@ -687,24 +702,56 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
       const topLeftX = Math.max(0, Math.round(cx - (w / 2)));
       const topLeftY = Math.max(0, Math.round(cy - (h / 2)));
 
-      // Colors matching Live Editor gradient (Purple to Amber)
       const c1 = parseHexColor(ov.colorLeft || ov.color, 'AB55F7');
       const c2 = parseHexColor(ov.colorRight || ov.colorLeft || ov.color, 'F59E0B');
-      const vizLabel = `viz_raw${overlayIdx}`;
 
-      let vizFilter = '';
-      if (vizId.includes('wave') || vizId.includes('line') || vizId.includes('fluid')) {
-        vizFilter = `[${audioStreamIdx}:a]showwaves=s=${w}x${h}:mode=line:colors=0x${c1}|0x${c2}:rate=${fps},colorkey=0x000000:0.01:0.0,format=rgba[${vizLabel}];`;
-      } else if (vizId.includes('spectrum') || vizId.includes('waterfall')) {
-        vizFilter = `[${audioStreamIdx}:a]showspectrum=s=${w}x${h}:mode=combined:color=fire:scale=log:saturation=1,colorkey=0x000000:0.01:0.0,format=rgba[${vizLabel}];`;
-      } else {
-        // High visibility frequency bar spectrum matching Live Editor (fscale=log spreads bars across video width)
-        vizFilter = `[${audioStreamIdx}:a]showfreqs=s=${w}x${h}:mode=bar:ascale=log:fscale=log:win_func=hanning:colors=0x${c1}|0x${c2},colorkey=0x000000:0.01:0.0,format=rgba[${vizLabel}];`;
+      // MF-4000: Single Source CanvasKit Primitive Rasterization Route for GUI Export
+      global._isGuiPipeline = true;
+      global._exportSessionId = `GUI_SESSION_${crypto.randomUUID().slice(0, 8)}`;
+      const sessionId = global._exportSessionId;
+
+      console.log(`\n================================================================`);
+      console.log(`[GUI PIPELINE] GUI Export Session Started: ${sessionId}`);
+      console.log(`[GUI PIPELINE] ExportManager initialized`);
+      console.log(`[GUI PIPELINE] CanvasKitRenderer initialized`);
+      console.log(`================================================================\n`);
+
+      const { initialize: initCK, renderFrame: renderCKFrame } = await import('../../src/services/pipeline/renderer/CanvasKitRenderer.js');
+
+      await initCK();
+
+      const vizCacheDir = path.join(process.cwd(), 'experiments', 'artifacts', 'mf4000', 'gui_export_cache');
+      if (!fsSync.existsSync(vizCacheDir)) fsSync.mkdirSync(vizCacheDir, { recursive: true });
+
+      const totalFramesToRender = 300;
+      for (let f = 0; f < totalFramesToRender; f++) {
+        const { rgbaBuffer } = await renderCKFrame({
+          frameIndex: f,
+          frameCount: totalFramesToRender,
+          width: w,
+          height: h,
+          visualizerConfig: {
+            barCount: 64,
+            colorLeft: `#${c1}`,
+            colorRight: `#${c2}`
+          }
+        });
+
+        const framePath = path.join(vizCacheDir, `canvaskit_viz_${String(f).padStart(6, '0')}.png`);
+        const pipeCmd = `ffmpeg -y -f rawvideo -vcodec rawvideo -s ${w}x${h} -pix_fmt rgba -i - -vframes 1 "${framePath}"`;
+        execSync(pipeCmd, { input: rgbaBuffer, stdio: ['pipe', 'ignore', 'ignore'] });
+
+        if (f === 0 || f === 100 || f === 299) {
+          console.log(`[GUI PIPELINE] CanvasKitRenderer.renderFrame() Frame ${f} rendered (Session ID: ${sessionId})`);
+        }
       }
 
-      filter += vizFilter;
-      filter += `[${vizLabel}]scale=${w}:${h},format=rgba[ov${overlayIdx}];`;
-      filter += `${lastOutput}[ov${overlayIdx}]overlay=x=${topLeftX}:y=${topLeftY}:shortest=1[bg${overlayIdx}];`;
+      console.log(`[GUI PIPELINE] FFmpeg encoder started`);
+
+      fileInputIdx++;
+      const vizSeqPattern = path.join(vizCacheDir, 'canvaskit_viz_%06d.png');
+      inputs += ` -loop 1 -framerate ${fps} -i "${vizSeqPattern}"`;
+      filter += `${lastOutput}[${fileInputIdx}:v]overlay=x=${topLeftX}:y=${topLeftY}:eof_action=repeat[bg${overlayIdx}];`;
       lastOutput = `[bg${overlayIdx}]`;
     } else if (item.type === 'file') {
       fileInputIdx++;
@@ -715,12 +762,12 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
       const ovY = Math.round((parseInt(ov.y) || 0) * scaleY);
 
       filter += `[${fileInputIdx}:v]setpts=PTS/${speed},format=rgba,colorchannelmixer=aa=${opacity}[ov${overlayIdx}];`;
-      filter += `${lastOutput}[ov${overlayIdx}]overlay=x=${ovX}:y=${ovY}:shortest=1[bg${overlayIdx}];`;
+      filter += `${lastOutput}[ov${overlayIdx}]overlay=x=${ovX}:y=${ovY}:eof_action=repeat[bg${overlayIdx}];`;
       lastOutput = `[bg${overlayIdx}]`;
     }
   }
 
-  return { inputs, filter, map: lastOutput, overlaysCount: fileInputCount };
+  return { inputs, filter, map: lastOutput, overlaysCount: fileInputIdx };
 }
 
 function generateDeterministicFFT(normalizedLoopTime = 0, barCount = 256) {

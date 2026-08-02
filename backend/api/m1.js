@@ -185,7 +185,7 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
 
         // Step 1: Fetch video metadata via --dump-json using spawn without shell:true
         const info = await new Promise((resolve, reject) => {
-            const dumpArgs = ['--dump-json', '--no-playlist', '--js-runtimes', 'node', '--', url];
+            const dumpArgs = ['--dump-json', '--no-playlist', '--', url];
             const dumpProc = spawn(AppPaths.getYtDlpPath(), dumpArgs);
             let stdoutData = '';
             let stderrData = '';
@@ -237,7 +237,7 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
 
         // Step 2: Download audio using spawn with ffmpeg location
         const ffmpegBin = AppPaths.getFFmpegPath();
-        const ytArgs = ['--no-warnings', '--no-playlist', '-x', '--audio-format', 'mp3', '--ffmpeg-location', ffmpegBin, '--write-thumbnail', '--js-runtimes', 'node', '-o', outTemplate, '--', url];
+        const ytArgs = ['--no-warnings', '--no-playlist', '-x', '--audio-format', 'mp3', '--ffmpeg-location', ffmpegBin, '--write-thumbnail', '-o', outTemplate, '--', url];
         const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs);
 
         ytProc.stdout.on('data', (data) => {
