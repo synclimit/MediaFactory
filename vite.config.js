@@ -22,5 +22,10 @@ export default defineConfig({
     watch: {
       ignored: ['**/Output/**', '**/.mediafactory/**', '**/Workspace/**']
     }
+  },
+  build: {
+    rollupOptions: {
+      external: ['canvaskit-wasm']
+    }
   }
 })

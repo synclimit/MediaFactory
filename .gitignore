@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 # Ignored heavy folders
 .mediafactory/
-Output/
+/Output/
 Workspaces/
 dist-electron/
 dist/
