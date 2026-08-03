@@ -39,12 +39,19 @@ export class VisualizerRegistryAdapter {
 
   /**
    * Translates a legacy visualizer plugin ID to Reference Engine plugin ID.
-   * @param {string} legacyId Legacy plugin ID (e.g. B01_ClassicVertical)
+   * @param {string} pluginId Legacy plugin ID (e.g. B01_ClassicVertical) or Reference ID
    * @returns {string} Reference Engine plugin ID (e.g. SPECTRUM_BARS)
    */
-  getMappedReferenceId(legacyId) {
-    return this.idMap[legacyId] || 'SPECTRUM_BARS';
+  getMappedReferenceId(pluginId) {
+    if (this.idMap[pluginId]) {
+      return this.idMap[pluginId];
+    }
+    if (this.referenceRegistry.getPlugin(pluginId)) {
+      return pluginId;
+    }
+    return 'SPECTRUM_BARS';
   }
+
 
   /**
    * Retrieves plugin metadata from both registries.

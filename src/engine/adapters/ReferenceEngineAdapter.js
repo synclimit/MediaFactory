@@ -27,8 +27,12 @@ export class ReferenceEngineAdapter {
     this.registry = VisualizerRegistry;
     this.registryAdapter = visualizerRegistryAdapter;
     this.pipeline = referenceRenderPipeline;
-    this.router = pipelineRouter;
   }
+
+  get router() {
+    return pipelineRouter;
+  }
+
 
 
 

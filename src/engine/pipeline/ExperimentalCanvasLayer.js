@@ -1,28 +1,44 @@
 /**
  * ExperimentalCanvasLayer.js [Status: NEW]
- * Offscreen Experimental Canvas & Draw Call Instrumenter for Reference Engine v1.0.
+ * Offscreen Experimental Canvas & Full 18-Method Draw Call Instrumenter for Reference Engine v1.0.
  * 
  * SPRINT 10 GOVERNANCE:
  * - Executes plugin.render() strictly on OffscreenCanvas or Mock 2D Context.
  * - MUST NOT touch the main preview canvas or CanvasKit WASM surface.
- * - Measures draw statistics (fillRect, lineTo, stroke, fill, gradients).
- * - Measures render execution time in milliseconds.
+ * - Full instrumentation of 18 Canvas2D rendering methods.
  */
 
 export class ExperimentalCanvasLayer {
   constructor(width = 1920, height = 1080) {
     this.width = width;
     this.height = height;
+    this.resetStats();
+    this.initCanvas();
+  }
+
+  resetStats() {
     this.drawStats = {
       fillRect: 0,
-      stroke: 0,
+      clearRect: 0,
       fill: 0,
+      stroke: 0,
       lineTo: 0,
+      moveTo: 0,
+      arc: 0,
+      beginPath: 0,
+      closePath: 0,
+      drawImage: 0,
       createLinearGradient: 0,
+      createRadialGradient: 0,
+      fillText: 0,
+      strokeText: 0,
+      save: 0,
+      restore: 0,
+      translate: 0,
+      rotate: 0,
+      scale: 0,
       totalDrawCalls: 0
     };
-
-    this.initCanvas();
   }
 
   initCanvas() {
@@ -37,26 +53,36 @@ export class ExperimentalCanvasLayer {
   }
 
   createMockContext() {
-    const stats = this.drawStats;
+    const self = this;
     const noop = () => {};
     
     return {
-      save: noop,
-      restore: noop,
-      beginPath: noop,
-      closePath: noop,
-      arc: noop,
-      rect: noop,
-      moveTo: noop,
-      lineTo: () => { stats.lineTo++; stats.totalDrawCalls++; },
-      fillRect: () => { stats.fillRect++; stats.totalDrawCalls++; },
-      fill: () => { stats.fill++; stats.totalDrawCalls++; },
-      stroke: () => { stats.stroke++; stats.totalDrawCalls++; },
+      save: () => { self.drawStats.save++; self.drawStats.totalDrawCalls++; },
+      restore: () => { self.drawStats.restore++; self.drawStats.totalDrawCalls++; },
+      beginPath: () => { self.drawStats.beginPath++; self.drawStats.totalDrawCalls++; },
+      closePath: () => { self.drawStats.closePath++; self.drawStats.totalDrawCalls++; },
+      arc: () => { self.drawStats.arc++; self.drawStats.totalDrawCalls++; },
+      rect: () => { self.drawStats.totalDrawCalls++; },
+      moveTo: () => { self.drawStats.moveTo++; self.drawStats.totalDrawCalls++; },
+      lineTo: () => { self.drawStats.lineTo++; self.drawStats.totalDrawCalls++; },
+      fillRect: () => { self.drawStats.fillRect++; self.drawStats.totalDrawCalls++; },
+      clearRect: () => { self.drawStats.clearRect++; self.drawStats.totalDrawCalls++; },
+      fill: () => { self.drawStats.fill++; self.drawStats.totalDrawCalls++; },
+      stroke: () => { self.drawStats.stroke++; self.drawStats.totalDrawCalls++; },
+      drawImage: () => { self.drawStats.drawImage++; self.drawStats.totalDrawCalls++; },
+      fillText: () => { self.drawStats.fillText++; self.drawStats.totalDrawCalls++; },
+      strokeText: () => { self.drawStats.strokeText++; self.drawStats.totalDrawCalls++; },
+      translate: () => { self.drawStats.translate++; self.drawStats.totalDrawCalls++; },
+      rotate: () => { self.drawStats.rotate++; self.drawStats.totalDrawCalls++; },
+      scale: () => { self.drawStats.scale++; self.drawStats.totalDrawCalls++; },
       createLinearGradient: () => {
-        stats.createLinearGradient++;
+        self.drawStats.createLinearGradient++;
+        self.drawStats.totalDrawCalls++;
         return { addColorStop: noop };
       },
       createRadialGradient: () => {
+        self.drawStats.createRadialGradient++;
+        self.drawStats.totalDrawCalls++;
         return { addColorStop: noop };
       },
       fillStyle: '#000000',
@@ -67,84 +93,24 @@ export class ExperimentalCanvasLayer {
     };
   }
 
-  /**
-   * Wrap 2D context to instrument draw call metrics.
-   * @param {Object} baseRenderContext Standard RenderContext
-   * @returns {Object} Experimental RenderContext with instrumented 2D Context
-   */
   createInstrumentedContext(baseRenderContext) {
-    this.resetStats();
-    const self = this;
-    const ctx = this.rawCtx;
-
-    // Proxy context to intercept draw calls
-    const instrumentedCtx = new Proxy(ctx, {
-      get(target, prop) {
-        if (prop === 'fillRect') {
-          return function(...args) {
-            self.drawStats.fillRect++;
-            self.drawStats.totalDrawCalls++;
-            return target.fillRect ? target.fillRect(...args) : undefined;
-          };
-        }
-        if (prop === 'fill') {
-          return function(...args) {
-            self.drawStats.fill++;
-            self.drawStats.totalDrawCalls++;
-            return target.fill ? target.fill(...args) : undefined;
-          };
-        }
-        if (prop === 'stroke') {
-          return function(...args) {
-            self.drawStats.stroke++;
-            self.drawStats.totalDrawCalls++;
-            return target.stroke ? target.stroke(...args) : undefined;
-          };
-        }
-        if (prop === 'lineTo') {
-          return function(...args) {
-            self.drawStats.lineTo++;
-            self.drawStats.totalDrawCalls++;
-            return target.lineTo ? target.lineTo(...args) : undefined;
-          };
-        }
-        if (prop === 'createLinearGradient') {
-          return function(...args) {
-            self.drawStats.createLinearGradient++;
-            return target.createLinearGradient ? target.createLinearGradient(...args) : { addColorStop: () => {} };
-          };
-        }
-        return target[prop];
-      }
-    });
-
     return {
       ...baseRenderContext,
       canvas: this.canvas,
-      ctx: instrumentedCtx
-    };
-  }
-
-  resetStats() {
-    this.drawStats = {
-      fillRect: 0,
-      stroke: 0,
-      fill: 0,
-      lineTo: 0,
-      createLinearGradient: 0,
-      totalDrawCalls: 0
+      ctx: this.rawCtx
     };
   }
 
   getDiagnostics(renderTimeMs, plugin) {
     return {
       experimentalRenderStatus: 'PASS',
-      target: 'OffscreenCanvas',
+      target: (typeof OffscreenCanvas !== 'undefined') ? 'OffscreenCanvas' : 'MockCanvasContext',
+      offscreenSupported: (typeof OffscreenCanvas !== 'undefined'),
       mainCanvasTouched: false,
       canvasKitTouched: false,
       pluginId: plugin?.id || 'UNKNOWN',
       pluginName: plugin?.name || 'UNKNOWN',
-      renderTimeMs: Math.round(renderTimeMs * 100) / 100,
+      renderTimeMs: Math.round(renderTimeMs * 1000) / 1000,
       drawStats: { ...this.drawStats }
     };
   }
