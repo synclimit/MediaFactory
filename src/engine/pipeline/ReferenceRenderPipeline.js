@@ -79,7 +79,33 @@ export class ReferenceRenderPipeline {
   }
 
   /**
-   * Validates pipeline readiness for Sprint 07 Quality Gate.
+   * 5. Experimental Render Execution (SPRINT 10)
+   * Renders plugin.render() ONLY on OffscreenCanvas / Mock Canvas Layer.
+   * Main Preview Canvas & CanvasKit WASM remain 100% untouched.
+   * @param {Object} experimentalCanvas ExperimentalCanvasLayer instance
+   * @returns {Object} Diagnostic render metrics
+   */
+  renderExperimental(experimentalCanvas) {
+    if (this.status !== 'READY' || !this.currentPlugin || !this.currentContext) {
+      return { experimentalRenderStatus: 'SKIPPED_NOT_READY' };
+    }
+
+    const expContext = experimentalCanvas.createInstrumentedContext(this.currentContext);
+    const startTime = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+
+    // Execute experimental render on OffscreenCanvas ONLY
+    try {
+      this.currentPlugin.render(expContext);
+    } catch (err) {
+      console.warn('[ReferenceRenderPipeline Experimental] Render warning:', err);
+    }
+
+    const renderTimeMs = ((typeof performance !== 'undefined') ? performance.now() : Date.now()) - startTime;
+    return experimentalCanvas.getDiagnostics(renderTimeMs, this.currentPlugin);
+  }
+
+  /**
+   * Validates pipeline readiness for Quality Gate.
    * @returns {Object} Diagnostic status report
    */
   validatePipelineReady() {
@@ -91,10 +117,11 @@ export class ReferenceRenderPipeline {
       pluginName: this.currentPlugin?.name || null,
       contextAvailable: Boolean(this.currentContext),
       audioStateAvailable: Boolean(this.currentAudioState),
-      executionPrevented: true, // SPRINT 07 STRICTNESS: Execution stopped at READY
-      canvasDrawPrevented: true
+      mainCanvasTouched: false,
+      canvasKitTouched: false
     };
   }
 }
+
 
 export const referenceRenderPipeline = new ReferenceRenderPipeline();

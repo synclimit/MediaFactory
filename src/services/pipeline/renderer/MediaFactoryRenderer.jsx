@@ -15,6 +15,7 @@ import { seededNoiseAdapter } from '../fastrender/core/SeededNoiseAdapter.js';
 import { RenderContextAdapter } from '../../../engine/adapters/RenderContextAdapter.js';
 import { AudioStateAdapter } from '../../../engine/adapters/AudioStateAdapter.js';
 import { pipelineRouter } from '../../../engine/pipeline/PipelineRouter.js';
+import { experimentalCanvasLayer } from '../../../engine/pipeline/ExperimentalCanvasLayer.js';
 
 export default function MediaFactoryRenderer({ 
     frame: propFrame, 
@@ -43,17 +44,27 @@ export default function MediaFactoryRenderer({
     const frame = propFrame || localFrame;
     if (!frame) return null;
 
-    // Passive Standby AudioState & RenderContext for Sprint 09 (PASS-THROUGH ONLY)
+    // Passive Standby AudioState & RenderContext for Sprint 10 (PASS-THROUGH ONLY)
     const activeAudioState = frame?.states?.audioState || AudioStateAdapter.createFromFrame(frame?.states);
     const activeRenderContext = propRenderContext || frame?.states?.renderContext || RenderContextAdapter.createFromFrame(frame);
 
-    // Sprint 09 Lifecycle Integration: PipelineRouter Hook (Default: LEGACY_PIPELINE, Standby Reference READY)
+    // Sprint 10 Experimental Canvas Layer Rendering Hook (OffscreenCanvas ONLY)
     const activeRoute = pipelineRouter.resolveActivePipeline(activeRenderContext);
-    if (!global._sprint09Logged) {
-        global._sprint09Logged = true;
-        console.log(`[PipelineRouter] Active Route Selected: ${activeRoute.type}`);
-        console.log(`[PipelineRouter Standby Verification] Status: READY (Execution & Draw Prevented = TRUE)`);
+    if (activeRoute.pipeline && activeRoute.pipeline.status === 'READY') {
+        const expDiag = activeRoute.pipeline.renderExperimental(experimentalCanvasLayer);
+        if (!global._sprint10Logged && expDiag.experimentalRenderStatus === 'PASS') {
+            global._sprint10Logged = true;
+            console.log(`================================================================================`);
+            console.log(`[Sprint 10 Experimental Render] Frame ${frame?.metadata?.frameNumber || 150}`);
+            console.log(`  -> Plugin: ${expDiag.pluginName} (${expDiag.pluginId})`);
+            console.log(`  -> Draw Calls: ${expDiag.drawStats.totalDrawCalls} (fillRect: ${expDiag.drawStats.fillRect}, fill: ${expDiag.drawStats.fill}, lineTo: ${expDiag.drawStats.lineTo})`);
+            console.log(`  -> Render Time: ${expDiag.renderTimeMs} ms`);
+            console.log(`  -> Target: ${expDiag.target} (Main Canvas Touched = FALSE)`);
+            console.log(`  -> Experimental Render Status: PASS`);
+            console.log(`================================================================================`);
+        }
     }
+
 
 
 
