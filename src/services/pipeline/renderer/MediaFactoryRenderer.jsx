@@ -12,8 +12,12 @@ import { beatEngine } from '../../audio/BeatEngine';
 import { fastWorkspaceManager } from '../fastrender/workspace/FastWorkspaceManager.js';
 import { seededNoiseAdapter } from '../fastrender/core/SeededNoiseAdapter.js';
 
+import { RenderContextAdapter } from '../../../engine/adapters/RenderContextAdapter.js';
+import { AudioStateAdapter } from '../../../engine/adapters/AudioStateAdapter.js';
+
 export default function MediaFactoryRenderer({ 
     frame: propFrame, 
+    renderContext: propRenderContext,
     renderMode = 'Preview', 
     targetRef,
     onPointerDown,
@@ -37,6 +41,11 @@ export default function MediaFactoryRenderer({
     
     const frame = propFrame || localFrame;
     if (!frame) return null;
+
+    // Passive Standby AudioState & RenderContext for Sprint 03 (PASS-THROUGH ONLY - Legacy calculations remain 100% active)
+    const activeAudioState = frame?.states?.audioState || AudioStateAdapter.createFromFrame(frame?.states);
+    const activeRenderContext = propRenderContext || frame?.states?.renderContext || RenderContextAdapter.createFromFrame(frame);
+
 
     const { subtitle, visual, beat, objects } = frame.engineStates || frame.states || {};
     const meta = frame.metadata || {};

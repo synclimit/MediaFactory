@@ -1,7 +1,9 @@
 import { RenderFrame } from '../models/RenderFrame';
+import { RenderContextAdapter } from '../../../engine/adapters/RenderContextAdapter.js';
+import { AudioStateAdapter } from '../../../engine/adapters/AudioStateAdapter.js';
 
 /**
- * FrameBuilder
+ * FrameBuilder [Status: ACTIVE - PASS-THROUGH ONLY]
  * 
  * The only valid way to instantiate a RenderFrame.
  * Gathers metadata and engine states, then constructs the immutable frame.
@@ -28,7 +30,21 @@ export class FrameBuilder {
             diagnostics: partialMetadata.diagnostics || []
         };
 
+        // Construct passive AudioState & RenderContext for Sprint 03 (Standby mode - PASS-THROUGH ONLY)
+        const audioState = AudioStateAdapter.createFromFrame(engineStates);
+        const renderContext = RenderContextAdapter.createFromFrame(
+            { metadata, engineStates },
+            { width: partialMetadata.width || 1920, height: partialMetadata.height || 1080 }
+        );
+
+        const updatedEngineStates = {
+            ...engineStates,
+            audioState,    // Passive standby AudioState object
+            renderContext  // Passive standby RenderContext object
+        };
+
         // Instantiate the frame using the secret key
-        return new RenderFrame(RenderFrame.BUILDER_SECRET, metadata, engineStates);
+        return new RenderFrame(RenderFrame.BUILDER_SECRET, metadata, updatedEngineStates);
     }
 }
+

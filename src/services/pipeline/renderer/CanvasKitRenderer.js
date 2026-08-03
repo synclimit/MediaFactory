@@ -100,7 +100,8 @@ export async function renderFrame({
   }
 
   const canvas = persistentSurface.getCanvas();
-  const fftData = generateDeterministicFFT(frameIndex, frameCount, visualizerConfig.barCount || 256);
+  const fftFrame = sharedAudioAnalysisEngine.getFrame('export_session', frameIndex, frameCount);
+  const fftData = fftFrame.spectrum;
 
   const defaultConfig = {
     shape: 'bar',
@@ -114,8 +115,22 @@ export async function renderFrame({
     ...visualizerConfig
   };
 
-  // Render visualizer frame onto persistent Skia surface
-  drawCanvasKitVisualizer(ckInstance, canvas, fftData, defaultConfig, width, height, true);
+  // Passive Standby AudioState & RenderContext construction for Sprint 03 (PASS-THROUGH ONLY - Legacy drawCanvasKitVisualizer remains 100% active)
+  const passiveAudioState = AudioStateAdapter.createFromFrame({ audio: { frequencies: fftData } });
+  const passiveRenderContext = RenderContextAdapter.createFromFrame({
+    metadata: { frameNumber: frameIndex, currentTime: frameIndex / 60, fps: 60 },
+    engineStates: { audioState: passiveAudioState, audio: { frequencies: fftData } }
+  }, { canvas, width, height, config: defaultConfig });
+
+  const sessionId = global._exportSessionId || 'NO_SESSION_ID';
+  const pipelineType = global._isGuiPipeline ? '[GUI PIPELINE]' : '[TEST PIPELINE]';
+  console.log(`=== ${pipelineType} BREAKPOINT: CanvasKitRenderer.renderFrame() ===`);
+  console.log(`Export Session ID : ${sessionId}`);
+  console.log(`Frame Index       : ${frameIndex}`);
+
+  global._currentFrameIndex = frameIndex;
+  // Render visualizer frame onto persistent Skia surface (Legacy Active Pipeline)
+  drawCanvasKitVisualizer(ckInstance, canvas, fftData, defaultConfig, width, height, true, frameIndex);
 
   persistentSurface.flush();
   const image = persistentSurface.makeImageSnapshot();
