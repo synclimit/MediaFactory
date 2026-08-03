@@ -14,6 +14,7 @@ import { VisualizerRegistry } from '../registry/VisualizerRegistry.js';
 import { visualizerRegistryAdapter } from './VisualizerRegistryAdapter.js';
 import { referenceRenderPipeline } from '../pipeline/ReferenceRenderPipeline.js';
 import { pipelineRouter } from '../pipeline/PipelineRouter.js';
+import { cutoverValidator } from '../pipeline/CutoverValidator.js';
 
 export const featureFlags = {
   useReferenceEngine: false,
@@ -33,6 +34,10 @@ export class ReferenceEngineAdapter {
 
   get router() {
     return pipelineRouter;
+  }
+
+  get validator() {
+    return cutoverValidator;
   }
 
 
