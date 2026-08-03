@@ -11,6 +11,8 @@
 
 import { featureFlags } from '../adapters/ReferenceEngineAdapter.js';
 import { referenceRenderPipeline } from './ReferenceRenderPipeline.js';
+import { createRenderContext } from '../contracts/RenderContext.js';
+import { AudioStateAdapter } from '../adapters/AudioStateAdapter.js';
 
 export class PipelineRouter {
   /**
@@ -24,11 +26,13 @@ export class PipelineRouter {
 
     if (isReferenceActive) {
       // Reference Engine Branch (STANDBY READY)
-      const pluginId = options.pluginId || renderContext?.config?.visualizerId || 'B01_ClassicVertical';
+      const ctx = renderContext || createRenderContext({ width: 1920, height: 1080 });
+      const audioState = ctx.audioState || AudioStateAdapter.createFromFrame({});
+      const pluginId = options.pluginId || ctx.config?.visualizerId || 'B01_ClassicVertical';
       
       referenceRenderPipeline
-        .receiveContext(renderContext)
-        .receiveAudioState(renderContext.audioState)
+        .receiveContext(ctx)
+        .receiveAudioState(audioState)
         .resolvePlugin(pluginId)
         .preparePlugin();
 
@@ -40,6 +44,7 @@ export class PipelineRouter {
         featureFlagState: true
       });
     } else {
+
       // Legacy Pipeline Branch (DEFAULT ACTIVE 100%)
       return Object.freeze({
         type: 'LEGACY_PIPELINE',
