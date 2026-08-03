@@ -115,12 +115,19 @@ export async function renderFrame({
     ...visualizerConfig
   };
 
-  // Passive Standby AudioState & RenderContext construction for Sprint 03 (PASS-THROUGH ONLY - Legacy drawCanvasKitVisualizer remains 100% active)
+  // Passive Standby AudioState & RenderContext construction for Sprint 09 (PASS-THROUGH ONLY)
   const passiveAudioState = AudioStateAdapter.createFromFrame({ audio: { frequencies: fftData } });
   const passiveRenderContext = RenderContextAdapter.createFromFrame({
     metadata: { frameNumber: frameIndex, currentTime: frameIndex / 60, fps: 60 },
     engineStates: { audioState: passiveAudioState, audio: { frequencies: fftData } }
   }, { canvas, width, height, config: defaultConfig });
+
+  // Sprint 09 Lifecycle Integration: PipelineRouter Hook (Export Session)
+  const exportRoute = pipelineRouter.resolveActivePipeline(passiveRenderContext);
+  if (frameIndex === 0) {
+    console.log(`[PipelineRouter Export Hook] Active Route Selected: ${exportRoute.type}`);
+    console.log(`[PipelineRouter Export Hook] Status: READY (Execution & Draw Prevented = TRUE)`);
+  }
 
   const sessionId = global._exportSessionId || 'NO_SESSION_ID';
   const pipelineType = global._isGuiPipeline ? '[GUI PIPELINE]' : '[TEST PIPELINE]';

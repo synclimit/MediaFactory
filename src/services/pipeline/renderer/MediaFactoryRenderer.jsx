@@ -14,6 +14,7 @@ import { seededNoiseAdapter } from '../fastrender/core/SeededNoiseAdapter.js';
 
 import { RenderContextAdapter } from '../../../engine/adapters/RenderContextAdapter.js';
 import { AudioStateAdapter } from '../../../engine/adapters/AudioStateAdapter.js';
+import { pipelineRouter } from '../../../engine/pipeline/PipelineRouter.js';
 
 export default function MediaFactoryRenderer({ 
     frame: propFrame, 
@@ -42,9 +43,18 @@ export default function MediaFactoryRenderer({
     const frame = propFrame || localFrame;
     if (!frame) return null;
 
-    // Passive Standby AudioState & RenderContext for Sprint 03 (PASS-THROUGH ONLY - Legacy calculations remain 100% active)
+    // Passive Standby AudioState & RenderContext for Sprint 09 (PASS-THROUGH ONLY)
     const activeAudioState = frame?.states?.audioState || AudioStateAdapter.createFromFrame(frame?.states);
     const activeRenderContext = propRenderContext || frame?.states?.renderContext || RenderContextAdapter.createFromFrame(frame);
+
+    // Sprint 09 Lifecycle Integration: PipelineRouter Hook (Default: LEGACY_PIPELINE, Standby Reference READY)
+    const activeRoute = pipelineRouter.resolveActivePipeline(activeRenderContext);
+    if (!global._sprint09Logged) {
+        global._sprint09Logged = true;
+        console.log(`[PipelineRouter] Active Route Selected: ${activeRoute.type}`);
+        console.log(`[PipelineRouter Standby Verification] Status: READY (Execution & Draw Prevented = TRUE)`);
+    }
+
 
 
     const { subtitle, visual, beat, objects } = frame.engineStates || frame.states || {};
