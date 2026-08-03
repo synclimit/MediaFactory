@@ -16,6 +16,7 @@ import { RenderContextAdapter } from '../../../engine/adapters/RenderContextAdap
 import { AudioStateAdapter } from '../../../engine/adapters/AudioStateAdapter.js';
 import { pipelineRouter } from '../../../engine/pipeline/PipelineRouter.js';
 import { experimentalCanvasLayer } from '../../../engine/pipeline/ExperimentalCanvasLayer.js';
+import { referencePreviewDriver } from '../../../engine/pipeline/ReferencePreviewDriver.js';
 
 export default function MediaFactoryRenderer({ 
     frame: propFrame, 
@@ -44,26 +45,28 @@ export default function MediaFactoryRenderer({
     const frame = propFrame || localFrame;
     if (!frame) return null;
 
-    // Passive Standby AudioState & RenderContext for Sprint 10 (PASS-THROUGH ONLY)
+    // Passive Standby AudioState & RenderContext for Sprint 14 (PASS-THROUGH ONLY)
     const activeAudioState = frame?.states?.audioState || AudioStateAdapter.createFromFrame(frame?.states);
     const activeRenderContext = propRenderContext || frame?.states?.renderContext || RenderContextAdapter.createFromFrame(frame);
 
-    // Sprint 10 Experimental Canvas Layer Rendering Hook (OffscreenCanvas ONLY)
+    // Sprint 14 Official Preview Swap Driver Hook (Default: LEGACY_ACTIVE when useReferenceEngine = false)
+    const driverResult = referencePreviewDriver.renderPreviewFrame(activeRenderContext, null);
+    if (!global._sprint14Logged) {
+        global._sprint14Logged = true;
+        console.log(`================================================================================`);
+        console.log(`[Sprint 14 Official Preview Swap Driver] Driver Mode: ${driverResult.driverMode}`);
+        console.log(`  -> Reference Engine Active = ${driverResult.isReferenceActive}`);
+        console.log(`  -> Legacy Driver Active    = ${driverResult.useLegacyDriver}`);
+        console.log(`  -> Instant Rollback Status = READY (Zero App Restart Required)`);
+        console.log(`================================================================================`);
+    }
+
+    // Experimental Offscreen Canvas Execution (Standby Inspection)
     const activeRoute = pipelineRouter.resolveActivePipeline(activeRenderContext);
     if (activeRoute.pipeline && activeRoute.pipeline.status === 'READY') {
-        const expDiag = activeRoute.pipeline.renderExperimental(experimentalCanvasLayer);
-        if (!global._sprint10Logged && expDiag.experimentalRenderStatus === 'PASS') {
-            global._sprint10Logged = true;
-            console.log(`================================================================================`);
-            console.log(`[Sprint 10 Experimental Render] Frame ${frame?.metadata?.frameNumber || 150}`);
-            console.log(`  -> Plugin: ${expDiag.pluginName} (${expDiag.pluginId})`);
-            console.log(`  -> Draw Calls: ${expDiag.drawStats.totalDrawCalls} (fillRect: ${expDiag.drawStats.fillRect}, fill: ${expDiag.drawStats.fill}, lineTo: ${expDiag.drawStats.lineTo})`);
-            console.log(`  -> Render Time: ${expDiag.renderTimeMs} ms`);
-            console.log(`  -> Target: ${expDiag.target} (Main Canvas Touched = FALSE)`);
-            console.log(`  -> Experimental Render Status: PASS`);
-            console.log(`================================================================================`);
-        }
+        activeRoute.pipeline.renderExperimental(experimentalCanvasLayer);
     }
+
 
 
 
