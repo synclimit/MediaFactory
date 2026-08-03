@@ -20,8 +20,10 @@ import { subtitleAnimationEngine } from '../../services/subtitle/animation/Subti
 import { requestFrame } from '../../services/pipeline/scheduler/RenderScheduler.js';
 import ProductionQAToolkit from './ProductionQAToolkit.jsx';
 import MediaFactoryRenderer from '../../services/pipeline/renderer/MediaFactoryRenderer';
+import ReferencePreviewCanvas from './ReferencePreviewCanvas.jsx';
 
 import { emitRuntimeEvent } from '../../services/RuntimeClient';
+
 import { bootstrapPipeline } from '../../services/pipeline/PipelineBootstrap';
 import { fastWorkspaceManager } from '../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
 import { fastRenderState } from '../../services/pipeline/fastrender/core/FastRenderState.js';
@@ -611,6 +613,8 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
           )}
 
         <ProductionQAToolkit />
+        <ReferencePreviewCanvas width={1920} height={1080} mode="overlay" />
+
 
         {/* Fast Render Preview Mode Badge Overlay */}
         {fastRenderState.isFastMode() && (

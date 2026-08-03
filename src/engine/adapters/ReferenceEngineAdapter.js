@@ -17,9 +17,11 @@ import { pipelineRouter } from '../pipeline/PipelineRouter.js';
 
 export const featureFlags = {
   useReferenceEngine: false,
+  showReferencePreview: false,
   enableStrictRenderContext: false,
   enableValidationEngine: false
 };
+
 
 export class ReferenceEngineAdapter {
   constructor() {
