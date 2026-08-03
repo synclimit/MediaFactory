@@ -1,11 +1,24 @@
+import { CircularPulsePlugin } from '../plugins/CircularPulsePlugin.js';
+import { CyberpunkWaveformPlugin } from '../plugins/CyberpunkWaveformPlugin.js';
+import { SpectrumBarsPlugin } from '../plugins/SpectrumBarsPlugin.js';
+import { ParticleOrbitPlugin } from '../plugins/ParticleOrbitPlugin.js';
+
 /**
- * VisualizerRegistry.js
+ * VisualizerRegistry.js [Status: ACTIVE - PASS-THROUGH ONLY]
  * Central Plugin Manager & Registry Singleton for Production Reference Engine v1.0.
  */
 
 class VisualizerRegistrySingleton {
   constructor() {
     this.plugins = new Map();
+    this.registerBuiltInPlugins();
+  }
+
+  registerBuiltInPlugins() {
+    this.register(new SpectrumBarsPlugin());
+    this.register(new CyberpunkWaveformPlugin());
+    this.register(new CircularPulsePlugin());
+    this.register(new ParticleOrbitPlugin());
   }
 
   register(pluginInstance) {
@@ -14,6 +27,7 @@ class VisualizerRegistrySingleton {
     }
     this.plugins.set(pluginInstance.id, pluginInstance);
   }
+
 
   unregister(pluginId) {
     return this.plugins.delete(pluginId);
