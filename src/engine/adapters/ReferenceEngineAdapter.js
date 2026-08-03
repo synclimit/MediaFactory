@@ -12,6 +12,7 @@ import { createRenderContext } from '../contracts/RenderContext.js';
 import { createAudioState } from '../audio/AudioState.js';
 import { VisualizerRegistry } from '../registry/VisualizerRegistry.js';
 import { visualizerRegistryAdapter } from './VisualizerRegistryAdapter.js';
+import { referenceRenderPipeline } from '../pipeline/ReferenceRenderPipeline.js';
 
 export const featureFlags = {
   useReferenceEngine: false,
@@ -24,7 +25,9 @@ export class ReferenceEngineAdapter {
     this.isInitialized = false;
     this.registry = VisualizerRegistry;
     this.registryAdapter = visualizerRegistryAdapter;
+    this.pipeline = referenceRenderPipeline;
   }
+
 
   initialize() {
     if (this.isInitialized) return true;
