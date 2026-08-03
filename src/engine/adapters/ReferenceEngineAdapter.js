@@ -11,6 +11,7 @@
 import { createRenderContext } from '../contracts/RenderContext.js';
 import { createAudioState } from '../audio/AudioState.js';
 import { VisualizerRegistry } from '../registry/VisualizerRegistry.js';
+import { visualizerRegistryAdapter } from './VisualizerRegistryAdapter.js';
 
 export const featureFlags = {
   useReferenceEngine: false,
@@ -22,6 +23,7 @@ export class ReferenceEngineAdapter {
   constructor() {
     this.isInitialized = false;
     this.registry = VisualizerRegistry;
+    this.registryAdapter = visualizerRegistryAdapter;
   }
 
   initialize() {
@@ -39,12 +41,14 @@ export class ReferenceEngineAdapter {
   }
 
   getPlugin(pluginId) {
-    return this.registry.getPlugin(pluginId);
+    const mappedId = this.registryAdapter.getMappedReferenceId(pluginId);
+    return this.registry.getPlugin(mappedId) || this.registry.getPlugin(pluginId);
   }
 
   isReferenceEngineActive() {
     return featureFlags.useReferenceEngine === true;
   }
 }
+
 
 export const referenceEngineAdapter = new ReferenceEngineAdapter();
