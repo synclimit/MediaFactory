@@ -9,6 +9,7 @@
  */
 
 import { createAudioState } from '../audio/AudioState.js';
+import { ReferenceBeatEngineAdapter } from './ReferenceBeatEngineAdapter.js';
 
 export class AudioStateAdapter {
   /**
@@ -76,6 +77,9 @@ export class AudioStateAdapter {
     const normalizedFreqs = AudioStateAdapter.normalizeFrequencies(rawFreqs);
     const bands = AudioStateAdapter.calculateBands(normalizedFreqs);
 
+    // Compute passive standby Reference BeatState for Sprint 04 Coexistence (PASS-THROUGH ONLY)
+    const refBeatState = ReferenceBeatEngineAdapter.calculateBeatState(normalizedFreqs, beat);
+
     const rawEnergy = beat.energy !== undefined ? beat.energy : (audio.energy || 0);
     const energy = rawEnergy > 1.0 ? rawEnergy / 255.0 : rawEnergy;
 
@@ -88,13 +92,14 @@ export class AudioStateAdapter {
       highMid: bands.highMid,
       treble: beat.treble !== undefined ? beat.treble : bands.treble,
       energy: Math.min(Math.max(energy, 0.0), 1.0),
-      RMS: audio.rms || energy,
-      kick: Boolean(beat.kick),
-      snare: Boolean(beat.snare),
-      beatStrength: beat.beatStrength || energy,
-      spectralFlux: audio.spectralFlux || 0,
+      RMS: refBeatState.RMS || audio.rms || energy,
+      kick: refBeatState.kick || Boolean(beat.kick),
+      snare: refBeatState.snare || Boolean(beat.snare),
+      beatStrength: refBeatState.beatStrength || beat.beatStrength || energy,
+      spectralFlux: refBeatState.spectralFlux || audio.spectralFlux || 0,
       frequencies: normalizedFreqs,
       waveform: audio.waveform || new Float32Array(64)
     });
   }
 }
+
