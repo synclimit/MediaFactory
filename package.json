@@ -1,7 +1,7 @@
 {
   "name": "mediafactory",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.9",
   "description": "MediaFactory Desktop App",
   "author": "MediaFactory",
   "repository": {
@@ -26,15 +26,16 @@
     "files": [
       "dist/**/*",
       "backend/**/*",
+      "electron/main.cjs",
       "electron/**/*",
-      "src/services/m1/**/*",
+      "src/**/*",
       "package.json",
       "dummy.mp4",
       "test_bg.mp4",
       "test_audio.mp3"
     ],
     "directories": {
-      "output": "dist-electron"
+      "output": "dist-release"
     },
     "npmRebuild": false,
     "buildDependenciesFromSource": false,
@@ -47,6 +48,13 @@
       "allowToChangeInstallationDirectory": true
     },
     "extraResources": [
+      {
+        "from": "backend/bin",
+        "to": "backend/bin",
+        "filter": [
+          "**/*"
+        ]
+      },
       {
         "from": "backend/ffmpeg",
         "to": "backend/ffmpeg",

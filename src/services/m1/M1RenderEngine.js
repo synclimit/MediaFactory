@@ -1,8 +1,33 @@
 import { exec, spawn } from 'child_process';
 import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
 
 import { FilterGraphBuilder } from './builders/FilterGraphBuilder.js';
+
+function resolveYtDlpPath() {
+  const candidatePaths = [
+    process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'yt-dlp.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'yt-dlp.exe') : '',
+    path.join(process.cwd(), 'backend', 'bin', 'yt-dlp.exe'),
+    path.join(process.cwd(), 'bin', 'yt-dlp.exe')
+  ];
+  for (const p of candidatePaths) {
+    if (p && existsSync(p)) return p;
+  }
+  return 'yt-dlp';
+}
+
+function resolveFFmpegDir() {
+  const candidatePaths = [
+    process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin') : '',
+    path.join(process.cwd(), 'backend', 'bin')
+  ];
+  for (const p of candidatePaths) {
+    if (p && existsSync(p)) return p;
+  }
+  return process.cwd();
+}
 
 export async function processM1Job(job, updateProgress, onComplete, onError) {
   const cacheDir = path.resolve('Workspace/Cache/M1');
@@ -60,8 +85,9 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     const videoIn = typeof job.inputVideo === 'object' ? job.inputVideo.fullPath : job.inputVideo;
     let audioIn = job.audioPath || job.tracks[0];
     
+
     // YouTube Audio Check
-    if (audioIn && (audioIn.includes('youtube.com') || audioIn.includes('youtu.be'))) {
+    if (audioIn && (audioIn.includes('youtube.com') || audioIn.includes('youtu.be') || /^[a-zA-Z0-9_-]{11}$/.test(audioIn))) {
       updateProgress(2, 'Downloading YouTube Audio');
       const crypto = await import('crypto');
       const hashUri = (uri) => crypto.createHash('md5').update(uri).digest('hex').substring(0, 8);
@@ -73,9 +99,37 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
         else throw new Error('Cache file empty');
       } catch (e) {
         await new Promise((resolve, reject) => {
-          const ytProc = spawn('yt-dlp', ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', audioIn], { shell: true });
-          ytProc.on('close', (code) => { if (code === 0) resolve(); else reject(new Error('yt-dlp failed to download audio')); });
-          ytProc.on('error', reject);
+          const ytBin = resolveYtDlpPath();
+          const ffmpegDir = resolveFFmpegDir();
+          const targetUrl = (audioIn.includes('http://') || audioIn.includes('https://')) 
+            ? audioIn 
+            : `https://www.youtube.com/watch?v=${audioIn}`;
+
+          const ytArgs = [
+            '--no-check-certificates',
+            '--force-ipv4',
+            '--extractor-args', 'youtube:player_client=android,web',
+            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0',
+            '--no-warnings',
+            '--no-playlist',
+            '-x',
+            '--audio-format', 'mp3',
+            '--ffmpeg-location', ffmpegDir,
+            '-o', ytOut,
+            '--',
+            targetUrl
+          ];
+
+          const ytProc = spawn(ytBin, ytArgs);
+          let stderrLog = '';
+          if (ytProc.stderr) {
+            ytProc.stderr.on('data', d => stderrLog += d.toString());
+          }
+          ytProc.on('close', (code) => { 
+            if (code === 0) resolve(); 
+            else reject(new Error(`yt-dlp failed to download audio (code ${code}): ${stderrLog.slice(-300)}`)); 
+          });
+          ytProc.on('error', (err) => reject(new Error(`yt-dlp process error: ${err.message}`)));
         });
         audioIn = ytOut;
       }
