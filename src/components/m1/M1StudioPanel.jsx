@@ -11,7 +11,8 @@ export default function M1StudioPanel(props) {
     isDevMode, m1Slots, updateM1Slot, isDuplicateOutput, isDuplicateSource, isQueuedOutput, isQueuedSource,
     m1QueueSummary, setM1QueueSummary, handleResetModeForm, m1VideoProbing, handleVideoUploadChange,
     selectedVideo, handleManualVideoPathChange, m1VideoProbeError, m1TargetSegment, setM1TargetSegment,
-    m1Watermark, setM1Watermark, m1Subscribe, setM1Subscribe, pipelineHistoryEngine, setActiveMode, handleAddToQueue
+    m1Watermark, setM1Watermark, m1Subscribe, setM1Subscribe, pipelineHistoryEngine, setActiveMode, handleAddToQueue,
+    m1VideoRotation, handleRotateVideo
   } = props;
 
   return (
@@ -51,6 +52,8 @@ export default function M1StudioPanel(props) {
             setM1Watermark={setM1Watermark}
             m1Subscribe={m1Subscribe}
             setM1Subscribe={setM1Subscribe}
+            m1VideoRotation={m1VideoRotation}
+            handleRotateVideo={handleRotateVideo}
           />
 
           {/* BOTTOM ROW: Slot Manager */}
@@ -77,6 +80,8 @@ export default function M1StudioPanel(props) {
             selectedVideo={selectedVideo}
             handleManualVideoPathChange={handleManualVideoPathChange}
             m1VideoProbeError={m1VideoProbeError}
+            m1VideoRotation={m1VideoRotation}
+            handleRotateVideo={handleRotateVideo}
           />
         </div>
       )}

@@ -100,8 +100,8 @@ export default function App() {
     return localStorage.getItem('pipelineDrawerCollapsed') === 'true';
   });
 
-  const [appState, setAppState] = useState('SPLASH'); // 'SPLASH' | 'PICKER' | 'WIZARD' | 'EDITOR'
-  const [activeWorkspace, setActiveWorkspace] = useState(null);
+  const [appState, setAppState] = useState('EDITOR'); // 'SPLASH' | 'PICKER' | 'WIZARD' | 'EDITOR'
+  const [activeWorkspace, setActiveWorkspace] = useState(() => localStorage.getItem('mf_active_workspace') || 'Test 1');
   const [hardwareStats, setHardwareStats] = useState({ cpu: 12, gpu: 18, ram: 32 });
   const [fps, setFps] = useState(60);
 
@@ -308,6 +308,11 @@ export default function App() {
   const [m1Watermark, setM1Watermark] = useState(false);
   const [m1Subscribe, setM1Subscribe] = useState(false);
   const [m1Quality, setM1Quality] = useState('240p');
+  const [m1VideoRotation, setM1VideoRotation] = useState(0); // 0, 90, 180, 270
+
+  const handleRotateVideo = () => {
+    setM1VideoRotation(prev => (prev + 90) % 360);
+  };
 
   // Calculate Mode 1 slots dynamically using precise seconds (at least 1 slot if video loaded)
   const m1SlotCount = selectedVideo?.metadata ? Math.max(1, Math.floor(selectedVideo.metadata.durationSec / (m1TargetSegment * 60))) : 0;
@@ -949,10 +954,19 @@ export default function App() {
 
   const checkWorkspaces = useCallback(async () => {
     try {
+      const storedLastWs = localStorage.getItem('mf_active_workspace');
       const res = await fetch('/api/v1/system/workspace/list');
       const data = await res.json();
       if (data.success && data.data && data.data.length > 0) {
-        setAppState('PICKER');
+        const targetWs = (storedLastWs && data.data.some(w => w.name === storedLastWs))
+          ? storedLastWs
+          : data.data[0].name;
+        
+        if (targetWs) {
+          handleWorkspaceSelected(targetWs);
+        } else {
+          setAppState('PICKER');
+        }
       } else {
         setAppState('WIZARD');
       }
@@ -972,6 +986,7 @@ export default function App() {
 
   const handleWorkspaceSelected = async (name) => {
     try {
+        localStorage.setItem('mf_active_workspace', name);
         const res = await fetch(`/api/v1/system/workspace/${name}/settings`);
         const data = await res.json();
         if (data.success && data.data) {
@@ -1655,7 +1670,9 @@ export default function App() {
           bufferSec: 300,
           watermarkEnabled: m1Watermark,
           subscribeEnabled: m1Subscribe,
+          rotation: m1VideoRotation || 0,
           effects: {
+            rotation: m1VideoRotation || 0,
             logo: { enabled: slot.useLogoChannel || false, asset: workspaceConfig?.branding?.logo || 'logo.png', opacity: 1, position: 'bottom-right' },
             subscribe: { enabled: slot.useSubscribe || false, asset: workspaceConfig?.branding?.subscribeAnim || 'subscribe.webm', position: 'center' },
             overlay: { enabled: slot.useOverlay || false, asset: workspaceConfig?.branding?.overlay || 'overlay.png', position: 'bottom-left' },
@@ -2571,6 +2588,7 @@ export default function App() {
               setM1Watermark={setM1Watermark} m1Subscribe={m1Subscribe}
               setM1Subscribe={setM1Subscribe} pipelineHistoryEngine={pipelineHistoryEngine}
               setActiveMode={setActiveMode} handleAddToQueue={handleOpenReviewDialog}
+              m1VideoRotation={m1VideoRotation} handleRotateVideo={handleRotateVideo}
             />
           )}
 

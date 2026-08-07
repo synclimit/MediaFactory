@@ -1,7 +1,7 @@
 import React from 'react';
 import Tooltip from '../ui/Tooltip.jsx';
 
-export default function M1VideoUpload({ m1VideoProbing, handleVideoUploadChange, selectedVideo, handleManualVideoPathChange, m1VideoProbeError }) {
+export default function M1VideoUpload({ m1VideoProbing, handleVideoUploadChange, selectedVideo, handleManualVideoPathChange, m1VideoProbeError, m1VideoRotation = 0, handleRotateVideo }) {
   
   const handleNativeDialog = async () => {
     try {
@@ -82,7 +82,8 @@ export default function M1VideoUpload({ m1VideoProbing, handleVideoUploadChange,
           <video 
             src={selectedVideo.previewUrl} 
             controls 
-            className="w-full h-full object-contain bg-black"
+            className="w-full h-full object-contain bg-black transition-transform duration-300"
+            style={{ transform: `rotate(${m1VideoRotation}deg)` }}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-gray-500 font-mono text-sm">
@@ -90,9 +91,20 @@ export default function M1VideoUpload({ m1VideoProbing, handleVideoUploadChange,
           </div>
         )}
 
-        {/* Change Video Button (Top Right) */}
-        <div className="absolute top-2 right-2">
-          <div onClick={handleNativeDialog} className="bg-black/70 hover:bg-orange-600 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded border border-white/20 hover:border-orange-400 transition-colors shadow-lg flex items-center gap-1.5 cursor-pointer">
+        {/* Change Video & Rotate Buttons (Top Right) */}
+        <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+          <button 
+            onClick={handleRotateVideo}
+            type="button"
+            className="bg-black/70 hover:bg-orange-600 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1.5 rounded border border-white/20 hover:border-orange-400 transition-all shadow-lg flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
+            title="Rotate Video 90° (Change Aspect Ratio to 16:9)"
+          >
+            <svg className="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span>ROTATE {m1VideoRotation ? `${m1VideoRotation}°` : '90°'}</span>
+          </button>
+          <div onClick={handleNativeDialog} className="bg-black/70 hover:bg-orange-600 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1.5 rounded border border-white/20 hover:border-orange-400 transition-all shadow-lg flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95">
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             GANTI
           </div>

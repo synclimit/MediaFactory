@@ -13,7 +13,9 @@ export default function M1TopSection({
   m1Watermark,
   setM1Watermark,
   m1Subscribe,
-  setM1Subscribe
+  setM1Subscribe,
+  m1VideoRotation,
+  handleRotateVideo
 }) {
   return (
     <div className="relative bg-gradient-to-br from-[#1b1d22] via-[#14151a] to-[#0d0e12] rounded-xl border border-[#2a2c33] shadow-[0_15px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05),inset_0_-1px_2px_rgba(0,0,0,0.5)] p-4 flex items-stretch gap-6 group shrink-0 h-auto">
@@ -39,6 +41,8 @@ export default function M1TopSection({
         selectedVideo={selectedVideo}
         handleManualVideoPathChange={handleManualVideoPathChange}
         m1VideoProbeError={m1VideoProbeError}
+        m1VideoRotation={m1VideoRotation}
+        handleRotateVideo={handleRotateVideo}
       />
       
       {/* Segment Duration Selection (Only visible if video selected) */}
