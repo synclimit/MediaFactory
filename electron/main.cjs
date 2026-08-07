@@ -3,43 +3,50 @@ const path = require('path');
 const { startServer } = require('../backend/server');
 const { autoUpdater } = require('electron-updater');
 
+// Fix Chromium GPU Cache "Access is denied (0x5)" black screen bug on Windows
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+app.commandLine.appendSwitch('disable-http-cache');
+
 let mainWindow;
 let backendServer;
 
 async function createWindow() {
-    // Start backend server on fixed port so Chrome Extension can connect
     backendServer = await startServer(18888);
-    const port = (backendServer && typeof backendServer.address === 'function' && backendServer.address()) ? backendServer.address().port : 18888;
+    const serverPort = (backendServer && typeof backendServer.address === 'function' && backendServer.address())
+        ? backendServer.address().port
+        : 18888;
 
     mainWindow = new BrowserWindow({
         width: 1366,
         height: 768,
         minWidth: 1024,
         minHeight: 600,
-        backgroundColor: '#000000',
+        backgroundColor: '#111319',
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
-            webSecurity: false // Bypasses local file CORS for easier video previewing
+            webSecurity: false
         }
     });
 
     mainWindow.setMenuBarVisibility(false);
 
-    // If running in dev mode, connect to Vite dev server
-    // If packaged, load the built HTML file via the random backend port
     const isDev = process.env.NODE_ENV === 'development';
-    
+    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+
     if (isDev) {
-        mainWindow.loadURL('http://localhost:5173');
-        mainWindow.webContents.openDevTools();
+        mainWindow.loadURL('http://localhost:5173').catch(() => {
+            console.log(`[Electron] Dev server unavailable, loading http://localhost:${serverPort}`);
+            mainWindow.loadURL(`http://localhost:${serverPort}`).catch(() => mainWindow.loadFile(indexPath));
+        });
     } else {
-        const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
-        const targetUrl = port ? `http://localhost:${port}` : `file://${indexPath}`;
-        mainWindow.loadURL(targetUrl).catch(() => {
+        mainWindow.loadURL(`http://localhost:${serverPort}`).catch(() => {
+            console.log('[Electron] HTTP server loadURL failed, falling back to loadFile');
             mainWindow.loadFile(indexPath);
         });
     }
+
+    mainWindow.webContents.openDevTools();
 
     mainWindow.on('closed', () => {
         mainWindow = null;
@@ -111,57 +118,159 @@ app.on('window-all-closed', () => {
     }
 });
 
-// IPC Listeners for UI-triggered updates
-ipcMain.on('check-for-updates', async () => {
+let pendingUpdateExePath = null;
+let latestReleaseAssetInfo = null;
+
+function isVersionGreater(v1, v2) {
+    const clean = (v) => (v || '').toString().replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+    const p1 = clean(v1);
+    const p2 = clean(v2);
+    for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+        const n1 = p1[i] || 0;
+        const n2 = p2[i] || 0;
+        if (n1 > n2) return true;
+        if (n1 < n2) return false;
+    }
+    return false;
+}
+
+function checkGitHubReleaseREST() {
+    return new Promise((resolve, reject) => {
+        const token = getUpdateToken();
+        const https = require('https');
+        const req = https.request({
+            hostname: 'api.github.com',
+            path: '/repos/synclimit/MediaFactory/releases/latest',
+            method: 'GET',
+            headers: {
+                'User-Agent': 'MediaFactoryApp',
+                'Authorization': `Bearer ${token}`
+            }
+        }, (res) => {
+            let body = '';
+            res.on('data', c => body += c);
+            res.on('end', () => {
+                if (res.statusCode === 200) {
+                    try { resolve(JSON.parse(body)); }
+                    catch (e) { reject(e); }
+                } else {
+                    reject(new Error(`GitHub API HTTP ${res.statusCode}`));
+                }
+            });
+        });
+        req.on('error', reject);
+        req.end();
+    });
+}
+
+function downloadReleaseAsset(assetUrl, destPath, onProgress) {
+    return new Promise((resolve, reject) => {
+        const token = getUpdateToken();
+        const https = require('https');
+        const fs = require('fs');
+        const req = https.request(assetUrl, {
+            method: 'GET',
+            headers: {
+                'User-Agent': 'MediaFactoryApp',
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/octet-stream'
+            }
+        }, (res) => {
+            if (res.statusCode === 302 || res.statusCode === 301) {
+                return https.get(res.headers.location, (redirectRes) => {
+                    if (redirectRes.statusCode !== 200) return reject(new Error(`HTTP ${redirectRes.statusCode}`));
+                    const totalBytes = parseInt(redirectRes.headers['content-length'] || '0', 10);
+                    let downloadedBytes = 0;
+                    const fileStream = fs.createWriteStream(destPath);
+                    redirectRes.on('data', (chunk) => {
+                        downloadedBytes += chunk.length;
+                        if (onProgress && totalBytes > 0) {
+                            onProgress(Math.round((downloadedBytes / totalBytes) * 100));
+                        }
+                    });
+                    redirectRes.pipe(fileStream);
+                    fileStream.on('finish', () => {
+                        fileStream.close();
+                        resolve(destPath);
+                    });
+                    fileStream.on('error', reject);
+                }).on('error', reject);
+            } else if (res.statusCode === 200) {
+                const totalBytes = parseInt(res.headers['content-length'] || '0', 10);
+                let downloadedBytes = 0;
+                const fileStream = fs.createWriteStream(destPath);
+                res.on('data', (chunk) => {
+                    downloadedBytes += chunk.length;
+                    if (onProgress && totalBytes > 0) {
+                        onProgress(Math.round((downloadedBytes / totalBytes) * 100));
+                    }
+                });
+                res.pipe(fileStream);
+                fileStream.on('finish', () => {
+                    fileStream.close();
+                    resolve(destPath);
+                });
+                fileStream.on('error', reject);
+            } else {
+                reject(new Error(`HTTP ${res.statusCode}`));
+            }
+        });
+        req.on('error', reject);
+        req.end();
+    });
+}
+
+async function performUpdateCheck() {
     if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
     try {
-        if (!app.isPackaged) {
-            setTimeout(() => {
-                if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
-            }, 600);
-            return;
+        const release = await checkGitHubReleaseREST();
+        const latestTag = release.tag_name || release.name || '';
+        const currentVer = app.getVersion() || '1.0.8';
+        
+        if (isVersionGreater(latestTag, currentVer)) {
+            const exeAsset = (release.assets || []).find(a => a.name.endsWith('.exe'));
+            if (exeAsset) {
+                latestReleaseAssetInfo = { tag: latestTag, assetUrl: exeAsset.url, name: exeAsset.name };
+                if (mainWindow) {
+                    mainWindow.webContents.send('update-status', { status: 'available', version: latestTag });
+                }
+                return;
+            }
         }
-        const token = getUpdateToken();
-        autoUpdater.setFeedURL({
-            provider: 'github',
-            owner: 'synclimit',
-            repo: 'MediaFactory',
-            private: true,
-            token: token
-        });
-        await autoUpdater.checkForUpdates();
-    } catch (err) {
+        if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
+    } catch (e) {
+        console.error('[Update Check Error]', e);
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
     }
-});
+}
 
+async function performUpdateDownload() {
+    if (!latestReleaseAssetInfo) return;
+    const os = require('os');
+    const destPath = path.join(os.tmpdir(), `MediaFactory-Setup-${latestReleaseAssetInfo.tag}.exe`);
+    
+    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', progress: 0, version: latestReleaseAssetInfo.tag });
+    
+    try {
+        await downloadReleaseAsset(latestReleaseAssetInfo.assetUrl, destPath, (pct) => {
+            if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', progress: pct, version: latestReleaseAssetInfo.tag });
+        });
+        pendingUpdateExePath = destPath;
+        if (mainWindow) mainWindow.webContents.send('update-status', { status: 'ready', version: latestReleaseAssetInfo.tag });
+    } catch (e) {
+        console.error('[Update Download Error]', e);
+        if (mainWindow) mainWindow.webContents.send('update-status', { status: 'error' });
+    }
+}
+
+ipcMain.on('check-for-updates', performUpdateCheck);
+ipcMain.on('download-update', performUpdateDownload);
 ipcMain.on('install-update', () => {
-    autoUpdater.quitAndInstall();
-});
-
-// Auto Updater Events - Forwarded to UI
-autoUpdater.on('checking-for-update', () => {
-    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
-});
-
-autoUpdater.on('update-available', (info) => {
-    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'available', version: info.version });
-});
-
-autoUpdater.on('update-not-available', (info) => {
-    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
-});
-
-autoUpdater.on('download-progress', (progressObj) => {
-    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', progress: progressObj.percent });
-});
-
-autoUpdater.on('update-downloaded', (info) => {
-    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'ready', version: info.version });
-});
-
-autoUpdater.on('error', (err) => {
-    if (mainWindow) {
-        mainWindow.webContents.send('update-status', { status: 'not-available' });
+    if (pendingUpdateExePath && require('fs').existsSync(pendingUpdateExePath)) {
+        const { spawn } = require('child_process');
+        spawn(pendingUpdateExePath, [], { detached: true, stdio: 'ignore' });
+        app.quit();
+    } else {
+        performUpdateDownload();
     }
 });

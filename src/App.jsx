@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import packageJson from '../package.json';
+const APP_VERSION = packageJson.version || '1.0.8';
 
 // ─── Platform Foundation (TASK_00) ───────────────────────────────────────────
 // Safe integration point — does NOT modify M1 logic.
@@ -830,6 +832,9 @@ export default function App() {
         const { ipcRenderer } = window.require('electron');
         if (updateState.status === 'ready') {
           ipcRenderer.send('install-update');
+        } else if (updateState.status === 'available') {
+          setUpdateState(prev => ({ ...prev, status: 'downloading', progress: 0 }));
+          ipcRenderer.send('download-update');
         } else {
           setUpdateState({ status: 'checking', progress: 0, version: '' });
           ipcRenderer.send('check-for-updates');
@@ -1599,6 +1604,7 @@ export default function App() {
         const uuid = crypto.randomUUID().slice(0,6).toUpperCase();
         const d = new Date();
         const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`;
+        const rid = `m1_${dateStr}_${uuid}`;
         const safeTitle = slot.outputName.replace('.mp4', '').replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, ' ').trim();
         const yyyymmdd = d.toISOString().split('T')[0];
         const customOutputDir = workspaceConfig?.output?.main || (activeWorkspace ? localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) : '') || 'Output';
@@ -2468,16 +2474,17 @@ export default function App() {
                     <button
                       onClick={handleCheckUpdate}
                       disabled={updateState.status === 'checking' || updateState.status === 'downloading'}
-                      className={`w-full text-left text-xs ${updateState.status === 'ready' ? 'text-green-400 font-bold hover:bg-green-500/10 border hover:border-green-500/20' : 'text-gray-300 hover:text-orange-100 hover:bg-orange-500/10 border border-transparent hover:border-orange-500/20'} px-2 py-1.5 rounded-lg flex items-center justify-between transition-all`}
+                      className={`w-full text-left text-xs ${updateState.status === 'ready' || updateState.status === 'available' ? 'text-emerald-400 font-bold hover:bg-emerald-500/10 border border-emerald-500/30' : 'text-gray-300 hover:text-orange-100 hover:bg-orange-500/10 border border-transparent hover:border-orange-500/20'} px-2 py-1.5 rounded-lg flex items-center justify-between transition-all`}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-orange-500 text-sm drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]">🔄</span> 
-                        {updateState.status === 'idle' && "Check for Updates (v1.0.3)"}
-                        {updateState.status === 'checking' && "Checking... (v1.0.3)"}
-                        {updateState.status === 'not-available' && "Up to date (v1.0.3) ✓"}
-                        {updateState.status === 'downloading' && `Downloading v1.0.3 (${Math.round(updateState.progress)}%)`}
-                        {updateState.status === 'ready' && `Restart to Update (v${updateState.version || '1.0.3'})`}
-                        {updateState.status === 'error' && "Update Failed (v1.0.3)"}
+                        {updateState.status === 'idle' && `Check for Updates (v${APP_VERSION})`}
+                        {updateState.status === 'checking' && `Checking... (v${APP_VERSION})`}
+                        {updateState.status === 'not-available' && `Up to date (v${APP_VERSION}) ✓`}
+                        {updateState.status === 'available' && `New v${updateState.version} Available! (Click to Download)`}
+                        {updateState.status === 'downloading' && `Downloading v${updateState.version || APP_VERSION} (${Math.round(updateState.progress)}%)`}
+                        {updateState.status === 'ready' && `Restart to Update (v${updateState.version || APP_VERSION})`}
+                        {updateState.status === 'error' && `Update Failed (v${APP_VERSION})`}
                       </div>
                       {updateState.status === 'downloading' && (
                         <div className="w-10 h-1 bg-gray-700 rounded-full overflow-hidden">
