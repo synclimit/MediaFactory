@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DebugActions from '../components/diagnostics/DebugActions.jsx';
 import M3DynamicContentPanel from '../components/m3/M3DynamicContentPanel.jsx';
 import M3ObjectInspector from '../components/m3/M3ObjectInspector.jsx';
+import VisualizerVerificationInspector from '../components/m3/debug/VisualizerVerificationInspector.jsx';
 
 export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Props = null }) {
     const [stateData, setStateData] = useState(null);
@@ -249,90 +250,8 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
 
                             {/* VISUALIZER PARITY TAB */}
                             {activeTab === 'Visualizer Parity (100%)' && (
-                                <div className="space-y-6">
-                                    <div className="bg-[#13161D] p-6 rounded-lg border border-gray-800 flex justify-between items-center shadow-md">
-                                        <div>
-                                            <h3 className="text-white font-bold text-lg flex items-center gap-2">
-                                                <span>🔍 Visualizer Engine Single-Source-of-Truth Parity Inspector</span>
-                                                <span className="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono px-2 py-0.5 rounded font-bold">100.00% MATCH</span>
-                                            </h3>
-                                            <p className="text-gray-400 text-xs mt-1">Verifikasi presisi piksel real-time antara HTML5 Live Editor Plugin vs Backend BMP Renderer Engine.</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <div className="text-right font-mono text-xs text-gray-400">
-                                                <div>FRAME RATE: <b className="text-emerald-400">60 FPS</b></div>
-                                                <div>CORE SCALE: <b className="text-cyan-400">0.85 EXACT</b></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                        <div className="bg-[#13161D] p-4 rounded-lg border border-gray-800 flex flex-col items-center">
-                                            <div className="text-xs font-bold text-gray-300 mb-2 uppercase tracking-wider">1. Live Editor Preview Canvas</div>
-                                            <div className="border border-gray-800 rounded bg-black w-full h-48 flex items-center justify-center relative overflow-hidden">
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <div className="w-20 h-20 rounded-full border-2 border-cyan-400 animate-ping opacity-75" />
-                                                    <div className="w-16 h-16 rounded-full border-4 border-cyan-500 bg-cyan-500/20 absolute" />
-                                                </div>
-                                                <span className="absolute bottom-2 left-2 text-[9px] font-mono text-cyan-400 bg-black/70 px-1.5 py-0.5 rounded">CIRCULAR_PULSE (Frontend)</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-[#13161D] p-4 rounded-lg border border-gray-800 flex flex-col items-center">
-                                            <div className="text-xs font-bold text-gray-300 mb-2 uppercase tracking-wider">2. Backend BMP Export Engine</div>
-                                            <div className="border border-gray-800 rounded bg-black w-full h-48 flex items-center justify-center relative overflow-hidden">
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <div className="w-20 h-20 rounded-full border-2 border-cyan-400 animate-ping opacity-75" />
-                                                    <div className="w-16 h-16 rounded-full border-4 border-cyan-500 bg-cyan-500/20 absolute" />
-                                                </div>
-                                                <span className="absolute bottom-2 left-2 text-[9px] font-mono text-emerald-400 bg-black/70 px-1.5 py-0.5 rounded">CIRCULAR_PULSE (m3-render.js)</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-[#13161D] p-4 rounded-lg border border-gray-800 flex flex-col items-center">
-                                            <div className="text-xs font-bold text-gray-300 mb-2 uppercase tracking-wider">3. Pixel Difference Heatmap</div>
-                                            <div className="border border-gray-800 rounded bg-black w-full h-48 flex items-center justify-center relative overflow-hidden">
-                                                <div className="absolute inset-0 flex items-center justify-center text-center p-4">
-                                                    <div className="text-emerald-400 font-black text-2xl font-mono">0 MISMATCH</div>
-                                                </div>
-                                                <span className="absolute bottom-2 left-2 text-[9px] font-mono text-emerald-400 bg-black/70 px-1.5 py-0.5 rounded">100.00% IDENTICAL PASS</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-[#13161D] p-4 rounded-lg border border-gray-800 space-y-3">
-                                        <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">Pipeline Verification Checklist:</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                                            <div className="bg-[#1A1D24] p-3 rounded border border-gray-800 flex items-start gap-2.5">
-                                                <span className="text-emerald-400 font-bold">✓</span>
-                                                <div>
-                                                    <div className="font-bold text-gray-200">Core Radius Scale Ratio (0.85)</div>
-                                                    <div className="text-[11px] text-gray-400">Frontend plugin & backend per-frame BMP generator synchronized at exact 0.85 scale.</div>
-                                                </div>
-                                            </div>
-                                            <div className="bg-[#1A1D24] p-3 rounded border border-gray-800 flex items-start gap-2.5">
-                                                <span className="text-emerald-400 font-bold">✓</span>
-                                                <div>
-                                                    <div className="font-bold text-gray-200">FFmpeg Sequence Export (-loop 1 disabled)</div>
-                                                    <div className="text-[11px] text-gray-400">FFmpeg streams all generated frame sequence images dynamically without locking frame 0.</div>
-                                                </div>
-                                            </div>
-                                            <div className="bg-[#1A1D24] p-3 rounded border border-gray-800 flex items-start gap-2.5">
-                                                <span className="text-emerald-400 font-bold">✓</span>
-                                                <div>
-                                                    <div className="font-bold text-gray-200">Hex Color Code Sanitation (toHex6)</div>
-                                                    <div className="text-[11px] text-gray-400">All addColorStop gradient calls sanitized against DOMException syntax crashes.</div>
-                                                </div>
-                                            </div>
-                                            <div className="bg-[#1A1D24] p-3 rounded border border-gray-800 flex items-start gap-2.5">
-                                                <span className="text-emerald-400 font-bold">✓</span>
-                                                <div>
-                                                    <div className="font-bold text-gray-200">Position Clamping Removed</div>
-                                                    <div className="text-[11px] text-gray-400">Top-left coordinate offset Math.max(0) clamping unblocked for exact canvas positioning.</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div className="h-full relative overflow-hidden rounded-xl bg-[#0a0c14]">
+                                    <VisualizerVerificationInspector isOpen={true} onClose={() => setActiveTab('Overview')} />
                                 </div>
                             )}
 
