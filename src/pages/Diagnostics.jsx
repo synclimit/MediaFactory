@@ -85,12 +85,41 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                     </div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                    {/* Featured M3 Diagnostic Tools */}
+                    <div className="space-y-1.5 pb-2 border-b border-gray-800">
+                        <div className="text-[9px] font-black uppercase text-cyan-400 tracking-widest px-1">M3 VISUALIZER & TOOLS DIAGNOSTIC</div>
+                        <button
+                            onClick={() => setActiveTab('Visualizer Parity (100%)')}
+                            className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-between shadow-lg ${
+                                activeTab === 'Visualizer Parity (100%)'
+                                ? 'bg-cyan-500 text-black border border-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.6)]'
+                                : 'bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60 border border-cyan-500/40'
+                            }`}
+                        >
+                            <span>🔍 VISUALIZER PARITY INSPECTOR</span>
+                            <span className="text-[9px] bg-black/40 px-1.5 py-0.5 rounded font-mono">100%</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('M3 Tools & Inspector')}
+                            className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-between shadow-lg ${
+                                activeTab === 'M3 Tools & Inspector'
+                                ? 'bg-orange-500 text-black border border-orange-300 shadow-[0_0_15px_rgba(249,115,22,0.6)]'
+                                : 'bg-orange-950/40 text-orange-300 hover:bg-orange-900/60 border border-orange-500/40'
+                            }`}
+                        >
+                            <span>🛠️ M3 TOOLS & INSPECTOR</span>
+                            <span className="text-[9px] bg-black/40 px-1.5 py-0.5 rounded font-mono">FULL</span>
+                        </button>
+                    </div>
+
+                    <div className="text-[9px] font-black uppercase text-gray-500 tracking-widest px-1 pt-1">SYSTEM TELEMETRY</div>
                     {tabs.map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`w-full text-left px-3 py-2.5 rounded text-xs font-semibold transition-all ${
+                            className={`w-full text-left px-3 py-2 rounded text-xs font-semibold transition-all ${
                                 activeTab === tab 
                                 ? 'bg-blue-600/20 text-blue-400 border border-blue-500/50' 
                                 : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'

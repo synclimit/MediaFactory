@@ -46,7 +46,7 @@ export default function ProductionQAToolkit() {
     // Toggle Hotkey Ctrl+Shift+Q
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'q') {
+            if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'y') {
                 e.preventDefault();
                 setIsVisible(v => !v);
             }
