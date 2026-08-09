@@ -23,6 +23,7 @@ export const VISUALIZER2_MODES = {
   SPECTRUM_BARS: 'SPECTRUM_BARS',
   PARTICLE_ORBIT: 'PARTICLE_ORBIT'
 };
+export const VISUALIZER_MODES = VISUALIZER2_MODES;
 
 /**
  * renderPipelineFrame
