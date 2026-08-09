@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { QAOrchestrator } from '../../services/qa/QAOrchestrator';
 import { EngineRegistry } from '../../services/qa/EngineRegistry';
 import { FeatureRegistry } from '../../services/qa/FeatureRegistry';
@@ -316,7 +317,7 @@ export default function ProductionQAToolkit() {
                             </div>
 
                             {(() => {
-                                const instance = qaState.validators.find(v => v.constructor.engineName === selectedEngine.engineName);
+                                const instance = (qaState.validators || []).find(v => v && v.constructor && v.constructor.engineName === selectedEngine.engineName);
                                 if (!instance) return null;
                                 const m = instance.metrics;
                                 return (
@@ -479,8 +480,8 @@ export default function ProductionQAToolkit() {
                     <h4 className="text-yellow-400 font-bold">FEATURE HEALTH</h4>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
-                    {FeatureRegistry.getFeatures().map(FeatureClass => {
-                        const instance = qaState.featureValidators.find(f => f.constructor.featureName === FeatureClass.featureName);
+                    {(FeatureRegistry.getFeatures() || []).map(FeatureClass => {
+                        const instance = (qaState.featureValidators || []).find(f => f && f.constructor && f.constructor.featureName === FeatureClass.featureName);
                         const status = instance ? instance.status : 'WAITING';
                         
                         let healthColor = 'text-gray-500 border-gray-700 bg-gray-900/30';
@@ -559,8 +560,8 @@ export default function ProductionQAToolkit() {
                     <h4 className="text-yellow-400 font-bold">WORKFLOW HEALTH</h4>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
-                    {window.WorkflowRegistry && window.WorkflowRegistry.getWorkflows().map(WorkflowClass => {
-                        const instance = qaState.workflowValidators.find(w => w.constructor.workflowName === WorkflowClass.workflowName);
+                    {window.WorkflowRegistry && (window.WorkflowRegistry.getWorkflows() || []).map(WorkflowClass => {
+                        const instance = (qaState.workflowValidators || []).find(w => w && w.constructor && w.constructor.workflowName === WorkflowClass.workflowName);
                         const status = instance ? instance.status : 'WAITING';
                         
                         let healthColor = 'text-gray-500 border-gray-700 bg-gray-900/30';
@@ -616,12 +617,12 @@ export default function ProductionQAToolkit() {
         let allHealthy = true;
         let hasWarnings = false;
 
-        if (qaState.validators.some(v => v.status === 'FAILED')) allHealthy = false;
-        if (qaState.featureValidators.some(f => f.status === 'CRITICAL')) allHealthy = false;
-        if (qaState.workflowValidators.some(w => w.status === 'CRITICAL')) allHealthy = false;
+        if ((qaState.validators || []).some(v => v.status === 'FAILED')) allHealthy = false;
+        if ((qaState.featureValidators || []).some(f => f.status === 'CRITICAL')) allHealthy = false;
+        if ((qaState.workflowValidators || []).some(w => w.status === 'CRITICAL')) allHealthy = false;
         
-        if (qaState.featureValidators.some(f => f.status === 'WARNING')) hasWarnings = true;
-        if (qaState.workflowValidators.some(w => w.status === 'WARNING')) hasWarnings = true;
+        if ((qaState.featureValidators || []).some(f => f.status === 'WARNING')) hasWarnings = true;
+        if ((qaState.workflowValidators || []).some(w => w.status === 'WARNING')) hasWarnings = true;
 
         let recommendation = "READY FOR RELEASE";
         let recColor = "text-emerald-400 bg-emerald-900/20 border-emerald-500";
@@ -690,8 +691,9 @@ export default function ProductionQAToolkit() {
         </div>
     );
 
-    return (
-        <div className="fixed top-[5%] left-[5%] w-[90%] bg-[#0c0d12]/95 backdrop-blur-xl border border-[#2d3247] rounded-lg text-gray-300 z-[99999] shadow-2xl flex flex-col overflow-hidden">
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[999998] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-6">
+            <div className="bg-[#0c0d12] border-2 border-yellow-500/50 rounded-2xl shadow-[0_0_60px_rgba(234,179,8,0.3)] w-[95vw] h-[92vh] max-w-[1600px] flex flex-col overflow-hidden text-gray-300">
             <div className="flex justify-between items-center border-b border-[#2d3247] p-3 bg-black/40">
                 <div className="flex items-center gap-3">
                     <h3 className="text-yellow-400 font-bold uppercase tracking-widest">Production QA Toolkit <span className="text-xs text-gray-500 normal-case ml-2">MF-1000B.10 (Feature Complete)</span></h3>
@@ -700,7 +702,7 @@ export default function ProductionQAToolkit() {
                     <button onClick={() => setActiveTab('Release Certification')} className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-1.5 rounded text-xs">
                         Generate Release Certificate
                     </button>
-                    <button onClick={() => setIsVisible(false)} className="text-gray-400 hover:text-white text-xl leading-none">&times;</button>
+                    <button onClick={() => setIsVisible(false)} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
                 </div>
             </div>
 
@@ -746,6 +748,7 @@ export default function ProductionQAToolkit() {
                 {activeTab === 'Evidence Viewer' && renderNotImplemented('NO EVIDENCE AVAILABLE')}
                 {activeTab === 'Benchmark History' && renderNotImplemented('NO BENCHMARK HISTORY')}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

@@ -11,6 +11,7 @@ import ReactivePanel from './panels/ReactivePanel';
 import BrandingPanel from './panels/BrandingPanel';
 import ParticlesPanel from './panels/ParticlesPanel';
 import LyricsPanel from './panels/LyricsPanel';
+import Visualizer2Panel from './panels/Visualizer2Panel';
 import { ThumbnailCard, GridThumbnail } from '../ui/Thumbnails';
 
 // Thumbnails are now imported from ../ui/Thumbnails.jsx
@@ -49,6 +50,7 @@ export default function M3DynamicContentPanel({
   );
 
   const renderVisualizer = () => <VisualizerPanel addObject={addObject} />;
+  const renderVisualizer2 = () => <Visualizer2Panel addObject={addObject} />;
   const renderParticle = () => <ParticlesPanel addObject={addObject} m3Objects={m3Objects || []} setM3Objects={setM3Objects} m3SelectedObjectId={m3SelectedObjectId} setM3SelectedObjectId={setM3SelectedObjectId} />;
   const renderEffects = () => <EffectsPanel m3Objects={m3Objects || []} setM3Objects={setM3Objects} m3SelectedObjectId={m3SelectedObjectId} setM3SelectedObjectId={setM3SelectedObjectId} />;
   const renderOverlay = () => <OverlayPanel addObject={addObject} />;
@@ -71,6 +73,7 @@ export default function M3DynamicContentPanel({
     case 'Playlist Audio': content = renderPlaylistAudio(); break;
     case 'Lyrics': content = renderLyrics(); break;
     case 'Visualizer': content = renderVisualizer(); break;
+    case 'Visualizer 2': content = renderVisualizer2(); break;
     case 'Particle': content = renderParticle(); break;
     case 'Effects': content = renderEffects(); break;
     case 'Overlay': content = renderOverlay(); break;

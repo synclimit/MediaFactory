@@ -1963,6 +1963,7 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
       if (obj) {
         if (obj.type === 'text') return 'Text Objects';
         if (obj.type === 'visualizer') return 'Visualizer';
+        if (obj.type === 'visualizer2') return 'Visualizer 2';
         if (obj.type === 'image' || obj.type === 'widget' || obj.type === 'logo') return 'Overlay';
         if (obj.type === 'social-widget') return 'Social Widget';
         if (obj.type === 'background') return 'Background';
@@ -2006,6 +2007,7 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         return renderAudioSettingsInspector();
       }
       case 'Visualizer': return renderVisualizerInspector();
+      case 'Visualizer 2': return renderVisualizerInspector();
       case 'Overlay': return renderImageInspector();
       case 'Social Widget': return renderImageInspector();
       case 'Text Objects': {

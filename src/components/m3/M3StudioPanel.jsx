@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Surface from '../ui/Surface';
 import { BackgroundVariants } from '../ui/BackgroundVariants';
+import { X, SlidersHorizontal } from 'lucide-react';
 import M3Toolbar from './M3Toolbar.jsx';
 import M3MenuBar from './M3MenuBar.jsx';
 import M3NavigationRail from './M3NavigationRail.jsx';
@@ -13,6 +14,8 @@ import M3PlaybackBar from './M3PlaybackBar.jsx';
 import M3Statistics from './M3Statistics.jsx';
 import BeatDebugOverlay from './debug/BeatDebugOverlay.jsx';
 import M3SubtitleTimelinePanel from './M3SubtitleTimelinePanel.jsx';
+import VisualizerVerificationInspector from './debug/VisualizerVerificationInspector.jsx';
+import DiagnosticsModal from './debug/DiagnosticsModal.jsx';
 import { projectManager } from '../../services/pipeline/project/ProjectManager';
 import { fastWorkspaceManager } from '../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
 import { fastRenderState } from '../../services/pipeline/fastrender/core/FastRenderState.js';
@@ -42,7 +45,9 @@ export default function M3StudioPanel({
   const [m3CurrentTimeSec, setM3CurrentTimeSec] = useState(0);
   const [m3CurrentTrackIndex, setM3CurrentTrackIndex] = useState(0);
   const [activeContextCategory, setActiveContextCategory] = useState('Background');
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [analyser, setAnalyser] = useState(null);
+  const [showGlobalInspectorModal, setShowGlobalInspectorModal] = useState(false);
   const [renderMode, setRenderModeState] = useState(() => {
     try {
       return fastRenderState ? fastRenderState.getMode() : 'FAST';
@@ -71,7 +76,18 @@ export default function M3StudioPanel({
         setRenderModeState(event.mode);
       }
     });
-    return () => unsubscribe();
+    
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsPanelOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   // Simple Undo/Redo for m3Objects
@@ -89,9 +105,37 @@ export default function M3StudioPanel({
 
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(currentObjectsStr);
-    if (newHistory.length > 50) newHistory.shift(); // Limit to 50
+    if (newHistory.length > 50) newHistory.shift();
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
+  }, [m3Objects]);
+
+  // Auto-arrange visualizer objects if they overlap at default (960, 540) coordinates
+  useEffect(() => {
+    if (m3Objects && m3Objects.length > 0) {
+      const vizObjs = m3Objects.filter(o => o && (o.type === 'visualizer' || o.type === 'visualizer2'));
+      if (vizObjs.length > 1) {
+        const firstX = vizObjs[0].x;
+        const firstY = vizObjs[0].y;
+        if (vizObjs.every(o => o.x === firstX && o.y === firstY)) {
+          setM3Objects(prev => prev.map(o => {
+            if (!o || (o.type !== 'visualizer' && o.type !== 'visualizer2')) return o;
+            const modeStr = (o.mode || o.visualizerId || o.name || '').toUpperCase();
+            let nx = o.x, ny = o.y, nw = o.width || 600, nh = o.height || 300;
+            if (modeStr.includes('CIRCULAR') || modeStr.includes('PULSE')) {
+              nx = 480; ny = 420; nw = 450; nh = 450;
+            } else if (modeStr.includes('WAVE') || modeStr.includes('CYBERPUNK')) {
+              nx = 960; ny = 420; nw = 800; nh = 200;
+            } else if (modeStr.includes('BAR') || modeStr.includes('SPECTRUM')) {
+              nx = 960; ny = 900; nw = 1000; nh = 250;
+            } else if (modeStr.includes('PARTICLE') || modeStr.includes('ORBIT')) {
+              nx = 1440; ny = 420; nw = 450; nh = 450;
+            }
+            return { ...o, x: nx, y: ny, width: nw, height: nh };
+          }));
+        }
+      }
+    }
   }, [m3Objects]);
 
   const handleUndo = () => {
@@ -163,6 +207,7 @@ export default function M3StudioPanel({
       if (obj) {
         if (obj.type === 'text') setActiveContextCategory('Text Objects');
         else if (obj.type === 'visualizer') setActiveContextCategory('Visualizer');
+        else if (obj.type === 'visualizer2') setActiveContextCategory('Visualizer 2');
         else if (obj.type === 'image' || obj.type === 'video' || obj.type === 'gif') setActiveContextCategory('Overlay');
         else if (obj.type === 'social-widget') setActiveContextCategory('Branding');
         else if (obj.type === 'background') setActiveContextCategory('Background');
@@ -171,6 +216,7 @@ export default function M3StudioPanel({
         else if (obj.type === 'particle') setActiveContextCategory('Particle');
         else if (obj.type === 'subtitle') setActiveContextCategory('Lyrics');
       }
+      setIsPanelOpen(true);
     }
   };
 
@@ -231,44 +277,24 @@ export default function M3StudioPanel({
           m3ThumbnailSaved={m3ThumbnailSaved}
           m3Objects={m3Objects}
           addNotification={addNotification}
+          onOpenInspector={() => setShowGlobalInspectorModal(true)}
         />
         
-        {/* Main Studio Area */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Navigation Rail */}
+        {/* Main Studio Area (100% Clean Canvas) */}
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Navigation Rail (180px Wide) */}
           <M3NavigationRail 
             activeCategory={activeContextCategory} 
             setActiveCategory={(cat) => {
               setActiveContextCategory(cat);
               setM3SelectedObjectId(null);
+              setShowGlobalInspectorModal(true);
             }} 
+            isPanelOpen={showGlobalInspectorModal}
+            setIsPanelOpen={setShowGlobalInspectorModal}
           />
           
-          {/* Dynamic Content Panel */}
-          <M3DynamicContentPanel 
-            m3BgPool={m3BgPool} setM3BgPool={setM3BgPool}
-            m3AudioTracks={m3AudioTracks} setM3AudioTracks={setM3AudioTracks}
-            m3CurrentTrackIndex={m3CurrentTrackIndex}
-            m3Objects={m3Objects} setM3Objects={setM3Objects}
-            setM3SelectedObjectId={handleSetM3SelectedObjectId}
-            canvasMode={editorMode === 'Composer' ? 'composer' : 'thumbnail'}
-            editorMode={editorMode}
-            activeContextCategory={activeContextCategory}
-          />
-          
-          {/* Left-Middle Panel: Object Inspector */}
-          <M3ObjectInspector 
-            m3Objects={m3Objects}
-            setM3Objects={setM3Objects}
-            m3BgPool={m3BgPool}
-            setM3BgPool={setM3BgPool}
-            m3SelectedObjectId={m3SelectedObjectId}
-            activeCategory={activeContextCategory}
-            renderSettings={m3RenderSettings}
-            setRenderSettings={setM3RenderSettings}
-          />
-          
-          {/* Right Panel: Live Preview */}
+          {/* Main Panel: Live Preview Canvas (100% Full Width) */}
           <div className="flex-1 flex flex-col min-w-0 bg-[#0a0a0a]">
             {editorMode === 'Composer' ? (
               <>
@@ -323,7 +349,7 @@ export default function M3StudioPanel({
 
         </div>
         
-        {editorMode === 'Composer' && (activeContextCategory === 'Lyrics' || m3Objects.some(o => o.type === 'subtitle' || o.type === 'lyrics')) && (
+        {editorMode === 'Composer' && (activeContextCategory === 'Lyrics' || (m3Objects || []).some(o => o && (o.type === 'subtitle' || o.type === 'lyrics'))) && (
           <M3SubtitleTimelinePanel 
             m3CurrentTimeSec={m3CurrentTimeSec}
             setM3CurrentTimeSec={setM3CurrentTimeSec}
@@ -332,8 +358,27 @@ export default function M3StudioPanel({
         )}
       </Surface>
 
-      {/* Global Debug HUD - Moved OUTSIDE of Surface to avoid overflow-hidden clipping */}
-      <BeatDebugOverlay />
+      {/* Developer Tools / Diagnostics V5 Window with M3 Tools & Inspector Tab */}
+      <DiagnosticsModal 
+        isOpen={showGlobalInspectorModal} 
+        onClose={() => setShowGlobalInspectorModal(false)}
+        initialTab="M3 Tools & Inspector"
+        m3Props={{
+          m3BgPool, setM3BgPool,
+          m3AudioTracks, setM3AudioTracks,
+          m3CurrentTrackIndex,
+          m3Objects, setM3Objects,
+          m3SelectedObjectId, setM3SelectedObjectId: handleSetM3SelectedObjectId,
+          canvasMode: editorMode === 'Composer' ? 'composer' : 'thumbnail',
+          editorMode,
+          activeContextCategory,
+          activeCategory: activeContextCategory,
+          renderSettings: m3RenderSettings,
+          setRenderSettings: setM3RenderSettings
+        }}
+      />
     </div>
   );
 }
+
+
