@@ -1,7 +1,7 @@
 {
   "name": "mediafactory",
   "private": true,
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "MediaFactory Desktop App",
   "author": "MediaFactory",
   "repository": {
@@ -29,6 +29,7 @@
       "electron/main.cjs",
       "electron/**/*",
       "src/**/*",
+      "node_modules/**/*",
       "package.json",
       "dummy.mp4",
       "test_bg.mp4",
@@ -76,7 +77,9 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@tailwindcss/vite": "^4.3.0",
+    "adm-zip": "^0.5.16",
     "axios": "^1.18.1",
+    "canvas": "^3.2.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "electron-updater": "^6.8.9",

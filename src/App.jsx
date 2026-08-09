@@ -68,6 +68,14 @@ function Tooltip({ text }) {
   );
 }
 
+const getApiUrl = (endpoint) => {
+  if (typeof window === 'undefined') return endpoint;
+  if (window.location.protocol === 'file:' || window.location.port !== '18888') {
+    return 'http://localhost:18888' + (endpoint.startsWith('/') ? endpoint : '/' + endpoint);
+  }
+  return endpoint;
+};
+
 export default function App() {
   const [lang, setLang] = useState('English');
   const [profiles, setProfiles] = useState([]);
@@ -1722,9 +1730,56 @@ export default function App() {
           progress: 0
         }]);
         addNotification('success', 'M4 Render Job added to queue!');
-        addLog(`Added M4 Job: ${payload.renderName}`);
-        setPipelineDrawerCollapsed(false);
       }
+    } else if (activeMode === 'Mode 3') {
+      const customOutputDir = workspaceConfig?.output?.main || (activeWorkspace ? localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) : '') || 'Output';
+      const cleanDir = (customOutputDir || 'Output').replace(/[/\\]+$/, '');
+      const targetMode = m3RenderSettings?.renderMode ? String(m3RenderSettings.renderMode).toUpperCase() : 'FAST';
+      const isFast = targetMode === 'FAST';
+      const modeSubfolder = isFast ? 'Fast Render' : 'Normal Render';
+      const outFolder = `${cleanDir}/M3/${modeSubfolder}/`;
+
+      const m3Job = {
+        id: 'm3_q_' + Date.now(),
+        mode: 'Mode 3',
+        renderName: m3OutputFilename || 'M3_Render.mp4',
+        profileName: 'Mode 3 Profile',
+        status: 'Waiting',
+        scheduleMode: 'Manual',
+        scheduledAt: null,
+        isPaused: false,
+        inputVideo: m3BgPool[0]?.filename || 'Background',
+        tracks: m3AudioTracks.map(t => t.sourcePath || t.title),
+        outputFiles: [m3OutputFilename || 'Chill_Lofi_Playlist_Mix.mp4'],
+        outputFolder: outFolder,
+        estTimeSec: Math.round(m3TotalDurationSec * 0.15),
+        estStorageMb: Math.round(m3TotalDurationSec * 0.5),
+        totalDurationSec: m3TotalDurationSec,
+        progress: 0,
+        m3Payload: {
+          playlist: m3AudioTracks,
+          m3AudioTracks: m3AudioTracks,
+          audioTracks: m3AudioTracks,
+          background: m3BgPool[0] || {},
+          bgPool: m3BgPool,
+          m3BgPool: m3BgPool,
+          objects: m3Objects,
+          m3Objects: m3Objects,
+          metadata: {
+            outputName: m3OutputFilename || 'Chill_Lofi_Playlist_Mix.mp4',
+            profileId: m3ProfileId || 'Standard'
+          },
+          thumbnail: { saved: m3ThumbnailSaved },
+          settings: m3RenderSettings,
+          outputFilename: m3OutputFilename || 'Chill_Lofi_Playlist_Mix.mp4',
+          totalDurationSec: m3TotalDurationSec
+        }
+      };
+
+      setQueue(prev => [...prev, m3Job]);
+      addNotification('Added To Pipeline', `M3 Job added to queue`);
+      addLog(`[M3] Pipeline Job Created: ${m3Job.outputFiles[0]}`);
+      setPipelineDrawerCollapsed(false);
     }
     setReviewDialog({ isOpen: false, data: null });
   };
@@ -2155,7 +2210,7 @@ export default function App() {
 
            if (job.mode === 'Mode 1') {
              addLog(`[M1] STARTING ${job.outputFiles[0]}`);
-             fetch('/api/m1/render', {
+             fetch(getApiUrl('/api/m1/render'), {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify(job)
@@ -2174,7 +2229,7 @@ export default function App() {
            } else if (job.mode === 'Mode 2') {
              addLog(`[M2] STARTING ${job.outputFiles[0]}`);
              console.log('STEP_3_POST_RENDER');
-             fetch('/api/m2/render', {
+             fetch(getApiUrl('/api/m2/render'), {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify({
@@ -2200,7 +2255,7 @@ export default function App() {
              });
            } else if (job.mode === 'Mode 3') {
              addLog(`[M3] STARTING ${job.outputFiles[0]}`);
-             fetch('/api/m3/render', {
+             fetch(getApiUrl('/api/m3/render'), {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify(job)
@@ -2238,7 +2293,7 @@ export default function App() {
              });
            } else if (job.mode === 'Mode 4') {
              addLog(`[M4] STARTING ${job.outputFiles[0]}`);
-             fetch('/api/m4/render', {
+             fetch(getApiUrl('/api/m4/render'), {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify(job)

@@ -2,7 +2,12 @@ const fs = require('fs/promises');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const AdmZip = require('adm-zip');
+let AdmZip = null;
+try {
+    AdmZip = require('adm-zip');
+} catch (e) {
+    // Graceful fallback if adm-zip is not bundled
+}
 const { PipelineEmitter, PipelineEvents } = require('../m5/core/Events');
 const AppPaths = require('./AppPaths');
 
@@ -380,6 +385,12 @@ class DiagnosticsManager {
     }
 
     async buildZipPackage(errorContext = null) {
+        if (!AdmZip) {
+            try { AdmZip = require('adm-zip'); } catch(e) {}
+        }
+        if (!AdmZip) {
+            return null;
+        }
         const zip = new AdmZip();
         
         const aiReport = await this.buildAIReport(errorContext);
@@ -408,10 +419,12 @@ class DiagnosticsManager {
             await this._saveSession();
             
             const zip = await this.buildZipPackage({ type, error });
-            const filename = `CrashPackage_${this.currentSessionId}_${Date.now()}.zip`;
-            const dest = path.join(this.diagnosticsDir, filename);
-            zip.writeZip(dest);
-            console.log(`[DiagnosticsManager] Crash package saved to ${dest}`);
+            if (zip) {
+                const filename = `CrashPackage_${this.currentSessionId}_${Date.now()}.zip`;
+                const dest = path.join(this.diagnosticsDir, filename);
+                zip.writeZip(dest);
+                console.log(`[DiagnosticsManager] Crash package saved to ${dest}`);
+            }
         } catch (e) {
             console.error('[DiagnosticsManager] Failed to generate crash package!', e);
         }

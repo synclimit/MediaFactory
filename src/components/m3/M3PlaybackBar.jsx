@@ -78,18 +78,44 @@ export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, 
       else setInternalTrackIndex(idx);
   };
 
+  const getAudioSource = (trk) => {
+    if (!trk) return '';
+    if (trk.blobUrl && trk.blobUrl.startsWith('blob:')) {
+      return trk.blobUrl;
+    }
+    const sp = trk.sourcePath || trk.path || trk.uri || trk.title || '';
+    const cleanSp = sp.replace(/\\/g, '/');
+    const apiPath = `/api/m2/stream?uri=${encodeURIComponent(cleanSp)}`;
+    if (window.location.protocol === 'file:' || window.location.port !== '18888') {
+      return 'http://localhost:18888' + apiPath;
+    }
+    return apiPath;
+  };
+
   useEffect(() => {
     if (m3AudioTracks.length > 0) {
       const trk = m3AudioTracks[activeTrackIndex];
       if (trk && audioRef.current) {
-        const targetSrc = trk.blobUrl || `/api/m2/stream?uri=${encodeURIComponent(trk.sourcePath.replace(/\\/g, '/'))}`;
+        const targetSrc = getAudioSource(trk);
         if (audioRef.current.getAttribute('src') !== targetSrc) {
           audioRef.current.setAttribute('src', targetSrc);
           audioRef.current.playbackRate = playbackSpeed;
           audioRef.current.load();
         }
         if (isPlaying) {
-          audioRef.current.play().catch(e => console.error("Play error caught", e));
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(e => {
+              console.warn("[Audio Preview] Primary play error, trying stream fallback:", e);
+              // Fallback if blobUrl failed
+              const streamSrc = getAudioSource({ ...trk, blobUrl: null });
+              if (audioRef.current.getAttribute('src') !== streamSrc) {
+                audioRef.current.setAttribute('src', streamSrc);
+                audioRef.current.load();
+                audioRef.current.play().catch(err => console.error("[Audio Preview] Stream fallback error:", err));
+              }
+            });
+          }
         } else {
           audioRef.current.pause();
         }
@@ -339,7 +365,7 @@ export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, 
         </div>
       </div>
 
-      <audio ref={audioRef} crossOrigin="anonymous" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} className="hidden" />
+      <audio ref={audioRef} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} className="hidden" />
 
       {/* Error Toast */}
       {toastError && (

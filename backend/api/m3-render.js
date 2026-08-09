@@ -11,6 +11,19 @@ const RenderPlanner = require('../m5/RenderPlanner');
 const RenderStrategy = require('./services/RenderStrategy');
 const FastRenderCacheManager = require('./services/FastRenderCacheManager');
 
+let visualizerPipelineV3Module = null;
+async function getVisualizerPipelineV3() {
+  if (!visualizerPipelineV3Module) {
+    const { VisualizerPipeline } = await import('../../src/visualizers/v3/pipeline/VisualizerPipeline.js');
+    await import('../../src/visualizers/v3/plugins/SpectrumBarsPlugin.js');
+    await import('../../src/visualizers/v3/plugins/CircularPulsePlugin.js');
+    await import('../../src/visualizers/v3/plugins/CyberpunkWaveformPlugin.js');
+    await import('../../src/visualizers/v3/plugins/ParticleOrbitPlugin.js');
+    visualizerPipelineV3Module = VisualizerPipeline;
+  }
+  return visualizerPipelineV3Module;
+}
+
 let lastCpuTimesM3 = null;
 const getSystemStats = () => new Promise(resolve => {
   try {
@@ -470,9 +483,11 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
   const allMp3 = resolvedPaths.every(p => p.toLowerCase().endsWith('.mp3'));
   const outMp3Path = outAudioPath.replace(/\.[^.]+$/, '.mp3');
   
+  let actualAudioPath = outAudioPath;
   if (audioPlan && audioPlan.strategy === RenderStrategy.FULL_ENCODE) {
     const encodeCmd = `ffmpeg -y -threads 0 -f concat -safe 0 -i "${concatPath}" -c:a aac -b:a 192k -ar 44100 -ac 2 "${outAudioPath}"`;
     await spawnFFmpegM3(encodeCmd, job);
+    actualAudioPath = outAudioPath;
   } else {
     let concatSuccess = false;
 
@@ -484,7 +499,7 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
         await spawnFFmpegM3(mp3CopyCmd, job);
         logRuntimeEvent(job, 'buildPlaylistAudio SUCCESS (MP3 stream copy)');
         concatSuccess = true;
-        // Update outAudioPath reference for downstream usage
+        actualAudioPath = outMp3Path;
         if (audioPlan) audioPlan.targetAudioPath = outMp3Path;
       } catch (e) {
         logRuntimeEvent(job, 'buildPlaylistAudio MP3 stream copy failed, trying M4A');
@@ -499,6 +514,7 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
         await spawnFFmpegM3(copyCmd, job);
         logRuntimeEvent(job, 'buildPlaylistAudio SUCCESS (M4A stream copy)');
         concatSuccess = true;
+        actualAudioPath = outAudioPath;
       } catch (copyErr) {
         logRuntimeEvent(job, 'buildPlaylistAudio M4A stream copy also failed');
       }
@@ -510,11 +526,12 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
       console.log('[M3] Stream copy failed, falling back to fast MP3 re-encode (libmp3lame)');
       const mp3EncodeCmd = `ffmpeg -y -threads 0 -f concat -safe 0 -i "${concatPath}" -c:a libmp3lame -q:a 2 -ar 44100 -ac 2 "${outMp3Path}"`;
       await spawnFFmpegM3(mp3EncodeCmd, job);
+      actualAudioPath = outMp3Path;
       if (audioPlan) audioPlan.targetAudioPath = outMp3Path;
     }
   }
   
-  const finalAudioPath = (audioPlan && audioPlan.targetAudioPath) || outAudioPath;
+  const finalAudioPath = (audioPlan && audioPlan.targetAudioPath) || actualAudioPath;
 
   // Register generated asset in FastRenderCacheManager
   if (audioPlan && audioPlan.outputFingerprint) {
@@ -803,7 +820,32 @@ function parseHexColor(col, defaultHex = 'AB55F7') {
   return defaultHex.replace('#', '');
 }
 
-async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targetHeight = 1080) {
+function getFFmpegEncodingFlags(metadata = {}) {
+  const meta = metadata || {};
+  const res = (meta.resolution || '1080p').toString().toLowerCase();
+  let targetWidth = 1920;
+  let targetHeight = 1080;
+  if (res.includes('720')) {
+    targetWidth = 1280; targetHeight = 720;
+  } else if (res.includes('480')) {
+    targetWidth = 854; targetHeight = 480;
+  } else if (res.includes('4k') || res.includes('2160')) {
+    targetWidth = 3840; targetHeight = 2160;
+  }
+
+  const fps = parseInt(meta.fps) || 30;
+  const codec = (meta.codec || 'H264').toUpperCase();
+  const codecFlag = (codec === 'H265' || codec === 'HEVC') ? '-c:v libx265' : '-c:v libx264';
+  
+  return {
+    targetWidth,
+    targetHeight,
+    fps,
+    flags: `${codecFlag} -preset ultrafast -pix_fmt yuv420p`
+  };
+}
+
+async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targetHeight = 1080, totalDur = 10) {
   if (!objects || objects.length === 0) return { inputs: '', filter: '', map: '', overlaysCount: 0 };
   
   const validObjects = objects
@@ -818,7 +860,7 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
   // First pass: resolve asset paths and classify overlay types
   const resolvedOverlays = [];
   for (const ov of validObjects) {
-    const isVis = ov.type === 'visualizer' || ov.type === 'visualizer2' || ov.type === 'spectrum' || ov.type === 'audio-visualizer' || ov.visualizerId || (ov.name && (ov.name.toLowerCase().includes('spectrum') || ov.name.toLowerCase().includes('visualizer')));
+    const isVis = ov.type === 'visualizer' || ov.type === 'visualizer2' || ov.type === 'visualizer3' || ov.type === 'spectrum' || ov.type === 'audio-visualizer' || ov.visualizerId || (ov.name && (ov.name.toLowerCase().includes('spectrum') || ov.name.toLowerCase().includes('visualizer')));
     if (isVis) {
       resolvedOverlays.push({ type: 'visualizer', ov });
     } else if (ov.type === 'overlay' || ov.type === 'image' || ov.type === 'video' || ov.type === 'particle' || ov.type === 'effect') {
@@ -887,7 +929,7 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
   for (const item of sortedOverlays) {
     overlayIdx++;
 
-    if (item.type === 'visualizer' || item.type === 'visualizer2') {
+    if (item.type === 'visualizer' || item.type === 'visualizer2' || item.type === 'visualizer3') {
       const ov = item.ov;
       
       let rawW = parseInt(ov.width);
@@ -918,21 +960,19 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
       const viz2CacheDir = path.join(process.cwd(), 'experiments', 'artifacts', 'v2_export_cache', String(uniqueObjId));
       if (!fsSync.existsSync(viz2CacheDir)) fsSync.mkdirSync(viz2CacheDir, { recursive: true });
 
-      const modeStr = (ov.mode || ov.visualizerId || ov.visualizerStyle || '').toUpperCase();
-      let mode = 'CIRCULAR_PULSE';
-      if (modeStr.includes('WAVE') || modeStr.includes('CYBERPUNK')) {
-        mode = 'CYBERPUNK_WAVEFORM';
-      } else if (modeStr.includes('BAR') || modeStr.includes('SPECTRUM')) {
-        mode = 'SPECTRUM_BARS';
-      } else if (modeStr.includes('PARTICLE') || modeStr.includes('ORBIT')) {
-        mode = 'PARTICLE_ORBIT';
-      } else if (modeStr.includes('CIRCULAR') || modeStr.includes('PULSE') || modeStr.includes('RING')) {
-        mode = 'CIRCULAR_PULSE';
-      }
+      const { createCanvas } = require('canvas');
+      const PipelineEngine = await getVisualizerPipelineV3();
+      const exportCanvas = createCanvas(w, h);
 
-      const durationSec = payload.totalDurationSec || payload.durationSec || (payload.metadata && payload.metadata.durationSec) || 10;
-      const totalFramesToRender = Math.max(30, Math.min(3600, Math.ceil(durationSec * fps)));
-      const bgraBuf = Buffer.alloc(w * h * 4);
+      let pluginIdMode = 'spectrum-bars';
+      const modeStr = (ov.mode || ov.pluginId || ov.visualizerId || ov.name || '').toLowerCase();
+      if (modeStr.includes('wave') || modeStr.includes('cyberpunk')) pluginIdMode = 'cyberpunk-waveform';
+      else if (modeStr.includes('bar') || modeStr.includes('spectrum')) pluginIdMode = 'spectrum-bars';
+      else if (modeStr.includes('particle') || modeStr.includes('orbit')) pluginIdMode = 'particle-orbit';
+      else if (modeStr.includes('circular') || modeStr.includes('circle') || modeStr.includes('pulse')) pluginIdMode = 'circular-pulse';
+
+      const durationSec = totalDur || 10;
+      const totalFramesToRender = Math.max(30, Math.ceil(durationSec * fps));
 
       for (let f = 0; f < totalFramesToRender; f++) {
         const frameTimestamp = (f / fps) % 3600;
@@ -987,22 +1027,25 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
           waveform
         };
 
-        if (mode === 'CYBERPUNK_WAVEFORM') {
-          renderCyberpunkWaveformBGRA(bgraBuf, w, h, audioState, col1, col2);
-        } else if (mode === 'SPECTRUM_BARS') {
-          renderSpectrumBarsBGRA(bgraBuf, w, h, audioState, col1, col2);
-        } else if (mode === 'PARTICLE_ORBIT') {
-          renderParticleOrbitBGRA(bgraBuf, w, h, audioState, col1, col2);
-        } else {
-          renderCircularPulseBGRA(bgraBuf, w, h, audioState, col1, col2);
-        }
+        const v3Config = {
+          colorLeft: ov.colorLeft || ov.primaryColor || '#AB55F7',
+          colorRight: ov.colorRight || ov.secondaryColor || '#F59E0B',
+          colorMid: ov.colorMid || '#06B6D4',
+          colorMode: ov.colorMode || '2 Gradient',
+          frequencyOrder: ov.frequencyOrder || 'Bass -> Treble',
+          barCount: parseInt(ov.barCount) || 64,
+          thickness: parseInt(ov.thickness) || parseInt(ov.barThickness) || 4,
+          ...ov
+        };
 
-        const framePath = path.join(viz2CacheDir, `v2_viz_${String(f).padStart(6, '0')}.bmp`);
-        saveBgraBufferAsBmp(bgraBuf, w, h, framePath);
+        PipelineEngine.renderPipelineFrame(exportCanvas, frameTimestamp, audioState, pluginIdMode, v3Config);
+
+        const framePath = path.join(viz2CacheDir, `v3_viz_${String(f).padStart(6, '0')}.png`);
+        fsSync.writeFileSync(framePath, exportCanvas.toBuffer('image/png'));
       }
 
       fileInputIdx++;
-      const vizSeqPattern = path.join(viz2CacheDir, 'v2_viz_%06d.bmp').replace(/\\/g, '/');
+      const vizSeqPattern = path.join(viz2CacheDir, 'v3_viz_%06d.png').replace(/\\/g, '/');
       inputs += ` -framerate ${fps} -i "${vizSeqPattern}"`;
       filter += `${lastOutput}[${fileInputIdx}:v]overlay=x=${topLeftX}:y=${topLeftY}[bg${overlayIdx}];`;
       lastOutput = `[bg${overlayIdx}]`;
@@ -1299,7 +1342,8 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
   }
 
   // Fallback / Normal Mode full encode
-  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h);
+  const durationSec = job.totalDurationSec || payload?.totalDurationSec || 180;
+  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h, durationSec);
   const baseScale = `scale=${w}:${h}`;
   const audioMap = `-map ${1 + overlaysCount}:a`;
   const filterFlag = filter ? `-filter_complex "[0:v]${baseScale}[base];${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}" ${audioMap}` : `-vf "${baseScale}"`;
@@ -1365,7 +1409,8 @@ async function buildLoopVideo(job, videoPath, audioPath, loopType, cacheDir, out
   }
 
   // Full Encode Fallback
-  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h);
+  const loopDurationSec = job.totalDurationSec || payload?.totalDurationSec || 180;
+  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h, loopDurationSec);
   const baseScale = `scale=${w}:${h}`;
   const audioMap = `-map ${1 + overlaysCount}:a`;
   const filterFlag = filter ? `-filter_complex "[0:v]${baseScale}[base];${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}" ${audioMap}` : `-vf "${baseScale}"`;
@@ -1511,22 +1556,18 @@ async function processM3Job(job) {
     const payload = job.m3Payload || job;
     if (!payload) throw new Error("Missing M3 Payload");
 
-    // Single Decision Authority: Query RenderPlanner to obtain the Execution Strategy Plan
-    const planner = new RenderPlanner();
-    const jobPlan = await planner.createJobPlan(payload);
-    job.jobPlan = jobPlan;
+    // Robust payload normalization to ensure all expected objects exist
+    payload.playlist = payload.playlist || payload.m3AudioTracks || payload.audioTracks || [];
+    payload.background = payload.background || (payload.m3BgPool && payload.m3BgPool[0]) || (payload.bgPool && payload.bgPool[0]) || {};
+    payload.thumbnail = payload.thumbnail || {};
+    payload.metadata = payload.metadata || { outputName: payload.outputFilename || 'video.mp4' };
+    if (!payload.metadata.outputName) payload.metadata.outputName = payload.outputFilename || 'video.mp4';
+    payload.objects = payload.objects || payload.m3Objects || [];
 
-    // Attach Planner Decision Trace, Confidence Scores, Rationale, and Metrics to Diagnostic Report
-    if (!job.diagnosticReport) job.diagnosticReport = '=== M3 DIAGNOSTIC REPORT ===\n\n';
-    job.diagnosticReport += '=== FAST RENDER PLANNER DECISION TRACE ===\n';
-    job.diagnosticReport += `Audio Plan: Strategy=${jobPlan.audioPlan.strategy} | Confidence=${jobPlan.audioPlan.confidence}%\nReason: ${jobPlan.audioPlan.reason}\nTrace:\n${jobPlan.audioPlan.decisionTrace.map(t => '  - ' + t).join('\n')}\n\n`;
-    job.diagnosticReport += `Background Plan: Strategy=${jobPlan.bgPlan.strategy} | Confidence=${jobPlan.bgPlan.confidence}%\nReason: ${jobPlan.bgPlan.reason}\nTrace:\n${jobPlan.bgPlan.decisionTrace.map(t => '  - ' + t).join('\n')}\n\n`;
-    job.diagnosticReport += `=== EXECUTION METRICS SUMMARY ===\nAssets Reused: ${jobPlan.metrics.assetsReused}\nAssets Generated: ${jobPlan.metrics.assetsGenerated}\nVideo Stream Copy: ${jobPlan.metrics.videoStreamCopy}\nAudio Stream Copy: ${jobPlan.metrics.audioStreamCopy}\nConcat Operations: ${jobPlan.metrics.concatOperations}\nMinimal Encodes: ${jobPlan.metrics.minimalEncodes}\nFull Encodes: ${jobPlan.metrics.fullEncodes}\nCache Hit Rate: ${jobPlan.metrics.cacheHitRate}%\n=========================================\n\n`;
-
-    const playlist = payload.playlist || payload.m3AudioTracks || [];
-    const background = payload.background || (payload.m3BgPool && payload.m3BgPool[0]) || {};
-    const thumbnail = payload.thumbnail || {};
-    const metadata = payload.metadata || {};
+    const playlist = payload.playlist;
+    const background = payload.background;
+    const thumbnail = payload.thumbnail;
+    const metadata = payload.metadata;
     
     logRuntimeEvent(job, 'fs.mkdir TRY (Cache & Output)');
     const cacheDir = path.join(AppPaths.getCacheBase(), 'm3');

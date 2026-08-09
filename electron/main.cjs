@@ -7,8 +7,19 @@ const { autoUpdater } = require('electron-updater');
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 app.commandLine.appendSwitch('disable-http-cache');
 
+const getUpdateToken = () => {
+    try {
+        const p1 = 'github_pat_11CB4FNEA0I3jiQuPTi6V4';
+        const p2 = '_oXaL2DIaXHPSWLZDk3wX6iguFbHcF2RsrZfLMvtQPNIKLZDH5IXBa7sWG3N';
+        return p1 + p2;
+    } catch (e) {
+        return null;
+    }
+};
+
 let mainWindow;
 let backendServer;
+const isDev = !app.isPackaged;
 
 async function createWindow() {
     backendServer = await startServer(18888);
@@ -31,31 +42,28 @@ async function createWindow() {
 
     mainWindow.setMenuBarVisibility(false);
 
-    const isDev = process.env.NODE_ENV === 'development';
+    try {
+        await mainWindow.webContents.session.clearCache();
+        await mainWindow.webContents.session.clearStorageData();
+    } catch(e) {}
+
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
 
-    mainWindow.loadURL(`http://localhost:${serverPort}`).catch(() => {
-        console.log('[Electron] Loading local dist index.html');
+    if (require('fs').existsSync(indexPath)) {
+        console.log('[Electron] Loading dist/index.html via loadFile:', indexPath);
         mainWindow.loadFile(indexPath).catch((err) => {
             console.error('[Electron] Failed to load index.html:', err);
+            mainWindow.loadURL(`http://localhost:${serverPort}`);
         });
-    });
+    } else {
+        mainWindow.loadURL(`http://localhost:${serverPort}`);
+    }
 
     mainWindow.webContents.openDevTools();
 
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
-
-const getUpdateToken = () => {
-    try {
-        const p1 = 'github_pat_11CB4FNEA0I3jiQuPTi6V4';
-        const p2 = '_oXaL2DIaXHPSWLZDk3wX6iguFbHcF2RsrZfLMvtQPNIKLZDH5IXBa7sWG3N';
-        return p1 + p2;
-    } catch (e) {
-        return null;
-    }
-};
 
     // Check for updates when the window is created
     if (!isDev) {
@@ -74,6 +82,10 @@ const getUpdateToken = () => {
 
 app.whenReady().then(() => {
     createWindow();
+
+    setTimeout(() => {
+        performUpdateCheck();
+    }, 3000);
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -133,31 +145,42 @@ function checkGitHubReleasesREST() {
     return new Promise((resolve, reject) => {
         const token = getUpdateToken();
         const https = require('https');
-        const req = https.request({
-            hostname: 'api.github.com',
-            path: '/repos/synclimit/MediaFactory/releases',
-            method: 'GET',
-            headers: {
-                'User-Agent': 'MediaFactoryApp',
-                'Authorization': `Bearer ${token}`
+        
+        const fetchReleases = (authToken) => {
+            const headers = { 'User-Agent': 'MediaFactoryApp' };
+            if (authToken && typeof authToken === 'string' && authToken.trim() && !authToken.includes('undefined')) {
+                headers['Authorization'] = `Bearer ${authToken}`;
             }
-        }, (res) => {
-            let body = '';
-            res.on('data', c => body += c);
-            res.on('end', () => {
-                if (res.statusCode === 200) {
-                    try { 
-                        const rels = JSON.parse(body);
-                        resolve(Array.isArray(rels) ? rels : [rels]); 
+            const req = https.request({
+                hostname: 'api.github.com',
+                path: '/repos/synclimit/MediaFactory/releases',
+                method: 'GET',
+                headers: headers
+            }, (res) => {
+                let body = '';
+                res.on('data', c => body += c);
+                res.on('end', () => {
+                    if (res.statusCode === 200) {
+                        try { 
+                            const rels = JSON.parse(body);
+                            resolve(Array.isArray(rels) ? rels : [rels]); 
+                        } catch (e) { reject(e); }
+                    } else if (authToken) {
+                        console.warn(`[AutoUpdater] Auth token request returned ${res.statusCode}, retrying unauthenticated for public repo...`);
+                        fetchReleases(null);
+                    } else {
+                        reject(new Error(`GitHub API HTTP ${res.statusCode}`));
                     }
-                    catch (e) { reject(e); }
-                } else {
-                    reject(new Error(`GitHub API HTTP ${res.statusCode}`));
-                }
+                });
             });
-        });
-        req.on('error', reject);
-        req.end();
+            req.on('error', (err) => {
+                if (authToken) fetchReleases(null);
+                else reject(err);
+            });
+            req.end();
+        };
+
+        fetchReleases(token);
     });
 }
 
