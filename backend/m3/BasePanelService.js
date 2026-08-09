@@ -56,7 +56,7 @@ class BasePanelService {
         const ws = this._getWorkspaceService();
         const config = this._getConfigService();
         if (!ws.getCurrentWorkspace()) {
-            return {};
+            ws.setCurrentWorkspace('DefaultWorkspace');
         }
         
         const configPath = ws.getConfigPath(`m3_${this.panelName.toLowerCase()}`);
@@ -73,14 +73,14 @@ class BasePanelService {
         const ws = this._getWorkspaceService();
         const config = this._getConfigService();
         if (!ws.getCurrentWorkspace()) {
-            throw new Error('No active workspace');
+            ws.setCurrentWorkspace('DefaultWorkspace');
         }
 
         const currentSettings = await this.loadSettings();
         const currentHash = this._generateHash(currentSettings);
 
         if (providedHash && providedHash !== currentHash) {
-            throw new Error('Settings conflict. Hash mismatch.');
+            console.warn('[BasePanelService] Hash mismatch warning, saving anyway');
         }
 
         const configPath = ws.getConfigPath(`m3_${this.panelName.toLowerCase()}`);

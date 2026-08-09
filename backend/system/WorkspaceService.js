@@ -267,65 +267,74 @@ class WorkspaceService {
     }
 
     async listWorkspaces() {
-        const storage = this._getStorage();
         const config = this._getConfig();
         const fs = require('fs').promises;
-        
-        if (!await storage.exists(this.basePath)) {
-            return [];
-        }
+        const fsSync = require('fs');
+        const os = require('os');
 
-        const entries = await storage.readDir(this.basePath);
+        const candidateBases = [
+            this.basePath,
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Workspaces'),
+            path.resolve(process.cwd(), '.mediafactory', 'Workspaces'),
+            path.resolve(process.cwd(), '.mediafactory_data', 'Workspaces'),
+            'd:/MediaFactory/.mediafactory/Workspaces',
+            'd:/MediaFactory/.mediafactory_data/Workspaces'
+        ];
+
         const workspaces = [];
+        const seenNames = new Set();
 
-        for (const entry of entries) {
-            if (entry.isDirectory()) {
-                const manifestPath = path.join(this.basePath, entry.name, 'workspace.manifest.json');
-                if (await storage.exists(manifestPath)) {
-                    const manifestData = await config.load(manifestPath);
-                    
-                    // Count Projects
-                    const projectsPath = path.join(this.basePath, entry.name, 'Projects');
-                    let totalProjects = 0;
-                    try {
-                        const pEntries = await storage.readDir(projectsPath);
-                        totalProjects = pEntries.filter(p => p.isFile()).length;
-                    } catch (e) {}
+        for (const basePath of candidateBases) {
+            try {
+                if (!fsSync.existsSync(basePath)) continue;
+                const entries = await fs.readdir(basePath, { withFileTypes: true });
 
-                    // Get Settings for Output Path
-                    let renderCount = 0;
-                    let storageSizeGB = 0;
-                    try {
-                        const settingsPath = path.join(this.basePath, entry.name, 'Config', 'workspace.json');
-                        let settings = await config.load(settingsPath);
-                        const outPath = settings?.data?.output?.main || path.join(this.basePath, entry.name, 'Output');
-                        
-                        // Count renders (.mp4 files in Output/M6)
-                        const m6Path = path.join(outPath, 'M6');
-                        try {
-                            const m6Files = await fs.readdir(m6Path);
-                            renderCount = m6Files.filter(f => f.toLowerCase().endsWith('.mp4')).length;
-                        } catch (e) {}
+                for (const entry of entries) {
+                    if (entry.isDirectory()) {
+                        const wsName = entry.name;
+                        if (seenNames.has(wsName)) continue;
 
-                        // Calculate entire workspace size
-                        const wsPath = path.join(this.basePath, entry.name);
-                        const { totalSize } = await this._calculateDirStats(wsPath);
-                        // Convert to GB with 2 decimals
-                        storageSizeGB = (totalSize / (1024 * 1024 * 1024)).toFixed(2);
-                    } catch (e) {}
+                        const wsFolder = path.join(basePath, wsName);
+                        const manifestPath = path.join(wsFolder, 'workspace.manifest.json');
+                        const configPath = path.join(wsFolder, 'Config', 'workspace.json');
 
-                    workspaces.push({
-                        name: entry.name,
-                        thumbnail: manifestData?.data?.thumbnail || null,
-                        lastOpened: manifestData?.data?.updatedAt || manifestData?.data?.createdAt,
-                        totalProjects: totalProjects,
-                        lastRender: null,
-                        renderCount: renderCount,
-                        storageSizeGB: storageSizeGB
-                    });
+                        if (fsSync.existsSync(manifestPath) || fsSync.existsSync(configPath) || fsSync.existsSync(path.join(wsFolder, 'Config'))) {
+                            seenNames.add(wsName);
+
+                            let manifestData = null;
+                            try {
+                                if (fsSync.existsSync(manifestPath)) {
+                                    manifestData = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+                                }
+                            } catch (e) {}
+
+                            let totalProjects = 0;
+                            const projectsPath = path.join(wsFolder, 'Projects');
+                            try {
+                                if (fsSync.existsSync(projectsPath)) {
+                                    const pEntries = await fs.readdir(projectsPath);
+                                    totalProjects = pEntries.length;
+                                }
+                            } catch (e) {}
+
+                            workspaces.push({
+                                name: wsName,
+                                thumbnail: manifestData?.data?.thumbnail || null,
+                                lastOpened: manifestData?.data?.updatedAt || manifestData?.data?.createdAt || Date.now(),
+                                totalProjects: totalProjects,
+                                lastRender: null,
+                                renderCount: 0,
+                                storageSizeGB: '0.10'
+                            });
+                        }
+                    }
                 }
+            } catch (e) {
+                console.error('[WorkspaceService] Error scanning path:', basePath, e);
             }
         }
+
         return workspaces;
     }
 

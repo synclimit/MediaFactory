@@ -4,6 +4,7 @@ import SubtitleRenderer from '../../../components/m3/widgets/SubtitleRenderer';
 import SocialWidgetRenderer from '../../../components/m3/widgets/SocialWidgetRenderer.jsx';
 import RealtimeEffectRenderer from '../../../components/m3/renderers/RealtimeEffectRenderer';
 import VisualizerRenderer from '../../../components/m3/widgets/VisualizerRenderer';
+import Visualizer2Renderer from '../../../components/m3/widgets/Visualizer2Renderer';
 import ParticleRenderer from '../../../components/m3/widgets/ParticleRenderer';
 import IntroSequenceRenderer from '../../../components/m3/widgets/IntroSequenceRenderer';
 import ProceduralSpeaker from '../../../components/m3/overlays/ProceduralSpeaker';
@@ -215,7 +216,7 @@ export default function MediaFactoryRenderer({
                 const isSelected = m3SelectedObjectId === el.id;
                 const isInteractive = !isParticleOrEffect && !el.locked;
 
-                const isVisualizerObj = el.type === 'visualizer';
+                const isVisualizerObj = el.type === 'visualizer' || el.type === 'visualizer2';
                 const computedLeft = isVisualizerObj && (el.x === 0 || !el.x || el.x === '0' || el.x === '0px')
                     ? '50%'
                     : (typeof el.x === 'string' && el.x.includes('%') ? el.x : (el.x || 0) + 'px');
@@ -229,8 +230,8 @@ export default function MediaFactoryRenderer({
                             style={{
                                 left: computedLeft,
                                 top: typeof el.y === 'string' && el.y.includes('%') ? el.y : (el.y || 0) + 'px',
-                                width: (el.type === 'text' || el.type === 'playlist' || el.type === 'track_list_column' || el.type === 'visualizer') ? 'max-content' : (el.width ? (typeof el.width === 'string' && el.width.includes('%') ? el.width : el.width + 'px') : 'auto'),
-                                height: (el.type === 'text' || el.type === 'playlist' || el.type === 'track_list_column' || el.type === 'visualizer') ? 'max-content' : (el.height ? (typeof el.height === 'string' && el.height.includes('%') ? el.height : el.height + 'px') : 'auto'),
+                                width: (el.type === 'text' || el.type === 'playlist' || el.type === 'track_list_column') ? 'max-content' : (el.width ? (typeof el.width === 'string' && el.width.includes('%') ? el.width : el.width + 'px') : 'auto'),
+                                height: (el.type === 'text' || el.type === 'playlist' || el.type === 'track_list_column') ? 'max-content' : (el.height ? (typeof el.height === 'string' && el.height.includes('%') ? el.height : el.height + 'px') : 'auto'),
                                 opacity: (el.opacity !== undefined ? el.opacity : 100) / 100,
                                 transform: `translate(calc(-50% + ${mSwayX}px), calc(-50% + ${mSwayY}px)) rotate(${finalRotate}deg) scale(${finalScale})`,
                                 transformOrigin: 'center',
@@ -317,7 +318,12 @@ export default function MediaFactoryRenderer({
                             )}
                             {el.type === 'visualizer' && (
                                 <div className="w-full h-full">
-                                    <VisualizerRenderer config={el} id={el.id} />
+                                    <VisualizerRenderer config={el} id={el.id} currentTime={currentTime} audioState={activeAudioState} />
+                                </div>
+                            )}
+                            {el.type === 'visualizer2' && (
+                                <div className="w-full h-full">
+                                    <Visualizer2Renderer config={el} id={el.id} currentTime={currentTime} audioState={activeAudioState} />
                                 </div>
                             )}
                             {el.type === 'particle' && (

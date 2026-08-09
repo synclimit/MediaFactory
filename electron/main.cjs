@@ -34,17 +34,12 @@ async function createWindow() {
     const isDev = process.env.NODE_ENV === 'development';
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
 
-    if (isDev) {
-        mainWindow.loadURL('http://localhost:5173').catch(() => {
-            console.log(`[Electron] Dev server unavailable, loading http://localhost:${serverPort}`);
-            mainWindow.loadURL(`http://localhost:${serverPort}`).catch(() => mainWindow.loadFile(indexPath));
+    mainWindow.loadURL(`http://localhost:${serverPort}`).catch(() => {
+        console.log('[Electron] Loading local dist index.html');
+        mainWindow.loadFile(indexPath).catch((err) => {
+            console.error('[Electron] Failed to load index.html:', err);
         });
-    } else {
-        mainWindow.loadURL(`http://localhost:${serverPort}`).catch(() => {
-            console.log('[Electron] HTTP server loadURL failed, falling back to loadFile');
-            mainWindow.loadFile(indexPath);
-        });
-    }
+    });
 
     mainWindow.webContents.openDevTools();
 
@@ -134,13 +129,13 @@ function isVersionGreater(v1, v2) {
     return false;
 }
 
-function checkGitHubReleaseREST() {
+function checkGitHubReleasesREST() {
     return new Promise((resolve, reject) => {
         const token = getUpdateToken();
         const https = require('https');
         const req = https.request({
             hostname: 'api.github.com',
-            path: '/repos/synclimit/MediaFactory/releases/latest',
+            path: '/repos/synclimit/MediaFactory/releases',
             method: 'GET',
             headers: {
                 'User-Agent': 'MediaFactoryApp',
@@ -151,7 +146,10 @@ function checkGitHubReleaseREST() {
             res.on('data', c => body += c);
             res.on('end', () => {
                 if (res.statusCode === 200) {
-                    try { resolve(JSON.parse(body)); }
+                    try { 
+                        const rels = JSON.parse(body);
+                        resolve(Array.isArray(rels) ? rels : [rels]); 
+                    }
                     catch (e) { reject(e); }
                 } else {
                     reject(new Error(`GitHub API HTTP ${res.statusCode}`));
@@ -168,34 +166,17 @@ function downloadReleaseAsset(assetUrl, destPath, onProgress) {
         const token = getUpdateToken();
         const https = require('https');
         const fs = require('fs');
-        const req = https.request(assetUrl, {
-            method: 'GET',
-            headers: {
-                'User-Agent': 'MediaFactoryApp',
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/octet-stream'
-            }
-        }, (res) => {
-            if (res.statusCode === 302 || res.statusCode === 301) {
-                return https.get(res.headers.location, (redirectRes) => {
-                    if (redirectRes.statusCode !== 200) return reject(new Error(`HTTP ${redirectRes.statusCode}`));
-                    const totalBytes = parseInt(redirectRes.headers['content-length'] || '0', 10);
-                    let downloadedBytes = 0;
-                    const fileStream = fs.createWriteStream(destPath);
-                    redirectRes.on('data', (chunk) => {
-                        downloadedBytes += chunk.length;
-                        if (onProgress && totalBytes > 0) {
-                            onProgress(Math.round((downloadedBytes / totalBytes) * 100));
-                        }
-                    });
-                    redirectRes.pipe(fileStream);
-                    fileStream.on('finish', () => {
-                        fileStream.close();
-                        resolve(destPath);
-                    });
-                    fileStream.on('error', reject);
-                }).on('error', reject);
-            } else if (res.statusCode === 200) {
+
+        const doDownload = (url, headers) => {
+            const req = https.request(url, { method: 'GET', headers }, (res) => {
+                if (res.statusCode === 302 || res.statusCode === 301) {
+                    const redirectUrl = res.headers.location;
+                    // When following redirect to S3/CDN, DO NOT send GitHub Authorization header to prevent S3 400/403 error
+                    return doDownload(redirectUrl, { 'User-Agent': 'MediaFactoryApp' });
+                }
+                if (res.statusCode !== 200) {
+                    return reject(new Error(`HTTP ${res.statusCode}`));
+                }
                 const totalBytes = parseInt(res.headers['content-length'] || '0', 10);
                 let downloadedBytes = 0;
                 const fileStream = fs.createWriteStream(destPath);
@@ -211,35 +192,51 @@ function downloadReleaseAsset(assetUrl, destPath, onProgress) {
                     resolve(destPath);
                 });
                 fileStream.on('error', reject);
-            } else {
-                reject(new Error(`HTTP ${res.statusCode}`));
-            }
+            });
+            req.on('error', reject);
+            req.end();
+        };
+
+        doDownload(assetUrl, {
+            'User-Agent': 'MediaFactoryApp',
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/octet-stream'
         });
-        req.on('error', reject);
-        req.end();
     });
 }
 
 async function performUpdateCheck() {
+    console.log('[AutoUpdater] Checking for updates via GitHub REST API...');
     if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
     try {
-        const release = await checkGitHubReleaseREST();
-        const latestTag = release.tag_name || release.name || '';
-        const currentVer = app.getVersion() || '1.0.8';
+        const releases = await checkGitHubReleasesREST();
+        const currentVer = app.getVersion() || '1.0.10';
+        console.log(`[AutoUpdater] Current version: ${currentVer}, Total releases found: ${releases.length}`);
         
-        if (isVersionGreater(latestTag, currentVer)) {
-            const exeAsset = (release.assets || []).find(a => a.name.endsWith('.exe'));
-            if (exeAsset) {
-                latestReleaseAssetInfo = { tag: latestTag, assetUrl: exeAsset.url, name: exeAsset.name };
-                if (mainWindow) {
-                    mainWindow.webContents.send('update-status', { status: 'available', version: latestTag });
-                }
-                return;
+        // Find newest release greater than currentVer that contains a valid .exe asset
+        const validRelease = releases.find(rel => {
+            const tag = rel.tag_name || rel.name || '';
+            const hasExe = (rel.assets || []).some(a => a.name.endsWith('.exe'));
+            const isGreater = isVersionGreater(tag, currentVer);
+            console.log(`[AutoUpdater] Release tag: ${tag}, hasExe: ${hasExe}, isGreater: ${isGreater}`);
+            return isGreater && hasExe;
+        });
+
+        if (validRelease) {
+            const tag = validRelease.tag_name || validRelease.name;
+            const exeAsset = validRelease.assets.find(a => a.name.endsWith('.exe'));
+            latestReleaseAssetInfo = { tag: tag, assetUrl: exeAsset.url, name: exeAsset.name };
+            console.log(`[AutoUpdater] Update available! Tag: ${tag}, Asset: ${exeAsset.name}`);
+            if (mainWindow) {
+                mainWindow.webContents.send('update-status', { status: 'available', version: tag });
             }
+            return;
         }
+        
+        console.log('[AutoUpdater] No newer release with exe asset found.');
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
     } catch (e) {
-        console.error('[Update Check Error]', e);
+        console.error('[AutoUpdater Error]', e);
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
     }
 }
@@ -248,6 +245,7 @@ async function performUpdateDownload() {
     if (!latestReleaseAssetInfo) return;
     const os = require('os');
     const destPath = path.join(os.tmpdir(), `MediaFactory-Setup-${latestReleaseAssetInfo.tag}.exe`);
+    console.log(`[AutoUpdater] Starting download of ${latestReleaseAssetInfo.name} to ${destPath}`);
     
     if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', progress: 0, version: latestReleaseAssetInfo.tag });
     
@@ -256,9 +254,10 @@ async function performUpdateDownload() {
             if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', progress: pct, version: latestReleaseAssetInfo.tag });
         });
         pendingUpdateExePath = destPath;
+        console.log('[AutoUpdater] Download complete! Ready to install.');
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'ready', version: latestReleaseAssetInfo.tag });
     } catch (e) {
-        console.error('[Update Download Error]', e);
+        console.error('[AutoUpdater Download Error]', e);
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'error' });
     }
 }
@@ -267,6 +266,7 @@ ipcMain.on('check-for-updates', performUpdateCheck);
 ipcMain.on('download-update', performUpdateDownload);
 ipcMain.on('install-update', () => {
     if (pendingUpdateExePath && require('fs').existsSync(pendingUpdateExePath)) {
+        console.log(`[AutoUpdater] Launching installer: ${pendingUpdateExePath}`);
         const { spawn } = require('child_process');
         spawn(pendingUpdateExePath, [], { detached: true, stdio: 'ignore' });
         app.quit();

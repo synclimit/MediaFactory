@@ -186,7 +186,22 @@ async function ensureYoutubeAudioDownloaded(uri, onProgress) {
 
     const downloadPromise = new Promise((resolve, reject) => {
         const ytOut = path.join(cacheDir, hash + '.%(ext)s');
-        const dlArgs = ['--newline', '--no-playlist', '-f', 'bestaudio', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', searchUrl];
+        const ffmpegDir = AppPaths.getFFmpegDir();
+        const dlArgs = [
+            '--no-check-certificates',
+            '--force-ipv4',
+            '--extractor-args', 'youtube:player_client=android,web',
+            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0',
+            '--ffmpeg-location', ffmpegDir,
+            '--newline',
+            '--no-playlist',
+            '-f', 'bestaudio',
+            '-x',
+            '--audio-format', 'mp3',
+            '-o', ytOut,
+            '--',
+            searchUrl
+        ];
         const dlProc = spawn(AppPaths.getYtDlpPath(), dlArgs);
 
         dlProc.stdout.on('data', chunk => {
@@ -248,7 +263,16 @@ router.post('/api/m2/yt-metadata', async (req, res) => {
 
     try {
         const ytData = await new Promise((resolve, reject) => {
-            const ytArgs = ['--dump-json', '--no-playlist', '--', searchUrl];
+            const ytArgs = [
+                '--no-check-certificates',
+                '--force-ipv4',
+                '--extractor-args', 'youtube:player_client=android,web',
+                '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0',
+                '--dump-json',
+                '--no-playlist',
+                '--',
+                searchUrl
+            ];
             const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs);
             
             let stdoutData = '';

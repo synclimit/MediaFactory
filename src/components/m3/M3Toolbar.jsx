@@ -4,7 +4,7 @@ import { BackgroundVariants } from '../ui/BackgroundVariants';
 import { fastRenderState, RENDER_MODES } from '../../services/pipeline/fastrender/core/FastRenderState';
 import { fastWorkspaceManager } from '../../services/pipeline/fastrender/workspace/FastWorkspaceManager';
 
-export default function M3Toolbar({ mode, setMode, renderMode = 'NORMAL', setRenderMode, m3BgPool = [], m3AudioTracks = [], m3ThumbnailSaved = false, m3Objects = [], addNotification }) {
+export default function M3Toolbar({ mode, setMode, renderMode = 'NORMAL', setRenderMode, m3BgPool = [], m3AudioTracks = [], m3ThumbnailSaved = false, m3Objects = [], addNotification, onOpenInspector }) {
   const isBgReady = m3BgPool.length > 0;
   const isPlaylistReady = m3AudioTracks.length > 0;
   const isComposerReady = m3Objects.length > 0;
@@ -36,6 +36,14 @@ export default function M3Toolbar({ mode, setMode, renderMode = 'NORMAL', setRen
       </div>
 
       <div className="flex gap-2 items-center">
+        {/* Diagnostic Inspector Button */}
+        <button
+          onClick={onOpenInspector}
+          className="bg-cyan-500 hover:bg-cyan-400 text-black font-black text-[11px] px-3 py-1 rounded shadow-[0_0_12px_rgba(6,182,212,0.6)] flex items-center gap-1.5 transition-all mr-2"
+        >
+          <span>🔍 DIAGNOSTIC INSPECTOR</span>
+        </button>
+
         {/* Mode Switcher (Composer vs Thumbnail) */}
         <div className="flex bg-[#0c0d12] rounded border border-[#2d3247] overflow-hidden mr-4">
           <button 

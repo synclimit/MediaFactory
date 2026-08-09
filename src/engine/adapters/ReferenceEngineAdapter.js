@@ -2,10 +2,9 @@
  * ReferenceEngineAdapter.js
  * Bridge Adapter & Dependency Injection Container for Media Factory.
  * 
- * SPRINT 01 GOVERNANCE:
- * - Feature Flag `useReferenceEngine` is set to FALSE by default.
- * - Legacy rendering pipeline remains 100% active and unmodified.
- * - Reference Engine contracts & registry are loaded in coexistence mode.
+ * SPRINT 25 GOVERNANCE:
+ * - Feature Flag `useReferenceEngine` is ENABLED (true) for development/testing.
+ * - Live Preview drives 100% via ReferencePreviewDriver -> ReferenceRenderPipeline -> Core Engine -> Canvas2D Adapter.
  */
 
 import { createRenderContext } from '../contracts/RenderContext.js';
@@ -18,12 +17,11 @@ import { cutoverValidator } from '../pipeline/CutoverValidator.js';
 import { referencePreviewDriver } from '../pipeline/ReferencePreviewDriver.js';
 
 export const featureFlags = {
-  useReferenceEngine: false,
+  useReferenceEngine: true,
   showReferencePreview: false,
-  enableStrictRenderContext: false,
+  enableStrictRenderContext: true,
   enableValidationEngine: false
 };
-
 
 export class ReferenceEngineAdapter {
   constructor() {
@@ -44,9 +42,6 @@ export class ReferenceEngineAdapter {
   get driver() {
     return referencePreviewDriver;
   }
-
-
-
 
   initialize() {
     if (this.isInitialized) return true;
@@ -71,6 +66,5 @@ export class ReferenceEngineAdapter {
     return featureFlags.useReferenceEngine === true;
   }
 }
-
 
 export const referenceEngineAdapter = new ReferenceEngineAdapter();

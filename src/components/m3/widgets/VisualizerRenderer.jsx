@@ -1,140 +1,149 @@
 import React, { useRef, useEffect } from 'react';
-import { VisualizerRuntime } from '../../../visualizers/runtime/VisualizerRuntime';
-import { visualizerRegistry, categoryRegistry, rendererRegistry } from '../../../visualizers/registry';
-import { registerBarsCategory } from '../../../visualizers/categories/bars';
-import { registerWavesCategory } from '../../../visualizers/categories/waves';
-import { registerCircleCategory } from '../../../visualizers/categories/circle';
-import { registerRingCategory } from '../../../visualizers/categories/ring';
-import { registerSpiralCategory } from '../../../visualizers/categories/spiral';
-import { registerMandalaCategory } from '../../../visualizers/categories/mandala';
-import { registerParticleCategory } from '../../../visualizers/categories/particle';
-import { registerGalaxyCategory } from '../../../visualizers/categories/galaxy';
-import { registerTunnelCategory } from '../../../visualizers/categories/tunnel';
-import { registerRibbonCategory } from '../../../visualizers/categories/ribbon';
-import { registerDNACategory } from '../../../visualizers/categories/dna';
-import { registerGeometryCategory } from '../../../visualizers/categories/geometry';
-import { registerNeonCategory } from '../../../visualizers/categories/neon';
-import { registerSpeakerCategory } from '../../../visualizers/categories/speaker';
-import { registerMatrixCategory } from '../../../visualizers/categories/matrix';
-import { registerTerrainCategory } from '../../../visualizers/categories/terrain';
-import { registerAbstractCategory } from '../../../visualizers/categories/abstract';
-import { registerMinimalCategory } from '../../../visualizers/categories/minimal';
-import { registerCinematicCategory } from '../../../visualizers/categories/cinematic';
-import { register3DCategory } from '../../../visualizers/categories/3d';
-import { registerFluidCategory } from '../../../visualizers/categories/fluid';
-import { registerTextCategory } from '../../../visualizers/categories/text';
-import { registerRetroCategory } from '../../../visualizers/categories/retro';
-import { registerNatureCategory } from '../../../visualizers/categories/nature';
-import { registerExperimentalCategory } from '../../../visualizers/categories/experimental';
+import { renderPipelineFrame } from '../../../pipeline/v2/VisualizerPipeline.js';
+import { beatEngine } from '../../../services/audio/BeatEngine.js';
 
-// Initialize all registries
-registerBarsCategory();
-registerWavesCategory();
-registerCircleCategory();
-registerRingCategory();
-registerSpiralCategory();
-registerMandalaCategory();
-registerParticleCategory();
-registerGalaxyCategory();
-registerTunnelCategory();
-registerRibbonCategory();
-registerDNACategory();
-registerGeometryCategory();
-registerNeonCategory();
-registerSpeakerCategory();
-registerMatrixCategory();
-registerTerrainCategory();
-registerAbstractCategory();
-registerMinimalCategory();
-registerCinematicCategory();
-register3DCategory();
-registerFluidCategory();
-registerTextCategory();
-registerRetroCategory();
-registerNatureCategory();
-registerExperimentalCategory();
-
-export default function VisualizerRenderer({ config }) {
+export default function VisualizerRenderer({ config, id, currentTime, audioState }) {
     const canvasRef = useRef(null);
-    const runtimeRef = useRef(null);
+    const animationFrameRef = useRef(null);
 
     useEffect(() => {
         if (!canvasRef.current) return;
-        
-        // 1. Initialize Runtime
-        const runtime = new VisualizerRuntime(canvasRef.current, config);
-        runtimeRef.current = runtime;
-        
-        let pluginId = config?.visualizerId || 'bars-classic-vertical';
-        
-        // Legacy mapping for backward compatibility during transition
-        if (!config?.visualizerId && config?.visualizerStyle) {
-            const style = config.visualizerStyle;
-            if (style === 'Vertical') pluginId = 'bars-classic-vertical';
-            if (style === 'Staggered') pluginId = 'bars-staggered-center';
-            if (style === 'Mirror') pluginId = 'bars-mirror';
-            if (style === 'Split') pluginId = 'bars-split-dual';
-            if (style === 'Rounded') pluginId = 'bars-rounded-pill';
-        }
 
-        // 2. Load Plugin ONLY if it changed or on mount
-        if (runtime.activePlugin?.metadata?.id !== pluginId) {
-            runtime.load(pluginId).then(success => {
-                if (success) {
-                    runtime.start();
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        let isRunning = true;
+
+        const isDeterministic = typeof currentTime === 'number';
+
+        const renderSingleFrame = (timestampMs) => {
+            if (!canvas) return;
+
+            const width = canvas.width || 1920;
+            const height = canvas.height || 1080;
+
+            ctx.clearRect(0, 0, width, height);
+
+            let stateToUse = audioState;
+            let time = isDeterministic ? currentTime : timestampMs / 1000;
+
+            if (!stateToUse || Object.keys(stateToUse).length === 0) {
+                if (beatEngine && typeof beatEngine.update === 'function') {
+                    beatEngine.update(Boolean(window.m3IsPlaying));
                 }
-            }).catch(err => {
-                console.error("Failed to load plugin:", err);
-            });
+
+                const numBins = 64;
+                const frequencies = new Float32Array(numBins);
+                const waveform = new Float32Array(numBins);
+                
+                const bpm = 128;
+                const beatPeriod = 60 / bpm;
+                const beatPhase = (time % beatPeriod) / beatPeriod;
+                const kickPulse = Math.max(0, 1 - beatPhase * 3);
+                
+                for (let i = 0; i < 10; i++) {
+                  const bassBase = 0.3 + 0.7 * Math.sin(time * 2 + i * 0.5);
+                  frequencies[i] = Math.min(1.0, bassBase + kickPulse * 0.6);
+                }
+                
+                for (let i = 10; i < 40; i++) {
+                  const midVal = 0.2 + 0.5 * Math.sin(time * 5 + i * 0.2) * Math.cos(time * 1.5);
+                  frequencies[i] = Math.abs(midVal);
+                }
+                
+                for (let i = 40; i < numBins; i++) {
+                  const hiVal = 0.1 + 0.4 * Math.sin(time * 12 + i * 0.8) * (1 - beatPhase);
+                  frequencies[i] = Math.max(0.05, hiVal);
+                }
+
+                for (let i = 0; i < numBins; i++) {
+                  waveform[i] = Math.sin(time * 20 + (i / numBins) * Math.PI * 4) * 0.5;
+                }
+
+                let sum = 0;
+                for (let i = 0; i < numBins; i++) sum += frequencies[i];
+                const avg = sum / numBins;
+
+                stateToUse = {
+                  time,
+                  subBass: frequencies[0],
+                  bass: frequencies[2],
+                  lowMid: frequencies[12],
+                  mid: frequencies[25],
+                  highMid: frequencies[40],
+                  treble: frequencies[55],
+                  energy: avg,
+                  RMS: avg,
+                  kick: kickPulse > 0.4,
+                  snare: frequencies[35] > 0.4,
+                  beatStrength: kickPulse,
+                  spectralFlux: avg,
+                  frequencies,
+                  waveform
+                };
+            }
+
+            let mode = config.mode;
+            if (!mode && config.visualizerId) {
+              const vid = String(config.visualizerId).toUpperCase();
+              if (vid.includes('WAVE') || vid.includes('CYBERPUNK')) mode = 'CYBERPUNK_WAVEFORM';
+              else if (vid.includes('BAR') || vid.includes('SPECTRUM')) mode = 'SPECTRUM_BARS';
+              else if (vid.includes('PARTICLE') || vid.includes('ORBIT')) mode = 'PARTICLE_ORBIT';
+              else if (vid.includes('CIRCULAR') || vid.includes('CIRCLE') || vid.includes('PULSE') || vid.includes('RING')) mode = 'CIRCULAR_PULSE';
+            }
+            if (!mode) mode = 'CIRCULAR_PULSE';
+
+            const visualizerConfig = {
+                primaryColor: config.primaryColor || (config.colorLeft ? (config.colorLeft.startsWith('#') ? config.colorLeft : `#${config.colorLeft}`) : '#00f2fe'),
+                secondaryColor: config.secondaryColor || (config.colorRight ? (config.colorRight.startsWith('#') ? config.colorRight : `#${config.colorRight}`) : '#4facfe'),
+                ...config
+            };
+
+            renderPipelineFrame(canvas, time, stateToUse, mode, visualizerConfig);
+        };
+
+        const isPausedSnapshot = typeof currentTime === 'number' && !window.m3IsPlaying;
+
+        if (isPausedSnapshot) {
+            renderSingleFrame(performance.now());
+        } else {
+            const renderLoop = (timestamp) => {
+                if (!isRunning || !canvas) return;
+                renderSingleFrame(timestamp);
+                animationFrameRef.current = requestAnimationFrame(renderLoop);
+            };
+            animationFrameRef.current = requestAnimationFrame(renderLoop);
         }
 
-        // 3. Handle resize (Basic, depends on parent)
+        // Handle Resize Observer
         const resizeObserver = new ResizeObserver(entries => {
-            if (!canvasRef.current || !canvasRef.current.parentElement) return;
+            if (!canvas || !canvas.parentElement) return;
             for (let entry of entries) {
-                if (entry.target === canvasRef.current.parentElement) {
+                if (entry.target === canvas.parentElement) {
                     const { width, height } = entry.contentRect;
-                    runtime.resize(width, height);
+                    if (width > 0 && height > 0) {
+                        canvas.width = width;
+                        canvas.height = height;
+                    }
                 }
             }
         });
 
-        if (canvasRef.current && canvasRef.current.parentElement) {
-            resizeObserver.observe(canvasRef.current.parentElement);
+        if (canvas.parentElement) {
+            resizeObserver.observe(canvas.parentElement);
         }
 
         return () => {
+            isRunning = false;
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
             resizeObserver.disconnect();
-            if (runtime) {
-                runtime.stop();
-                if (runtime.renderer) {
-                    runtime.renderer.dispose();
-                }
-            }
-            runtimeRef.current = null;
         };
-    }, [config?.visualizerId, config?.visualizerStyle]); // Re-initialize completely if visualizer changes
-
-    // Handle pure config updates without reloading plugin
-    useEffect(() => {
-        if (runtimeRef.current) {
-            runtimeRef.current.setConfig(config);
-        }
-    }, [config]);
-
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (runtimeRef.current) {
-                runtimeRef.current.dispose();
-                runtimeRef.current = null;
-            }
-        };
-    }, []);
+    }, [config?.visualizerId, config?.visualizerStyle, config, currentTime, audioState]);
 
     return (
-        <div className="relative flex items-center justify-center overflow-hidden" style={{ width: config.width || 1920, height: config.height || 200 }}>
-            <canvas ref={canvasRef} width={config.width || 1920} height={config.height || 200} style={{ display: 'block' }} />
+        <div className="relative w-full h-full flex items-center justify-center overflow-hidden pointer-events-none">
+            <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
         </div>
     );
 }

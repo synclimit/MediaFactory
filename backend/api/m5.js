@@ -28,19 +28,26 @@ const cardEngine = new CardGenerationEngine();
 // Initialize database
 dbEngine.init().then(() => console.log('[M5 API] SQLite Database Initialized')).catch(console.error);
 
-router.post('/api/v1/m5/dialog/folder', (req, res) => {
-    const encoded = "aW1wb3J0IHRraW50ZXIgYXMgdGsKZnJvbSB0a2ludGVyIGltcG9ydCBmaWxlZGlhbG9nCnJvb3QgPSB0ay5UaygpCnJvb3QuYXR0cmlidXRlcygnLXRvcG1vc3QnLCBUcnVlKQpyb290LndpdGhkcmF3KCkKZm9sZGVyX3BhdGggPSBmaWxlZGlhbG9nLmFza2RpcmVjdG9yeShwYXJlbnQ9cm9vdCwgdGl0bGU9J1NlbGVjdCBGb2xkZXInKQppZiBmb2xkZXJfcGF0aDoKICAgIHByaW50KGZvbGRlcl9wYXRoKQ==";
-    exec(`python -c "import base64; exec(base64.b64decode('${encoded}').decode('utf-8'))"`, (err, stdout) => {
-        let pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
-        if (!pathStr || err) {
-            const psCommand = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; $f.ShowNewFolderButton = $true; $form = New-Object System.Windows.Forms.Form; $form.TopMost = $true; $form.Add_Shown({$form.Hide()}); if ($f.ShowDialog($form) -eq 'OK') { $f.SelectedPath }`;
-            exec(`powershell -sta -command "${psCommand}"`, (err2, stdout2) => {
-                pathStr = stdout2 ? stdout2.replace(/^\uFEFF/, '').trim() : null;
-                finishFolderDialog(pathStr, res);
+router.post('/api/v1/m5/dialog/folder', async (req, res) => {
+    try {
+        const { dialog, BrowserWindow } = require('electron');
+        if (dialog) {
+            const win = BrowserWindow.getFocusedWindow() || (BrowserWindow.getAllWindows && BrowserWindow.getAllWindows()[0]);
+            const result = await dialog.showOpenDialog(win, {
+                properties: ['openDirectory', 'createDirectory']
             });
-        } else {
-            finishFolderDialog(pathStr, res);
+            if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+                return finishFolderDialog(result.filePaths[0], res);
+            } else {
+                return finishFolderDialog(null, res);
+            }
         }
+    } catch(e) {}
+
+    const psCommand = `[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $f = New-Object System.Windows.Forms.FolderBrowserDialog; $f.ShowNewFolderButton = $true; if ($f.ShowDialog() -eq 'OK') { $f.SelectedPath }`;
+    exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "${psCommand}"`, (err, stdout) => {
+        const pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
+        finishFolderDialog(pathStr, res);
     });
 });
 
@@ -69,20 +76,27 @@ function finishFolderDialog(pathStr, res) {
     res.json({ success: true, path: pathStr, count });
 }
 
-router.post('/api/v1/m5/dialog/file', (req, res) => {
-    const pyScript = `import tkinter as tk\nfrom tkinter import filedialog\nroot = tk.Tk()\nroot.attributes('-topmost', True)\nroot.withdraw()\nfile_path = filedialog.askopenfilename(parent=root, title='Select Media File', filetypes=[('Media Files', '*.mp4;*.mov;*.avi;*.mkv;*.webm;*.png;*.jpg;*.jpeg;*.mp3;*.wav'), ('All Files', '*.*')])\nif file_path:\n    print(file_path)`;
-    const encoded = Buffer.from(pyScript).toString('base64');
-    exec(`python -c "import base64; exec(base64.b64decode('${encoded}').decode('utf-8'))"`, (err, stdout) => {
-        let pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
-        if (!pathStr || err) {
-            const psCommand = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "Media Files|*.mp4;*.mov;*.avi;*.mkv;*.webm;*.png;*.jpg;*.jpeg;*.mp3;*.wav|All Files|*.*"; $form = New-Object System.Windows.Forms.Form; $form.TopMost = $true; $form.Add_Shown({$form.Hide()}); if ($f.ShowDialog($form) -eq 'OK') { $f.FileName }`;
-            exec(`powershell -sta -command "${psCommand}"`, (err2, stdout2) => {
-                pathStr = stdout2 ? stdout2.replace(/^\uFEFF/, '').trim() : null;
-                res.json({ success: !!pathStr, path: pathStr || null });
+router.post('/api/v1/m5/dialog/file', async (req, res) => {
+    try {
+        const { dialog, BrowserWindow } = require('electron');
+        if (dialog) {
+            const win = BrowserWindow.getFocusedWindow() || (BrowserWindow.getAllWindows && BrowserWindow.getAllWindows()[0]);
+            const result = await dialog.showOpenDialog(win, {
+                properties: ['openFile'],
+                filters: [{ name: 'Media Files', extensions: ['mp4','mov','avi','mkv','webm','png','jpg','jpeg','mp3','wav'] }]
             });
-        } else {
-            res.json({ success: true, path: pathStr });
+            if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+                return res.json({ success: true, path: result.filePaths[0] });
+            } else {
+                return res.json({ success: false, path: null });
+            }
         }
+    } catch(e) {}
+
+    const psCommand = `[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "Media Files|*.mp4;*.mov;*.avi;*.mkv;*.webm;*.png;*.jpg;*.jpeg;*.mp3;*.wav|All Files|*.*"; if ($f.ShowDialog() -eq 'OK') { $f.FileName }`;
+    exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "${psCommand}"`, (err, stdout) => {
+        const pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
+        res.json({ success: !!pathStr, path: pathStr || null });
     });
 });
 

@@ -3,6 +3,7 @@ import PlaylistRenderer from '../widgets/PlaylistRenderer';
 import SubtitleRenderer from '../widgets/SubtitleRenderer';
 import SocialWidgetRenderer from '../widgets/SocialWidgetRenderer.jsx';
 import VisualizerRenderer from '../widgets/VisualizerRenderer.jsx';
+import Visualizer2Renderer from '../widgets/Visualizer2Renderer.jsx';
 import ChromaKeyImage from '../widgets/ChromaKeyImage';
 import ChromaKeyVideo from '../widgets/ChromaKeyVideo';
 import ProceduralSpeaker from '../overlays/ProceduralSpeaker';
@@ -377,7 +378,8 @@ const CanvasObjectNode = React.memo(({
                 </div>
             )}
             {el.type === 'social-widget' && <SocialWidgetRenderer config={el} currentTime={currentTime} />}
-            {el.type === 'visualizer' && <VisualizerRenderer config={el} />}
+            {el.type === 'visualizer' && <VisualizerRenderer config={el} currentTime={currentTime} audioState={frame?.states?.audioState} />}
+            {el.type === 'visualizer2' && <Visualizer2Renderer config={el} id={el.id} currentTime={currentTime} audioState={frame?.states?.audioState} />}
             {el.type === 'playlist' && <PlaylistRenderer config={el} id={el.id} frame={frame} />}
             {(el.type === 'procedural-speaker' || el.mediaType === 'procedural') && (
                 <div className="w-full h-full relative" style={{ mixBlendMode: el.blend === 'Normal' ? 'normal' : el.blend?.toLowerCase() }}>

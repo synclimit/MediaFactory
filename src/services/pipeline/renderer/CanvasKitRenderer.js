@@ -1,12 +1,17 @@
 /**
  * CanvasKitRenderer.js
- * MediaFactory V3 Production Master Loop Renderer Engine (MF-3002 Architecture)
- * Combines CanvasKitRuntime and CanvasKitDrawVisualizer into a single deterministic 1080p frame rendering engine.
- * Features persistent Skia Surface allocation to prevent WASM heap fragmentation during long render sequences.
+ * MediaFactory V3 Master Export Renderer Engine
+ * 
+ * SPRINT 26 GOVERNANCE:
+ * - Executes frame rendering 100% via ReferenceRenderPipeline -> Core Engine -> CanvasKit2DAdapter.
+ * - Zero legacy drawing math exists in export pipeline.
  */
 
 import { initCanvasKit } from './CanvasKitRuntime.js';
-import { drawCanvasKitVisualizer } from './CanvasKitDrawVisualizer.js';
+import { CanvasKit2DAdapter } from '../../../engine/adapters/CanvasKit2DAdapter.js';
+import { referenceRenderPipeline } from '../../../engine/pipeline/ReferenceRenderPipeline.js';
+import { createRenderContext } from '../../../engine/contracts/RenderContext.js';
+import { AudioStateAdapter } from '../../../engine/adapters/AudioStateAdapter.js';
 import crypto from 'crypto';
 
 let ckInstance = null;
@@ -17,10 +22,9 @@ let persistentSurfaceHeight = 0;
 
 /**
  * Synthesizes a pure deterministic FFT spectrum data array for a given frame index.
- * Isolate from system clock or random state.
  */
-function generateDeterministicFFT(frameIndex = 0, frameCount = 300, barCount = 256) {
-  const data = new Uint8Array(barCount);
+function generateDeterministicFFT(frameIndex = 0, frameCount = 300, barCount = 64) {
+  const data = new Float32Array(barCount);
   const normalizedLoopTime = (frameIndex % frameCount) / frameCount;
   const tAngle = normalizedLoopTime * Math.PI * 2;
 
@@ -31,47 +35,25 @@ function generateDeterministicFFT(frameIndex = 0, frameCount = 300, barCount = 2
     
     const oct1 = Math.sin(tAngle * 3 + barSeed * 6.28);
     const oct2 = Math.cos(tAngle * 7 + freqNorm * 18.84 + barSeed * 3.14);
-    const oct3 = Math.sin(tAngle * 13 + freqNorm * 31.42 + barSeed * 1.57);
-    const oct4 = Math.cos(tAngle * 47.12);
-    
-    const spike = Math.pow(Math.max(0, Math.sin(tAngle * 19 + i * 3.14)), 8);
-    const fastJitter = Math.sin(tAngle * 41 + i * 7.89) * 25;
     const envelope = Math.exp(-freqNorm * 2.2);
     
-    const rawVal = (0.35 * oct1 + 0.3 * oct2 + 0.2 * oct3 + 0.15 * oct4 + 0.4 * spike) * envelope;
-    const baseHeight = 35 + Math.abs(rawVal) * 190 + fastJitter;
-    data[i] = Math.min(255, Math.max(15, Math.floor(baseHeight)));
+    const rawVal = (0.5 * oct1 + 0.5 * oct2) * envelope;
+    data[i] = Math.min(1.0, Math.max(0.05, Math.abs(rawVal)));
   }
   return data;
 }
 
-/**
- * Initializes the master renderer runtime ONCE.
- * Reuses the initialized WASM runtime for all subsequent frame renders.
- * @returns {Promise<Object>} CanvasKit WASM instance
- */
 export async function initialize() {
   if (isInitialized && ckInstance) {
     return ckInstance;
   }
-
   ckInstance = await initCanvasKit();
   isInitialized = true;
   return ckInstance;
 }
 
 /**
- * Renders a single deterministic frame into an uncompressed RGBA framebuffer.
- * Returns ONLY { rgbaBuffer, metadata, verification, diagnostics }.
- * ZERO Skia objects (Surface, Canvas, Paint, Image) leak outside.
- * 
- * @param {Object} options Rendering options
- * @param {number} [options.frameIndex=0] Integer index of frame to render
- * @param {number} [options.frameCount=300] Total frame count in sequence
- * @param {number} [options.width=1920] Target frame width in pixels
- * @param {number} [options.height=1080] Target frame height in pixels
- * @param {Object} [options.visualizerConfig={}] Visualizer appearance configuration
- * @returns {Promise<{ rgbaBuffer: Buffer, metadata: Object, verification: Object, diagnostics: Object }>}
+ * Renders a single deterministic frame into an uncompressed RGBA framebuffer via Core Engine.
  */
 export async function renderFrame({
   frameIndex = 0,
@@ -86,7 +68,7 @@ export async function renderFrame({
     await initialize();
   }
 
-  // Allocate or reuse persistent Skia Surface to prevent WASM heap fragmentation
+  // Allocate or reuse persistent Skia Surface
   if (!persistentSurface || persistentSurfaceWidth !== width || persistentSurfaceHeight !== height) {
     if (persistentSurface) {
       persistentSurface.delete();
@@ -100,49 +82,51 @@ export async function renderFrame({
   }
 
   const canvas = persistentSurface.getCanvas();
-  const fftFrame = sharedAudioAnalysisEngine.getFrame('export_session', frameIndex, frameCount);
-  const fftData = fftFrame.spectrum;
+
+  // Clear Surface with transparent background
+  const bgPaint = new ckInstance.Paint();
+  bgPaint.setColor(ckInstance.Color(0, 0, 0, 0));
+  bgPaint.setBlendMode(ckInstance.BlendMode.Src);
+  canvas.drawRect([0, 0, width, height], bgPaint);
+  bgPaint.delete();
+
+  const fftData = generateDeterministicFFT(frameIndex, frameCount, visualizerConfig.barCount || 64);
+  const audioState = AudioStateAdapter.createFromFrame({ audio: { frequencies: fftData } });
 
   const defaultConfig = {
-    shape: 'bar',
-    thickness: 4,
+    visualizerId: 'bars-classic-vertical',
+    barCount: 64,
+    barWidth: 4,
     spacing: 2,
-    center: true,
-    mirror: false,
-    colorLeft: '#AB55F7',
-    colorRight: '#F59E0B',
-    fftGain: 100,
+    colorLeft: '#00f2fe',
+    colorRight: '#4facfe',
     ...visualizerConfig
   };
 
-  // Passive Standby AudioState & RenderContext construction for Sprint 09 (PASS-THROUGH ONLY)
-  const passiveAudioState = AudioStateAdapter.createFromFrame({ audio: { frequencies: fftData } });
-  const passiveRenderContext = RenderContextAdapter.createFromFrame({
-    metadata: { frameNumber: frameIndex, currentTime: frameIndex / 60, fps: 60 },
-    engineStates: { audioState: passiveAudioState, audio: { frequencies: fftData } }
-  }, { canvas, width, height, config: defaultConfig });
+  const adapter = new CanvasKit2DAdapter(ckInstance, canvas);
+  const renderContext = createRenderContext({
+    canvas,
+    ctx: adapter,
+    viewport: { width, height, pixelRatio: 1 },
+    timeline: { timestamp: frameIndex / 60, fps: 60, frameIndex },
+    audioState,
+    config: defaultConfig
+  });
 
-  // Sprint 09 Lifecycle Integration: PipelineRouter Hook (Export Session)
-  const exportRoute = pipelineRouter.resolveActivePipeline(passiveRenderContext);
-  if (frameIndex === 0) {
-    console.log(`[PipelineRouter Export Hook] Active Route Selected: ${exportRoute.type}`);
-    console.log(`[PipelineRouter Export Hook] Status: READY (Execution & Draw Prevented = TRUE)`);
-  }
+  // Execute Export Frame via ReferenceRenderPipeline -> Core Engine -> CanvasKit2DAdapter
+  const pluginId = defaultConfig.visualizerId;
+  referenceRenderPipeline
+    .receiveContext(renderContext)
+    .receiveAudioState(audioState)
+    .resolvePlugin(pluginId)
+    .preparePlugin();
 
-  const sessionId = global._exportSessionId || 'NO_SESSION_ID';
-  const pipelineType = global._isGuiPipeline ? '[GUI PIPELINE]' : '[TEST PIPELINE]';
-  console.log(`=== ${pipelineType} BREAKPOINT: CanvasKitRenderer.renderFrame() ===`);
-  console.log(`Export Session ID : ${sessionId}`);
-  console.log(`Frame Index       : ${frameIndex}`);
-
-  global._currentFrameIndex = frameIndex;
-  // Render visualizer frame onto persistent Skia surface (Legacy Active Pipeline)
-  drawCanvasKitVisualizer(ckInstance, canvas, fftData, defaultConfig, width, height, true, frameIndex);
+  referenceRenderPipeline.currentPlugin.render(renderContext);
+  adapter.dispose();
 
   persistentSurface.flush();
   const image = persistentSurface.makeImageSnapshot();
 
-  // Extract raw 32-bit RGBA pixel buffer
   const imageInfo = {
     width,
     height,
@@ -152,47 +136,22 @@ export async function renderFrame({
   };
 
   const destPixels = new Uint8Array(width * height * 4);
-  const rawPixels = image.readPixels(0, 0, imageInfo, destPixels) || destPixels;
+  const rawPixels = image.readPixels(0, 0, imageInfo) || destPixels;
   const rgbaBuffer = Buffer.from(rawPixels.buffer, rawPixels.byteOffset, rawPixels.byteLength);
 
-  // Dispose snapshot image immediately
   image.delete();
 
   const renderDurationMs = Date.now() - startTime;
   const sha256 = crypto.createHash('sha256').update(rgbaBuffer).digest('hex');
 
-  const mem = process.memoryUsage();
-  const heapUsedMB = Math.round((mem.heapUsed / (1024 * 1024)) * 100) / 100;
-  const rssMB = Math.round((mem.rss / (1024 * 1024)) * 100) / 100;
-
   return {
     rgbaBuffer,
-
-    metadata: {
-      frameIndex,
-      width,
-      height,
-      stride: width * 4,
-      pixelFormat: 'RGBA32'
-    },
-
-    verification: {
-      sha256
-    },
-
-    diagnostics: {
-      renderDurationMs,
-      heapUsedMB,
-      rssMB,
-      canvasKitVersion: '0.39.1 (Google Skia WASM)'
-    }
+    metadata: { frameIndex, width, height, stride: width * 4, pixelFormat: 'RGBA32' },
+    verification: { sha256 },
+    diagnostics: { renderDurationMs, engineUsed: referenceRenderPipeline.currentPlugin.id }
   };
 }
 
-/**
- * Terminates the renderer runtime lifecycle and cleans up state.
- * @returns {Promise<boolean>}
- */
 export async function destroyRenderer() {
   if (persistentSurface) {
     persistentSurface.delete();

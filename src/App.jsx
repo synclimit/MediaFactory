@@ -309,6 +309,9 @@ export default function App() {
   const [m1Subscribe, setM1Subscribe] = useState(false);
   const [m1Quality, setM1Quality] = useState('240p');
   const [m1VideoRotation, setM1VideoRotation] = useState(0); // 0, 90, 180, 270
+  const [m1VideoTransform, setM1VideoTransform] = useState({
+    x: 0, y: 0, scale: 100, rotation: 0, flipH: false, flipV: false, aspectRatio: '16:9'
+  });
 
   const handleRotateVideo = () => {
     setM1VideoRotation(prev => (prev + 90) % 360);
@@ -826,7 +829,7 @@ export default function App() {
           }
         };
         ipcRenderer.on('update-status', handleUpdateStatus);
-        return () => ipcRenderer.removeAllListeners('update-status');
+        return () => ipcRenderer.removeListener('update-status', handleUpdateStatus);
       } catch (e) {}
     }
   }, []);
@@ -845,6 +848,8 @@ export default function App() {
           ipcRenderer.send('check-for-updates');
         }
       } catch(e) {}
+    } else {
+      window.open('https://github.com/synclimit/MediaFactory/releases', '_blank');
     }
   };
 
@@ -2589,6 +2594,7 @@ export default function App() {
               setM1Subscribe={setM1Subscribe} pipelineHistoryEngine={pipelineHistoryEngine}
               setActiveMode={setActiveMode} handleAddToQueue={handleOpenReviewDialog}
               m1VideoRotation={m1VideoRotation} handleRotateVideo={handleRotateVideo}
+              m1VideoTransform={m1VideoTransform} setM1VideoTransform={setM1VideoTransform}
             />
           )}
 

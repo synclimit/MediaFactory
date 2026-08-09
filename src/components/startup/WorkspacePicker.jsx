@@ -47,7 +47,16 @@ export default function WorkspacePicker({ onWorkspaceSelected, onNewWorkspace })
         }
     };
 
-    if (isLoading) return null;
+    if (isLoading) {
+        return (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center font-sans bg-[#0a0a0c] text-white">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm font-bold tracking-wider uppercase text-gray-400">Loading Channel Workspaces...</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center font-sans overflow-hidden bg-[#0a0a0c]">

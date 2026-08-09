@@ -391,7 +391,7 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
       if (totalTracks > 0) {
         job.progress = Math.min(8, 3 + Math.round((trackIdx / totalTracks) * 5));
       }
-      let sp = typeof track === 'string' ? track : (track?.uri || track?.sourcePath);
+      let sp = typeof track === 'string' ? track : (track?.sourcePath || track?.sourceUrl || track?.uri || track?.path || track?.file || track?.url || track?.localPath || track?.title);
       if (!sp) continue;
       
       if (sp.startsWith('http')) {
@@ -445,6 +445,10 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
   } catch (err) {
     logRuntimeEvent(job, 'fs.stat FAILED', `Stack: ${err.stack}`);
     throw err;
+  }
+
+  if (!resolvedPaths || resolvedPaths.length === 0) {
+    throw new Error('No valid audio track files could be found for playlist export. Please verify track file paths.');
   }
 
   const concatContent = resolvedPaths.map(sp => {
@@ -576,6 +580,209 @@ function getFFmpegEncodingFlags(metadata = {}) {
     flags
   };
 }
+function saveBgraBufferAsBmp(bgraBuffer, width, height, filePath) {
+  const fileHeaderSize = 14;
+  const dibHeaderSize = 40;
+  const headerSize = fileHeaderSize + dibHeaderSize;
+  const imageSize = width * height * 4;
+  const fileSize = headerSize + imageSize;
+
+  const buf = Buffer.alloc(fileSize);
+
+  buf.write('BM', 0, 2, 'ascii');
+  buf.writeUInt32LE(fileSize, 2);
+  buf.writeUInt16LE(0, 6);
+  buf.writeUInt16LE(0, 8);
+  buf.writeUInt32LE(headerSize, 10);
+
+  buf.writeUInt32LE(dibHeaderSize, 14);
+  buf.writeInt32LE(width, 18);
+  buf.writeInt32LE(-height, 22);
+  buf.writeUInt16LE(1, 26);
+  buf.writeUInt16LE(32, 28);
+  buf.writeUInt32LE(0, 30);
+  buf.writeUInt32LE(imageSize, 34);
+  buf.writeInt32LE(2835, 38);
+  buf.writeInt32LE(2835, 42);
+  buf.writeUInt32LE(0, 46);
+  buf.writeUInt32LE(0, 50);
+
+  bgraBuffer.copy(buf, headerSize);
+  fsSync.writeFileSync(filePath, buf);
+}
+
+function parseColorRgba(col, defaultHex = '00f2fe') {
+  if (!col) col = defaultHex;
+  let hex = String(col).replace('#', '').trim();
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  if (hex.length !== 6) hex = defaultHex.replace('#', '');
+  const num = parseInt(hex, 16);
+  if (isNaN(num)) return { r: 0, g: 242, b: 254, a: 255 };
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255, a: 255 };
+}
+
+function drawLineBGRA(buf, width, height, x0, y0, x1, y1, r, g, b, a, lineWidth = 2) {
+  x0 = Math.round(x0); y0 = Math.round(y0);
+  x1 = Math.round(x1); y1 = Math.round(y1);
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+
+  let currX = x0;
+  let currY = y0;
+  const halfW = Math.floor(lineWidth / 2);
+
+  while (true) {
+    for (let ox = -halfW; ox <= halfW; ox++) {
+      for (let oy = -halfW; oy <= halfW; oy++) {
+        const px = currX + ox;
+        const py = currY + oy;
+        if (px >= 0 && px < width && py >= 0 && py < height) {
+          const idx = (py * width + px) * 4;
+          buf[idx] = b;
+          buf[idx + 1] = g;
+          buf[idx + 2] = r;
+          buf[idx + 3] = a;
+        }
+      }
+    }
+
+    if (currX === x1 && currY === y1) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; currX += sx; }
+    if (e2 < dx) { err += dx; currY += sy; }
+  }
+}
+
+function drawFilledCircleBGRA(buf, width, height, cx, cy, radius, r, g, b, a) {
+  cx = Math.round(cx); cy = Math.round(cy); radius = Math.round(radius);
+  const minX = Math.max(0, cx - radius);
+  const maxX = Math.min(width - 1, cx + radius);
+  const minY = Math.max(0, cy - radius);
+  const maxY = Math.min(height - 1, cy + radius);
+  const r2 = radius * radius;
+
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      const dist2 = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+      if (dist2 <= r2) {
+        const idx = (y * width + x) * 4;
+        buf[idx] = b;
+        buf[idx + 1] = g;
+        buf[idx + 2] = r;
+        buf[idx + 3] = a;
+      }
+    }
+  }
+}
+
+function renderSpectrumBarsBGRA(buf, width, height, audioState, c1, c2) {
+  buf.fill(0);
+  const freqs = audioState.frequencies || new Float32Array(64);
+  const count = Math.min(64, freqs.length);
+  const step = width / count;
+  const barWidth = Math.max(2, Math.floor(step - 2));
+
+  for (let i = 0; i < count; i++) {
+    const val = freqs[i] || 0;
+    const barH = Math.round(Math.max(4, val * (height * 0.85)));
+    const startX = Math.round(i * step);
+    const endX = Math.min(width, startX + barWidth);
+    const startY = Math.max(0, height - barH);
+
+    const ratio = i / count;
+    const r = Math.round(c1.r * (1 - ratio) + c2.r * ratio);
+    const g = Math.round(c1.g * (1 - ratio) + c2.g * ratio);
+    const b = Math.round(c1.b * (1 - ratio) + c2.b * ratio);
+
+    for (let y = startY; y < height; y++) {
+      for (let x = startX; x < endX; x++) {
+        const idx = (y * width + x) * 4;
+        buf[idx] = b;
+        buf[idx + 1] = g;
+        buf[idx + 2] = r;
+        buf[idx + 3] = 255;
+      }
+    }
+  }
+}
+
+function renderCyberpunkWaveformBGRA(buf, width, height, audioState, c1, c2) {
+  buf.fill(0);
+  const waveform = audioState.waveform || new Float32Array(64);
+  const count = waveform.length || 64;
+  const midY = height / 2;
+  const amp = height * 0.35;
+
+  let prevX1 = 0, prevY1 = midY + (waveform[0] || 0) * amp;
+  let prevX2 = 0, prevY2 = midY - (waveform[0] || 0) * amp;
+
+  for (let i = 1; i < count; i++) {
+    const currX = (i / (count - 1)) * width;
+    const val = waveform[i] || 0;
+    const currY1 = midY + val * amp;
+    const currY2 = midY - val * amp;
+
+    drawLineBGRA(buf, width, height, prevX1, prevY1, currX, currY1, c1.r, c1.g, c1.b, 255, 3);
+    drawLineBGRA(buf, width, height, prevX2, prevY2, currX, currY2, c2.r, c2.g, c2.b, 255, 3);
+
+    prevX1 = currX; prevY1 = currY1;
+    prevX2 = currX; prevY2 = currY2;
+  }
+}
+
+function renderCircularPulseBGRA(buf, width, height, audioState, c1, c2) {
+  buf.fill(0);
+  const cx = width / 2;
+  const cy = height / 2;
+  const baseRadius = Math.min(width, height) * 0.22;
+  const bassEnergy = audioState.bass || 0;
+  const kickBoost = audioState.kick ? 0.25 : 0;
+  const pulseRadius = baseRadius * (1 + bassEnergy * 0.3 + kickBoost);
+
+  drawFilledCircleBGRA(buf, width, height, cx, cy, pulseRadius * 0.85, c1.r, c1.g, c1.b, 255);
+
+  const freqs = audioState.frequencies || new Float32Array(64);
+  const count = freqs.length || 64;
+  const step = (Math.PI * 2) / count;
+
+  for (let i = 0; i < count; i++) {
+    const angle = i * step;
+    const val = freqs[i] || 0;
+    const barLen = val * (Math.min(width, height) * 0.25);
+
+    const x1 = cx + Math.cos(angle) * pulseRadius;
+    const y1 = cy + Math.sin(angle) * pulseRadius;
+    const x2 = cx + Math.cos(angle) * (pulseRadius + barLen);
+    const y2 = cy + Math.sin(angle) * (pulseRadius + barLen);
+
+    const col = i % 2 === 0 ? c1 : c2;
+    drawLineBGRA(buf, width, height, x1, y1, x2, y2, col.r, col.g, col.b, 255, 3);
+  }
+}
+
+function renderParticleOrbitBGRA(buf, width, height, audioState, c1, c2) {
+  buf.fill(0);
+  const cx = width / 2;
+  const cy = height / 2;
+  const time = audioState.time || 0;
+  const energy = audioState.energy || 0.5;
+
+  const numParticles = 48;
+  for (let i = 0; i < numParticles; i++) {
+    const angle = (i / numParticles) * Math.PI * 2 + time * 1.5;
+    const orbitRadius = Math.min(width, height) * (0.15 + 0.15 * Math.sin(i * 0.5 + time * 2) + energy * 0.1);
+
+    const px = cx + Math.cos(angle) * orbitRadius;
+    const py = cy + Math.sin(angle) * orbitRadius;
+    const particleRadius = 3 + (i % 4) * 2;
+
+    const col = i % 2 === 0 ? c1 : c2;
+    drawFilledCircleBGRA(buf, width, height, px, py, particleRadius, col.r, col.g, col.b, 255);
+  }
+}
 
 function parseHexColor(col, defaultHex = 'AB55F7') {
   if (!col) return defaultHex.replace('#', '');
@@ -611,7 +818,7 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
   // First pass: resolve asset paths and classify overlay types
   const resolvedOverlays = [];
   for (const ov of validObjects) {
-    const isVis = ov.type === 'visualizer' || ov.type === 'spectrum' || ov.type === 'audio-visualizer' || ov.visualizerId || (ov.name && (ov.name.toLowerCase().includes('spectrum') || ov.name.toLowerCase().includes('visualizer')));
+    const isVis = ov.type === 'visualizer' || ov.type === 'visualizer2' || ov.type === 'spectrum' || ov.type === 'audio-visualizer' || ov.visualizerId || (ov.name && (ov.name.toLowerCase().includes('spectrum') || ov.name.toLowerCase().includes('visualizer')));
     if (isVis) {
       resolvedOverlays.push({ type: 'visualizer', ov });
     } else if (ov.type === 'overlay' || ov.type === 'image' || ov.type === 'video' || ov.type === 'particle' || ov.type === 'effect') {
@@ -640,7 +847,7 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
     }
   }
 
-  if (!resolvedOverlays.some(item => item.type === 'visualizer')) {
+  if (!resolvedOverlays.some(item => item.type === 'visualizer' || item.type === 'visualizer2')) {
     resolvedOverlays.push({
       type: 'visualizer',
       ov: {
@@ -658,7 +865,7 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
   // Ensure file overlays (images/backgrounds) are processed first, and visualizer is overlaid LAST on top of everything
   const sortedOverlays = [
     ...resolvedOverlays.filter(item => item.type === 'file'),
-    ...resolvedOverlays.filter(item => item.type === 'visualizer')
+    ...resolvedOverlays.filter(item => item.type === 'visualizer' || item.type === 'visualizer2')
   ];
 
   const fileOverlays = sortedOverlays.filter(item => item.type === 'file');
@@ -680,14 +887,13 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
   for (const item of sortedOverlays) {
     overlayIdx++;
 
-    if (item.type === 'visualizer') {
+    if (item.type === 'visualizer' || item.type === 'visualizer2') {
       const ov = item.ov;
-      const vizId = (ov.visualizerId || ov.name || '').toLowerCase();
       
       let rawW = parseInt(ov.width);
-      if (isNaN(rawW) || rawW <= 0) rawW = 1920;
+      if (isNaN(rawW) || rawW <= 0) rawW = 600;
       let rawH = parseInt(ov.height);
-      if (isNaN(rawH) || rawH <= 0) rawH = 250;
+      if (isNaN(rawH) || rawH <= 0) rawH = (ov.mode === 'SPECTRUM_BARS' ? 250 : 600);
 
       let rawCx = parseInt(ov.x);
       if (isNaN(rawCx) || rawCx === 0) rawCx = 960;
@@ -699,59 +905,106 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
       let cx = Math.round(rawCx * scaleX);
       let cy = Math.round(rawCy * scaleY);
 
-      const topLeftX = Math.max(0, Math.round(cx - (w / 2)));
-      const topLeftY = Math.max(0, Math.round(cy - (h / 2)));
+      const topLeftX = Math.round(cx - (w / 2));
+      const topLeftY = Math.round(cy - (h / 2));
 
-      const c1 = parseHexColor(ov.colorLeft || ov.color, 'AB55F7');
-      const c2 = parseHexColor(ov.colorRight || ov.colorLeft || ov.color, 'F59E0B');
+      const primaryColor = ov.primaryColor || (ov.colorLeft ? (ov.colorLeft.startsWith('#') ? ov.colorLeft : `#${ov.colorLeft}`) : '#00f2fe');
+      const secondaryColor = ov.secondaryColor || (ov.colorRight ? (ov.colorRight.startsWith('#') ? ov.colorRight : `#${ov.colorRight}`) : '#4facfe');
 
-      // MF-4000: Single Source CanvasKit Primitive Rasterization Route for GUI Export
-      global._isGuiPipeline = true;
-      global._exportSessionId = `GUI_SESSION_${crypto.randomUUID().slice(0, 8)}`;
-      const sessionId = global._exportSessionId;
+      const col1 = parseColorRgba(primaryColor, '00f2fe');
+      const col2 = parseColorRgba(secondaryColor, '4facfe');
 
-      console.log(`\n================================================================`);
-      console.log(`[GUI PIPELINE] GUI Export Session Started: ${sessionId}`);
-      console.log(`[GUI PIPELINE] ExportManager initialized`);
-      console.log(`[GUI PIPELINE] CanvasKitRenderer initialized`);
-      console.log(`================================================================\n`);
+      const uniqueObjId = ov.id || `viz_${overlayIdx}`;
+      const viz2CacheDir = path.join(process.cwd(), 'experiments', 'artifacts', 'v2_export_cache', String(uniqueObjId));
+      if (!fsSync.existsSync(viz2CacheDir)) fsSync.mkdirSync(viz2CacheDir, { recursive: true });
 
-      const { initialize: initCK, renderFrame: renderCKFrame } = await import('../../src/services/pipeline/renderer/CanvasKitRenderer.js');
-
-      await initCK();
-
-      const vizCacheDir = path.join(process.cwd(), 'experiments', 'artifacts', 'mf4000', 'gui_export_cache');
-      if (!fsSync.existsSync(vizCacheDir)) fsSync.mkdirSync(vizCacheDir, { recursive: true });
-
-      const totalFramesToRender = 300;
-      for (let f = 0; f < totalFramesToRender; f++) {
-        const { rgbaBuffer } = await renderCKFrame({
-          frameIndex: f,
-          frameCount: totalFramesToRender,
-          width: w,
-          height: h,
-          visualizerConfig: {
-            barCount: 64,
-            colorLeft: `#${c1}`,
-            colorRight: `#${c2}`
-          }
-        });
-
-        const framePath = path.join(vizCacheDir, `canvaskit_viz_${String(f).padStart(6, '0')}.png`);
-        const pipeCmd = `ffmpeg -y -f rawvideo -vcodec rawvideo -s ${w}x${h} -pix_fmt rgba -i - -vframes 1 "${framePath}"`;
-        execSync(pipeCmd, { input: rgbaBuffer, stdio: ['pipe', 'ignore', 'ignore'] });
-
-        if (f === 0 || f === 100 || f === 299) {
-          console.log(`[GUI PIPELINE] CanvasKitRenderer.renderFrame() Frame ${f} rendered (Session ID: ${sessionId})`);
-        }
+      const modeStr = (ov.mode || ov.visualizerId || ov.visualizerStyle || '').toUpperCase();
+      let mode = 'CIRCULAR_PULSE';
+      if (modeStr.includes('WAVE') || modeStr.includes('CYBERPUNK')) {
+        mode = 'CYBERPUNK_WAVEFORM';
+      } else if (modeStr.includes('BAR') || modeStr.includes('SPECTRUM')) {
+        mode = 'SPECTRUM_BARS';
+      } else if (modeStr.includes('PARTICLE') || modeStr.includes('ORBIT')) {
+        mode = 'PARTICLE_ORBIT';
+      } else if (modeStr.includes('CIRCULAR') || modeStr.includes('PULSE') || modeStr.includes('RING')) {
+        mode = 'CIRCULAR_PULSE';
       }
 
-      console.log(`[GUI PIPELINE] FFmpeg encoder started`);
+      const durationSec = payload.totalDurationSec || payload.durationSec || (payload.metadata && payload.metadata.durationSec) || 10;
+      const totalFramesToRender = Math.max(30, Math.min(3600, Math.ceil(durationSec * fps)));
+      const bgraBuf = Buffer.alloc(w * h * 4);
+
+      for (let f = 0; f < totalFramesToRender; f++) {
+        const frameTimestamp = (f / fps) % 3600;
+        const time = frameTimestamp;
+        const numBins = 64;
+        const frequencies = new Float32Array(numBins);
+        const waveform = new Float32Array(numBins);
+        
+        const bpm = 128;
+        const beatPeriod = 60 / bpm;
+        const beatPhase = (time % beatPeriod) / beatPeriod;
+        const kickPulse = Math.max(0, 1 - beatPhase * 3);
+        
+        for (let i = 0; i < 10; i++) {
+          const bassBase = 0.3 + 0.7 * Math.sin(time * 2 + i * 0.5);
+          frequencies[i] = Math.min(1.0, bassBase + kickPulse * 0.6);
+        }
+        
+        for (let i = 10; i < 40; i++) {
+          const midVal = 0.2 + 0.5 * Math.sin(time * 5 + i * 0.2) * Math.cos(time * 1.5);
+          frequencies[i] = Math.abs(midVal);
+        }
+        
+        for (let i = 40; i < numBins; i++) {
+          const hiVal = 0.1 + 0.4 * Math.sin(time * 12 + i * 0.8) * (1 - beatPhase);
+          frequencies[i] = Math.max(0.05, hiVal);
+        }
+
+        for (let i = 0; i < numBins; i++) {
+          waveform[i] = Math.sin(time * 20 + (i / numBins) * Math.PI * 4) * 0.5;
+        }
+
+        let sum = 0;
+        for (let i = 0; i < numBins; i++) sum += frequencies[i];
+        const avg = sum / numBins;
+
+        const audioState = {
+          time,
+          subBass: frequencies[0],
+          bass: frequencies[2],
+          lowMid: frequencies[12],
+          mid: frequencies[25],
+          highMid: frequencies[40],
+          treble: frequencies[55],
+          energy: avg,
+          RMS: avg,
+          kick: kickPulse > 0.4,
+          snare: frequencies[35] > 0.4,
+          beatStrength: kickPulse,
+          spectralFlux: avg,
+          frequencies,
+          waveform
+        };
+
+        if (mode === 'CYBERPUNK_WAVEFORM') {
+          renderCyberpunkWaveformBGRA(bgraBuf, w, h, audioState, col1, col2);
+        } else if (mode === 'SPECTRUM_BARS') {
+          renderSpectrumBarsBGRA(bgraBuf, w, h, audioState, col1, col2);
+        } else if (mode === 'PARTICLE_ORBIT') {
+          renderParticleOrbitBGRA(bgraBuf, w, h, audioState, col1, col2);
+        } else {
+          renderCircularPulseBGRA(bgraBuf, w, h, audioState, col1, col2);
+        }
+
+        const framePath = path.join(viz2CacheDir, `v2_viz_${String(f).padStart(6, '0')}.bmp`);
+        saveBgraBufferAsBmp(bgraBuf, w, h, framePath);
+      }
 
       fileInputIdx++;
-      const vizSeqPattern = path.join(vizCacheDir, 'canvaskit_viz_%06d.png');
-      inputs += ` -loop 1 -framerate ${fps} -i "${vizSeqPattern}"`;
-      filter += `${lastOutput}[${fileInputIdx}:v]overlay=x=${topLeftX}:y=${topLeftY}:eof_action=repeat[bg${overlayIdx}];`;
+      const vizSeqPattern = path.join(viz2CacheDir, 'v2_viz_%06d.bmp').replace(/\\/g, '/');
+      inputs += ` -framerate ${fps} -i "${vizSeqPattern}"`;
+      filter += `${lastOutput}[${fileInputIdx}:v]overlay=x=${topLeftX}:y=${topLeftY}[bg${overlayIdx}];`;
       lastOutput = `[bg${overlayIdx}]`;
     } else if (item.type === 'file') {
       fileInputIdx++;
@@ -811,7 +1064,7 @@ function detectAndNormalizeChannelOrder(buf) {
 }
 
 async function generateSingleEngineCanvasClip(job, imagePath, objects, enc, shortBgPath) {
-  const visObj = (objects && objects.find(o => o && o.type === 'visualizer')) || {};
+  const visObj = (objects && objects.find(o => o && (o.type === 'visualizer' || o.type === 'visualizer2'))) || {};
   const width = enc.targetWidth || 1920;
   const height = enc.targetHeight || 1080;
   const fps = enc.fps || 60;
@@ -969,7 +1222,7 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
   const bgPlan = job.jobPlan ? job.jobPlan.bgPlan : null;
 
   const cacheDir = path.join(AppPaths.getCacheBase(), 'm3');
-  const hasVis = objects && objects.some(o => o && o.type === 'visualizer' && o.visible !== false);
+  const hasVis = objects && objects.some(o => o && (o.type === 'visualizer' || o.type === 'visualizer2') && o.visible !== false);
 
   const USE_OSR_ENGINE = false;
   if (USE_OSR_ENGINE && hasVis) {
@@ -996,7 +1249,7 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
     return;
   }
 
-  const hasOverlays = objects && objects.some(o => o && o.visible !== false && (o.type === 'visualizer' || o.type === 'image' || o.type === 'text' || o.type === 'overlay' || o.type === 'social-widget'));
+  const hasOverlays = objects && objects.some(o => o && o.visible !== false && (o.type === 'visualizer' || o.type === 'visualizer2' || o.type === 'image' || o.type === 'text' || o.type === 'overlay' || o.type === 'social-widget'));
 
   if (bgPlan && !hasOverlays) {
     if (bgPlan.strategy === RenderStrategy.CACHE_HIT && bgPlan.cachedPath) {
@@ -1086,7 +1339,7 @@ async function buildLoopVideo(job, videoPath, audioPath, loopType, cacheDir, out
 
   const objects = payload.objects || (payload.composer && payload.composer.objects) || [];
   const bgPlan = job.jobPlan ? job.jobPlan.bgPlan : null;
-  const hasOverlays = objects && objects.some(o => o && o.visible !== false && (o.type === 'visualizer' || o.type === 'image' || o.type === 'text' || o.type === 'overlay' || o.type === 'social-widget' || o.type === 'particle' || o.type === 'effect'));
+  const hasOverlays = objects && objects.some(o => o && o.visible !== false && (o.type === 'visualizer' || o.type === 'visualizer2' || o.type === 'image' || o.type === 'text' || o.type === 'overlay' || o.type === 'social-widget' || o.type === 'particle' || o.type === 'effect'));
 
   // Pure execution of assigned Planner strategy for Loop Video
   if (bgPlan && bgPlan.strategy === RenderStrategy.STREAM_COPY && !hasOverlays) {

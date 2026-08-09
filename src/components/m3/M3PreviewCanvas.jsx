@@ -177,7 +177,8 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
             const dt = Math.min((now - lastTime) / 1000, 0.1);
             lastTime = now;
 
-            // --- Render Pipeline Runtime ---
+            // --- Render Pipeline & Audio DSP Runtime ---
+            beatEngine.update(Boolean(window.m3IsPlaying));
             frameInput.setInputs(latestObjectsRef.current || [], { 
                 canvasMode, 
                 currentTimeSec: currentTimeSecRef.current, 
@@ -612,8 +613,7 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
             </>
           )}
 
-        <ProductionQAToolkit />
-        <ReferencePreviewCanvas width={1920} height={1080} mode="overlay" />
+        {/* ReferencePreviewCanvas removed completely for clean canvas */}
 
 
         {/* Fast Render Preview Mode Badge Overlay */}

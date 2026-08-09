@@ -1,7 +1,18 @@
 import React from 'react';
 import Tooltip from '../ui/Tooltip.jsx';
+import M1CanvaVideoEditor from './M1CanvaVideoEditor.jsx';
 
-export default function M1VideoUpload({ m1VideoProbing, handleVideoUploadChange, selectedVideo, handleManualVideoPathChange, m1VideoProbeError, m1VideoRotation = 0, handleRotateVideo }) {
+export default function M1VideoUpload({
+  m1VideoProbing,
+  handleVideoUploadChange,
+  selectedVideo,
+  handleManualVideoPathChange,
+  m1VideoProbeError,
+  m1VideoRotation = 0,
+  handleRotateVideo,
+  m1VideoTransform,
+  setM1VideoTransform
+}) {
   
   const handleNativeDialog = async () => {
     try {
@@ -76,50 +87,16 @@ export default function M1VideoUpload({ m1VideoProbing, handleVideoUploadChange,
   return (
     <>
       
-      {/* Left Video Thumbnail (Real Video Preview) */}
-      <div className="flex-[0.27] aspect-video my-auto min-w-0 relative rounded-xl overflow-hidden bg-black group border border-[#333] shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-center">
-        {selectedVideo?.previewUrl ? (
-          <video 
-            src={selectedVideo.previewUrl} 
-            controls 
-            className="w-full h-full object-contain bg-black transition-transform duration-300"
-            style={{ transform: `rotate(${m1VideoRotation}deg)` }}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-500 font-mono text-sm">
-            NO PREVIEW
-          </div>
-        )}
-
-        {/* Change Video & Rotate Buttons (Top Right) */}
-        <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
-          <button 
-            onClick={handleRotateVideo}
-            type="button"
-            className="bg-black/70 hover:bg-orange-600 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1.5 rounded border border-white/20 hover:border-orange-400 transition-all shadow-lg flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95"
-            title="Rotate Video 90° (Change Aspect Ratio to 16:9)"
-          >
-            <svg className="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-            <span>ROTATE {m1VideoRotation ? `${m1VideoRotation}°` : '90°'}</span>
-          </button>
-          <div onClick={handleNativeDialog} className="bg-black/70 hover:bg-orange-600 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1.5 rounded border border-white/20 hover:border-orange-400 transition-all shadow-lg flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95">
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            GANTI
-          </div>
-        </div>
-
-        {/* Timestamp */}
-        <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-md text-orange-400 font-mono font-bold text-[11px] px-2 py-1 rounded shadow-lg border border-orange-500/20 drop-shadow-[0_0_5px_rgba(249,115,22,0.3)] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-          {selectedVideo?.metadata?.durationDisplay || '00:00:00'}
-        </div>
-        
-        {m1VideoProbing && (
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center text-orange-500 font-black tracking-widest text-sm z-20">
-            PROBING...
-          </div>
-        )}
+      {/* Canva Interactive Video Editor */}
+      <div className="flex-[0.55] min-w-0 flex flex-col justify-center">
+        <M1CanvaVideoEditor 
+          selectedVideo={selectedVideo}
+          transform={m1VideoTransform}
+          onTransformChange={setM1VideoTransform}
+          m1VideoRotation={m1VideoRotation}
+          handleRotateVideo={handleRotateVideo}
+          handleNativeDialog={handleNativeDialog}
+        />
       </div>
 
       {/* Center Metadata */}

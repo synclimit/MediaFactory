@@ -95,10 +95,15 @@ class AppPaths {
 
     getFFmpegPath() {
         const candidatePaths = [
-            path.join(__dirname, '..', 'ffmpeg', 'ffmpeg.exe'),
-            path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'ffmpeg.exe'),
+            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffmpeg.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'ffmpeg.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'ffmpeg.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'ffmpeg', 'ffmpeg.exe') : '',
+            path.join(__dirname, '..', 'bin', 'ffmpeg.exe'),
+            path.join(__dirname, '..', 'ffmpeg', 'ffmpeg.exe'),
+            path.join(__dirname, '..', '..', 'backend', 'bin', 'ffmpeg.exe'),
+            path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'ffmpeg.exe'),
+            path.join(process.cwd(), 'backend', 'bin', 'ffmpeg.exe'),
             path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe')
         ];
         for (const p of candidatePaths) {
@@ -109,10 +114,15 @@ class AppPaths {
 
     getFFprobePath() {
         const candidatePaths = [
-            path.join(__dirname, '..', 'ffmpeg', 'ffprobe.exe'),
-            path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'ffprobe.exe'),
+            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffprobe.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'ffprobe.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'ffprobe.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'ffmpeg', 'ffprobe.exe') : '',
+            path.join(__dirname, '..', 'bin', 'ffprobe.exe'),
+            path.join(__dirname, '..', 'ffmpeg', 'ffprobe.exe'),
+            path.join(__dirname, '..', '..', 'backend', 'bin', 'ffprobe.exe'),
+            path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'ffprobe.exe'),
+            path.join(process.cwd(), 'backend', 'bin', 'ffprobe.exe'),
             path.join(process.cwd(), 'backend', 'ffmpeg', 'ffprobe.exe')
         ];
         for (const p of candidatePaths) {
@@ -121,15 +131,25 @@ class AppPaths {
         return 'ffprobe';
     }
 
+    getFFmpegDir() {
+        const ffmpegPath = this.getFFmpegPath();
+        if (ffmpegPath && fs.existsSync(ffmpegPath)) {
+            return path.dirname(ffmpegPath);
+        }
+        const defaultDir = path.join(process.cwd(), 'backend', 'bin');
+        if (fs.existsSync(defaultDir)) return defaultDir;
+        return process.cwd();
+    }
+
     getYtDlpPath() {
         const candidatePaths = [
+            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'yt-dlp.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'yt-dlp.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'yt-dlp.exe') : '',
             path.join(__dirname, '..', 'bin', 'yt-dlp.exe'),
             path.join(__dirname, '..', 'ffmpeg', 'yt-dlp.exe'),
             path.join(__dirname, '..', '..', 'backend', 'bin', 'yt-dlp.exe'),
             path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'yt-dlp.exe'),
-            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'yt-dlp.exe') : '',
-            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'yt-dlp.exe') : '',
-            process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'yt-dlp.exe') : '',
             path.join(process.cwd(), 'backend', 'bin', 'yt-dlp.exe'),
             path.join(process.cwd(), 'backend', 'ffmpeg', 'yt-dlp.exe'),
             path.join(process.cwd(), 'bin', 'yt-dlp.exe')

@@ -267,26 +267,59 @@ class DiagnosticsManager {
         // FFmpeg Check
         try {
             const { execSync } = require('child_process');
-            execSync('ffmpeg -version', { stdio: 'ignore' });
-            addResult('FFmpeg Execution', 'PASS', 'FFmpeg is installed and accessible in PATH.');
+            const ffmpegBin = AppPaths.getFFmpegPath();
+            execSync(`"${ffmpegBin}" -version`, { stdio: 'ignore' });
+            addResult('FFmpeg Execution', 'PASS', `FFmpeg accessible at: ${ffmpegBin}`);
         } catch(e) {
-            addResult('FFmpeg Execution', 'FAIL', 'FFmpeg command not found.');
+            addResult('FFmpeg Execution', 'FAIL', `FFmpeg failed to execute: ${e.message}`);
         }
 
         // FFprobe Check
         try {
             const { execSync } = require('child_process');
-            execSync('ffprobe -version', { stdio: 'ignore' });
-            addResult('FFprobe Execution', 'PASS', 'FFprobe is installed and accessible in PATH.');
+            const ffprobeBin = AppPaths.getFFprobePath();
+            execSync(`"${ffprobeBin}" -version`, { stdio: 'ignore' });
+            addResult('FFprobe Execution', 'PASS', `FFprobe accessible at: ${ffprobeBin}`);
         } catch(e) {
-            addResult('FFprobe Execution', 'FAIL', 'FFprobe command not found.');
+            addResult('FFprobe Execution', 'FAIL', `FFprobe failed to execute: ${e.message}`);
+        }
+
+        // yt-dlp Executable & VC++ Runtime Check
+        const ytDlpBin = AppPaths.getYtDlpPath();
+        let ytDlpWorking = false;
+        try {
+            const { execSync } = require('child_process');
+            const versionStr = execSync(`"${ytDlpBin}" --version`, { encoding: 'utf8' }).trim();
+            ytDlpWorking = true;
+            addResult('yt-dlp Engine', 'PASS', `yt-dlp version ${versionStr} running properly at: ${ytDlpBin}`);
+        } catch(e) {
+            addResult('yt-dlp Engine', 'FAIL', `yt-dlp failed to run (${ytDlpBin}). Error: ${e.message}. Possible cause: Missing Microsoft Visual C++ Redistributable 2015-2022 or blocked by Antivirus.`);
+        }
+
+        // YouTube Live Extraction Test
+        if (ytDlpWorking) {
+            try {
+                const { execSync } = require('child_process');
+                const testUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+                const stdout = execSync(`"${ytDlpBin}" --no-check-certificates --dump-json --no-playlist "${testUrl}"`, { timeout: 12000, encoding: 'utf8' });
+                if (stdout && stdout.includes('"id":')) {
+                    addResult('YouTube Extraction', 'PASS', 'YouTube live metadata extraction verified.');
+                } else {
+                    addResult('YouTube Extraction', 'FAIL', 'yt-dlp ran but returned invalid JSON output.');
+                }
+            } catch(e) {
+                const errDetail = e.stderr ? e.stderr.toString().replace(/[\r\n]+/g, ' ').trim() : e.message;
+                addResult('YouTube Extraction', 'FAIL', `YouTube fetch failed: ${errDetail || 'Code ' + e.status}. yt-dlp may be outdated or blocked by ISP/Firewall.`);
+            }
+        } else {
+            addResult('YouTube Extraction', 'FAIL', 'Skipped because yt-dlp binary is not executable.');
         }
 
         // Output Directory Check
         try {
             const outPath = AppPaths.getOutputBase();
             if (await fs.stat(outPath).catch(() => false)) {
-                addResult('Output Permissions', 'PASS', 'Output directory is writable.');
+                addResult('Output Permissions', 'PASS', `Output directory is writable: ${outPath}`);
             } else {
                 throw new Error('Not found');
             }
