@@ -2356,7 +2356,7 @@ export default function App() {
   }
 
   if (appState === 'DIAGNOSTICS') {
-      return <DiagnosticsPage onBack={() => setAppState('EDITOR')} />;
+      return <DiagnosticsPage onBack={() => setAppState('EDITOR')} initialTab="Visualizer Parity (100%)" />;
   }
 
   return (
