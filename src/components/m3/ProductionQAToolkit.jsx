@@ -745,8 +745,6 @@ export default function ProductionQAToolkit() {
                         </div>
                     </div>
                 )}
-                {activeTab === 'Evidence Viewer' && renderNotImplemented('NO EVIDENCE AVAILABLE')}
-                {activeTab === 'Benchmark History' && renderNotImplemented('NO BENCHMARK HISTORY')}
             </div>
         </div>,
         document.body
