@@ -56,7 +56,7 @@ export default function BackgroundPanel({
                 }
 
                 try {
-                    const response = await fetch('http://localhost:18888/api/v1/assets/upload', {
+                    const response = await fetch('http://127.0.0.1:18888/api/v1/assets/upload', {
                         method: 'POST',
                         headers: {
                             'x-file-name': encodeURIComponent(file.name),

@@ -83,17 +83,15 @@ async function createWindow() {
         await mainWindow.webContents.session.clearStorageData();
     } catch(e) {}
 
-    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
-
-    if (fs.existsSync(indexPath)) {
-        console.log('[Electron] Loading dist/index.html via loadFile:', indexPath);
-        mainWindow.loadFile(indexPath).catch((err) => {
-            console.error('[Electron] Failed to load index.html:', err);
-            mainWindow.loadURL(`http://localhost:${serverPort}`);
-        });
-    } else {
-        mainWindow.loadURL(`http://localhost:${serverPort}`);
-    }
+    const localUrl = `http://localhost:${serverPort}`;
+    console.log('[Electron] Loading UI via Express server:', localUrl);
+    mainWindow.loadURL(localUrl).catch((err) => {
+        console.error('[Electron] Failed to load URL, falling back to loadFile:', err);
+        const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+        if (fs.existsSync(indexPath)) {
+            mainWindow.loadFile(indexPath);
+        }
+    });
 
     if (isDev) {
         mainWindow.webContents.openDevTools();
@@ -423,6 +421,11 @@ function installUpdateUnified() {
         downloadUpdateUnified();
     }
 }
+
+ipcMain.handle('show-open-dialog', (event, options) => {
+    const { dialog } = require('electron');
+    return dialog.showOpenDialogSync(options || { properties: ['openFile'] });
+});
 
 ipcMain.on('check-for-updates', checkUpdatesUnified);
 ipcMain.on('download-update', downloadUpdateUnified);

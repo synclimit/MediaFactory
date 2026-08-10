@@ -129,8 +129,7 @@ const spawnFFmpegM3 = (cmd, job) => new Promise((resolve, reject) => {
   job.logs += cmdHeader;
   job.diagnosticReport += cmdHeader;
   
-  const args = cmd.match(/(?:[^\s"]+|"[^"]*")+/g).map(s => s.replace(/^"|"$/g, ''));
-  const proc = spawn(args[0], args.slice(1));
+  const proc = spawn(cmd, { shell: true });
   job.ffmpegProcess = proc;
   
   let timerId = setInterval(async () => {
@@ -152,18 +151,13 @@ const spawnFFmpegM3 = (cmd, job) => new Promise((resolve, reject) => {
     const timeMatch = text.match(/time=(\d{2}:\d{2}:\d{2}\.\d{2})/);
     if (timeMatch) {
       job.currentFFmpegTime = timeMatch[1];
-      const totalSec = job.totalDurationSec || (job.m3Payload && job.m3Payload.totalDurationSec) || 0;
-      if (totalSec > 0) {
-        const parts = timeMatch[1].split(':');
-        const currentSec = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseFloat(parts[2]);
-        const ratio = Math.min(1, Math.max(0, currentSec / totalSec));
-
-        if (job.stage === 'Compiling Audio') {
-          job.progress = Math.round(8 + ratio * 12);
-        } else if (job.stage === 'Rendering Video') {
-          job.progress = Math.round(20 + ratio * 79);
-        }
-      }
+      let totalSec = parseFloat(job.totalDurationSec || (job.m3Payload && job.m3Payload.totalDurationSec) || 0);
+      if (!totalSec || totalSec <= 0) totalSec = 48;
+      
+      const parts = timeMatch[1].split(':');
+      const currentSec = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseFloat(parts[2]);
+      const ratio = Math.min(1, Math.max(0, currentSec / totalSec));
+      job.progress = Math.max(5, Math.min(99, Math.round(ratio * 100)));
     }
   });
   proc.on('close', code => {

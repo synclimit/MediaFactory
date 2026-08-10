@@ -13,16 +13,62 @@ export default function M1VideoUpload({
   m1VideoTransform,
   setM1VideoTransform
 }) {
+  const fileInputRef = React.useRef(null);
   
   const handleNativeDialog = async () => {
+    // Layer 1: Electron IPC show-open-dialog
+    if (window.require) {
+      try {
+        const { ipcRenderer } = window.require('electron');
+        const pathResult = await ipcRenderer.invoke('show-open-dialog', {
+          properties: ['openFile'],
+          filters: [{ name: 'Video Files', extensions: ['mp4', 'mov', 'mkv', 'avi', 'webm'] }]
+        });
+        if (pathResult && pathResult.length > 0 && handleManualVideoPathChange) {
+          handleManualVideoPathChange({ target: { value: pathResult[0] } });
+          return;
+        }
+      } catch(e) {}
+    }
+
+    // Layer 2: Backend REST dialog endpoint
     try {
-      const res = await fetch('/api/m1/dialog/video', { method: 'POST' });
+      const port = window.location.port || '18888';
+      const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${port}`;
+      const res = await fetch(`${baseUrl}/api/m1/dialog/video`, { method: 'POST' });
       const data = await res.json();
       if (data.path && handleManualVideoPathChange) {
         handleManualVideoPathChange({ target: { value: data.path } });
+        return;
       }
     } catch(err) {
-      console.error('Dialog failed', err);
+      console.warn('[M1] REST dialog fetch failed, using HTML file picker fallback:', err);
+    }
+
+    // Layer 3: Invisible HTML File Input Element Fallback
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileInputChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    let filePath = file.path || '';
+    if (!filePath && window.require) {
+      try {
+        const { webUtils } = window.require('electron');
+        if (webUtils && typeof webUtils.getPathForFile === 'function') {
+          filePath = webUtils.getPathForFile(file);
+        }
+      } catch(err) {}
+    }
+
+    if (filePath && handleManualVideoPathChange) {
+      handleManualVideoPathChange({ target: { value: filePath } });
+    } else if (handleVideoUploadChange) {
+      handleVideoUploadChange(e);
     }
   };
 
@@ -30,6 +76,13 @@ export default function M1VideoUpload({
   if (!selectedVideo) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center w-full h-[250px] animate-fade-in relative z-10">
+        <input 
+          ref={fileInputRef}
+          type="file" 
+          accept="video/mp4,video/quicktime,video/x-matroska,video/avi,video/webm" 
+          className="hidden" 
+          onChange={handleFileInputChange} 
+        />
         
         {/* Giant Glowing Clapperboard Icon */}
         <div className="relative mb-4 group cursor-pointer" onClick={handleNativeDialog}>

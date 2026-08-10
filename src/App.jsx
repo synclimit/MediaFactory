@@ -72,7 +72,7 @@ function Tooltip({ text }) {
 const getApiUrl = (endpoint) => {
   if (typeof window === 'undefined') return endpoint;
   if (window.location.protocol === 'file:' || window.location.port !== '18888') {
-    return 'http://localhost:18888' + (endpoint.startsWith('/') ? endpoint : '/' + endpoint);
+    return 'http://127.0.0.1:18888' + (endpoint.startsWith('/') ? endpoint : '/' + endpoint);
   }
   return endpoint;
 };
@@ -708,57 +708,18 @@ export default function App() {
   });
   const [m3SelectedObjectId, setM3SelectedObjectId] = useState(null);
 
-  const m3InitializedRef = useRef(false);
-
-  // Load disk-backed M3 state on app startup
-  useEffect(() => {
-    fetch('/api/v1/m3/autosave/state')
-      .then(res => res.json())
-      .then(json => {
-        if (json.success && json.data) {
-          const { m3BgPool: diskBg, m3AudioTracks: diskAudio, m3Objects: diskObjs } = json.data;
-          if (Array.isArray(diskBg) && diskBg.length > 0) {
-            setM3BgPool(diskBg.map(bg => {
-              const targetPath = bg.sourcePath || bg.uri || bg.filename;
-              if (targetPath && !targetPath.startsWith('data:')) {
-                const streamUrl = `/api/m2/stream?uri=${encodeURIComponent(targetPath)}`;
-                return { ...bg, url: streamUrl, preview: streamUrl };
-              }
-              return bg;
-            }));
-          }
-          if (Array.isArray(diskAudio) && diskAudio.length > 0) {
-            setM3AudioTracks(diskAudio.map(trk => {
-              if (trk.sourcePath) {
-                const streamUrl = `/api/m2/stream?uri=${encodeURIComponent(trk.sourcePath)}`;
-                return { ...trk, blobUrl: streamUrl };
-              }
-              return trk;
-            }));
-          }
-          if (Array.isArray(diskObjs) && diskObjs.length > 0) {
-            setM3Objects(diskObjs);
-          }
-        }
-        m3InitializedRef.current = true;
-      })
-      .catch(() => {
-        m3InitializedRef.current = true;
-      });
-  }, []);
+  const m3InitializedRef = useRef(true);
 
   // M3 AutoSave Effect (Persists to both LocalStorage and Hard Drive Disk File)
   useEffect(() => {
-    if (!m3InitializedRef.current) return;
-
     if (m3BgPool && m3BgPool.length > 0) {
-      localStorage.setItem('m3_profile_bg', JSON.stringify(m3BgPool));
+      try { localStorage.setItem('m3_profile_bg', JSON.stringify(m3BgPool)); } catch(e){}
     }
     if (m3AudioTracks && m3AudioTracks.length > 0) {
-      localStorage.setItem('m3_profile_audio', JSON.stringify(m3AudioTracks));
+      try { localStorage.setItem('m3_profile_audio', JSON.stringify(m3AudioTracks)); } catch(e){}
     }
     if (m3Objects && m3Objects.length > 0) {
-      localStorage.setItem('m3_profile_objects', JSON.stringify(m3Objects));
+      try { localStorage.setItem('m3_profile_objects', JSON.stringify(m3Objects)); } catch(e){}
     }
 
     fetch('/api/v1/m3/autosave/state', {
@@ -2401,7 +2362,7 @@ export default function App() {
              });
            } else if (job.mode === 'Mode 3') {
              addLog(`[M3] STARTING ${job.outputFiles[0]}`);
-             fetch(getApiUrl('/api/m3/render'), {
+             fetch(getApiUrl('/api/m3_v2/render'), {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify(job)
@@ -2414,26 +2375,6 @@ export default function App() {
              })
              .catch((err) => {
                console.error(err);
-               
-               // M3 Output Debug Log (Priority 6)
-               console.log("==== M3 RENDER DEBUG ====");
-               console.log("Endpoint: POST /api/m3/render");
-               console.log("Request Payload: (Available in Network Tab)");
-               console.log("Response: FAILED / " + err.message);
-               console.log("Stack Trace:", err.stack);
-               console.log("Error FFmpeg: Not Executed");
-               console.log("Error Backend: Route /api/m3/render missing or crashed");
-               console.log("Error Validation: Backend validation failed before rendering");
-               
-               console.log("STEP 1 Validation FAIL");
-               console.log("STEP 2 Build Playlist FAIL");
-               console.log("STEP 3 Build Background FAIL");
-               console.log("STEP 4 Build Thumbnail FAIL");
-               console.log("STEP 5 Build Metadata FAIL");
-               console.log("STEP 6 FFmpeg FAIL");
-               console.log("STEP 7 Output Validation FAIL");
-               console.log("=========================");
-
                addLog(`[M3] FAILED TO START: ${err.message}`);
                setQueue(q => q.map(x => x.id === job.id ? { ...x, status: 'Failed', failureReason: err.message } : x));
              });

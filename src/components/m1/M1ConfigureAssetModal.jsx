@@ -109,20 +109,42 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                   />
                   <label className="cursor-pointer shrink-0">
                     <div onClick={async () => {
-                      try {
-                        const res = await fetch('/api/m1/dialog/audio', { method: 'POST' });
-                        const data = await res.json();
-                        if (data.path) {
-                          updateM1Slot(idx, 'audio', data.path);
-                          const probeRes = await fetch('/api/m1/audio/probe', { 
+                      let selectedPath = null;
+                      if (window.require) {
+                        try {
+                          const { ipcRenderer } = window.require('electron');
+                          const pathResult = await ipcRenderer.invoke('show-open-dialog', {
+                            properties: ['openFile'],
+                            filters: [{ name: 'Audio Files', extensions: ['mp3', 'wav', 'flac', 'm4a', 'aac', 'ogg'] }]
+                          });
+                          if (pathResult && pathResult.length > 0) selectedPath = pathResult[0];
+                        } catch(e) {}
+                      }
+
+                      if (!selectedPath) {
+                        try {
+                          const port = window.location.port || '18888';
+                          const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${port}`;
+                          const res = await fetch(`${baseUrl}/api/m1/dialog/audio`, { method: 'POST' });
+                          const data = await res.json();
+                          if (data.path) selectedPath = data.path;
+                        } catch (err) {}
+                      }
+
+                      if (selectedPath) {
+                        updateM1Slot(idx, 'audio', selectedPath);
+                        try {
+                          const port = window.location.port || '18888';
+                          const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${port}`;
+                          const probeRes = await fetch(`${baseUrl}/api/m1/audio/probe`, { 
                             method: 'POST', 
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ path: data.path }) 
+                            body: JSON.stringify({ path: selectedPath }) 
                           });
                           const probeData = await probeRes.json();
                           if (probeData.durationDisplay) updateM1Slot(idx, 'duration', probeData.durationDisplay);
-                        }
-                      } catch (err) {}
+                        } catch(e) {}
+                      }
                     }} className="h-[var(--m1-height-control)] px-5 bg-gradient-to-b from-[#1a1b23] to-[#0c0d12] hover:from-[#2d3247] hover:to-[#1a1b23] text-gray-300 font-['Rajdhani'] font-bold uppercase tracking-widest text-[11px] border border-[#2d3247] rounded-[var(--m1-radius-control)] shadow-[inset_0_1px_2px_rgba(255,255,255,0.05),0_5px_10px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all active:scale-[0.98]">
                       BROWSE
                     </div>
