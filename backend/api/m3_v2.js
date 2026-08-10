@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { createCanvas } = require('canvas');
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
 
-// Import V4 Audio and Core Engine in Node.js
 let VisualizerV4Core = null;
 let VisualizerV4Audio = null;
 
@@ -17,16 +19,16 @@ async function loadV4Modules() {
   }
 }
 
+// In-Memory Render Job Tracker
+const activeJobs = new Map();
+
 /**
  * POST /api/m3_v2/verify-parity
- * Standalone Endpoint: Renders 1 frame of Visualizer V4 on Node-Canvas and returns DataURL.
  */
 router.post('/verify-parity', async (req, res) => {
   try {
     await loadV4Modules();
-
     const { config = {}, timestamp = 1.0, width = 800, height = 300 } = req.body;
-
     const w = parseInt(width, 10) || 800;
     const h = parseInt(height, 10) || 300;
 
@@ -37,32 +39,147 @@ router.post('/verify-parity', async (req, res) => {
     VisualizerV4Core.renderFrame(ctx, w, h, audioState, config);
 
     const dataUrl = canvas.toDataURL('image/png');
-
-    return res.json({
-      success: true,
-      dataUrl,
-      width: w,
-      height: h,
-      timestamp
-    });
+    return res.json({ success: true, dataUrl, width: w, height: h, timestamp });
   } catch (err) {
-    console.error('[M3 V2 Verify Parity Error]:', err);
     return res.status(500).json({ success: false, error: err.message });
   }
 });
 
 /**
+ * GET /api/m3_v2/render/:id
+ */
+router.get('/render/:id', (req, res) => {
+  const job = activeJobs.get(req.params.id);
+  if (!job) {
+    return res.status(404).json({ error: 'Job not found' });
+  }
+  return res.json({
+    status: job.status,
+    progress: job.progress,
+    stage: job.stage,
+    logs: job.logs.join('\n')
+  });
+});
+
+/**
  * POST /api/m3_v2/render
- * Clean Video Export for M3 V2
  */
 router.post('/render', async (req, res) => {
   try {
     await loadV4Modules();
-    const { settings = {}, objects = [] } = req.body;
-    return res.json({ success: true, message: 'M3 V2 render job queued', jobCount: objects.length });
+    const jobData = req.body;
+    const jobId = jobData.id || ('m3v2_q_' + Date.now());
+
+    const job = {
+      id: jobId,
+      status: 'Rendering',
+      progress: 5,
+      stage: 'Initializing V4 Pipeline',
+      logs: ['[M3 V2] Single Pure Engine render job started...']
+    };
+    activeJobs.set(jobId, job);
+
+    // Run export in background
+    executeV4Render(jobId, jobData).catch(err => {
+      console.error('[M3 V2 Render Error]:', err);
+      job.status = 'Failed';
+      job.logs.push(`[ERROR] ${err.message}`);
+    });
+
+    return res.json({ success: true, jobId, message: 'Render started' });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
+
+async function executeV4Render(jobId, jobData) {
+  const job = activeJobs.get(jobId);
+  const payload = jobData.m3Payload || jobData;
+  const objects = payload.objects || payload.m3Objects || [];
+  const width = 1920;
+  const height = 1080;
+  const fps = 30;
+  const durationSec = Math.max(5, Math.min(60, payload.totalDurationSec || 10));
+  const totalFrames = Math.round(durationSec * fps);
+
+  // Setup Output Directory
+  const outputFolder = jobData.outputFolder || path.join(process.cwd(), 'Output', 'M3_V2');
+  if (!fs.existsSync(outputFolder)) fs.mkdirSync(outputFolder, { recursive: true });
+  const outputFilename = payload.outputFilename || 'M3_V2_Visualizer_Render.mp4';
+  const outputPath = path.join(outputFolder, outputFilename);
+
+  job.stage = 'Rendering Frames';
+  job.logs.push(`[M3 V2] Total Frames: ${totalFrames} (${durationSec}s @ ${fps}fps) -> ${outputPath}`);
+
+  // FFmpeg Path resolution
+  const ffmpegPath = path.join(process.cwd(), 'backend', 'bin', 'ffmpeg.exe');
+  const bin = fs.existsSync(ffmpegPath) ? ffmpegPath : 'ffmpeg';
+
+  const ffmpegArgs = [
+    '-y',
+    '-f', 'rawvideo',
+    '-vcodec', 'rawvideo',
+    '-pix_fmt', 'bgra',
+    '-s', `${width}x${height}`,
+    '-r', `${fps}`,
+    '-i', '-',
+    '-c:v', 'libx264',
+    '-pix_fmt', 'yuv420p',
+    '-preset', 'ultrafast',
+    outputPath
+  ];
+
+  const ffmpeg = spawn(bin, ffmpegArgs, { stdio: ['pipe', 'ignore', 'pipe'] });
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+
+  for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
+    const timeSec = frameIdx / fps;
+    const audioState = VisualizerV4Audio.generateSyntheticState(timeSec, 64);
+
+    // 1. Dark Background
+    ctx.fillStyle = '#0b0c10';
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Draw all Visualizer V4 Objects
+    for (const obj of objects) {
+      if (obj.visible === false) continue;
+      if (obj.type === 'visualizer4' || obj.type?.includes('visualizer')) {
+        const ox = Math.round(obj.x !== undefined ? obj.x - (obj.width || 800) / 2 : (width - 800) / 2);
+        const oy = Math.round(obj.y !== undefined ? obj.y - (obj.height || 300) / 2 : (height - 300) / 2);
+        const ow = Math.round(obj.width || 800);
+        const oh = Math.round(obj.height || 300);
+
+        ctx.save();
+        ctx.translate(ox, oy);
+        VisualizerV4Core.renderFrame(ctx, ow, oh, audioState, obj);
+        ctx.restore();
+      }
+    }
+
+    // Write raw BGRA buffer to FFmpeg stdin
+    const rawBuf = canvas.toBuffer('raw');
+    if (!ffmpeg.stdin.write(rawBuf)) {
+      await new Promise(r => ffmpeg.stdin.once('drain', r));
+    }
+
+    job.progress = Math.round(5 + (frameIdx / totalFrames) * 90);
+  }
+
+  ffmpeg.stdin.end();
+
+  await new Promise((resolve, reject) => {
+    ffmpeg.on('close', code => {
+      if (code === 0) resolve();
+      else reject(new Error(`FFmpeg exited with code ${code}`));
+    });
+    ffmpeg.on('error', reject);
+  });
+
+  job.status = 'Completed';
+  job.progress = 100;
+  job.stage = 'Done';
+  job.logs.push(`[M3 V2 SUCCESS] Video exported: ${outputPath}`);
+}
 
 module.exports = router;

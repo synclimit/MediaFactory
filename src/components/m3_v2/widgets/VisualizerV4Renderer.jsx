@@ -1,60 +1,74 @@
 import React, { useRef, useEffect } from 'react';
 import { VisualizerV4Core } from '../../../visualizers/v4/VisualizerV4Core.js';
 import { VisualizerV4Audio } from '../../../visualizers/v4/VisualizerV4Audio.js';
+import { beatEngine } from '../../../services/audio/BeatEngine';
 
 export default function VisualizerV4Renderer({
   object = {},
   currentTimeSec = 0,
-  analyser = null,
   width,
   height
 }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    let animId;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const parent = canvas.parentElement;
-    const renderWidth = width || (parent ? parent.clientWidth : 600);
-    const renderHeight = height || (parent ? parent.clientHeight : 300);
+    const render = () => {
+      const parent = canvas.parentElement;
+      const renderWidth = width || (parent && parent.clientWidth > 0 ? parent.clientWidth : 900);
+      const renderHeight = height || (parent && parent.clientHeight > 0 ? parent.clientHeight : 250);
 
-    if (canvas.width !== renderWidth || canvas.height !== renderHeight) {
-      canvas.width = renderWidth;
-      canvas.height = renderHeight;
-    }
+      if (canvas.width !== renderWidth || canvas.height !== renderHeight) {
+        canvas.width = renderWidth;
+        canvas.height = renderHeight;
+      }
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Read live frequencies or fall back to synthetic audio
+        let freqs = null;
+        try {
+          if (window.m3Analyser && typeof window.m3Analyser.getFrequencyData === 'function') {
+            freqs = window.m3Analyser.getFrequencyData();
+          } else if (beatEngine && typeof beatEngine.getFrequencies === 'function') {
+            freqs = beatEngine.getFrequencies();
+          }
+        } catch (e) {}
 
-    let audioState = null;
+        const nowSec = performance.now() / 1000;
+        let audioState = null;
+        if (freqs && freqs.length > 0) {
+          let sum = 0;
+          for (let i = 0; i < freqs.length; i++) sum += freqs[i];
+          const energy = sum / freqs.length;
+          audioState = {
+            time: nowSec,
+            energy,
+            RMS: energy,
+            beatStrength: energy,
+            bass: freqs[2] || 0.5,
+            frequencies: freqs,
+            waveform: new Float32Array(freqs.length)
+          };
+        } else {
+          audioState = VisualizerV4Audio.generateSyntheticState(nowSec, 64);
+        }
 
-    if (analyser && typeof analyser.getFrequencyData === 'function') {
-      try {
-        const freqs = analyser.getFrequencyData();
-        const waveform = analyser.getWaveformData ? analyser.getWaveformData() : new Float32Array(freqs.length);
-        let sum = 0;
-        for (let i = 0; i < freqs.length; i++) sum += freqs[i];
-        const energy = sum / freqs.length;
+        VisualizerV4Core.renderFrame(ctx, renderWidth, renderHeight, audioState, object);
+      }
 
-        audioState = {
-          time: currentTimeSec,
-          energy,
-          RMS: energy,
-          beatStrength: energy,
-          bass: freqs[2] || 0,
-          frequencies: freqs,
-          waveform
-        };
-      } catch (e) {}
-    }
+      animId = requestAnimationFrame(render);
+    };
 
-    if (!audioState) {
-      audioState = VisualizerV4Audio.generateSyntheticState(currentTimeSec || 1.0, 64);
-    }
+    render();
 
-    VisualizerV4Core.renderFrame(ctx, renderWidth, renderHeight, audioState, object);
-  }, [object, currentTimeSec, analyser, width, height]);
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, [object, width, height]);
 
   return (
     <canvas

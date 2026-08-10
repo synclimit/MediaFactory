@@ -1482,6 +1482,29 @@ export default function App() {
           ]
         }
       });
+    } else if (activeMode === 'Mode 3 V2') {
+      const customOutputDir = workspaceConfig?.output?.main || (activeWorkspace ? localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) : '') || 'Output';
+      const cleanDir = (customOutputDir || 'Output').replace(/[/\\]+$/, '');
+      const targetMode = m3v2RenderSettings?.renderMode ? String(m3v2RenderSettings.renderMode).toUpperCase() : 'FAST';
+      const isFast = targetMode === 'FAST';
+      const modeSubfolder = isFast ? 'Fast Render' : 'Normal Render';
+      const m3OutFolder = `${cleanDir}/M3_V2/${modeSubfolder}/`;
+
+      setReviewDialog({
+        isOpen: true,
+        data: {
+          mode: 'Mode 3 V2',
+          projectName: m3v2OutputFilename?.split('.')[0] || 'M3_V2_Visualizer_Render',
+          profile: 'Visualizer V4 Single Pure Profile',
+          details: [
+            { label: 'Visualizer Engine', value: 'Visualizer V4 Single Pure 2D' },
+            { label: 'Active Visualizer Layers', value: `${(m3v2Objects || []).filter(o => o.type === 'visualizer4' || o.type?.includes('visualizer')).length} layers` },
+            { label: 'Background Assets Count', value: `${(m3v2BgPool || []).length} files` },
+            { label: 'Audio Tracks Count', value: `${(m3v2AudioTracks || []).length} tracks` },
+            { label: 'Output Folder Path', value: m3OutFolder },
+          ]
+        }
+      });
     }
   };
 
@@ -1792,6 +1815,55 @@ export default function App() {
       addNotification('Added To Pipeline', `M3 Job added to queue`);
       addLog(`[M3] Pipeline Job Created: ${m3Job.outputFiles[0]}`);
       setPipelineDrawerCollapsed(false);
+    } else if (activeMode === 'Mode 3 V2') {
+      const customOutputDir = workspaceConfig?.output?.main || (activeWorkspace ? localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) : '') || 'Output';
+      const cleanDir = (customOutputDir || 'Output').replace(/[/\\]+$/, '');
+      const targetMode = m3v2RenderSettings?.renderMode ? String(m3v2RenderSettings.renderMode).toUpperCase() : 'FAST';
+      const isFast = targetMode === 'FAST';
+      const modeSubfolder = isFast ? 'Fast Render' : 'Normal Render';
+      const outFolder = `${cleanDir}/M3_V2/${modeSubfolder}/`;
+
+      const m3v2Job = {
+        id: 'm3v2_q_' + Date.now(),
+        mode: 'Mode 3 V2',
+        renderName: m3v2OutputFilename || 'M3_V2_Visualizer_Render.mp4',
+        profileName: 'Visualizer V4 Single Pure Profile',
+        status: 'Waiting',
+        scheduleMode: 'Manual',
+        scheduledAt: null,
+        isPaused: false,
+        inputVideo: (m3v2BgPool && m3v2BgPool[0]?.filename) || 'Visualizer Canvas',
+        tracks: (m3v2AudioTracks || []).map(t => t.sourcePath || t.title),
+        outputFiles: [m3v2OutputFilename || 'M3_V2_Visualizer_Render.mp4'],
+        outputFolder: outFolder,
+        estTimeSec: 60,
+        estStorageMb: 30,
+        totalDurationSec: 10,
+        progress: 0,
+        m3Payload: {
+          playlist: m3v2AudioTracks || [],
+          m3AudioTracks: m3v2AudioTracks || [],
+          audioTracks: m3v2AudioTracks || [],
+          background: (m3v2BgPool && m3v2BgPool[0]) || {},
+          bgPool: m3v2BgPool || [],
+          m3BgPool: m3v2BgPool || [],
+          objects: m3v2Objects || [],
+          m3Objects: m3v2Objects || [],
+          metadata: {
+            outputName: m3v2OutputFilename || 'M3_V2_Visualizer_Render.mp4',
+            profileId: 'Single_Engine_V4'
+          },
+          thumbnail: { saved: m3v2ThumbnailSaved },
+          settings: m3v2RenderSettings || {},
+          outputFilename: m3v2OutputFilename || 'M3_V2_Visualizer_Render.mp4',
+          totalDurationSec: 10
+        }
+      };
+
+      setQueue(prev => [...prev, m3v2Job]);
+      addNotification('Added To Pipeline', `M3 V2 Job added to queue`);
+      addLog(`[M3 V2] Pipeline Job Created: ${m3v2Job.outputFiles[0]}`);
+      setPipelineDrawerCollapsed(false);
     }
     setReviewDialog({ isOpen: false, data: null });
   };
@@ -1901,6 +1973,68 @@ export default function App() {
       addNotification("⚡ Berhasil ditambahkan ke Queue Manager.", "Status: Waiting");
     } catch (err) {
       console.error('[M3 Queue Error]', err);
+      if (addNotification) {
+        addNotification(`⚠️ Queue Error: ${err.message}`, "Validation Error");
+      }
+    }
+  };
+
+  const handleGenerateM3V2Configuration = async (settings = {}) => {
+    try {
+      const composerObjects = (m3v2Objects || []).filter(o => o && (o.canvasMode === 'composer' || !o.canvasMode || o.canvasMode !== 'thumbnail'));
+      const targetMode = settings?.renderMode ? String(settings.renderMode).toUpperCase() : 'FAST';
+      const isFast = targetMode === 'FAST';
+      const safeOutputFilename = (typeof m3v2OutputFilename === 'string' && m3v2OutputFilename.trim()) ? m3v2OutputFilename.trim() : 'M3_V2_Visualizer_Render.mp4';
+      const outFileName = safeOutputFilename.endsWith('.mp4') ? safeOutputFilename : `${safeOutputFilename}.mp4`;
+      
+      const customOutputDir = workspaceConfig?.output?.main || (activeWorkspace ? localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) : '') || 'Output';
+      const cleanDir = (customOutputDir || 'Output').replace(/[/\\]+$/, '');
+      const modeSubfolder = isFast ? 'Fast Render' : 'Normal Render';
+      const bundleName = outFileName.replace(/\.mp4$/i, '').trim();
+      const outFolder = `${cleanDir}/M3_V2/${modeSubfolder}/${bundleName}/`;
+      
+      const payload = {
+        background: (m3v2BgPool && m3v2BgPool[0]) || {},
+        playlist: m3v2AudioTracks || [],
+        objects: composerObjects,
+        composer: { objects: composerObjects },
+        totalDurationSec: 10,
+        outputFilename: outFileName,
+        metadata: {
+          outputName: outFileName,
+          profileId: 'v4_single_pure',
+          renderMode: isFast ? 'FAST' : 'NORMAL',
+          resolution: settings?.resolution || '1080p',
+          fps: settings?.fps || '60',
+          codec: settings?.codec || 'H.264',
+          bFrame: settings?.bFrame || 'Otomatis'
+        }
+      };
+      
+      const newJob = {
+        id: 'm3v2_q_' + Date.now(),
+        mode: 'Mode 3 V2',
+        profileName: 'Visualizer V4 Single Pure (100% WYSIWYG)',
+        status: 'Waiting',
+        scheduleMode: 'Manual',
+        scheduledAt: null,
+        isPaused: false,
+        inputVideo: (m3v2BgPool && m3v2BgPool[0]?.filename) || 'Visualizer Canvas',
+        tracks: (m3v2AudioTracks && m3v2AudioTracks.length > 0) ? m3v2AudioTracks.map(t => t.sourcePath || t.sourceUrl || t.title) : ['Audio Track'],
+        outputFiles: [outFileName],
+        outputFolder: outFolder,
+        totalDurationSec: 10,
+        progress: 0,
+        renderMode: isFast ? 'FAST' : 'NORMAL',
+        m3Payload: payload
+      };
+
+      setQueue(prev => [...prev.filter(j => j.status !== 'Failed'), newJob]);
+      setPipelineDrawerCollapsed(false);
+      addLog(`[M3 V2] Render Job created and queued for ${outFileName}`);
+      addNotification("⚡ Berhasil ditambahkan ke Queue Manager.", "Status: Waiting");
+    } catch (err) {
+      console.error('[M3 V2 Queue Error]', err);
       if (addNotification) {
         addNotification(`⚠️ Queue Error: ${err.message}`, "Validation Error");
       }
@@ -2729,7 +2863,7 @@ export default function App() {
               m3Objects={m3v2Objects} setM3Objects={setM3v2Objects}
               m3SelectedObjectId={m3v2SelectedObjectId} setM3SelectedObjectId={setM3v2SelectedObjectId}
               addNotification={addNotification}
-              onExportQueue={() => addNotification('M3 V2 is in UI Prototype Mode (No Backend Attached Yet)')}
+              onExportQueue={handleGenerateM3V2Configuration}
             />
           )}
 

@@ -1,7 +1,7 @@
 {
   "name": "mediafactory",
   "private": true,
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "MediaFactory Desktop App",
   "author": "MediaFactory",
   "repository": {
@@ -45,8 +45,12 @@
       "target": "nsis"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true
     },
     "extraResources": [
       {

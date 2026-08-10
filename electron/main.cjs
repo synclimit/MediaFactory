@@ -64,27 +64,13 @@ async function createWindow() {
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
-
-    // Check for updates when the window is created
-    if (!isDev) {
-        try {
-            autoUpdater.setFeedURL({
-                provider: 'github',
-                owner: 'synclimit',
-                repo: 'MediaFactory',
-                private: true,
-                token: getUpdateToken()
-            });
-            autoUpdater.checkForUpdatesAndNotify();
-        } catch (e) {}
-    }
 }
 
 app.whenReady().then(() => {
     createWindow();
 
     setTimeout(() => {
-        performUpdateCheck();
+        checkUpdatesUnified();
     }, 3000);
 
     app.on('activate', () => {
@@ -127,6 +113,54 @@ app.on('window-all-closed', () => {
 
 let pendingUpdateExePath = null;
 let latestReleaseAssetInfo = null;
+
+// Native autoUpdater setup for GitHub releases
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+try {
+    autoUpdater.setFeedURL({
+        provider: 'github',
+        owner: 'synclimit',
+        repo: 'MediaFactory'
+    });
+} catch (e) {
+    console.error('[AutoUpdater] setFeedURL error:', e);
+}
+
+let nativeUpdateAvailable = false;
+
+autoUpdater.on('checking-for-update', () => {
+    console.log('[AutoUpdater Native] Checking for updates...');
+    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
+});
+
+autoUpdater.on('update-available', (info) => {
+    nativeUpdateAvailable = true;
+    console.log('[AutoUpdater Native] Update available:', info.version);
+    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'available', version: info.version });
+});
+
+autoUpdater.on('update-not-available', () => {
+    console.log('[AutoUpdater Native] Native check found no update, running fallback check...');
+    performUpdateCheckFallback();
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+    const pct = Math.round(progressObj.percent || 0);
+    console.log(`[AutoUpdater Native] Download progress: ${pct}%`);
+    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', progress: pct });
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+    console.log('[AutoUpdater Native] Update downloaded successfully! Ready to install.');
+    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'ready', version: info.version });
+});
+
+autoUpdater.on('error', (err) => {
+    console.warn('[AutoUpdater Native Error]', err ? err.message : 'Unknown error');
+    performUpdateCheckFallback();
+});
 
 function extractSemver(v) {
     if (!v) return [0, 0, 0];
@@ -200,11 +234,9 @@ function downloadReleaseAsset(targetUrl, destPath, onProgress) {
             const req = https.request(url, { method: 'GET', headers }, (res) => {
                 if (res.statusCode === 302 || res.statusCode === 301) {
                     const redirectUrl = res.headers.location;
-                    // When following redirect to S3/CDN, DO NOT send GitHub Authorization header
                     return doDownload(redirectUrl, { 'User-Agent': 'MediaFactoryApp' }, redirectDepth + 1);
                 }
                 if (res.statusCode !== 200) {
-                    // If auth header failed with 401/403 on asset download, retry without auth header for public releases
                     if ((res.statusCode === 401 || res.statusCode === 403) && headers['Authorization']) {
                         console.warn('[AutoUpdater] Asset download with token returned ' + res.statusCode + ', retrying unauthenticated...');
                         return doDownload(url, { 'User-Agent': 'MediaFactoryApp' }, redirectDepth + 1);
@@ -241,21 +273,18 @@ function downloadReleaseAsset(targetUrl, destPath, onProgress) {
     });
 }
 
-async function performUpdateCheck() {
-    console.log('[AutoUpdater] Checking for updates via GitHub REST API...');
-    if (mainWindow) mainWindow.webContents.send('update-status', { status: 'checking' });
+async function performUpdateCheckFallback() {
+    console.log('[AutoUpdater Fallback] Checking for updates via GitHub REST API...');
     try {
         const releases = await checkGitHubReleasesREST();
-        const currentVer = app.getVersion() || '1.0.10';
-        console.log(`[AutoUpdater] Current version: ${currentVer}, Total releases found: ${releases.length}`);
+        const currentVer = app.getVersion() || '1.0.16';
+        console.log(`[AutoUpdater Fallback] Current version: ${currentVer}, Total releases found: ${releases.length}`);
         
-        // Find newest release greater than currentVer that contains a valid .exe asset
         const validRelease = releases.find(rel => {
             if (rel.draft) return false;
             const tag = rel.tag_name || rel.name || '';
             const hasExe = (rel.assets || []).some(a => a.name.endsWith('.exe'));
             const isGreater = isVersionGreater(tag, currentVer);
-            console.log(`[AutoUpdater] Release tag: ${tag}, hasExe: ${hasExe}, isGreater: ${isGreater}`);
             return isGreater && hasExe;
         });
 
@@ -264,26 +293,26 @@ async function performUpdateCheck() {
             const exeAsset = validRelease.assets.find(a => a.name.endsWith('.exe'));
             const downloadUrl = exeAsset.browser_download_url || exeAsset.url;
             latestReleaseAssetInfo = { tag: tag, assetUrl: downloadUrl, name: exeAsset.name };
-            console.log(`[AutoUpdater] Update available! Tag: ${tag}, Asset: ${exeAsset.name}, Download URL: ${downloadUrl}`);
+            console.log(`[AutoUpdater Fallback] Update available! Tag: ${tag}, Asset: ${exeAsset.name}`);
             if (mainWindow) {
                 mainWindow.webContents.send('update-status', { status: 'available', version: tag });
             }
             return;
         }
         
-        console.log('[AutoUpdater] No newer release with exe asset found.');
+        console.log('[AutoUpdater Fallback] No newer release found.');
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
     } catch (e) {
-        console.error('[AutoUpdater Error]', e);
+        console.error('[AutoUpdater Fallback Error]', e);
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'not-available' });
     }
 }
 
-async function performUpdateDownload() {
+async function performUpdateDownloadFallback() {
     if (!latestReleaseAssetInfo) return;
     const os = require('os');
     const destPath = path.join(os.tmpdir(), `MediaFactory-Setup-${latestReleaseAssetInfo.tag}.exe`);
-    console.log(`[AutoUpdater] Starting download of ${latestReleaseAssetInfo.name} to ${destPath}`);
+    console.log(`[AutoUpdater Fallback] Starting download of ${latestReleaseAssetInfo.name} to ${destPath}`);
     
     if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', progress: 0, version: latestReleaseAssetInfo.tag });
     
@@ -292,32 +321,71 @@ async function performUpdateDownload() {
             if (mainWindow) mainWindow.webContents.send('update-status', { status: 'downloading', progress: pct, version: latestReleaseAssetInfo.tag });
         });
         pendingUpdateExePath = destPath;
-        console.log('[AutoUpdater] Download complete! Ready to install.');
+        console.log('[AutoUpdater Fallback] Download complete! Ready to install.');
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'ready', version: latestReleaseAssetInfo.tag });
     } catch (e) {
-        console.error('[AutoUpdater Download Error]', e);
+        console.error('[AutoUpdater Fallback Download Error]', e);
         if (mainWindow) mainWindow.webContents.send('update-status', { status: 'error' });
     }
 }
 
-ipcMain.on('check-for-updates', performUpdateCheck);
-ipcMain.on('download-update', performUpdateDownload);
-ipcMain.on('install-update', async () => {
-    if (pendingUpdateExePath && require('fs').existsSync(pendingUpdateExePath)) {
-        console.log(`[AutoUpdater] Launching installer: ${pendingUpdateExePath}`);
-        const { shell } = require('electron');
+function checkUpdatesUnified() {
+    if (app.isPackaged) {
         try {
-            await shell.openPath(pendingUpdateExePath);
-            setTimeout(() => app.quit(), 1000);
+            autoUpdater.checkForUpdates().catch(() => performUpdateCheckFallback());
         } catch (e) {
-            console.error('[AutoUpdater] shell.openPath failed, using start fallback:', e);
-            const { exec } = require('child_process');
-            exec(`start "" "${pendingUpdateExePath}"`, (err) => {
-                if (err) console.error('[AutoUpdater] exec start failed:', err);
-            });
-            setTimeout(() => app.quit(), 1000);
+            performUpdateCheckFallback();
         }
     } else {
-        performUpdateDownload();
+        performUpdateCheckFallback();
     }
-});
+}
+
+function downloadUpdateUnified() {
+    if (app.isPackaged && nativeUpdateAvailable) {
+        try {
+            autoUpdater.downloadUpdate().catch(() => performUpdateDownloadFallback());
+        } catch (e) {
+            performUpdateDownloadFallback();
+        }
+    } else {
+        performUpdateDownloadFallback();
+    }
+}
+
+function installUpdateUnified() {
+    console.log('[AutoUpdater] Performing safe shutdown and 1-Click update installation...');
+    cleanupFFmpegOnExit();
+    if (backendServer) {
+        try { backendServer.close(); } catch(e) {}
+    }
+
+    if (app.isPackaged && nativeUpdateAvailable) {
+        // Native silent 1-click update: closes app safely, applies update quietly, restarts app
+        try {
+            autoUpdater.quitAndInstall(false, true);
+            return;
+        } catch (e) {
+            console.error('[AutoUpdater] quitAndInstall failed, using fallback:', e);
+        }
+    }
+
+    if (pendingUpdateExePath && require('fs').existsSync(pendingUpdateExePath)) {
+        // Run silent NSIS installer with /S flag to prevent file-locking and wizard issues
+        const { spawn } = require('child_process');
+        try {
+            spawn(pendingUpdateExePath, ['/S'], { detached: true, stdio: 'ignore' }).unref();
+            setTimeout(() => app.quit(), 500);
+        } catch (e) {
+            const { shell } = require('electron');
+            shell.openPath(pendingUpdateExePath);
+            setTimeout(() => app.quit(), 500);
+        }
+    } else {
+        downloadUpdateUnified();
+    }
+}
+
+ipcMain.on('check-for-updates', checkUpdatesUnified);
+ipcMain.on('download-update', downloadUpdateUnified);
+ipcMain.on('install-update', installUpdateUnified);
