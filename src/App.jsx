@@ -2437,7 +2437,25 @@ export default function App() {
                addLog(`[M3] FAILED TO START: ${err.message}`);
                setQueue(q => q.map(x => x.id === job.id ? { ...x, status: 'Failed', failureReason: err.message } : x));
              });
-           } else if (job.mode === 'Mode 4') {
+           } else if (job.mode === 'Mode 3 V2') {
+              addLog(`[M3 V2] STARTING ${job.outputFiles[0]}`);
+              fetch(getApiUrl('/api/m3_v2/render'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(job)
+              })
+              .then(async (res) => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                addLog(`[M3 V2] RENDER ACCEPTED`);
+                setQueue(q => q.map(x => x.id === job.id ? { ...x, backendJobId: data.jobId || data.id || job.id } : x));
+              })
+              .catch((err) => {
+                console.error(err);
+                addLog(`[M3 V2] FAILED TO START: ${err.message}`);
+                setQueue(q => q.map(x => x.id === job.id ? { ...x, status: 'Failed', failureReason: err.message } : x));
+              });
+            } else if (job.mode === 'Mode 4') {
              addLog(`[M4] STARTING ${job.outputFiles[0]}`);
              fetch(getApiUrl('/api/m4/render'), {
                method: 'POST',
@@ -2459,10 +2477,10 @@ export default function App() {
            return nextQueue;
         }
 
-        if (job.mode === 'Mode 1' || job.mode === 'Mode 2' || job.mode === 'Mode 3' || job.mode === 'Mode 4') {
+        if (job.mode === 'Mode 1' || job.mode === 'Mode 2' || job.mode === 'Mode 3' || job.mode === 'Mode 3 V2' || job.mode === 'Mode 4') {
            // Poll backend every 1 second
-           const endpoint = job.mode === 'Mode 1' ? '/api/m1/render/' : (job.mode === 'Mode 2' ? '/api/m2/render/' : (job.mode === 'Mode 3' ? '/api/m3/render/' : '/api/m4/render/'));
-           fetch(`${endpoint}${job.backendJobId || job.id}`)
+           const endpoint = job.mode === 'Mode 1' ? '/api/m1/render/' : (job.mode === 'Mode 2' ? '/api/m2/render/' : (job.mode === 'Mode 3' ? '/api/m3/render/' : (job.mode === 'Mode 3 V2' ? '/api/m3_v2/render/' : '/api/m4/render/')));
+           fetch(getApiUrl(`${endpoint}${job.backendJobId || job.id}`))
              .then(res => res.ok ? res.json() : null)
              .then(data => {
                 if (!data) return;
@@ -2484,7 +2502,7 @@ export default function App() {
                        currentFFmpegTime: data.currentFFmpegTime, 
                        rawLogs: data.logs 
                      };
-                     if (data.status === 'COMPLETED') {
+                     if (data.status?.toUpperCase() === 'COMPLETED') {
                         nq[jidx].status = 'Completed';
                         nq[jidx].progress = 100;
                         nq[jidx].OUTPUT_PATH = data.OUTPUT_PATH;

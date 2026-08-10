@@ -1,31 +1,67 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { startServer } = require('../backend/server');
+const fs = require('fs');
+
+// Global Exception Handler to write crash logs and show error dialog
+function writeCrashLog(err) {
+    try {
+        const crashDir = path.join(app.getPath('userData'), 'logs');
+        if (!fs.existsSync(crashDir)) fs.mkdirSync(crashDir, { recursive: true });
+        const crashFile = path.join(crashDir, 'startup_crash.log');
+        const content = `[${new Date().toISOString()}] ${err ? (err.stack || err.message) : 'Unknown Error'}\n\n`;
+        fs.appendFileSync(crashFile, content);
+    } catch(e) {}
+}
+
+process.on('uncaughtException', (err) => {
+    console.error('[Electron Uncaught Exception]', err);
+    writeCrashLog(err);
+    try {
+        dialog.showErrorBox('MediaFactory Startup Error', err ? (err.stack || err.message) : 'Unknown Startup Error');
+    } catch(e) {}
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('[Electron Unhandled Rejection]', reason);
+    writeCrashLog(reason);
+});
+
+// Single Instance Lock
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    console.log('[Electron] Another instance is already running. Quitting new instance...');
+    app.quit();
+} else {
+    app.on('second-instance', () => {
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.focus();
+        }
+    });
+}
+
 const { autoUpdater } = require('electron-updater');
 
 // Fix Chromium GPU Cache "Access is denied (0x5)" black screen bug on Windows
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 app.commandLine.appendSwitch('disable-http-cache');
 
-const getUpdateToken = () => {
-    try {
-        const p1 = 'github_pat_11CB4FNEA0I3jiQuPTi6V4';
-        const p2 = '_oXaL2DIaXHPSWLZDk3wX6iguFbHcF2RsrZfLMvtQPNIKLZDH5IXBa7sWG3N';
-        return p1 + p2;
-    } catch (e) {
-        return null;
-    }
-};
-
 let mainWindow;
 let backendServer;
 const isDev = !app.isPackaged;
 
 async function createWindow() {
-    backendServer = await startServer(18888);
-    const serverPort = (backendServer && typeof backendServer.address === 'function' && backendServer.address())
-        ? backendServer.address().port
-        : 18888;
+    let serverPort = 18888;
+    try {
+        const { startServer } = require('../backend/server');
+        backendServer = await startServer(18888);
+        if (backendServer && typeof backendServer.address === 'function' && backendServer.address()) {
+            serverPort = backendServer.address().port;
+        }
+    } catch (err) {
+        console.error('[Electron] Backend startServer error:', err);
+        writeCrashLog(err);
+    }
 
     mainWindow = new BrowserWindow({
         width: 1366,
@@ -49,7 +85,7 @@ async function createWindow() {
 
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
 
-    if (require('fs').existsSync(indexPath)) {
+    if (fs.existsSync(indexPath)) {
         console.log('[Electron] Loading dist/index.html via loadFile:', indexPath);
         mainWindow.loadFile(indexPath).catch((err) => {
             console.error('[Electron] Failed to load index.html:', err);
@@ -59,7 +95,9 @@ async function createWindow() {
         mainWindow.loadURL(`http://localhost:${serverPort}`);
     }
 
-    mainWindow.webContents.openDevTools();
+    if (isDev) {
+        mainWindow.webContents.openDevTools();
+    }
 
     mainWindow.on('closed', () => {
         mainWindow = null;

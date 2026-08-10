@@ -19,6 +19,40 @@ export default function BackgroundPanel({
         fileInput.onchange = async (e) => {
             const file = e.target.files[0];
             if (file) {
+                const localPreview = URL.createObjectURL(file);
+                const newId = `bg_${Date.now()}`;
+                const newBg = {
+                    id: newId,
+                    type: type || (file.type && file.type.startsWith('video') ? 'video' : 'image'),
+                    url: localPreview,
+                    preview: localPreview,
+                    blobUrl: localPreview,
+                    filename: file.name,
+                    file: file,
+                    settings: {
+                        overlayDarkness: 30,
+                        blurAmount: 0,
+                        scaleMode: 'Cover (Fill)',
+                        backgroundZoom: 0,
+                        horizontalPosition: 0,
+                        verticalPosition: 0,
+                        danceMode: 'Ringan (Pixel) — cepat di CPU',
+                        danceStyle: 'Subtle Sway',
+                        danceIntensity: 100,
+                        danceReactLevel: 45,
+                        danceReactsTo: 'Whole song',
+                        danceSmoothing: 0.70
+                    }
+                };
+
+                if (setM3BgPool) {
+                    setM3BgPool(prev => [...prev, newBg]);
+                }
+                if (setM3SelectedObjectId) {
+                    setM3SelectedObjectId(newId);
+                }
+
+                // Sync with server asset storage for render
                 try {
                     const response = await fetch('/api/v1/assets/upload', {
                         method: 'POST',
@@ -32,41 +66,18 @@ export default function BackgroundPanel({
                     
                     const json = await response.json();
                     if (json.success && json.data) {
-                        const url = `/api/m2/stream?uri=${encodeURIComponent(json.data.path)}`;
-                        const newId = `bg_${Date.now()}`;
-                        const newBg = {
-                            id: newId,
-                            type: type,
-                            url: url,
-                            preview: url,
-                            sourcePath: json.data.path,
-                            uri: json.data.path,
-                            filename: file.name,
-                            settings: {
-                                overlayDarkness: 30,
-                                blurAmount: 0,
-                                scaleMode: 'Cover (Fill)',
-                                backgroundZoom: 0,
-                                horizontalPosition: 0,
-                                verticalPosition: 0,
-                                danceMode: 'Ringan (Pixel) — cepat di CPU',
-                                danceStyle: 'Subtle Sway',
-                                danceIntensity: 100,
-                                danceReactLevel: 45,
-                                danceReactsTo: 'Whole song',
-                                danceSmoothing: 0.70
-                            }
-                        };
-                        
+                        const streamUrl = `/api/m2/stream?uri=${encodeURIComponent(json.data.path)}`;
                         if (setM3BgPool) {
-                            setM3BgPool(prev => [...prev, newBg]);
-                        }
-                        if (setM3SelectedObjectId) {
-                            setM3SelectedObjectId(newId);
+                            setM3BgPool(prev => prev.map(b => b.id === newId ? {
+                                ...b,
+                                sourcePath: json.data.path,
+                                uri: json.data.path,
+                                serverUrl: streamUrl
+                            } : b));
                         }
                     }
                 } catch (err) {
-                    console.error("Failed to upload background:", err);
+                    console.error("Failed to upload background asset in background:", err);
                 }
             }
             document.body.removeChild(fileInput);
@@ -108,16 +119,9 @@ export default function BackgroundPanel({
         });
     };
 
-    const tabs = [
-        { id: 'BG Image', icon: '🖼️' },
-        { id: 'Gradient', icon: '🌈' },
-        { id: 'Solid', icon: '🎨' },
-        { id: 'Video', icon: '🎞️' }
-    ];
-
     return (
         <div className="flex flex-col h-full relative z-10">
-            {/* Custom Header Tabs - Sleeker Design */}
+            {/* Header Tabs */}
             <div className="flex items-center border-b border-[#2a2c33] bg-black/20">
                 <button 
                     onClick={() => setActiveTab('BG Image')}
@@ -151,9 +155,7 @@ export default function BackgroundPanel({
                 </div>
 
                 <div className="relative bg-[#161822] border-[3px] border-orange-500/50 px-4 py-3 rounded-lg flex items-center justify-between mt-8 mb-4 shadow-[0_4px_20px_rgba(249,115,22,0.15)]">
-                    {/* Inner orange glow */}
                     <div className="absolute inset-0 bg-gradient-to-r from-orange-500/15 to-transparent rounded-lg pointer-events-none"></div>
-                    {/* Left accent bar */}
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-3 h-3/4 bg-orange-500 rounded-r-md shadow-[0_0_12px_#f97316]"></div>
                     
                     <span className="text-[12px] font-black text-white uppercase tracking-[0.15em] drop-shadow-md relative z-10 pl-2">
@@ -181,8 +183,7 @@ export default function BackgroundPanel({
                                 {!isSelected && (
                                     <div className="absolute inset-0 pointer-events-none opacity-[0.02] z-0" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, #fff 2px, #fff 4px)'}}></div>
                                 )}
-                                {/* Header */}
-                                <div className={`flex items-center justify-between p-2.5 relative z-10 ${isSelected ? '' : ''}`}>
+                                <div className={`flex items-center justify-between p-2.5 relative z-10`}>
                                     <div className="flex items-center gap-2">
                                         <button 
                                             onClick={(e) => removeBg(bg.id, e)}

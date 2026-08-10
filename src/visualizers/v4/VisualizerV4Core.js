@@ -10,11 +10,6 @@
 export class VisualizerV4Core {
   /**
    * Main Dispatcher for Visualizer V4 Rendering
-   * @param {CanvasRenderingContext2D} ctx 
-   * @param {number} width 
-   * @param {number} height 
-   * @param {object} audioState 
-   * @param {object} config 
    */
   static renderFrame(ctx, width, height, audioState = {}, config = {}) {
     if (!ctx || width <= 0 || height <= 0) return;
@@ -23,11 +18,13 @@ export class VisualizerV4Core {
     const h = Math.round(height);
 
     ctx.save();
-    ctx.clearRect(0, 0, w, h);
+    const mode = (config.mode || config.style || 'spectrum-bars').toLowerCase();
 
-    const mode = (config.mode || 'spectrum-bars').toLowerCase();
-
-    if (mode.includes('circle') || mode.includes('pulse')) {
+    if (mode.includes('double') || mode.includes('mirror')) {
+      this.renderDoubleSpectrum(ctx, w, h, audioState, config);
+    } else if (mode.includes('radial') || mode.includes('ring-wave')) {
+      this.renderRadialWave(ctx, w, h, audioState, config);
+    } else if (mode.includes('circle') || mode.includes('pulse')) {
       this.renderCircularPulse(ctx, w, h, audioState, config);
     } else if (mode.includes('wave') || mode.includes('cyberpunk') || mode.includes('oscilloscope')) {
       this.renderWaveformOscilloscope(ctx, w, h, audioState, config);
@@ -55,11 +52,9 @@ export class VisualizerV4Core {
     const colorMid = config.colorMid || '#06B6D4';
     const colorMode = config.colorMode || '2 Gradient';
 
-    // Total width allocation
-    const totalWidth = w;
     const barSpacing = Math.max(1, Math.floor(w / (barCount * 4)));
     const totalSpacing = barSpacing * (barCount - 1);
-    const barWidth = Math.max(2, Math.floor((totalWidth - totalSpacing) / barCount));
+    const barWidth = Math.max(2, Math.floor((w - totalSpacing) / barCount));
     const startX = Math.round((w - (barWidth * barCount + totalSpacing)) / 2);
 
     for (let i = 0; i < barCount; i++) {
@@ -79,10 +74,7 @@ export class VisualizerV4Core {
       const x = Math.round(startX + i * (barWidth + barSpacing));
       const y = Math.round(h - barHeight);
 
-      // Color Gradient Calculation
       ctx.fillStyle = this.getGradientOrColor(ctx, x, y, barWidth, barHeight, i, barCount, colorMode, colorLeft, colorMid, colorRight);
-
-      // Draw Bar
       ctx.fillRect(x, y, barWidth, barHeight);
 
       // Peak Cap Dot
@@ -93,7 +85,42 @@ export class VisualizerV4Core {
   }
 
   /**
-   * 2. Circular Pulse (Radial Ring & Audio Rays)
+   * 2. Double Mirror Spectrum (Top & Bottom Symmetrical Bars - Migrated from V1/V3)
+   */
+  static renderDoubleSpectrum(ctx, w, h, audio, config) {
+    const rawFrequencies = audio.frequencies || new Float32Array(64);
+    const barCount = Math.max(8, Math.min(128, parseInt(config.barCount || 64, 10)));
+    const gain = Math.max(0.1, parseFloat(config.gain || config.sensitivity || 100) / 100);
+
+    const colorLeft = config.colorLeft || config.color1 || '#F43F5E';
+    const colorRight = config.colorRight || config.color2 || '#8B5CF6';
+    const midY = Math.round(h / 2);
+
+    const barSpacing = Math.max(1, Math.floor(w / (barCount * 4)));
+    const totalSpacing = barSpacing * (barCount - 1);
+    const barWidth = Math.max(2, Math.floor((w - totalSpacing) / barCount));
+    const startX = Math.round((w - (barWidth * barCount + totalSpacing)) / 2);
+
+    for (let i = 0; i < barCount; i++) {
+      const freqIdx = Math.floor((i / barCount) * rawFrequencies.length);
+      const freqVal = (rawFrequencies[freqIdx] || 0) * gain;
+      const halfHeight = Math.max(2, Math.round(freqVal * (h * 0.45)));
+
+      const x = Math.round(startX + i * (barWidth + barSpacing));
+      const topY = midY - halfHeight;
+      const botY = midY;
+
+      const grad = ctx.createLinearGradient(x, topY, x, midY + halfHeight);
+      grad.addColorStop(0, colorLeft);
+      grad.addColorStop(1, colorRight);
+      ctx.fillStyle = grad;
+
+      ctx.fillRect(x, topY, barWidth, halfHeight * 2);
+    }
+  }
+
+  /**
+   * 3. Circular Pulse (Radial Ring & Audio Rays)
    */
   static renderCircularPulse(ctx, w, h, audio, config) {
     const rawFrequencies = audio.frequencies || new Float32Array(64);
@@ -144,7 +171,39 @@ export class VisualizerV4Core {
   }
 
   /**
-   * 3. Waveform Oscilloscope (Perspective Grid + Smooth Neon Wave)
+   * 4. Radial Mirror Ring Wave (Migrated from V2/V3)
+   */
+  static renderRadialWave(ctx, w, h, audio, config) {
+    const rawFrequencies = audio.frequencies || new Float32Array(64);
+    const colorLeft = config.colorLeft || config.color1 || '#10B981';
+    const colorRight = config.colorRight || config.color2 || '#6366F1';
+    const gain = Math.max(0.1, parseFloat(config.gain || config.sensitivity || 100) / 100);
+
+    const cx = Math.round(w / 2);
+    const cy = Math.round(h / 2);
+    const radius = Math.round(Math.min(w, h) * 0.25);
+    const points = rawFrequencies.length || 64;
+
+    ctx.strokeStyle = colorLeft;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    for (let i = 0; i <= points; i++) {
+      const idx = i % points;
+      const angle = (idx / points) * Math.PI * 2;
+      const val = (rawFrequencies[idx] || 0) * gain;
+      const r = radius + val * 60;
+      const x = Math.round(cx + Math.cos(angle) * r);
+      const y = Math.round(cy + Math.sin(angle) * r);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  /**
+   * 5. Waveform Oscilloscope (Perspective Grid + Smooth Neon Wave)
    */
   static renderWaveformOscilloscope(ctx, w, h, audio, config) {
     const waveform = audio.waveform || new Float32Array(64);
@@ -181,7 +240,7 @@ export class VisualizerV4Core {
     }
     ctx.stroke();
 
-    // Mirror Waveform (Subtle Perspective Reflection)
+    // Mirror Waveform
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -195,7 +254,7 @@ export class VisualizerV4Core {
   }
 
   /**
-   * 4. Particle Orbit (Orbital Galaxy Particles)
+   * 6. Particle Orbit (Orbital Galaxy Particles)
    */
   static renderParticleOrbit(ctx, w, h, audio, config) {
     const rawFrequencies = audio.frequencies || new Float32Array(64);
@@ -209,7 +268,7 @@ export class VisualizerV4Core {
     const time = (audio.time || 0) * 1.5;
 
     for (let i = 0; i < particleCount; i++) {
-      const ringIdx = i % 3; // 3 orbital rings
+      const ringIdx = i % 3;
       const radiusBase = Math.round(Math.min(w, h) * (0.15 + ringIdx * 0.12));
       const freqIdx = Math.floor((i / particleCount) * rawFrequencies.length);
       const freqVal = (rawFrequencies[freqIdx] || 0.2) * gain;
@@ -218,7 +277,7 @@ export class VisualizerV4Core {
       const r = Math.round(radiusBase + freqVal * 20);
 
       const x = Math.round(cx + Math.cos(angle) * r);
-      const y = Math.round(cy + Math.sin(angle) * (r * 0.6)); // Perspective oval
+      const y = Math.round(cy + Math.sin(angle) * (r * 0.6));
 
       const size = Math.max(2, Math.round(3 + freqVal * 4));
 
@@ -248,7 +307,6 @@ export class VisualizerV4Core {
       return `hsl(${hue}, 100%, 55%)`;
     }
 
-    // Default: 2 Gradient
     const grad = ctx.createLinearGradient(x, y + bh, x, y);
     grad.addColorStop(0, c1);
     grad.addColorStop(1, c2);

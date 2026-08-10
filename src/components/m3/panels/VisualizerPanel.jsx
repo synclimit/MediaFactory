@@ -182,9 +182,71 @@ export default function VisualizerPanel({ addObject }) {
 
     const categories = categoryRegistry.getAll();
 
+    const v4Presets = [
+        { mode: 'spectrum-bars', label: 'Spectrum Bars V4', color: '#AB55F7' },
+        { mode: 'double-spectrum', label: 'Double Mirror Spectrum V4', color: '#F43F5E' },
+        { mode: 'circular-pulse', label: 'Circular Pulse V4', color: '#06B6D4' },
+        { mode: 'radial-wave', label: 'Radial Ring Wave V4', color: '#10B981' },
+        { mode: 'cyberpunk-waveform', label: 'Cyberpunk Waveform V4', color: '#3B82F6' },
+        { mode: 'particle-orbit', label: 'Particle Orbit V4', color: '#EC4899' },
+    ];
+
+    const handleSelectV4Style = (preset) => {
+        const isCircle = preset.mode.includes('circle') || preset.mode.includes('pulse') || preset.mode.includes('orbit') || preset.mode.includes('radial');
+        const defaultW = isCircle ? 450 : (preset.mode.includes('wave') ? 800 : 900);
+        const defaultH = isCircle ? 450 : (preset.mode.includes('wave') ? 220 : 250);
+
+        addObject({
+            type: 'visualizer4',
+            canvasMode: 'composer',
+            name: `Visualizer V4 (${preset.label})`,
+            mode: preset.mode,
+            x: 960,
+            y: 540,
+            width: defaultW,
+            height: defaultH,
+            colorMode: '2 Gradient',
+            colorLeft: preset.color,
+            colorRight: '#F59E0B',
+            colorMid: '#06B6D4',
+            frequencyOrder: 'Bass -> Treble',
+            barCount: 64,
+            gain: 100,
+            sensitivity: 100,
+            visible: true
+        });
+    };
+
     return (
         <div className="space-y-4 pb-10 px-1">
             {error && <div className="bg-red-900/40 border border-red-500/50 text-red-200 p-3 rounded-xl text-[10px] mb-4 backdrop-blur-md shadow-lg">{error.message}</div>}
+
+            {/* Visualizer V4 Single Engine Category */}
+            <div className="p-3 bg-gradient-to-r from-orange-500/20 via-amber-500/10 to-transparent border border-orange-500/40 rounded-xl space-y-2 shadow-[0_4px_20px_rgba(249,115,22,0.15)]">
+                <div className="flex items-center justify-between">
+                    <span className="font-black text-orange-400 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                        ⚡ Visualizer V4 (100% WYSIWYG Single Engine)
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-400/40 text-orange-300 text-[8px] font-black uppercase">
+                        6 STYLES
+                    </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                    {v4Presets.map(p => (
+                        <button
+                            key={p.mode}
+                            onClick={() => handleSelectV4Style(p)}
+                            className="p-2 rounded-lg border border-orange-500/30 bg-[#161822] hover:bg-orange-500/10 hover:border-orange-400 text-left transition-all group cursor-pointer"
+                        >
+                            <div className="text-[10px] font-extrabold flex items-center gap-1.5" style={{ color: p.color }}>
+                                <span>✨</span>
+                                <span className="truncate">{p.label}</span>
+                            </div>
+                            <div className="text-[8px] text-gray-400 mt-0.5">Pure 2D Single Engine</div>
+                        </button>
+                    ))}
+                </div>
+            </div>
 
             <div className="flex flex-col gap-3 mt-2">
                 {categories.map(cat => {

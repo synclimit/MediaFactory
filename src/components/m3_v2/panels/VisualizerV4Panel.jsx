@@ -21,8 +21,10 @@ export default function VisualizerV4Panel({ addObject, m3Objects, setM3Objects }
 
   const presets = [
     { mode: 'spectrum-bars', label: 'Spectrum Bars V4', color: '#AB55F7', desc: 'Pure 2D vertical frequency spectrum bars' },
+    { mode: 'double-spectrum', label: 'Double Mirror Spectrum V4', color: '#F43F5E', desc: 'Symmetrical top & bottom vertical spectrum bars (Migrated V1/V3)' },
     { mode: 'circular-pulse', label: 'Circular Pulse V4', color: '#06B6D4', desc: 'Radial pulsing ring with audio spikes' },
-    { mode: 'cyberpunk-waveform', label: 'Cyberpunk Waveform V4', color: '#10B981', desc: 'Neon oscilloscope waveform with perspective line' },
+    { mode: 'radial-wave', label: 'Radial Ring Wave V4', color: '#10B981', desc: 'Symmetrical radial mirror frequency ring (Migrated V2/V3)' },
+    { mode: 'cyberpunk-waveform', label: 'Cyberpunk Waveform V4', color: '#3B82F6', desc: 'Neon oscilloscope waveform with perspective line' },
     { mode: 'particle-orbit', label: 'Particle Orbit V4', color: '#EC4899', desc: 'Deterministic orbital galaxy particle system' },
   ];
 
