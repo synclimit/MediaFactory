@@ -1,3 +1,9 @@
+const express = require('express');
+const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+const { spawn } = require('child_process');
+
 let _canvasMod = null;
 function getCanvas() {
   if (!_canvasMod) {
@@ -127,16 +133,50 @@ async function executeV4Render(jobId, jobData) {
   if (!canvasMod) throw new Error('Canvas native module unavailable');
   const { createCanvas, loadImage } = canvasMod;
 
-  // Load Background Image if available
+  // Load Background Image if available (support Disk Path, Stream URL, and Base64 Data URL)
   let bgImg = null;
-  const bgObj = payload.background || (payload.bgPool && payload.bgPool[0]) || {};
-  const bgPath = bgObj.sourcePath || bgObj.uri;
-  if (bgPath && fs.existsSync(bgPath)) {
+  const bgObj = payload.background || (payload.m3BgPool && payload.m3BgPool[0]) || (payload.bgPool && payload.bgPool[0]) || {};
+  let bgPath = bgObj.sourcePath || bgObj.uri || bgObj.url || bgObj.preview || bgObj.filename;
+  
+  if (bgPath && typeof bgPath === 'string') {
+    if (bgPath.includes('/api/m2/stream?uri=')) {
+      const match = bgPath.match(/uri=([^&]+)/);
+      if (match) bgPath = decodeURIComponent(match[1]);
+    }
+  }
+
+  if (bgPath && typeof bgPath === 'string' && bgPath.startsWith('data:')) {
     try {
-      bgImg = await loadImage(bgPath);
-      job.logs.push(`[M3 V2] Loaded background image: ${bgPath}`);
+      const base64Data = bgPath.split(';base64,').pop();
+      const buf = Buffer.from(base64Data, 'base64');
+      bgImg = await loadImage(buf);
+      job.logs.push(`[M3 V2] Loaded base64 background image`);
     } catch (e) {
-      console.warn('[M3 V2] Failed to load background image:', e.message);
+      console.warn('[M3 V2] Failed to load base64 background:', e.message);
+    }
+  } else if (bgPath && typeof bgPath === 'string') {
+    let resolvedBgPath = bgPath;
+    if (!fs.existsSync(resolvedBgPath)) {
+      const candidates = [
+        path.resolve(bgPath),
+        path.resolve('public', bgPath),
+        path.resolve('public/assets', bgPath),
+        path.resolve('public/assets/Backgrounds', bgPath)
+      ];
+      for (const cand of candidates) {
+        if (fs.existsSync(cand)) { resolvedBgPath = cand; break; }
+      }
+    }
+
+    if (fs.existsSync(resolvedBgPath)) {
+      try {
+        bgImg = await loadImage(resolvedBgPath);
+        job.logs.push(`[M3 V2] Loaded background image: ${resolvedBgPath}`);
+      } catch (e) {
+        console.warn('[M3 V2] Failed to load background image:', e.message);
+      }
+    } else {
+      console.warn('[M3 V2] Background path not found on disk:', bgPath);
     }
   }
 
@@ -162,6 +202,19 @@ async function executeV4Render(jobId, jobData) {
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
+  const parseCoord = (val, stageDim, defaultCenter) => {
+    if (val === undefined || val === null || val === '') return defaultCenter;
+    const str = String(val).trim();
+    if (str.endsWith('%')) {
+      const pct = parseFloat(str);
+      return isNaN(pct) ? defaultCenter : (pct / 100) * stageDim;
+    }
+    const num = parseFloat(str);
+    if (isNaN(num)) return defaultCenter;
+    if (num <= 1.0 && num > 0) return num * stageDim;
+    return num;
+  };
+
   for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
     const timeSec = frameIdx / fps;
     const audioState = VisualizerV4Audio.generateSyntheticState(timeSec, 64);
@@ -172,7 +225,7 @@ async function executeV4Render(jobId, jobData) {
     // 1. Draw Background
     if (bgImg) {
       ctx.drawImage(bgImg, 0, 0, width, height);
-      const darkness = bgObj.settings?.overlayDarkness !== undefined ? bgObj.settings.overlayDarkness : 30;
+      const darkness = bgObj.settings?.overlayDarkness !== undefined ? bgObj.settings.overlayDarkness : (bgObj.overlayDarkness !== undefined ? bgObj.overlayDarkness : 30);
       if (darkness > 0) {
         ctx.fillStyle = `rgba(0,0,0,${darkness / 100})`;
         ctx.fillRect(0, 0, width, height);
@@ -182,14 +235,17 @@ async function executeV4Render(jobId, jobData) {
       ctx.fillRect(0, 0, width, height);
     }
 
-    // 2. Draw all Visualizer V4 Objects
+    // 2. Draw all Visualizer V4 / V3 / V2 Objects
     for (const obj of objects) {
       if (obj.visible === false) continue;
-      if (obj.type === 'visualizer4' || obj.type?.includes('visualizer')) {
-        const ox = Math.round(obj.x !== undefined ? obj.x - (obj.width || 800) / 2 : (width - 800) / 2);
-        const oy = Math.round(obj.y !== undefined ? obj.y - (obj.height || 300) / 2 : (height - 300) / 2);
-        const ow = Math.round(obj.width || 800);
-        const oh = Math.round(obj.height || 300);
+      if (obj.type === 'visualizer4' || obj.type?.includes('visualizer') || obj.type === 'spectrum') {
+        const ow = Math.round(parseCoord(obj.width, width, 800));
+        const oh = Math.round(parseCoord(obj.height, height, 300));
+        const cx = parseCoord(obj.x, width, width / 2);
+        const cy = parseCoord(obj.y, height, height / 2);
+
+        const ox = Math.round(cx - ow / 2);
+        const oy = Math.round(cy - oh / 2);
 
         ctx.save();
         ctx.translate(ox, oy);

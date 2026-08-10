@@ -15,8 +15,11 @@ export default function M1VideoUpload({
 }) {
   const fileInputRef = React.useRef(null);
   
-  const handleNativeDialog = async () => {
-    // Layer 1: Electron IPC show-open-dialog
+  const handleNativeDialog = async (e) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    // 1. If inside Electron, try native Electron IPC dialog first
     if (window.require) {
       try {
         const { ipcRenderer } = window.require('electron');
@@ -24,28 +27,16 @@ export default function M1VideoUpload({
           properties: ['openFile'],
           filters: [{ name: 'Video Files', extensions: ['mp4', 'mov', 'mkv', 'avi', 'webm'] }]
         });
-        if (pathResult && pathResult.length > 0 && handleManualVideoPathChange) {
-          handleManualVideoPathChange({ target: { value: pathResult[0] } });
+        if (pathResult && pathResult.length > 0) {
+          if (handleManualVideoPathChange) {
+            handleManualVideoPathChange({ target: { value: pathResult[0] } });
+          }
           return;
         }
-      } catch(e) {}
+      } catch(err) {}
     }
 
-    // Layer 2: Backend REST dialog endpoint
-    try {
-      const port = window.location.port || '18888';
-      const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${port}`;
-      const res = await fetch(`${baseUrl}/api/m1/dialog/video`, { method: 'POST' });
-      const data = await res.json();
-      if (data.path && handleManualVideoPathChange) {
-        handleManualVideoPathChange({ target: { value: data.path } });
-        return;
-      }
-    } catch(err) {
-      console.warn('[M1] REST dialog fetch failed, using HTML file picker fallback:', err);
-    }
-
-    // Layer 3: Invisible HTML File Input Element Fallback
+    // 2. Direct HTML File Picker (instant, 100% reliable in any browser or webview)
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -55,20 +46,10 @@ export default function M1VideoUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    let filePath = file.path || '';
-    if (!filePath && window.require) {
-      try {
-        const { webUtils } = window.require('electron');
-        if (webUtils && typeof webUtils.getPathForFile === 'function') {
-          filePath = webUtils.getPathForFile(file);
-        }
-      } catch(err) {}
-    }
-
-    if (filePath && handleManualVideoPathChange) {
-      handleManualVideoPathChange({ target: { value: filePath } });
-    } else if (handleVideoUploadChange) {
+    if (handleVideoUploadChange) {
       handleVideoUploadChange(e);
+    } else if (file.path && handleManualVideoPathChange) {
+      handleManualVideoPathChange({ target: { value: file.path } });
     }
   };
 
@@ -103,13 +84,17 @@ export default function M1VideoUpload({
         {/* Action Button */}
         <div className="flex flex-col items-center justify-center gap-4 w-full max-w-md mb-4">
           <div className="flex w-full gap-2">
-            <div onClick={handleNativeDialog} className="flex-1 flex items-center justify-center gap-3 bg-gradient-to-b from-orange-500/20 to-orange-600/10 hover:from-orange-500/30 hover:to-orange-600/20 border border-orange-500/60 p-4 rounded-xl cursor-pointer transition-all duration-300 shadow-[0_0_25px_rgba(249,115,22,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] group">
+            <button 
+              type="button"
+              onClick={handleNativeDialog} 
+              className="flex-1 flex items-center justify-center gap-3 bg-gradient-to-b from-orange-500/20 to-orange-600/10 hover:from-orange-500/30 hover:to-orange-600/20 border border-orange-500/60 p-4 rounded-xl cursor-pointer transition-all duration-300 shadow-[0_0_25px_rgba(249,115,22,0.2),inset_0_1px_1px_rgba(255,255,255,0.2)] group"
+            >
               <svg className="w-8 h-8 text-orange-400 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
               <div className="flex flex-col">
                 <span className="text-orange-400 font-black text-[16px] tracking-[0.2em] drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]">BROWSE FILE</span>
               </div>
               {m1VideoProbing && <span className="absolute inset-0 bg-black/80 rounded-xl flex items-center justify-center text-orange-500 font-black text-lg tracking-widest backdrop-blur-md">PROBING...</span>}
-            </div>
+            </button>
           </div>
           
           <div className="w-full flex items-center gap-2 text-sm text-gray-400 mt-2">

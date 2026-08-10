@@ -53,6 +53,12 @@ const isDev = !app.isPackaged;
 async function createWindow() {
     let serverPort = 18888;
     try {
+        try {
+            const { execSync } = require('child_process');
+            if (process.platform === 'win32') {
+                execSync('npx kill-port 18888 3001', { stdio: 'ignore' });
+            }
+        } catch(e) {}
         const { startServer } = require('../backend/server');
         backendServer = await startServer(18888);
         if (backendServer && typeof backendServer.address === 'function' && backendServer.address()) {
@@ -93,9 +99,10 @@ async function createWindow() {
         }
     });
 
-    if (isDev) {
-        mainWindow.webContents.openDevTools();
-    }
+    // Disabled automatic DevTools window opening
+    // if (isDev) {
+    //     mainWindow.webContents.openDevTools();
+    // }
 
     mainWindow.on('closed', () => {
         mainWindow = null;

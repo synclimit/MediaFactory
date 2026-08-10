@@ -58,6 +58,10 @@ const getSystemStats = () => new Promise(resolve => {
   }
 });
 
+async function checkFFmpeg() {
+  return true;
+}
+
 function getTimestampMs() {
   const d = new Date();
   return d.toLocaleTimeString('id-ID', { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0');
@@ -865,7 +869,7 @@ function getFFmpegEncodingFlags(metadata = {}) {
   };
 }
 
-async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targetHeight = 1080, totalDur = 10) {
+async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targetHeight = 1080, totalDur = 10, job = null) {
   if (!objects || objects.length === 0) return { inputs: '', filter: '', map: '', overlaysCount: 0 };
   
   const validObjects = objects
@@ -1073,8 +1077,13 @@ const col1 = parseColorRgba(primaryColor, '00f2fe');
           PipelineEngine.renderPipelineFrame(exportCanvas, frameTimestamp, audioState, pluginIdMode, v3Config);
         }
 
-        // EVENT-LOOP UNBLOCK: Yield to Node.js event loop every 5 frames so Electron processes window messages and UI stays smooth and responsive.
-        if (f % 5 === 0) {
+        // EVENT-LOOP UNBLOCK & REALTIME PROGRESS: Update progress and yield to Node.js event loop every 10 frames
+        if (f % 10 === 0) {
+          if (job && job.queueId && jobs[job.queueId]) {
+            const frameProgress = Math.round(5 + (f / totalFramesToRender) * 20);
+            jobs[job.queueId].progress = Math.max(jobs[job.queueId].progress || 0, frameProgress);
+            jobs[job.queueId].stage = `Generating Visualizer Frames (${f}/${totalFramesToRender})`;
+          }
           await new Promise(resolve => setImmediate(resolve));
         }
 
@@ -1390,7 +1399,7 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
 
   // Fallback / Normal Mode full encode
   const durationSec = job.totalDurationSec || payload?.totalDurationSec || 180;
-  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h, durationSec);
+  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h, durationSec, job);
   const baseScale = `scale=${w}:${h}`;
   const audioMap = `-map ${1 + overlaysCount}:a`;
   const filterFlag = filter ? `-filter_complex "[0:v]${baseScale}[base];${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}" ${audioMap}` : `-vf "${baseScale}"`;

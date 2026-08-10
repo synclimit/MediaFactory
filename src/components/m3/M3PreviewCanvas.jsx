@@ -665,17 +665,31 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
                 transition: 'filter 0.1s ease-out' 
             };
 
+            const resolveMediaUrl = (mediaObj) => {
+                if (!mediaObj) return '';
+                let raw = mediaObj.blobUrl || mediaObj.preview || mediaObj.url || mediaObj.sourcePath || mediaObj.filename || '';
+                if (!raw) return '';
+                if (raw.startsWith('data:') || raw.startsWith('blob:') || raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+                if (raw.startsWith('/api/')) return 'http://127.0.0.1:18888' + raw;
+                if (raw.match(/^[a-zA-Z]:/) || raw.startsWith('/') || raw.startsWith('\\')) {
+                    return `http://127.0.0.1:18888/api/m2/stream?uri=${encodeURIComponent(raw.replace(/\\/g, '/'))}`;
+                }
+                return raw;
+            };
+
+            const bgMediaSrc = resolveMediaUrl(bg);
+
             return (
               <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center bg-black" style={colorGradingStyle}>
                 {bg.type === 'image' || !bg.type ? (
-                  <img ref={bgMediaRef} src={bg.blobUrl || bg.preview || bg.url || bg.sourcePath} alt="bg" className={`w-full h-full ${objectFitClass} will-change-transform`} style={mediaStyle} />
+                  <img ref={bgMediaRef} src={bgMediaSrc} alt="bg" className={`w-full h-full ${objectFitClass} will-change-transform`} style={mediaStyle} />
                 ) : bg.type === 'video' ? (
-                  <video ref={bgMediaRef} src={bg.blobUrl || bg.preview || bg.url || bg.sourcePath} autoPlay loop muted className={`w-full h-full ${objectFitClass} will-change-transform`} style={mediaStyle} />
+                  <video ref={bgMediaRef} src={bgMediaSrc} autoPlay loop muted className={`w-full h-full ${objectFitClass} will-change-transform`} style={mediaStyle} />
                 ) : null}
                 <div className="absolute inset-0 mix-blend-overlay" style={{ backgroundColor: `rgba(0,0,0,${darkness / 100})` }}></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 mix-blend-overlay opacity-50"></div>
                 <span className="absolute bottom-2 left-2 text-white/20 text-[10px] font-mono font-bold tracking-wider z-0 drop-shadow-md">
-                  [SRC] {bg.filename}
+                  [SRC] {bg.filename || bg.name}
                 </span>
               </div>
             );

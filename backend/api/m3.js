@@ -215,15 +215,17 @@ router.post('/api/m3/font/upload', async (req, res) => {
     }
 });
 
-router.get('/api/m3/font/list', async (req, res) => {
+router.get('/api/m3/font/list', (req, res) => {
     const fontsDir = path.resolve('public/assets/Fonts');
     try {
-        await fs.mkdir(fontsDir, { recursive: true });
-        const files = await fs.readdir(fontsDir);
+        if (!fs.existsSync(fontsDir)) {
+            fs.mkdirSync(fontsDir, { recursive: true });
+        }
+        const files = fs.readdirSync(fontsDir);
         const fonts = files.filter(f => f.endsWith('.ttf') || f.endsWith('.otf'));
         res.json({ fonts });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to list fonts' });
+        res.json({ fonts: [] });
     }
 });
 

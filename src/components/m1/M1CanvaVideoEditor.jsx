@@ -263,8 +263,32 @@ export default function M1CanvaVideoEditor({
           )}
         </button>
 
-        {/* Change Video & Rotate Buttons */}
+        {/* Change Video, Rotate & Auto-Zoom 16:9 Buttons */}
         <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+          <button
+            onClick={() => {
+              const rawW = selectedVideo?.metadata?.rawWidth || 1080;
+              const rawH = selectedVideo?.metadata?.rawHeight || 1920;
+              const srcRatio = rawW / rawH;
+              const targetRatio = 16 / 9;
+              let coverScale = 100;
+              if (srcRatio < targetRatio) {
+                coverScale = Math.max(100, Math.round((targetRatio / srcRatio) * 100));
+              } else if (srcRatio > targetRatio) {
+                coverScale = Math.max(100, Math.round((srcRatio / targetRatio) * 100));
+              }
+              updateTransform({ x: 0, y: 0, scale: coverScale, rotation: 0 });
+            }}
+            type="button"
+            className="bg-orange-600/90 hover:bg-orange-500 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded border border-orange-400/60 transition-all shadow-lg flex items-center gap-1 cursor-pointer active:scale-95"
+            title="Auto Zoom Fill 16:9 Frame (Hilangkan Black Bars)"
+          >
+            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+            <span>FULL 16:9</span>
+          </button>
+
           <button
             onClick={handleRotateVideo}
             type="button"

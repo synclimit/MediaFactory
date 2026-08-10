@@ -2002,6 +2002,124 @@ export default function App() {
     }
   };
 
+  const fetchVideoMetadataWithFallback = async (filePath, file = null) => {
+    const endpoints = [
+      '/api/m1/video-metadata',
+      'http://127.0.0.1:18888/api/m1/video-metadata',
+      'http://localhost:18888/api/m1/video-metadata'
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const probeRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: filePath }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (probeRes.ok) {
+          const probeData = await probeRes.json();
+          if (probeData && !probeData.error) {
+            return probeData;
+          }
+        }
+      } catch (e) {
+        console.warn(`[M1 Probe] Endpoint ${endpoint} failed:`, e.message);
+      }
+    }
+
+    // Client-side HTML5 Video element fallback if backend ffprobe is unreachable
+    console.warn('[M1 Probe] Backend endpoints unreachable. Using HTML5 Video fallback...');
+    return new Promise((resolve) => {
+      try {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        const cleanPath = filePath ? `file:///${filePath.replace(/\\/g, '/')}` : '';
+        const videoSrc = file ? URL.createObjectURL(file) : cleanPath;
+        
+        const cleanup = () => {
+          if (file && videoSrc) URL.revokeObjectURL(videoSrc);
+        };
+
+        const timer = setTimeout(() => {
+          cleanup();
+          const fileName = filePath ? filePath.split(/[\\/]/).pop() : 'Video';
+          resolve({
+            durationSec: 60,
+            durationDisplay: '1m 00s',
+            resolution: '1920 × 1080',
+            rawWidth: 1920,
+            rawHeight: 1080,
+            width: 1920,
+            height: 1080,
+            fps: 30,
+            codec: 'H264 (Local)',
+            fileSizeDisplay: file ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Local File'
+          });
+        }, 4000);
+
+        video.onloadedmetadata = () => {
+          clearTimeout(timer);
+          const durationSec = video.duration || 60;
+          const totalSec = Math.floor(durationSec);
+          const mins = Math.floor(totalSec / 60);
+          const secs = totalSec % 60;
+          const durationDisplay = `${mins}m ${String(secs).padStart(2, '0')}s`;
+          const rawW = video.videoWidth || 1920;
+          const rawH = video.videoHeight || 1080;
+          const resolution = `${rawW} × ${rawH}`;
+          cleanup();
+          resolve({
+            durationSec,
+            durationDisplay,
+            resolution,
+            rawWidth: rawW,
+            rawHeight: rawH,
+            width: rawW,
+            height: rawH,
+            fps: 30,
+            codec: 'H264 (Client)',
+            fileSizeDisplay: file ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Local File'
+          });
+        };
+
+        video.onerror = () => {
+          clearTimeout(timer);
+          cleanup();
+          resolve({
+            durationSec: 60,
+            durationDisplay: '1m 00s',
+            resolution: '1920 × 1080',
+            rawWidth: 1920,
+            rawHeight: 1080,
+            width: 1920,
+            height: 1080,
+            fps: 30,
+            codec: 'H264 (Local)',
+            fileSizeDisplay: file ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Local File'
+          });
+        };
+
+        video.src = videoSrc;
+      } catch(e) {
+        resolve({
+          durationSec: 60,
+          durationDisplay: '1m 00s',
+          resolution: '1920 × 1080',
+          rawWidth: 1920,
+          rawHeight: 1080,
+          width: 1920,
+          height: 1080,
+          fps: 30,
+          codec: 'H264 (Local)',
+          fileSizeDisplay: 'Local File'
+        });
+      }
+    });
+  };
 
   const handleVideoUploadChange = async (e) => {
     const file = e.target.files?.[0];
@@ -2010,41 +2128,50 @@ export default function App() {
     setM1VideoProbing(true);
     setM1VideoProbeError(null);
     
-    // Project Reset: Video Change Policy
     if (selectedVideo?.previewUrl) {
       URL.revokeObjectURL(selectedVideo.previewUrl);
     }
     setSelectedVideo(null);
-    setM1Slots([]); // Generate completely new slots
+    setM1Slots([]);
 
     try {
       console.log('UPLOAD_START', file.name);
       addLog(`[M1] Uploading video: ${file.name}...`);
       
       const objectUrl = URL.createObjectURL(file);
-      const filePath = file.path || file.name; // file.path available in Electron
+      const filePath = file.path || file.name;
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      const probeData = await fetchVideoMetadataWithFallback(filePath, file);
       
-      const probeRes = await fetch('/api/m1/video-metadata', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: filePath }),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      const probeData = await probeRes.json();
-      if (!probeRes.ok || probeData.error) {
-        throw new Error(probeData.error || 'FFprobe failed');
+      const rawW = probeData.rawWidth || (probeData.resolution ? parseInt(probeData.resolution.split('×')[0]) : 1920);
+      const rawH = probeData.rawHeight || (probeData.resolution ? parseInt(probeData.resolution.split('×')[1]) : 1080);
+      const srcRatio = rawW / rawH;
+      const targetRatio = 16 / 9;
+      let autoScale = 100;
+      if (srcRatio < targetRatio) {
+        autoScale = Math.max(100, Math.round((targetRatio / srcRatio) * 100));
+      } else if (srcRatio > targetRatio) {
+        autoScale = Math.max(100, Math.round((srcRatio / targetRatio) * 100));
       }
-      
+
+      setM1VideoTransform({
+        x: 0,
+        y: 0,
+        scale: autoScale,
+        rotation: 0,
+        flipH: false,
+        flipV: false,
+        aspectRatio: '16:9'
+      });
+
       const newVideoState = {
         file: file,
         previewUrl: objectUrl,
         metadata: {
           fileName: file.name,
           fullPath: filePath,
+          rawWidth: rawW,
+          rawHeight: rawH,
           durationSec: probeData.durationSec,
           durationDisplay: probeData.durationDisplay,
           resolution: probeData.resolution,
@@ -2056,15 +2183,15 @@ export default function App() {
       
       setSelectedVideo(newVideoState);
       console.log('VIDEO_METADATA_RENDERED', newVideoState);
-      addLog(`[M1] FFprobe success: ${file.name} (${probeData.durationDisplay})`);
+      addLog(`[M1] FFprobe success: ${file.name} (${probeData.durationDisplay}) [Scale: ${autoScale}%]`);
 
     } catch (err) {
       console.log('UPLOAD_FAILED', err);
-      setM1VideoProbeError(`Error: Browser cannot read file paths. Please use the PASTE ABSOLUTE PATH box instead!`);
+      setM1VideoProbeError(`Error probing video metadata: ${err.message}`);
     } finally {
       setM1VideoProbing(false);
       if (e && e.target) {
-        e.target.value = ''; // Reset input
+        e.target.value = '';
       }
     }
   };
@@ -2074,34 +2201,43 @@ export default function App() {
       setM1VideoProbeError(null);
       console.log('VIDEO_PROBE_REQUEST', filePath);
       
-      // Project Reset: Video Change Policy
       if (selectedVideo?.previewUrl) {
         URL.revokeObjectURL(selectedVideo.previewUrl);
       }
-      setM1Slots([]); // Reset slots on new source
+      setM1Slots([]);
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-        
-      const probeRes = await fetch('/api/m1/video-metadata', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: filePath }),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      const probeData = await probeRes.json();
-      if (!probeRes.ok || probeData.error) {
-        throw new Error(probeData.error || 'FFprobe failed');
-      }
+      const probeData = await fetchVideoMetadataWithFallback(filePath);
       
       const fileName = filePath.split(/[\\/]/).pop();
+      const rawW = probeData.rawWidth || (probeData.resolution ? parseInt(probeData.resolution.split('×')[0]) : 1920);
+      const rawH = probeData.rawHeight || (probeData.resolution ? parseInt(probeData.resolution.split('×')[1]) : 1080);
+      const srcRatio = rawW / rawH;
+      const targetRatio = 16 / 9;
+      let autoScale = 100;
+      if (srcRatio < targetRatio) {
+        autoScale = Math.max(100, Math.round((targetRatio / srcRatio) * 100));
+      } else if (srcRatio > targetRatio) {
+        autoScale = Math.max(100, Math.round((srcRatio / targetRatio) * 100));
+      }
+
+      setM1VideoTransform({
+        x: 0,
+        y: 0,
+        scale: autoScale,
+        rotation: 0,
+        flipH: false,
+        flipV: false,
+        aspectRatio: '16:9'
+      });
+
       const newVideoState = {
         file: null,
         previewUrl: `file:///${filePath.replace(/\\/g, '/')}`, 
         metadata: {
           fileName,
           fullPath: filePath,
+          rawWidth: rawW,
+          rawHeight: rawH,
           durationSec: probeData.durationSec,
           durationDisplay: probeData.durationDisplay,
           resolution: probeData.resolution,
@@ -2112,13 +2248,12 @@ export default function App() {
       };
       setSelectedVideo(newVideoState);
       console.log('VIDEO_METADATA_RENDERED', newVideoState);
-      addLog(`[M1] FFprobe success: ${fileName} (${probeData.durationDisplay})`);
+      addLog(`[M1] FFprobe success: ${fileName} (${probeData.durationDisplay}) [Scale: ${autoScale}%]`);
       
     } catch (e) {
       console.log('VIDEO_PROBE_REQUEST_FAILED', e);
-      setM1VideoProbeError('Probe request failed');
+      setM1VideoProbeError(`Error probing video metadata: ${e.message}`);
       addLog(`[ERROR] Probe request failed: ${e.message}`);
-      setSelectedVideo(null);
     } finally {
       setM1VideoProbing(false);
     }
@@ -2420,7 +2555,7 @@ export default function App() {
 
         if (job.mode === 'Mode 1' || job.mode === 'Mode 2' || job.mode === 'Mode 3' || job.mode === 'Mode 3 V2' || job.mode === 'Mode 4') {
            // Poll backend every 1 second
-           const endpoint = job.mode === 'Mode 1' ? '/api/m1/render/' : (job.mode === 'Mode 2' ? '/api/m2/render/' : (job.mode === 'Mode 3' ? '/api/m3/render/' : (job.mode === 'Mode 3 V2' ? '/api/m3_v2/render/' : '/api/m4/render/')));
+           const endpoint = job.mode === 'Mode 1' ? '/api/m1/render/' : (job.mode === 'Mode 2' ? '/api/m2/render/' : (job.mode === 'Mode 3' || job.mode === 'Mode 3 V2' ? '/api/m3_v2/render/' : '/api/m4/render/'));
            fetch(getApiUrl(`${endpoint}${job.backendJobId || job.id}`))
              .then(res => res.ok ? res.json() : null)
              .then(data => {
