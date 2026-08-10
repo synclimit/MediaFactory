@@ -19,8 +19,44 @@ export default function BackgroundPanel({
         fileInput.onchange = async (e) => {
             const file = e.target.files[0];
             if (file) {
+                const blobUrl = URL.createObjectURL(file);
+                const localPath = file.path || file.name;
+                const newId = `bg_${Date.now()}`;
+                
+                const newBg = {
+                    id: newId,
+                    type: type,
+                    blobUrl: blobUrl,
+                    url: blobUrl,
+                    preview: blobUrl,
+                    sourcePath: localPath,
+                    uri: localPath,
+                    filename: file.name,
+                    settings: {
+                        overlayDarkness: 30,
+                        blurAmount: 0,
+                        scaleMode: 'Cover (Fill)',
+                        backgroundZoom: 0,
+                        horizontalPosition: 0,
+                        verticalPosition: 0,
+                        danceMode: 'Ringan (Pixel) — cepat di CPU',
+                        danceStyle: 'Subtle Sway',
+                        danceIntensity: 100,
+                        danceReactLevel: 45,
+                        danceReactsTo: 'Whole song',
+                        danceSmoothing: 0.70
+                    }
+                };
+                
+                if (setM3BgPool) {
+                    setM3BgPool(prev => [...(prev || []), newBg]);
+                }
+                if (setM3SelectedObjectId) {
+                    setM3SelectedObjectId(newId);
+                }
+
                 try {
-                    const response = await fetch('/api/v1/assets/upload', {
+                    const response = await fetch('http://localhost:18888/api/v1/assets/upload', {
                         method: 'POST',
                         headers: {
                             'x-file-name': encodeURIComponent(file.name),
@@ -29,44 +65,13 @@ export default function BackgroundPanel({
                         },
                         body: file
                     });
-                    
                     const json = await response.json();
                     if (json.success && json.data) {
-                        const url = `/api/m2/stream?uri=${encodeURIComponent(json.data.path)}`;
-                        const newId = `bg_${Date.now()}`;
-                        const newBg = {
-                            id: newId,
-                            type: type,
-                            url: url,
-                            preview: url,
-                            sourcePath: json.data.path,
-                            uri: json.data.path,
-                            filename: file.name,
-                            settings: {
-                                overlayDarkness: 30,
-                                blurAmount: 0,
-                                scaleMode: 'Cover (Fill)',
-                                backgroundZoom: 0,
-                                horizontalPosition: 0,
-                                verticalPosition: 0,
-                                danceMode: 'Ringan (Pixel) — cepat di CPU',
-                                danceStyle: 'Subtle Sway',
-                                danceIntensity: 100,
-                                danceReactLevel: 45,
-                                danceReactsTo: 'Whole song',
-                                danceSmoothing: 0.70
-                            }
-                        };
-                        
-                        if (setM3BgPool) {
-                            setM3BgPool(prev => [...prev, newBg]);
-                        }
-                        if (setM3SelectedObjectId) {
-                            setM3SelectedObjectId(newId);
-                        }
+                        newBg.sourcePath = json.data.path;
+                        newBg.uri = json.data.path;
                     }
                 } catch (err) {
-                    console.error("Failed to upload background:", err);
+                    console.warn("Background upload fallback to local path:", err);
                 }
             }
             document.body.removeChild(fileInput);

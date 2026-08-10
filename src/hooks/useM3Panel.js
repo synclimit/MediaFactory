@@ -22,7 +22,8 @@ export function useM3Panel(panelName, baseRoute = '/api/v1/m3') {
         _settingsHash: null
     });
 
-    const endpoint = `${baseRoute}/${panelName.toLowerCase()}`;
+    const apiHost = typeof window !== 'undefined' && window.location.origin.startsWith('http') ? '' : 'http://localhost:18888';
+    const endpoint = `${apiHost}${baseRoute}/${panelName.toLowerCase()}`;
 
     const updateState = (updates) => {
         setState(prev => ({ ...prev, ...updates }));
@@ -39,7 +40,11 @@ export function useM3Panel(panelName, baseRoute = '/api/v1/m3') {
         updateState({ loading: true, error: null });
 
         try {
-            const res = await fetch(`${endpoint}/initialize`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+            const res = await fetch(`${endpoint}/initialize`, { signal: controller.signal });
+            clearTimeout(timeoutId);
             const json = await res.json();
 
             if (json.success) {
