@@ -18,6 +18,7 @@ app.use(require('./api/m2.js').router);
 app.use(require('./api/m2-splitter.js').router);
 app.use(require('./api/m2-mode3-assets.js'));
 app.use(require('./api/m3.js'));
+app.use('/api/m3_v2', require('./api/m3_v2.js'));
 app.use(require('./api/m4.js').router);
 app.use(require('./api/m5.js').router);
 app.use(require('./api/whisper.js'));
@@ -29,10 +30,31 @@ app.use('/api/overlays', require('./routes/overlays.js'));
 // Serve static frontend in production
 const path = require('path');
 const distPath = path.join(__dirname, '..', 'dist');
-app.use(express.static(distPath));
+app.use(express.static(distPath, {
+    setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    }
+}));
 
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'MediaFactory Backend is running' });
+app.get('/', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    const indexPath = path.join(distPath, 'index.html');
+    if (require('fs').existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.send('MediaFactory Backend running.');
+    }
+});
+
+app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        const indexPath = path.join(distPath, 'index.html');
+        if (require('fs').existsSync(indexPath)) {
+            return res.sendFile(indexPath);
+        }
+    }
+    next();
 });
 
 function startServer(port = 18888) {

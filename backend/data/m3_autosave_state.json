@@ -1,0 +1,124 @@
+{
+  "m3BgPool": [
+    {
+      "id": "bg_1786111433881",
+      "type": "image",
+      "url": "/api/m2/stream?uri=Assets%2Fbackground%2F4283618c-5497-4ecc-b17b-82d5db87d3e7.png",
+      "preview": "/api/m2/stream?uri=Assets%2Fbackground%2F4283618c-5497-4ecc-b17b-82d5db87d3e7.png",
+      "sourcePath": "Assets/background/4283618c-5497-4ecc-b17b-82d5db87d3e7.png",
+      "uri": "Assets/background/4283618c-5497-4ecc-b17b-82d5db87d3e7.png",
+      "filename": "Gemini_Generated_Image_fxer4afxer4afxer.png",
+      "settings": {
+        "overlayDarkness": 30,
+        "blurAmount": 0,
+        "scaleMode": "Cover (Fill)",
+        "backgroundZoom": 0,
+        "horizontalPosition": 0,
+        "verticalPosition": 0,
+        "danceMode": "Ringan (Pixel) — cepat di CPU",
+        "danceStyle": "Subtle Sway",
+        "danceIntensity": 100,
+        "danceReactLevel": 45,
+        "danceReactsTo": "Whole song",
+        "danceSmoothing": 0.7
+      }
+    }
+  ],
+  "m3AudioTracks": [
+    {
+      "id": "trk-1786267646425-0",
+      "title": "sigmamusicart-football-football-music-551346",
+      "artist": "Audio File",
+      "duration": "00:59",
+      "durationSec": 59.112,
+      "size": 1891584,
+      "thumbnail": "",
+      "sourceType": "file",
+      "sourcePath": "Assets/audio/d3107b4a-6493-4325-ab98-80fafbc4b29b.mp3",
+      "blobUrl": "/api/m2/stream?uri=Assets%2Faudio%2Fd3107b4a-6493-4325-ab98-80fafbc4b29b.mp3"
+    }
+  ],
+  "m3Objects": [
+    {
+      "id": "bg-1",
+      "canvasMode": "composer",
+      "type": "background",
+      "name": "Background",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "rotation": 0,
+      "opacity": 100,
+      "visible": true,
+      "locked": true,
+      "layer": 0
+    },
+    {
+      "id": "t-bg-1",
+      "canvasMode": "thumbnail",
+      "type": "background",
+      "name": "Thumbnail Background",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "rotation": 0,
+      "opacity": 100,
+      "visible": true,
+      "locked": true,
+      "layer": 0
+    },
+    {
+      "id": "visualizer2-1786316974043",
+      "canvasMode": "composer",
+      "visible": true,
+      "locked": false,
+      "layer": 2,
+      "type": "visualizer2",
+      "name": "Visualizer 2 (CIRCULAR_PULSE)",
+      "mode": "CIRCULAR_PULSE",
+      "primaryColor": "#00f2fe",
+      "secondaryColor": "#4facfe",
+      "x": 500,
+      "y": 400,
+      "width": 450,
+      "height": 450,
+      "opacity": 100
+    },
+    {
+      "id": "visualizer2-1786316975162",
+      "canvasMode": "composer",
+      "visible": true,
+      "locked": false,
+      "layer": 3,
+      "type": "visualizer2",
+      "name": "Visualizer 2 (CYBERPUNK_WAVEFORM)",
+      "mode": "CYBERPUNK_WAVEFORM",
+      "primaryColor": "#00f2fe",
+      "secondaryColor": "#4facfe",
+      "x": 960,
+      "y": 540,
+      "width": 800,
+      "height": 200,
+      "opacity": 100
+    },
+    {
+      "id": "visualizer2-1786316976179",
+      "canvasMode": "composer",
+      "visible": true,
+      "locked": false,
+      "layer": 4,
+      "type": "visualizer2",
+      "name": "Visualizer 2 (SPECTRUM_BARS)",
+      "mode": "SPECTRUM_BARS",
+      "primaryColor": "#00f2fe",
+      "secondaryColor": "#4facfe",
+      "x": 960,
+      "y": 920,
+      "width": 1000,
+      "height": 250,
+      "opacity": 100
+    }
+  ]
+}

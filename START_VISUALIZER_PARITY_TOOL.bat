@@ -9,4 +9,4 @@ echo.
 
 cd /d "D:\MediaFactory"
 call npx kill-port 5173 5174 18888 >nul 2>&1
-call npx electron .
+call npx concurrently "npx vite" "npx wait-on http://localhost:5173 && npx electron ."

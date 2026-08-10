@@ -128,15 +128,19 @@ app.on('window-all-closed', () => {
 let pendingUpdateExePath = null;
 let latestReleaseAssetInfo = null;
 
+function extractSemver(v) {
+    if (!v) return [0, 0, 0];
+    const match = v.toString().match(/(\d+)\.(\d+)\.(\d+)/);
+    if (!match) return [0, 0, 0];
+    return [parseInt(match[1], 10), parseInt(match[2], 10), parseInt(match[3], 10)];
+}
+
 function isVersionGreater(v1, v2) {
-    const clean = (v) => (v || '').toString().replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
-    const p1 = clean(v1);
-    const p2 = clean(v2);
-    for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
-        const n1 = p1[i] || 0;
-        const n2 = p2[i] || 0;
-        if (n1 > n2) return true;
-        if (n1 < n2) return false;
+    const p1 = extractSemver(v1);
+    const p2 = extractSemver(v2);
+    for (let i = 0; i < 3; i++) {
+        if (p1[i] > p2[i]) return true;
+        if (p1[i] < p2[i]) return false;
     }
     return false;
 }
@@ -184,20 +188,27 @@ function checkGitHubReleasesREST() {
     });
 }
 
-function downloadReleaseAsset(assetUrl, destPath, onProgress) {
+function downloadReleaseAsset(targetUrl, destPath, onProgress) {
     return new Promise((resolve, reject) => {
         const token = getUpdateToken();
         const https = require('https');
         const fs = require('fs');
 
-        const doDownload = (url, headers) => {
+        const doDownload = (url, headers, redirectDepth = 0) => {
+            if (redirectDepth > 10) return reject(new Error('Too many redirects'));
+            
             const req = https.request(url, { method: 'GET', headers }, (res) => {
                 if (res.statusCode === 302 || res.statusCode === 301) {
                     const redirectUrl = res.headers.location;
-                    // When following redirect to S3/CDN, DO NOT send GitHub Authorization header to prevent S3 400/403 error
-                    return doDownload(redirectUrl, { 'User-Agent': 'MediaFactoryApp' });
+                    // When following redirect to S3/CDN, DO NOT send GitHub Authorization header
+                    return doDownload(redirectUrl, { 'User-Agent': 'MediaFactoryApp' }, redirectDepth + 1);
                 }
                 if (res.statusCode !== 200) {
+                    // If auth header failed with 401/403 on asset download, retry without auth header for public releases
+                    if ((res.statusCode === 401 || res.statusCode === 403) && headers['Authorization']) {
+                        console.warn('[AutoUpdater] Asset download with token returned ' + res.statusCode + ', retrying unauthenticated...');
+                        return doDownload(url, { 'User-Agent': 'MediaFactoryApp' }, redirectDepth + 1);
+                    }
                     return reject(new Error(`HTTP ${res.statusCode}`));
                 }
                 const totalBytes = parseInt(res.headers['content-length'] || '0', 10);
@@ -220,11 +231,13 @@ function downloadReleaseAsset(assetUrl, destPath, onProgress) {
             req.end();
         };
 
-        doDownload(assetUrl, {
-            'User-Agent': 'MediaFactoryApp',
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/octet-stream'
-        });
+        const headers = { 'User-Agent': 'MediaFactoryApp' };
+        if (targetUrl.includes('api.github.com') && token) {
+            headers['Authorization'] = `Bearer ${token}`;
+            headers['Accept'] = 'application/octet-stream';
+        }
+
+        doDownload(targetUrl, headers);
     });
 }
 
@@ -238,6 +251,7 @@ async function performUpdateCheck() {
         
         // Find newest release greater than currentVer that contains a valid .exe asset
         const validRelease = releases.find(rel => {
+            if (rel.draft) return false;
             const tag = rel.tag_name || rel.name || '';
             const hasExe = (rel.assets || []).some(a => a.name.endsWith('.exe'));
             const isGreater = isVersionGreater(tag, currentVer);
@@ -248,8 +262,9 @@ async function performUpdateCheck() {
         if (validRelease) {
             const tag = validRelease.tag_name || validRelease.name;
             const exeAsset = validRelease.assets.find(a => a.name.endsWith('.exe'));
-            latestReleaseAssetInfo = { tag: tag, assetUrl: exeAsset.url, name: exeAsset.name };
-            console.log(`[AutoUpdater] Update available! Tag: ${tag}, Asset: ${exeAsset.name}`);
+            const downloadUrl = exeAsset.browser_download_url || exeAsset.url;
+            latestReleaseAssetInfo = { tag: tag, assetUrl: downloadUrl, name: exeAsset.name };
+            console.log(`[AutoUpdater] Update available! Tag: ${tag}, Asset: ${exeAsset.name}, Download URL: ${downloadUrl}`);
             if (mainWindow) {
                 mainWindow.webContents.send('update-status', { status: 'available', version: tag });
             }
@@ -287,12 +302,21 @@ async function performUpdateDownload() {
 
 ipcMain.on('check-for-updates', performUpdateCheck);
 ipcMain.on('download-update', performUpdateDownload);
-ipcMain.on('install-update', () => {
+ipcMain.on('install-update', async () => {
     if (pendingUpdateExePath && require('fs').existsSync(pendingUpdateExePath)) {
         console.log(`[AutoUpdater] Launching installer: ${pendingUpdateExePath}`);
-        const { spawn } = require('child_process');
-        spawn(pendingUpdateExePath, [], { detached: true, stdio: 'ignore' });
-        app.quit();
+        const { shell } = require('electron');
+        try {
+            await shell.openPath(pendingUpdateExePath);
+            setTimeout(() => app.quit(), 1000);
+        } catch (e) {
+            console.error('[AutoUpdater] shell.openPath failed, using start fallback:', e);
+            const { exec } = require('child_process');
+            exec(`start "" "${pendingUpdateExePath}"`, (err) => {
+                if (err) console.error('[AutoUpdater] exec start failed:', err);
+            });
+            setTimeout(() => app.quit(), 1000);
+        }
     } else {
         performUpdateDownload();
     }

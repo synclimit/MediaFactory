@@ -5,6 +5,8 @@ import SocialWidgetRenderer from '../../../components/m3/widgets/SocialWidgetRen
 import RealtimeEffectRenderer from '../../../components/m3/renderers/RealtimeEffectRenderer';
 import VisualizerRenderer from '../../../components/m3/widgets/VisualizerRenderer';
 import Visualizer2Renderer from '../../../components/m3/widgets/Visualizer2Renderer';
+import Visualizer3Renderer from '../../../components/m3/widgets/Visualizer3Renderer';
+import VisualizerV4Renderer from '../../../components/m3_v2/widgets/VisualizerV4Renderer';
 import ParticleRenderer from '../../../components/m3/widgets/ParticleRenderer';
 import IntroSequenceRenderer from '../../../components/m3/widgets/IntroSequenceRenderer';
 import ProceduralSpeaker from '../../../components/m3/overlays/ProceduralSpeaker';
@@ -216,7 +218,7 @@ export default function MediaFactoryRenderer({
                 const isSelected = m3SelectedObjectId === el.id;
                 const isInteractive = !isParticleOrEffect && !el.locked;
 
-                const isVisualizerObj = el.type === 'visualizer' || el.type === 'visualizer2';
+                const isVisualizerObj = el.type === 'visualizer' || el.type === 'visualizer2' || el.type === 'visualizer3';
                 const computedLeft = isVisualizerObj && (el.x === 0 || !el.x || el.x === '0' || el.x === '0px')
                     ? '50%'
                     : (typeof el.x === 'string' && el.x.includes('%') ? el.x : (el.x || 0) + 'px');
@@ -324,6 +326,16 @@ export default function MediaFactoryRenderer({
                             {el.type === 'visualizer2' && (
                                 <div className="w-full h-full">
                                     <Visualizer2Renderer config={el} id={el.id} currentTime={currentTime} audioState={activeAudioState} />
+                                </div>
+                            )}
+                            {el.type === 'visualizer3' && (
+                                <div className="w-full h-full">
+                                    <Visualizer3Renderer config={el} id={el.id} currentTime={currentTime} audioState={activeAudioState} />
+                                </div>
+                            )}
+                            {el.type === 'visualizer4' && (
+                                <div className="w-full h-full">
+                                    <VisualizerV4Renderer object={el} currentTimeSec={currentTime} width={el.width} height={el.height} />
                                 </div>
                             )}
                             {el.type === 'particle' && (

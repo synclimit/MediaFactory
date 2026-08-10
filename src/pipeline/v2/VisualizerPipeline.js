@@ -4,6 +4,7 @@
  * Pure Delegator -> Fetches Plugin from Registry and renders via RenderContext.
  */
 
+import { IVisualizerPlugin } from '../../engine/v2/contracts/IVisualizerPlugin.js';
 import { VisualizerRegistry } from '../../engine/v2/registry/VisualizerRegistry.js';
 import { createRenderContext } from '../../engine/v2/contracts/RenderContext.js';
 import { CircularPulsePlugin } from '../../engine/v2/plugins/CircularPulsePlugin.js';

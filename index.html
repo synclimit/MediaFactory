@@ -23,7 +23,7 @@
         errorDiv.style.padding = '20px';
         errorDiv.style.zIndex = '999999';
         errorDiv.style.fontFamily = 'monospace';
-        errorDiv.innerHTML = '<h2>CRITICAL ERROR</h2><p>' + event.message + '</p><pre>' + (event.error ? event.error.stack : '') + '</pre>';
+        errorDiv.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;"><h2 style="margin:0;font-size:16px;">CRITICAL ERROR</h2><button onclick="this.parentElement.parentElement.remove()" style="background:#fff;color:#000;border:none;padding:4px 12px;cursor:pointer;border-radius:4px;font-weight:bold;">Tutup X</button></div><p style="margin:8px 0 0 0;">' + event.message + '</p><pre style="max-height:100px;overflow:auto;margin:8px 0 0 0;">' + (event.error ? event.error.stack : '') + '</pre>';
         document.body.appendChild(errorDiv);
       });
       window.addEventListener('unhandledrejection', function(event) {

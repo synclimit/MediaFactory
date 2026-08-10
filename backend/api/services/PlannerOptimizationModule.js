@@ -145,8 +145,9 @@ class PlannerOptimizationModule {
       fullEncodes: 0
     };
 
-    const hasOverlays = objects && objects.some(o => o && (o.type === 'overlay' || o.type === 'image' || o.type === 'video' || o.type === 'visualizer') && o.visible !== false);
-    const hasVisualizer = objects && objects.some(o => o && o.type === 'visualizer' && o.visible !== false);
+    const isVisualizerType = (t) => t === 'visualizer' || t === 'visualizer2' || t === 'visualizer3' || t === 'spectrum' || t === 'audio-visualizer';
+    const hasOverlays = objects && objects.some(o => o && (o.type === 'overlay' || o.type === 'image' || o.type === 'video' || isVisualizerType(o.type)) && o.visible !== false);
+    const hasVisualizer = objects && objects.some(o => o && isVisualizerType(o.type) && o.visible !== false);
 
     // 1. Compute SHA-256 Fingerprints
     const sourceFp = bgPath && !bgPath.startsWith('http') ? await FastRenderCacheManager.computeSourceFingerprint(bgPath) : FastRenderCacheManager.sha256('virtual_bg');

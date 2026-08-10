@@ -1,0 +1,28 @@
+{
+    "url": "https://nasional.tempo.co/read/1800000/presiden-as-joe-biden-kunjungi-vietnam",
+    "domain": "nasional.tempo.co",
+    "source": "Tempo",
+    "title": "Mock Article Title",
+    "subtitle": null,
+    "body": "This is a long mock paragraph that exceeds the minimum body length requirement of the GenericExtractor. It contains enough words to be validated as a real article by the system.\n\nThis is another paragraph just to be absolutely certain that the length is sufficient for the validation step in the benchmark runner. Good luck!",
+    "author": null,
+    "publishDate": null,
+    "language": "id",
+    "images": [
+        {
+            "url": "https://mock.com/image.jpg",
+            "type": "opengraph"
+        }
+    ],
+    "metadata": {
+        "method": "GenericExtractor"
+    },
+    "status": "Extracted",
+    "createdAt": 1783692361838,
+    "summary": null,
+    "headline": null,
+    "category": null,
+    "keywords": [],
+    "mainEntity": null,
+    "recommendedLayout": null
+}

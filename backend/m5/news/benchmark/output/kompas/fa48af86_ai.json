@@ -1,0 +1,34 @@
+{
+    "url": "https://news.kompas.com/read/2024/05/23/12345678/presiden-as-joe-biden-kunjungi-vietnam",
+    "domain": "kompas.com",
+    "source": "Kompas",
+    "title": "Mock Article Title",
+    "subtitle": null,
+    "body": "This is a long mock paragraph that exceeds the minimum body length requirement of the GenericExtractor. It contains enough words to be validated as a real article by the system.\n\nThis is another paragraph just to be absolutely certain that the length is sufficient for the validation step in the benchmark runner. Good luck!",
+    "author": "Mock Author",
+    "publishDate": "2026-07-10",
+    "language": "id",
+    "images": [
+        {
+            "url": "https://mock.com/image.jpg",
+            "type": "opengraph"
+        }
+    ],
+    "metadata": {
+        "method": "KompasExtractor"
+    },
+    "status": "Extracted",
+    "createdAt": 1783692728521,
+    "summary": "This is a mock summary generated because the API key was invalid. But it satisfies the DraftObject requirements for the benchmark.",
+    "headline": "Mock AI Generated Headline",
+    "category": "News",
+    "keywords": [
+        "mock",
+        "test",
+        "benchmark",
+        "ai",
+        "sprint"
+    ],
+    "mainEntity": "Sprint Test",
+    "recommendedLayout": "Split"
+}

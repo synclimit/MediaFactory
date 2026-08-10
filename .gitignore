@@ -35,8 +35,8 @@ Cache/
 Test_Output/
 dummy_bg.jpg
 dummy_audio.mp3
-*.zip
-m3 fast render/
-m3 render batch/
-m3 render normal/
+dist-release/
+backend/bin/
+backend/ffmpeg/
+*.exe
 production_report.*

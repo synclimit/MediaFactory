@@ -889,7 +889,7 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
     }
   }
 
-  if (!resolvedOverlays.some(item => item.type === 'visualizer' || item.type === 'visualizer2')) {
+  if (!resolvedOverlays.some(item => item.type === 'visualizer' || item.type === 'visualizer2' || item.type === 'visualizer3')) {
     resolvedOverlays.push({
       type: 'visualizer',
       ov: {
@@ -907,7 +907,7 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
   // Ensure file overlays (images/backgrounds) are processed first, and visualizer is overlaid LAST on top of everything
   const sortedOverlays = [
     ...resolvedOverlays.filter(item => item.type === 'file'),
-    ...resolvedOverlays.filter(item => item.type === 'visualizer' || item.type === 'visualizer2')
+    ...resolvedOverlays.filter(item => item.type === 'visualizer' || item.type === 'visualizer2' || item.type === 'visualizer3')
   ];
 
   const fileOverlays = sortedOverlays.filter(item => item.type === 'file');
@@ -932,15 +932,21 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
     if (item.type === 'visualizer' || item.type === 'visualizer2' || item.type === 'visualizer3') {
       const ov = item.ov;
       
-      let rawW = parseInt(ov.width);
-      if (isNaN(rawW) || rawW <= 0) rawW = 600;
-      let rawH = parseInt(ov.height);
-      if (isNaN(rawH) || rawH <= 0) rawH = (ov.mode === 'SPECTRUM_BARS' ? 250 : 600);
+      const parseStageCoord = (val, stageDim, defaultVal) => {
+        if (val === undefined || val === null || val === '') return defaultVal;
+        const str = String(val).trim();
+        if (str.endsWith('%')) {
+          const pct = parseFloat(str);
+          return isNaN(pct) ? defaultVal : (pct / 100) * stageDim;
+        }
+        const num = parseFloat(str);
+        return isNaN(num) ? defaultVal : num;
+      };
 
-      let rawCx = parseInt(ov.x);
-      if (isNaN(rawCx) || rawCx === 0) rawCx = 960;
-      let rawCy = parseInt(ov.y);
-      if (isNaN(rawCy)) rawCy = 940;
+      let rawW = parseStageCoord(ov.width, 1920, 600);
+      let rawH = parseStageCoord(ov.height, 1080, 300);
+      let rawCx = parseStageCoord(ov.x, 1920, 960);
+      let rawCy = parseStageCoord(ov.y, 1080, 540);
 
       let w = Math.round(rawW * scaleX);
       let h = Math.round(rawH * scaleY);
@@ -953,7 +959,7 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
       const primaryColor = ov.primaryColor || (ov.colorLeft ? (ov.colorLeft.startsWith('#') ? ov.colorLeft : `#${ov.colorLeft}`) : '#00f2fe');
       const secondaryColor = ov.secondaryColor || (ov.colorRight ? (ov.colorRight.startsWith('#') ? ov.colorRight : `#${ov.colorRight}`) : '#4facfe');
 
-      const col1 = parseColorRgba(primaryColor, '00f2fe');
+const col1 = parseColorRgba(primaryColor, '00f2fe');
       const col2 = parseColorRgba(secondaryColor, '4facfe');
 
       const uniqueObjId = ov.id || `viz_${overlayIdx}`;
@@ -963,6 +969,9 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
       const { createCanvas } = require('canvas');
       const PipelineEngine = await getVisualizerPipelineV3();
       const exportCanvas = createCanvas(w, h);
+      const exportCtx = exportCanvas.getContext('2d');
+      const nativeCanvas = createCanvas(1920, 1080);
+      const nativeCtx = nativeCanvas.getContext('2d');
 
       let pluginIdMode = 'spectrum-bars';
       const modeStr = (ov.mode || ov.pluginId || ov.visualizerId || ov.name || '').toLowerCase();
@@ -974,71 +983,75 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
       const durationSec = totalDur || 10;
       const totalFramesToRender = Math.max(30, Math.ceil(durationSec * fps));
 
+      const v3Config = {
+        colorLeft: ov.colorLeft || ov.primaryColor || '#AB55F7',
+        colorRight: ov.colorRight || ov.secondaryColor || '#F59E0B',
+        colorMid: ov.colorMid || '#06B6D4',
+        colorMode: ov.colorMode || '2 Gradient',
+        frequencyOrder: ov.frequencyOrder || 'Bass -> Treble',
+        barCount: parseInt(ov.barCount) || 64,
+        thickness: parseInt(ov.thickness) || parseInt(ov.barThickness) || 4,
+        ...ov
+      };
+
       for (let f = 0; f < totalFramesToRender; f++) {
         const frameTimestamp = (f / fps) % 3600;
-        const time = frameTimestamp;
-        const numBins = 64;
+
+        // PARITY FIX: Use the SAME deterministic FFT formula as Visualizer3Renderer.jsx (frontend).
+        // This is the single source of truth for audio visualization data.
+        // DO NOT change this formula without updating frontend generateDeterministicFFT identically.
+        const numBins = parseInt(v3Config.barCount) || 64;
+        const frameCount = totalFramesToRender;
+        const normalizedLoopTime = (f % frameCount) / frameCount;
+        const tAngle = normalizedLoopTime * Math.PI * 2;
+
         const frequencies = new Float32Array(numBins);
-        const waveform = new Float32Array(numBins);
-        
-        const bpm = 128;
-        const beatPeriod = 60 / bpm;
-        const beatPhase = (time % beatPeriod) / beatPeriod;
-        const kickPulse = Math.max(0, 1 - beatPhase * 3);
-        
-        for (let i = 0; i < 10; i++) {
-          const bassBase = 0.3 + 0.7 * Math.sin(time * 2 + i * 0.5);
-          frequencies[i] = Math.min(1.0, bassBase + kickPulse * 0.6);
-        }
-        
-        for (let i = 10; i < 40; i++) {
-          const midVal = 0.2 + 0.5 * Math.sin(time * 5 + i * 0.2) * Math.cos(time * 1.5);
-          frequencies[i] = Math.abs(midVal);
-        }
-        
-        for (let i = 40; i < numBins; i++) {
-          const hiVal = 0.1 + 0.4 * Math.sin(time * 12 + i * 0.8) * (1 - beatPhase);
-          frequencies[i] = Math.max(0.05, hiVal);
-        }
-
         for (let i = 0; i < numBins; i++) {
-          waveform[i] = Math.sin(time * 20 + (i / numBins) * Math.PI * 4) * 0.5;
+          const freqNorm = i / numBins;
+          const barPhase = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
+          const barSeed = barPhase - Math.floor(barPhase);
+          const oct1 = Math.sin(tAngle * 3 + barSeed * 6.28);
+          const oct2 = Math.cos(tAngle * 7 + freqNorm * 18.84 + barSeed * 3.14);
+          const envelope = Math.exp(-freqNorm * 2.2);
+          const rawVal = (0.5 * oct1 + 0.5 * oct2) * envelope;
+          frequencies[i] = Math.min(1.0, Math.max(0.05, Math.abs(rawVal)));
         }
 
-        let sum = 0;
-        for (let i = 0; i < numBins; i++) sum += frequencies[i];
-        const avg = sum / numBins;
+        const waveform = new Float32Array(numBins);
+        for (let i = 0; i < numBins; i++) {
+          waveform[i] = Math.sin(frameTimestamp * 20 + (i / numBins) * Math.PI * 4) * 0.5;
+        }
+
+        let energySum = 0;
+        for (let i = 0; i < numBins; i++) energySum += frequencies[i];
+        const energy = energySum / numBins;
 
         const audioState = {
-          time,
+          time: frameTimestamp,
           subBass: frequencies[0],
-          bass: frequencies[2],
-          lowMid: frequencies[12],
-          mid: frequencies[25],
-          highMid: frequencies[40],
-          treble: frequencies[55],
-          energy: avg,
-          RMS: avg,
-          kick: kickPulse > 0.4,
-          snare: frequencies[35] > 0.4,
-          beatStrength: kickPulse,
-          spectralFlux: avg,
+          bass: frequencies[Math.min(2, numBins - 1)],
+          lowMid: frequencies[Math.min(12, numBins - 1)],
+          mid: frequencies[Math.min(25, numBins - 1)],
+          highMid: frequencies[Math.min(40, numBins - 1)],
+          treble: frequencies[Math.min(55, numBins - 1)],
+          energy,
+          RMS: energy,
+          kick: false,
+          snare: false,
+          beatStrength: energy,
+          spectralFlux: energy,
           frequencies,
           waveform
         };
 
-        const v3Config = {
-          colorLeft: ov.colorLeft || ov.primaryColor || '#AB55F7',
-          colorRight: ov.colorRight || ov.secondaryColor || '#F59E0B',
-          colorMid: ov.colorMid || '#06B6D4',
-          colorMode: ov.colorMode || '2 Gradient',
-          frequencyOrder: ov.frequencyOrder || 'Bass -> Treble',
-          barCount: parseInt(ov.barCount) || 64,
-          thickness: parseInt(ov.thickness) || parseInt(ov.barThickness) || 4,
-          ...ov
-        };
-
+        // PARITY FIX: Both Live Editor (Visualizer3Renderer.jsx) and Export (m3-render.js) render directly on canvas of size w x h (bounding box).
+        exportCtx.clearRect(0, 0, w, h);
         PipelineEngine.renderPipelineFrame(exportCanvas, frameTimestamp, audioState, pluginIdMode, v3Config);
+
+        // EVENT-LOOP UNBLOCK: Yield to Node.js event loop every 5 frames so Electron processes window messages and UI stays smooth and responsive.
+        if (f % 5 === 0) {
+          await new Promise(resolve => setImmediate(resolve));
+        }
 
         const framePath = path.join(viz2CacheDir, `v3_viz_${String(f).padStart(6, '0')}.png`);
         fsSync.writeFileSync(framePath, exportCanvas.toBuffer('image/png'));
@@ -1054,8 +1067,16 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
       const ov = item.ov;
       const speed = ov.playbackRate || 1.0;
       const opacity = (ov.opacity !== undefined ? ov.opacity : 100) / 100;
-      const ovX = Math.round((parseInt(ov.x) || 0) * scaleX);
-      const ovY = Math.round((parseInt(ov.y) || 0) * scaleY);
+      const rawCx = parseStageCoord(ov.x, 1920, 960);
+      const rawCy = parseStageCoord(ov.y, 1080, 540);
+      const rawW = parseStageCoord(ov.width, 1920, 0);
+      const rawH = parseStageCoord(ov.height, 1080, 0);
+      const cx = Math.round(rawCx * scaleX);
+      const cy = Math.round(rawCy * scaleY);
+      const w = Math.round(rawW * scaleX);
+      const h = Math.round(rawH * scaleY);
+      const ovX = w > 0 ? Math.round(cx - (w / 2)) : cx;
+      const ovY = h > 0 ? Math.round(cy - (h / 2)) : cy;
 
       filter += `[${fileInputIdx}:v]setpts=PTS/${speed},format=rgba,colorchannelmixer=aa=${opacity}[ov${overlayIdx}];`;
       filter += `${lastOutput}[ov${overlayIdx}]overlay=x=${ovX}:y=${ovY}:eof_action=repeat[bg${overlayIdx}];`;
@@ -1107,7 +1128,7 @@ function detectAndNormalizeChannelOrder(buf) {
 }
 
 async function generateSingleEngineCanvasClip(job, imagePath, objects, enc, shortBgPath) {
-  const visObj = (objects && objects.find(o => o && (o.type === 'visualizer' || o.type === 'visualizer2'))) || {};
+  const visObj = (objects && objects.find(o => o && (o.type === 'visualizer' || o.type === 'visualizer2' || o.type === 'visualizer3'))) || {};
   const width = enc.targetWidth || 1920;
   const height = enc.targetHeight || 1080;
   const fps = enc.fps || 60;
@@ -1265,7 +1286,8 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
   const bgPlan = job.jobPlan ? job.jobPlan.bgPlan : null;
 
   const cacheDir = path.join(AppPaths.getCacheBase(), 'm3');
-  const hasVis = objects && objects.some(o => o && (o.type === 'visualizer' || o.type === 'visualizer2') && o.visible !== false);
+  const isVisObj = (o) => o && o.visible !== false && (o.type === 'visualizer' || o.type === 'visualizer2' || o.type === 'visualizer3' || o.type === 'spectrum' || o.type === 'audio-visualizer');
+  const hasVis = objects && objects.some(isVisObj);
 
   const USE_OSR_ENGINE = false;
   if (USE_OSR_ENGINE && hasVis) {
@@ -1292,7 +1314,7 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
     return;
   }
 
-  const hasOverlays = objects && objects.some(o => o && o.visible !== false && (o.type === 'visualizer' || o.type === 'visualizer2' || o.type === 'image' || o.type === 'text' || o.type === 'overlay' || o.type === 'social-widget'));
+  const hasOverlays = objects && objects.some(o => o && o.visible !== false && (isVisObj(o) || o.type === 'image' || o.type === 'text' || o.type === 'overlay' || o.type === 'social-widget' || o.type === 'particle' || o.type === 'effect'));
 
   if (bgPlan && !hasOverlays) {
     if (bgPlan.strategy === RenderStrategy.CACHE_HIT && bgPlan.cachedPath) {
@@ -1383,7 +1405,7 @@ async function buildLoopVideo(job, videoPath, audioPath, loopType, cacheDir, out
 
   const objects = payload.objects || (payload.composer && payload.composer.objects) || [];
   const bgPlan = job.jobPlan ? job.jobPlan.bgPlan : null;
-  const hasOverlays = objects && objects.some(o => o && o.visible !== false && (o.type === 'visualizer' || o.type === 'visualizer2' || o.type === 'image' || o.type === 'text' || o.type === 'overlay' || o.type === 'social-widget' || o.type === 'particle' || o.type === 'effect'));
+  const hasOverlays = objects && objects.some(o => o && o.visible !== false && (isVisObj(o) || o.type === 'image' || o.type === 'text' || o.type === 'overlay' || o.type === 'social-widget' || o.type === 'particle' || o.type === 'effect'));
 
   // Pure execution of assigned Planner strategy for Loop Video
   if (bgPlan && bgPlan.strategy === RenderStrategy.STREAM_COPY && !hasOverlays) {
@@ -1526,7 +1548,23 @@ async function buildFinalRender(job, cacheDir, outputDir, payload) {
     }
   }
 
-  const outVid = path.join(outputDir, payload.metadata.outputName || 'video.mp4');
+  let outVidName = payload.metadata?.outputName || 'video.mp4';
+  let outVid = path.join(outputDir, outVidName);
+
+  // File Lock Guard: If VLC Media Player or another application is locking the target MP4 file on Windows
+  try {
+    if (fsSync.existsSync(outVid)) {
+      const handle = fsSync.openSync(outVid, 'r+');
+      fsSync.closeSync(handle);
+    }
+  } catch (lockErr) {
+    const ext = path.extname(outVidName);
+    const base = path.basename(outVidName, ext);
+    const timeTag = Date.now();
+    outVidName = `${base}_${timeTag}${ext}`;
+    outVid = path.join(outputDir, outVidName);
+    console.log(`[M3] Destination file locked by media player (VLC). Saving to new file: ${outVidName}`);
+  }
 
   await startM3Stage(job, 'Rendering Video');
   if (bg.type === 'video' && bgExists) {
@@ -1844,6 +1882,6 @@ function killAllFFmpegProcesses() {
 }
 
 let jobCounterM3 = 0;
-module.exports = { jobs, processM3Job, cancelM3Job, killAllFFmpegProcesses, jobCounterM3, resolveAssetPath };
+module.exports = { jobs, processM3Job, cancelM3Job, killAllFFmpegProcesses, jobCounterM3, resolveAssetPath, getVisualizerPipelineV3 };
 
 

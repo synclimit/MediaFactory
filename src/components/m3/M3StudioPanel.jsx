@@ -113,13 +113,13 @@ export default function M3StudioPanel({
   // Auto-arrange visualizer objects if they overlap at default (960, 540) coordinates
   useEffect(() => {
     if (m3Objects && m3Objects.length > 0) {
-      const vizObjs = m3Objects.filter(o => o && (o.type === 'visualizer' || o.type === 'visualizer2'));
+      const vizObjs = m3Objects.filter(o => o && (o.type === 'visualizer' || o.type === 'visualizer2' || o.type === 'visualizer3'));
       if (vizObjs.length > 1) {
         const firstX = vizObjs[0].x;
         const firstY = vizObjs[0].y;
         if (vizObjs.every(o => o.x === firstX && o.y === firstY)) {
           setM3Objects(prev => prev.map(o => {
-            if (!o || (o.type !== 'visualizer' && o.type !== 'visualizer2')) return o;
+            if (!o || (o.type !== 'visualizer' && o.type !== 'visualizer2' && o.type !== 'visualizer3')) return o;
             const modeStr = (o.mode || o.visualizerId || o.name || '').toUpperCase();
             let nx = o.x, ny = o.y, nw = o.width || 600, nh = o.height || 300;
             if (modeStr.includes('CIRCULAR') || modeStr.includes('PULSE')) {
@@ -208,6 +208,7 @@ export default function M3StudioPanel({
         if (obj.type === 'text') setActiveContextCategory('Text Objects');
         else if (obj.type === 'visualizer') setActiveContextCategory('Visualizer');
         else if (obj.type === 'visualizer2') setActiveContextCategory('Visualizer 2');
+        else if (obj.type === 'visualizer3') setActiveContextCategory('Visualizer 3');
         else if (obj.type === 'image' || obj.type === 'video' || obj.type === 'gif') setActiveContextCategory('Overlay');
         else if (obj.type === 'social-widget') setActiveContextCategory('Branding');
         else if (obj.type === 'background') setActiveContextCategory('Background');
@@ -279,56 +280,90 @@ export default function M3StudioPanel({
           addNotification={addNotification}
           onOpenInspector={() => setShowGlobalInspectorModal(true)}
         />
-        
-        {/* Main Studio Area (100% Clean Canvas) */}
+                {/* Main Studio Area (Restored Classic Layout - Column Order: Rail -> Drawer -> Inspector -> Preview) */}
         <div className="flex flex-1 overflow-hidden relative">
-          {/* Navigation Rail (180px Wide) */}
+          {/* 1. Navigation Rail */}
           <M3NavigationRail 
             activeCategory={activeContextCategory} 
             setActiveCategory={(cat) => {
               setActiveContextCategory(cat);
               setM3SelectedObjectId(null);
-              setShowGlobalInspectorModal(true);
+              setIsPanelOpen(true);
             }} 
-            isPanelOpen={showGlobalInspectorModal}
-            setIsPanelOpen={setShowGlobalInspectorModal}
+            isPanelOpen={isPanelOpen}
+            setIsPanelOpen={setIsPanelOpen}
           />
           
-          {/* Main Panel: Live Preview Canvas (100% Full Width) */}
+          {/* 2. Asset / Tools Content Drawer Panel */}
+          {isPanelOpen && (
+            <M3DynamicContentPanel
+              m3BgPool={m3BgPool}
+              setM3BgPool={setM3BgPool}
+              m3AudioTracks={m3AudioTracks}
+              setM3AudioTracks={setM3AudioTracks}
+              m3CurrentTrackIndex={m3CurrentTrackIndex}
+              m3Objects={m3Objects}
+              setM3Objects={setM3Objects}
+              m3SelectedObjectId={m3SelectedObjectId}
+              setM3SelectedObjectId={handleSetM3SelectedObjectId}
+              canvasMode={editorMode === 'Composer' ? 'composer' : 'thumbnail'}
+              editorMode={editorMode}
+              activeContextCategory={activeContextCategory}
+            />
+          )}
+
+          {/* 3. Object Inspector Panel */}
+          <M3ObjectInspector 
+            m3Objects={m3Objects}
+            setM3Objects={setM3Objects}
+            m3SelectedObjectId={m3SelectedObjectId}
+            setM3SelectedObjectId={handleSetM3SelectedObjectId}
+            m3BgPool={m3BgPool}
+            setM3BgPool={setM3BgPool}
+            m3AudioTracks={m3AudioTracks}
+            setM3AudioTracks={setM3AudioTracks}
+            m3CurrentTrackIndex={m3CurrentTrackIndex}
+            renderSettings={m3RenderSettings}
+            setRenderSettings={setM3RenderSettings}
+            activeCategory={activeContextCategory}
+            renderMode={renderMode}
+            setRenderMode={setRenderMode}
+          />
+          
+          {/* 4. Live Preview Canvas & Export Settings Panel (Far Right) */}
           <div className="flex-1 flex flex-col min-w-0 bg-[#0a0a0a]">
             {editorMode === 'Composer' ? (
               <>
                 <M3PreviewCanvas 
                   m3BgPool={m3BgPool} 
-                m3AudioTracks={m3AudioTracks}
-                m3Objects={m3Objects} 
-                setM3Objects={setM3Objects}
-                m3SelectedObjectId={m3SelectedObjectId}
-                setM3SelectedObjectId={handleSetM3SelectedObjectId}
-                m3CurrentTimeSec={m3CurrentTimeSec}
-                m3TotalDurationSec={m3TotalDurationSec}
-                setM3CurrentTimeSec={setM3CurrentTimeSec}
-                m3CurrentTrackIndex={m3CurrentTrackIndex}
-                setM3CurrentTrackIndex={setM3CurrentTrackIndex}
-                m3EstRenderTimeSec={m3EstRenderTimeSec}
-                m3EstStorageMb={m3EstStorageMb}
-                analyser={analyser}
-              >
-                <div className="w-full bg-[#0a0a0a] border border-[#1a1b26] rounded-b-lg overflow-hidden shadow-lg mb-1">
-                  <M3PlaybackBar
-                    m3AudioTracks={m3AudioTracks}
-                    currentTimeSec={m3CurrentTimeSec}
-                    setCurrentTimeSec={setM3CurrentTimeSec}
-                    currentTrackIndex={m3CurrentTrackIndex}
-                    setCurrentTrackIndex={setM3CurrentTrackIndex}
-                    onAnalyserReady={setAnalyser}
-                  />
-                </div>
-                
-                {/* Export Settings added directly under playback bar */}
-                <M3ExportSettingsPanel renderMode={renderMode} onAddToQueue={(opts) => handleExport(opts)} />
-
-              </M3PreviewCanvas>
+                  m3AudioTracks={m3AudioTracks}
+                  m3Objects={m3Objects} 
+                  setM3Objects={setM3Objects}
+                  m3SelectedObjectId={m3SelectedObjectId}
+                  setM3SelectedObjectId={handleSetM3SelectedObjectId}
+                  m3CurrentTimeSec={m3CurrentTimeSec}
+                  m3TotalDurationSec={m3TotalDurationSec}
+                  setM3CurrentTimeSec={setM3CurrentTimeSec}
+                  m3CurrentTrackIndex={m3CurrentTrackIndex}
+                  setM3CurrentTrackIndex={setM3CurrentTrackIndex}
+                  m3EstRenderTimeSec={m3EstRenderTimeSec}
+                  m3EstStorageMb={m3EstStorageMb}
+                  analyser={analyser}
+                >
+                  <div className="w-full bg-[#0a0a0a] border border-[#1a1b26] rounded-b-lg overflow-hidden shadow-lg mb-1">
+                    <M3PlaybackBar
+                      m3AudioTracks={m3AudioTracks}
+                      currentTimeSec={m3CurrentTimeSec}
+                      setCurrentTimeSec={setM3CurrentTimeSec}
+                      currentTrackIndex={m3CurrentTrackIndex}
+                      setCurrentTrackIndex={setM3CurrentTrackIndex}
+                      onAnalyserReady={setAnalyser}
+                    />
+                  </div>
+                  
+                  {/* Export Settings */}
+                  <M3ExportSettingsPanel renderMode={renderMode} onAddToQueue={(opts) => handleExport(opts)} />
+                </M3PreviewCanvas>
               </>
             ) : (
               <M3ThumbnailEditor 
@@ -343,10 +378,7 @@ export default function M3StudioPanel({
                 setM3SelectedObjectId={setM3SelectedObjectId}
               />
             )}
-
-
           </div>
-
         </div>
         
         {editorMode === 'Composer' && (activeContextCategory === 'Lyrics' || (m3Objects || []).some(o => o && (o.type === 'subtitle' || o.type === 'lyrics'))) && (

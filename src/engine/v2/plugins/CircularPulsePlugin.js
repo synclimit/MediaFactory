@@ -1,3 +1,5 @@
+import { IVisualizerPlugin } from '../contracts/IVisualizerPlugin.js';
+
 function toHex6(col, defaultHex = '#00f2fe') {
   if (!col) return defaultHex;
   let s = String(col).trim();

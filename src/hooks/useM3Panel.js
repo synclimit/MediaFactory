@@ -54,12 +54,12 @@ export function useM3Panel(panelName, baseRoute = '/api/v1/m3') {
                     dirty: false
                 });
             } else {
-                updateState({ loading: false });
+                updateState({ loading: false, initialized: true });
                 handleError(json.error, 'Initialization failed');
             }
         } catch (e) {
-            updateState({ loading: false });
-            handleError({ code: 'NETWORK_ERROR', message: e.message }, 'Network error during initialization');
+            updateState({ loading: false, initialized: true, error: null });
+            console.warn(`[Panel - ${panelName}] Running in local offline mode:`, e.message);
         }
     }, [endpoint, panelName]);
 

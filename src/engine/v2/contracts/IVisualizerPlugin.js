@@ -19,3 +19,10 @@ export class IVisualizerPlugin {
     return {};
   }
 }
+
+if (typeof window !== 'undefined') {
+  window.IVisualizerPlugin = IVisualizerPlugin;
+}
+if (typeof globalThis !== 'undefined') {
+  globalThis.IVisualizerPlugin = IVisualizerPlugin;
+}

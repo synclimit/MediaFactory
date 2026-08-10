@@ -32,6 +32,7 @@ import { pipelineHistoryEngine } from './services/PipelineHistoryEngine.js';
 import M1StudioPanel from './components/m1/M1StudioPanel.jsx';
 import M2StudioPanel from './components/m2/M2StudioPanel.jsx';
 import M3StudioPanel from './components/m3/M3StudioPanel.jsx';
+import M3V2StudioPanel from './components/m3_v2/M3V2StudioPanel.jsx';
 import html2canvas from 'html2canvas';
 import M4StudioPanel from './components/m4/M4StudioPanel.jsx';
 import M5StudioPanel from './components/m5/M5StudioPanel.jsx';
@@ -803,6 +804,17 @@ export default function App() {
   const [m3OverlayCounter, setM3OverlayCounter] = useState(true);
   const [m3OverlayNotify, setM3OverlayNotify] = useState(true);
   const [m3OverlaySpectrumStyle, setM3OverlaySpectrumStyle] = useState('None');
+
+  // --- MODE 3 V2 STATES (ISOLATED CLEAN V2 MODULE) ---
+  const [m3v2Objects, setM3v2Objects] = useState([]);
+  const [m3v2BgPool, setM3v2BgPool] = useState([]);
+  const [m3v2AudioTracks, setM3v2AudioTracks] = useState([]);
+  const [m3v2ProfileId, setM3v2ProfileId] = useState('P-M3V2-DEFAULT');
+  const [m3v2MotionPreset, setM3v2MotionPreset] = useState('Gentle Float');
+  const [m3v2RenderSettings, setM3v2RenderSettings] = useState({ fps: 60, resolution: '1080p', videoCodec: 'H.264', audioBitrate: '192 kbps (Standar)', bitrate: 'Auto (2.5M)' });
+  const [m3v2OutputFilename, setM3v2OutputFilename] = useState('M3V2_Composition');
+  const [m3v2ThumbnailSaved, setM3v2ThumbnailSaved] = useState(false);
+  const [m3v2SelectedObjectId, setM3v2SelectedObjectId] = useState(null);
 
   // Mode 3 Statistics (dynamic estimations)
   const m3TotalDurationSec = m3AudioTracks.reduce((acc, t) => acc + (t.durationSec || 0), 0);
@@ -2439,10 +2451,10 @@ export default function App() {
         {/* CENTER: Navigation Tabs (Trapezoid) */}
         <div className="flex-1 flex justify-center -mb-[13px] z-30">
           <div className="flex items-end gap-1">
-            {['Mode 1', 'Mode 2', 'Mode 3', 'Mode 4', 'Mode 5', 'Mode 6'].map((mode) => {
+            {['Mode 1', 'Mode 2', 'Mode 3', 'Mode 3 V2', 'Mode 4', 'Mode 5', 'Mode 6'].map((mode) => {
               const isActive = activeMode === mode;
-              const modeId = mode.replace('Mode ', 'M');
-              const modeTitle = mode === 'Mode 1' ? 'BATCH' : mode === 'Mode 2' ? 'COMPILER' : mode === 'Mode 3' ? 'PLAYLIST' : mode === 'Mode 4' ? 'AMBIENT' : mode === 'Mode 5' ? 'CREATE' : 'COLLECT';
+              const modeId = mode === 'Mode 3 V2' ? 'M3 V2' : mode.replace('Mode ', 'M');
+              const modeTitle = mode === 'Mode 1' ? 'BATCH' : mode === 'Mode 2' ? 'COMPILER' : mode === 'Mode 3' ? 'PLAYLIST V1' : mode === 'Mode 3 V2' ? 'M3 V2' : mode === 'Mode 4' ? 'AMBIENT' : mode === 'Mode 5' ? 'CREATE' : 'COLLECT';
               return (
                 <button
                   key={mode}
@@ -2692,6 +2704,32 @@ export default function App() {
               m3SelectedObjectId={m3SelectedObjectId} setM3SelectedObjectId={setM3SelectedObjectId}
               addNotification={addNotification}
               onExportQueue={handleGenerateM3Configuration}
+            />
+          )}
+
+          {activeMode === 'Mode 3 V2' && (
+            <M3V2StudioPanel 
+              m3ProfileId={m3v2ProfileId} setM3ProfileId={setM3v2ProfileId}
+              m3BgPool={m3v2BgPool} setM3BgPool={setM3v2BgPool}
+              m3AudioTracks={m3v2AudioTracks} setM3AudioTracks={setM3v2AudioTracks}
+              m3MotionPreset={m3v2MotionPreset} setM3MotionPreset={setM3v2MotionPreset}
+              m3RenderSettings={m3v2RenderSettings} setM3RenderSettings={setM3v2RenderSettings}
+              m3OutputFilename={m3v2OutputFilename} setM3OutputFilename={setM3v2OutputFilename}
+              m3OverlayWatermark={m3OverlayWatermark} setM3OverlayWatermark={setM3OverlayWatermark}
+              m3OverlaySub={m3OverlaySub} setM3OverlaySub={setM3OverlaySub}
+              m3OverlayPlaylist={m3OverlayPlaylist} setM3OverlayPlaylist={setM3OverlayPlaylist}
+              m3OverlayCurrent={m3OverlayCurrent} setM3OverlayCurrent={setM3OverlayCurrent}
+              m3OverlayCounter={m3OverlayCounter} setM3OverlayCounter={setM3OverlayCounter}
+              m3OverlayNotify={m3OverlayNotify} setM3OverlayNotify={setM3OverlayNotify}
+              m3OverlaySpectrumStyle={m3OverlaySpectrumStyle} setM3OverlaySpectrumStyle={setM3OverlaySpectrumStyle}
+              m3TotalDurationSec={0} 
+              m3EstRenderTimeSec={0} 
+              m3EstStorageMb={0}
+              m3ThumbnailSaved={m3v2ThumbnailSaved} setM3ThumbnailSaved={setM3v2ThumbnailSaved}
+              m3Objects={m3v2Objects} setM3Objects={setM3v2Objects}
+              m3SelectedObjectId={m3v2SelectedObjectId} setM3SelectedObjectId={setM3v2SelectedObjectId}
+              addNotification={addNotification}
+              onExportQueue={() => addNotification('M3 V2 is in UI Prototype Mode (No Backend Attached Yet)')}
             />
           )}
 

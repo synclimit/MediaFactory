@@ -227,4 +227,158 @@ router.get('/api/m3/font/list', async (req, res) => {
     }
 });
 
+router.post('/api/m3/verify-stage-parity', async (req, res) => {
+    try {
+        const payload = req.body.m3Payload || req.body || {};
+        const objects = payload.m3Objects || payload.objects || [];
+        const bg = payload.background || {};
+        const timestamp = req.body.timestamp || 1.0;
+        const targetWidth = 1920;
+        const targetHeight = 1080;
+
+        const { createCanvas, loadImage } = require('canvas');
+        const { getVisualizerPipelineV3, resolveAssetPath } = require('./m3-render');
+        const PipelineEngine = await getVisualizerPipelineV3();
+
+        const stageCanvas = createCanvas(targetWidth, targetHeight);
+        const stageCtx = stageCanvas.getContext('2d');
+
+        // 1. Fill Stage Background
+        stageCtx.fillStyle = bg.color || '#000000';
+        stageCtx.fillRect(0, 0, targetWidth, targetHeight);
+
+        if (bg.url || bg.source || bg.uri) {
+            let bgPath = await resolveAssetPath(bg.url || bg.source || bg.uri, 'Background');
+            if (bgPath) {
+                try {
+                    const bgImg = await loadImage(bgPath);
+                    stageCtx.drawImage(bgImg, 0, 0, targetWidth, targetHeight);
+                } catch (bgErr) {
+                    console.warn('[Verify Stage Parity] Failed to load background image:', bgErr.message);
+                }
+            }
+        }
+
+        // 2. Helper for stage coordinate parsing
+        const parseStageCoord = (val, stageDim, defaultVal) => {
+            if (val === undefined || val === null || val === '') return defaultVal;
+            const str = String(val).trim();
+            if (str.endsWith('%')) {
+                const pct = parseFloat(str);
+                return isNaN(pct) ? defaultVal : (pct / 100) * stageDim;
+            }
+            const num = parseFloat(str);
+            return isNaN(num) ? defaultVal : num;
+        };
+
+        // 3. Render Objects
+        const validObjects = objects
+            .filter(o => o && o.visible !== false)
+            .sort((a, b) => (a.layer || 0) - (b.layer || 0));
+
+        const numBins = 64;
+        const frequencies = new Float32Array(numBins);
+        const frameIndex = Math.floor(timestamp * 60);
+        const frameCount = 300;
+        const normalizedLoopTime = (frameIndex % frameCount) / frameCount;
+        const tAngle = normalizedLoopTime * Math.PI * 2;
+
+        for (let i = 0; i < numBins; i++) {
+            const freqNorm = i / numBins;
+            const barPhase = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
+            const barSeed = barPhase - Math.floor(barPhase);
+            const oct1 = Math.sin(tAngle * 3 + barSeed * 6.28);
+            const oct2 = Math.cos(tAngle * 7 + freqNorm * 18.84 + barSeed * 3.14);
+            const envelope = Math.exp(-freqNorm * 2.2);
+            const rawVal = (0.5 * oct1 + 0.5 * oct2) * envelope;
+            frequencies[i] = Math.min(1.0, Math.max(0.05, Math.abs(rawVal)));
+        }
+
+        const waveform = new Float32Array(numBins);
+        for (let i = 0; i < numBins; i++) {
+            waveform[i] = Math.sin(timestamp * 20 + (i / numBins) * Math.PI * 4) * 0.5;
+        }
+
+        let energySum = 0;
+        for (let i = 0; i < numBins; i++) energySum += frequencies[i];
+        const energy = energySum / numBins;
+
+        const audioState = {
+            time: timestamp,
+            subBass: frequencies[0],
+            bass: frequencies[Math.min(2, numBins - 1)],
+            lowMid: frequencies[Math.min(12, numBins - 1)],
+            mid: frequencies[Math.min(25, numBins - 1)],
+            highMid: frequencies[Math.min(40, numBins - 1)],
+            treble: frequencies[Math.min(55, numBins - 1)],
+            energy,
+            RMS: energy,
+            kick: false,
+            snare: false,
+            beatStrength: energy,
+            spectralFlux: energy,
+            frequencies,
+            waveform
+        };
+
+        for (const ov of validObjects) {
+            const isVis = ov.type === 'visualizer' || ov.type === 'visualizer2' || ov.type === 'visualizer3' || ov.type === 'spectrum' || ov.visualizerId || (ov.name && (ov.name.toLowerCase().includes('spectrum') || ov.name.toLowerCase().includes('visualizer')));
+
+            let rawW = parseStageCoord(ov.width, targetWidth, 600);
+            let rawH = parseStageCoord(ov.height, targetHeight, 300);
+            let rawCx = parseStageCoord(ov.x, targetWidth, 960);
+            let rawCy = parseStageCoord(ov.y, targetHeight, 540);
+
+            const w = Math.round(rawW);
+            const h = Math.round(rawH);
+            const cx = Math.round(rawCx);
+            const cy = Math.round(rawCy);
+            const topLeftX = Math.round(cx - (w / 2));
+            const topLeftY = Math.round(cy - (h / 2));
+
+            if (isVis) {
+                let pluginIdMode = 'spectrum-bars';
+                const modeStr = (ov.mode || ov.pluginId || ov.visualizerId || ov.name || '').toLowerCase();
+                if (modeStr.includes('wave') || modeStr.includes('cyberpunk')) pluginIdMode = 'cyberpunk-waveform';
+                else if (modeStr.includes('bar') || modeStr.includes('spectrum')) pluginIdMode = 'spectrum-bars';
+                else if (modeStr.includes('particle') || modeStr.includes('orbit')) pluginIdMode = 'particle-orbit';
+                else if (modeStr.includes('circular') || modeStr.includes('circle') || modeStr.includes('pulse')) pluginIdMode = 'circular-pulse';
+
+                const v3Config = {
+                    colorLeft: ov.colorLeft || ov.primaryColor || '#AB55F7',
+                    colorRight: ov.colorRight || ov.secondaryColor || '#F59E0B',
+                    colorMid: ov.colorMid || '#06B6D4',
+                    colorMode: ov.colorMode || '2 Gradient',
+                    frequencyOrder: ov.frequencyOrder || 'Bass -> Treble',
+                    barCount: parseInt(ov.barCount) || 64,
+                    thickness: parseInt(ov.thickness) || parseInt(ov.barThickness) || 4,
+                    ...ov
+                };
+
+                const objCanvas = createCanvas(w, h);
+                PipelineEngine.renderPipelineFrame(objCanvas, timestamp, audioState, pluginIdMode, v3Config);
+                stageCtx.drawImage(objCanvas, topLeftX, topLeftY);
+            } else if (ov.type === 'image' || ov.type === 'overlay' || ov.type === 'particle') {
+                let ovPath = ov.source || ov.url || ov.uri;
+                if (ovPath) {
+                    let resolved = await resolveAssetPath(ovPath, 'Overlay');
+                    if (resolved) {
+                        try {
+                            const ovImg = await loadImage(resolved);
+                            stageCtx.drawImage(ovImg, topLeftX, topLeftY, w, h);
+                        } catch (err) {}
+                    }
+                }
+            }
+        }
+
+        const buf = stageCanvas.toBuffer('image/png');
+        const dataUrl = `data:image/png;base64,${buf.toString('base64')}`;
+        res.json({ success: true, dataUrl });
+    } catch (err) {
+        console.error('[Verify Stage Parity Error]:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 module.exports = router;
