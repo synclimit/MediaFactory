@@ -28,6 +28,7 @@ export default function VisualizerV4Renderer({
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        ctx.clearRect(0, 0, renderWidth, renderHeight);
         // Read live frequencies or fall back to synthetic audio
         let freqs = null;
         try {

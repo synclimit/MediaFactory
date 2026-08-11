@@ -1962,9 +1962,7 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
       const obj = m3Objects.find(o => o.id === m3SelectedObjectId);
       if (obj) {
         if (obj.type === 'text') return 'Text Objects';
-        if (obj.type === 'visualizer') return 'Visualizer';
-        if (obj.type === 'visualizer2') return 'Visualizer 2';
-        if (obj.type === 'visualizer3') return 'Visualizer 3';
+        if (obj.type === 'visualizer' || obj.type === 'visualizer2' || obj.type === 'visualizer3' || obj.type === 'visualizer4') return 'Visualizer';
         if (obj.type === 'image' || obj.type === 'widget' || obj.type === 'logo') return 'Overlay';
         if (obj.type === 'social-widget') return 'Social Widget';
         if (obj.type === 'background') return 'Background';

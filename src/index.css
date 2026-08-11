@@ -72,7 +72,16 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(249, 115, 22, 0.4) transparent;
+  will-change: scroll-position;
+  contain: content;
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
 }
 
 body {

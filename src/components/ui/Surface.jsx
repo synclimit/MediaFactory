@@ -33,11 +33,11 @@ const Surface = forwardRef(({
                 transformOrigin={variant === BackgroundVariants.Drawer ? 'left center' : transformOrigin}
             />
 
-            {/* Layer 3: Soft Radial Glow */}
+            {/* Layer 3: Soft Radial Glow (GPU Accelerated) */}
             {withGlow && (
-                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[2]">
-                    <div className="absolute top-[-10%] left-[-10%] w-[80%] h-[80%] bg-[radial-gradient(circle_at_center,rgba(50,216,255,0.12),transparent_70%)] rounded-full blur-[80px]"></div>
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] bg-[radial-gradient(circle_at_center,rgba(50,216,255,0.08),transparent_70%)] rounded-full blur-[90px]"></div>
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[2]" style={{ transform: 'translateZ(0)', contain: 'strict' }}>
+                    <div className="absolute top-[-10%] left-[-10%] w-[80%] h-[80%] bg-[radial-gradient(circle_at_center,rgba(50,216,255,0.12),transparent_70%)] rounded-full blur-[80px]" style={{ transform: 'translateZ(0)' }}></div>
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[80%] bg-[radial-gradient(circle_at_center,rgba(50,216,255,0.08),transparent_70%)] rounded-full blur-[90px]" style={{ transform: 'translateZ(0)' }}></div>
                 </div>
             )}
 

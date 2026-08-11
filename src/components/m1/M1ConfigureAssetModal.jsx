@@ -123,8 +123,8 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
 
                       if (!selectedPath) {
                         try {
-                          const port = window.location.port || '18888';
-                          const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${port}`;
+                          const activePort = window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888);
+                          const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${activePort}`;
                           const res = await fetch(`${baseUrl}/api/m1/dialog/audio`, { method: 'POST' });
                           const data = await res.json();
                           if (data.path) selectedPath = data.path;
@@ -134,8 +134,8 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                       if (selectedPath) {
                         updateM1Slot(idx, 'audio', selectedPath);
                         try {
-                          const port = window.location.port || '18888';
-                          const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${port}`;
+                          const activePort = window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888);
+                          const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${activePort}`;
                           const probeRes = await fetch(`${baseUrl}/api/m1/audio/probe`, { 
                             method: 'POST', 
                             headers: { 'Content-Type': 'application/json' },

@@ -56,7 +56,10 @@ export default function BackgroundPanel({
                 }
 
                 try {
-                    const response = await fetch('http://127.0.0.1:18888/api/v1/assets/upload', {
+                    const uploadUrl = typeof window !== 'undefined' && window.location.protocol.startsWith('http')
+                        ? '/api/v1/assets/upload'
+                        : `http://127.0.0.1:${window.SERVER_PORT || 18888}/api/v1/assets/upload`;
+                    const response = await fetch(uploadUrl, {
                         method: 'POST',
                         headers: {
                             'x-file-name': encodeURIComponent(file.name),
@@ -66,9 +69,15 @@ export default function BackgroundPanel({
                         body: file
                     });
                     const json = await response.json();
-                    if (json.success && json.data) {
-                        newBg.sourcePath = json.data.path;
-                        newBg.uri = json.data.path;
+                    if (json.success && json.data && json.data.path) {
+                        const uploadedPath = json.data.path;
+                        if (setM3BgPool) {
+                            setM3BgPool(prev => (prev || []).map(b => b.id === newId ? {
+                                ...b,
+                                sourcePath: uploadedPath,
+                                uri: uploadedPath
+                            } : b));
+                        }
                     }
                 } catch (err) {
                     console.warn("Background upload fallback to local path:", err);

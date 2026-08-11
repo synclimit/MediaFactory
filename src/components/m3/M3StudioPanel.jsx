@@ -206,9 +206,7 @@ export default function M3StudioPanel({
       const obj = m3Objects.find(o => o.id === id);
       if (obj) {
         if (obj.type === 'text') setActiveContextCategory('Text Objects');
-        else if (obj.type === 'visualizer') setActiveContextCategory('Visualizer');
-        else if (obj.type === 'visualizer2') setActiveContextCategory('Visualizer 2');
-        else if (obj.type === 'visualizer3') setActiveContextCategory('Visualizer 3');
+        else if (obj.type === 'visualizer' || obj.type === 'visualizer2' || obj.type === 'visualizer3' || obj.type === 'visualizer4') setActiveContextCategory('Visualizer');
         else if (obj.type === 'image' || obj.type === 'video' || obj.type === 'gif') setActiveContextCategory('Overlay');
         else if (obj.type === 'social-widget') setActiveContextCategory('Branding');
         else if (obj.type === 'background') setActiveContextCategory('Background');

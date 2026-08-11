@@ -667,14 +667,22 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
 
             const resolveMediaUrl = (mediaObj) => {
                 if (!mediaObj) return '';
-                let raw = mediaObj.blobUrl || mediaObj.preview || mediaObj.url || mediaObj.sourcePath || mediaObj.filename || '';
+                let raw = '';
+                if (mediaObj.sourcePath && !mediaObj.sourcePath.startsWith('blob:')) raw = mediaObj.sourcePath;
+                else if (mediaObj.uri && !mediaObj.uri.startsWith('blob:')) raw = mediaObj.uri;
+                else if (mediaObj.filename && !mediaObj.filename.startsWith('blob:')) raw = mediaObj.filename;
+                else if (mediaObj.url && !mediaObj.url.startsWith('blob:')) raw = mediaObj.url;
+                else if (mediaObj.preview && !mediaObj.preview.startsWith('blob:')) raw = mediaObj.preview;
+                else raw = mediaObj.blobUrl || '';
+
                 if (!raw) return '';
-                if (raw.startsWith('data:') || raw.startsWith('blob:') || raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-                if (raw.startsWith('/api/')) return 'http://127.0.0.1:18888' + raw;
-                if (raw.match(/^[a-zA-Z]:/) || raw.startsWith('/') || raw.startsWith('\\')) {
-                    return `http://127.0.0.1:18888/api/m2/stream?uri=${encodeURIComponent(raw.replace(/\\/g, '/'))}`;
-                }
-                return raw;
+                if (raw.startsWith('data:') || raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+                if (raw.startsWith('blob:')) return raw;
+                const activePort = typeof window !== 'undefined' ? (window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888)) : 18888;
+                const isHttp = typeof window !== 'undefined' && window.location.protocol.startsWith('http');
+                const baseUrl = isHttp ? '' : `http://127.0.0.1:${activePort}`;
+                if (raw.startsWith('/api/')) return `${baseUrl}${raw}`;
+                return `${baseUrl}/api/m2/stream?uri=${encodeURIComponent(raw.replace(/\\/g, '/'))}`;
             };
 
             const bgMediaSrc = resolveMediaUrl(bg);

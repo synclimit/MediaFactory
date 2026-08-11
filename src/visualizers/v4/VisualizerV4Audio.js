@@ -19,16 +19,17 @@ export class VisualizerV4Audio {
       const freqNorm = i / binCount;
       const barPhase = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
       const barSeed = barPhase - Math.floor(barPhase);
-      const oct1 = Math.sin(tAngle * 3 + barSeed * 6.28);
-      const oct2 = Math.cos(tAngle * 7 + freqNorm * 18.84 + barSeed * 3.14);
-      const envelope = Math.exp(-freqNorm * 2.2);
-      const rawVal = (0.5 * oct1 + 0.5 * oct2) * envelope;
+      const oct1 = Math.sin(tAngle * 2 + barSeed * 6.28);
+      const oct2 = Math.cos(tAngle * 4 + freqNorm * 12.56 + barSeed * 3.14);
       
-      const val = Math.min(1.0, Math.max(0.05, Math.abs(rawVal)));
+      // Dynamic idle heights resting low (0.04 - 0.45 max) like Gambar 2
+      const rawVal = (0.15 + 0.15 * oct1 + 0.1 * oct2) * Math.sin(freqNorm * Math.PI);
+      const val = Math.min(0.45, Math.max(0.04, Math.abs(rawVal)));
+      
       frequencies[i] = val;
       energySum += val;
 
-      waveform[i] = Math.sin(timestamp * 20 + (i / binCount) * Math.PI * 4) * 0.5;
+      waveform[i] = Math.sin(timestamp * 20 + (i / binCount) * Math.PI * 4) * 0.3;
     }
 
     const energy = energySum / binCount;

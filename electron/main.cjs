@@ -53,12 +53,6 @@ const isDev = !app.isPackaged;
 async function createWindow() {
     let serverPort = 18888;
     try {
-        try {
-            const { execSync } = require('child_process');
-            if (process.platform === 'win32') {
-                execSync('npx kill-port 18888 3001', { stdio: 'ignore' });
-            }
-        } catch(e) {}
         const { startServer } = require('../backend/server');
         backendServer = await startServer(18888);
         if (backendServer && typeof backendServer.address === 'function' && backendServer.address()) {
@@ -83,6 +77,11 @@ async function createWindow() {
     });
 
     mainWindow.setMenuBarVisibility(false);
+
+    // Inject bound server port into window object when webContents finishes loading
+    mainWindow.webContents.on('did-finish-load', () => {
+        mainWindow.webContents.executeJavaScript(`window.SERVER_PORT = ${serverPort};`).catch(() => {});
+    });
 
     try {
         await mainWindow.webContents.session.clearCache();

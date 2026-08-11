@@ -1,11 +1,28 @@
 {
   "m3BgPool": [
     {
-      "id": "bg1",
+      "id": "bg_1786408604494",
       "type": "image",
-      "filename": "bg_image_1.webp",
-      "preview": "bg_image_1.webp",
-      "sourcePath": "bg_image_1.webp"
+      "blobUrl": null,
+      "url": null,
+      "preview": null,
+      "sourcePath": "Gemini_Generated_Image_fxer4afxer4afxer.png",
+      "uri": "Gemini_Generated_Image_fxer4afxer4afxer.png",
+      "filename": "Gemini_Generated_Image_fxer4afxer4afxer.png",
+      "settings": {
+        "overlayDarkness": 30,
+        "blurAmount": 0,
+        "scaleMode": "Cover (Fill)",
+        "backgroundZoom": 0,
+        "horizontalPosition": 0,
+        "verticalPosition": 0,
+        "danceMode": "Ringan (Pixel) — cepat di CPU",
+        "danceStyle": "Subtle Sway",
+        "danceIntensity": 100,
+        "danceReactLevel": 45,
+        "danceReactsTo": "Whole song",
+        "danceSmoothing": 0.7
+      }
     }
   ],
   "m3AudioTracks": [],
@@ -26,36 +43,6 @@
       "layer": 0
     },
     {
-      "id": "txt-1",
-      "canvasMode": "composer",
-      "type": "text",
-      "name": "Playlist Title",
-      "x": 100,
-      "y": 100,
-      "width": 800,
-      "height": 100,
-      "rotation": 0,
-      "opacity": 100,
-      "visible": true,
-      "locked": false,
-      "layer": 1
-    },
-    {
-      "id": "txt-2",
-      "canvasMode": "composer",
-      "type": "text",
-      "name": "Current Playing",
-      "x": 100,
-      "y": 250,
-      "width": 600,
-      "height": 50,
-      "rotation": 0,
-      "opacity": 100,
-      "visible": true,
-      "locked": false,
-      "layer": 2
-    },
-    {
       "id": "img-1",
       "canvasMode": "composer",
       "type": "image",
@@ -71,36 +58,6 @@
       "layer": 3
     },
     {
-      "id": "viz-1",
-      "canvasMode": "composer",
-      "type": "visualizer",
-      "name": "Spectrum",
-      "x": 0,
-      "y": 900,
-      "width": 1920,
-      "height": 180,
-      "rotation": 0,
-      "opacity": 100,
-      "visible": true,
-      "locked": false,
-      "layer": 4
-    },
-    {
-      "id": "ply-1",
-      "canvasMode": "composer",
-      "type": "playlist",
-      "name": "Playlist Overlay",
-      "x": 1400,
-      "y": 300,
-      "width": 400,
-      "height": 600,
-      "rotation": 0,
-      "opacity": 90,
-      "visible": true,
-      "locked": false,
-      "layer": 5
-    },
-    {
       "id": "t-bg-1",
       "canvasMode": "thumbnail",
       "type": "background",
@@ -114,36 +71,6 @@
       "visible": true,
       "locked": true,
       "layer": 0
-    },
-    {
-      "id": "t-txt-1",
-      "canvasMode": "thumbnail",
-      "type": "text",
-      "name": "Thumb Title",
-      "x": 150,
-      "y": 200,
-      "width": 1000,
-      "height": 200,
-      "rotation": 0,
-      "opacity": 100,
-      "visible": true,
-      "locked": false,
-      "layer": 1
-    },
-    {
-      "id": "t-txt-2",
-      "canvasMode": "thumbnail",
-      "type": "text",
-      "name": "Thumb Subtitle",
-      "x": 160,
-      "y": 450,
-      "width": 800,
-      "height": 100,
-      "rotation": 0,
-      "opacity": 100,
-      "visible": true,
-      "locked": false,
-      "layer": 2
     }
   ]
 }

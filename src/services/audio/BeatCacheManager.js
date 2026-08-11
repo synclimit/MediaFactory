@@ -10,6 +10,7 @@ class BeatCacheManager {
     _initDB() {
         return new Promise((resolve, reject) => {
             if (this._db) return resolve(this._db);
+            if (typeof indexedDB === 'undefined') return resolve(null);
             const req = indexedDB.open('m3_analysis_cache', 1);
             req.onupgradeneeded = (e) => {
                 const db = e.target.result;

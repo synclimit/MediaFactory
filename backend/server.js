@@ -18,7 +18,6 @@ app.use(require('./api/m2.js').router);
 app.use(require('./api/m2-splitter.js').router);
 app.use(require('./api/m2-mode3-assets.js'));
 app.use(require('./api/m3.js'));
-app.use('/api/m3_v2', require('./api/m3_v2.js'));
 app.use(require('./api/m4.js').router);
 app.use(require('./api/m5.js').router);
 app.use(require('./api/whisper.js'));
@@ -59,22 +58,29 @@ app.use((req, res, next) => {
 
 function startServer(port = 18888) {
     return new Promise((resolve) => {
-        const server = app.listen(port, '0.0.0.0', () => {
-            console.log(`MediaFactory Backend running on port ${port}`);
-            resolve(server);
-        }).on('error', (err) => {
-            console.warn(`[Backend] Port ${port} listen error:`, err.message);
-            if (err.code === 'EADDRINUSE') {
-                console.log(`Port ${port} in use, trying fallback port 3001...`);
-                const fallbackServer = app.listen(3001, '0.0.0.0', () => {
-                    console.log(`MediaFactory Backend running on fallback port 3001`);
-                    resolve(fallbackServer);
-                });
-                fallbackServer.on('error', () => resolve(null));
-            } else {
-                resolve(null);
-            }
-        });
+        const tryListen = (targetPort) => {
+            const server = app.listen(targetPort, '0.0.0.0', () => {
+                const boundPort = server.address() ? server.address().port : targetPort;
+                console.log(`[MediaFactory Backend] Running successfully on port ${boundPort}`);
+                resolve(server);
+            }).on('error', (err) => {
+                console.warn(`[Backend] Port ${targetPort} listen error:`, err.message);
+                if (err.code === 'EADDRINUSE') {
+                    if (targetPort === 18888) {
+                        console.log(`[Backend] Port 18888 in use, trying fallback port 3001...`);
+                        tryListen(3001);
+                    } else if (targetPort === 3001) {
+                        console.log(`[Backend] Port 3001 in use, allocating dynamic free port (port 0)...`);
+                        tryListen(0);
+                    } else {
+                        resolve(null);
+                    }
+                } else {
+                    resolve(null);
+                }
+            });
+        };
+        tryListen(port);
     });
 }
 

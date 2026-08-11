@@ -75,10 +75,7 @@ export default function M3DynamicContentPanel({
     case 'Background': content = renderBackground(); break;
     case 'Playlist Audio': content = renderPlaylistAudio(); break;
     case 'Lyrics': content = renderLyrics(); break;
-    case 'Visualizer': content = renderVisualizer(); break;
-    case 'Visualizer 2': content = renderVisualizer2(); break;
-    case 'Visualizer 3': content = <Visualizer3Panel addObject={addObject} m3Objects={m3Objects || []} m3BgPool={m3BgPool || []} />; break;
-    case 'Visualizer 4': content = <VisualizerV4Panel addObject={addObject} m3Objects={m3Objects || []} setM3Objects={setM3Objects} />; break;
+    case 'Visualizer': content = <VisualizerV4Panel addObject={addObject} m3Objects={m3Objects || []} setM3Objects={setM3Objects} />; break;
     case 'Particle': content = renderParticle(); break;
     case 'Effects': content = renderEffects(); break;
     case 'Overlay': content = renderOverlay(); break;

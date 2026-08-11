@@ -32,7 +32,6 @@ import { pipelineHistoryEngine } from './services/PipelineHistoryEngine.js';
 import M1StudioPanel from './components/m1/M1StudioPanel.jsx';
 import M2StudioPanel from './components/m2/M2StudioPanel.jsx';
 import M3StudioPanel from './components/m3/M3StudioPanel.jsx';
-import M3V2StudioPanel from './components/m3_v2/M3V2StudioPanel.jsx';
 import html2canvas from 'html2canvas';
 import M4StudioPanel from './components/m4/M4StudioPanel.jsx';
 import M5StudioPanel from './components/m5/M5StudioPanel.jsx';
@@ -71,10 +70,10 @@ function Tooltip({ text }) {
 
 const getApiUrl = (endpoint) => {
   if (typeof window === 'undefined') return endpoint;
-  if (window.location.protocol === 'file:' || window.location.port !== '18888') {
-    return 'http://127.0.0.1:18888' + (endpoint.startsWith('/') ? endpoint : '/' + endpoint);
-  }
-  return endpoint;
+  const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+  if (window.location.protocol.startsWith('http')) return path;
+  const port = window.SERVER_PORT || 18888;
+  return `http://127.0.0.1:${port}${path}`;
 };
 
 export default function App() {
@@ -649,14 +648,12 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(bg => {
-            const targetPath = bg.sourcePath || bg.uri || bg.filename;
-            if (targetPath && !targetPath.startsWith('data:')) {
-              const streamUrl = `/api/m2/stream?uri=${encodeURIComponent(targetPath)}`;
-              return { ...bg, url: streamUrl, preview: streamUrl };
-            }
-            return bg;
-          });
+          return parsed.map(bg => ({
+            ...bg,
+            blobUrl: (bg.blobUrl && !bg.blobUrl.startsWith('blob:')) ? bg.blobUrl : null,
+            preview: (bg.preview && !bg.preview.startsWith('blob:')) ? bg.preview : null,
+            url: (bg.url && !bg.url.startsWith('blob:')) ? bg.url : null
+          }));
         }
       }
     } catch(e) {}
@@ -672,15 +669,7 @@ export default function App() {
       const saved = localStorage.getItem('m3_profile_audio');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(trk => {
-            if (trk.sourcePath) {
-              const streamUrl = `/api/m2/stream?uri=${encodeURIComponent(trk.sourcePath)}`;
-              return { ...trk, blobUrl: streamUrl };
-            }
-            return trk;
-          });
-        }
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch(e) {}
     return [];
@@ -699,7 +688,7 @@ export default function App() {
       { id: 'txt-1', canvasMode: 'composer', type: 'text', name: 'Playlist Title', x: 100, y: 100, width: 800, height: 100, rotation: 0, opacity: 100, visible: true, locked: false, layer: 1 },
       { id: 'txt-2', canvasMode: 'composer', type: 'text', name: 'Current Playing', x: 100, y: 250, width: 600, height: 50, rotation: 0, opacity: 100, visible: true, locked: false, layer: 2 },
       { id: 'img-1', canvasMode: 'composer', type: 'image', name: 'Watermark', x: 1700, y: 50, width: 150, height: 150, rotation: 0, opacity: 50, visible: true, locked: false, layer: 3 },
-      { id: 'viz-1', canvasMode: 'composer', type: 'visualizer', name: 'Spectrum', x: 0, y: 900, width: 1920, height: 180, rotation: 0, opacity: 100, visible: true, locked: false, layer: 4 },
+      { id: 'viz-1', canvasMode: 'composer', type: 'visualizer4', mode: 'spectrum-bars', name: 'Spectrum Bars V4', x: 960, y: 700, width: 960, height: 150, rotation: 0, opacity: 100, visible: true, locked: false, layer: 4 },
       { id: 'ply-1', canvasMode: 'composer', type: 'playlist', name: 'Playlist Overlay', x: 1400, y: 300, width: 400, height: 600, rotation: 0, opacity: 90, visible: true, locked: false, layer: 5 },
       { id: 't-bg-1', canvasMode: 'thumbnail', type: 'background', name: 'Thumbnail Background', x: 0, y: 0, width: 1920, height: 1080, rotation: 0, opacity: 100, visible: true, locked: true, layer: 0 },
       { id: 't-txt-1', canvasMode: 'thumbnail', type: 'text', name: 'Thumb Title', x: 150, y: 200, width: 1000, height: 200, rotation: 0, opacity: 100, visible: true, locked: false, layer: 1 },
@@ -708,19 +697,42 @@ export default function App() {
   });
   const [m3SelectedObjectId, setM3SelectedObjectId] = useState(null);
 
-  const m3InitializedRef = useRef(true);
+  const m3InitializedRef = useRef(false);
+
+  // Load disk-backed M3 state on app startup
+  useEffect(() => {
+    fetch('/api/v1/m3/autosave/state')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data) {
+          const { m3BgPool: diskBg, m3AudioTracks: diskAudio, m3Objects: diskObjs } = json.data;
+          if (Array.isArray(diskBg) && diskBg.length > 0) {
+            setM3BgPool(diskBg.map(bg => ({
+              ...bg,
+              blobUrl: (bg.blobUrl && !bg.blobUrl.startsWith('blob:')) ? bg.blobUrl : null,
+              preview: (bg.preview && !bg.preview.startsWith('blob:')) ? bg.preview : null,
+              url: (bg.url && !bg.url.startsWith('blob:')) ? bg.url : null
+            })));
+          }
+          if (Array.isArray(diskAudio) && diskAudio.length > 0) setM3AudioTracks(diskAudio);
+          if (Array.isArray(diskObjs) && diskObjs.length > 0) setM3Objects(diskObjs);
+        }
+        m3InitializedRef.current = true;
+      })
+      .catch(() => {
+        m3InitializedRef.current = true;
+      });
+  }, []);
 
   // M3 AutoSave Effect (Persists to both LocalStorage and Hard Drive Disk File)
   useEffect(() => {
-    if (m3BgPool && m3BgPool.length > 0) {
-      try { localStorage.setItem('m3_profile_bg', JSON.stringify(m3BgPool)); } catch(e){}
-    }
-    if (m3AudioTracks && m3AudioTracks.length > 0) {
-      try { localStorage.setItem('m3_profile_audio', JSON.stringify(m3AudioTracks)); } catch(e){}
-    }
-    if (m3Objects && m3Objects.length > 0) {
-      try { localStorage.setItem('m3_profile_objects', JSON.stringify(m3Objects)); } catch(e){}
-    }
+    if (!m3InitializedRef.current) return;
+
+    try {
+      if (m3BgPool) localStorage.setItem('m3_profile_bg', JSON.stringify(m3BgPool));
+      if (m3AudioTracks) localStorage.setItem('m3_profile_audio', JSON.stringify(m3AudioTracks));
+      if (m3Objects) localStorage.setItem('m3_profile_objects', JSON.stringify(m3Objects));
+    } catch(e) {}
 
     fetch('/api/v1/m3/autosave/state', {
       method: 'POST',
@@ -2003,10 +2015,11 @@ export default function App() {
   };
 
   const fetchVideoMetadataWithFallback = async (filePath, file = null) => {
+    const activePort = window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888);
     const endpoints = [
       '/api/m1/video-metadata',
-      'http://127.0.0.1:18888/api/m1/video-metadata',
-      'http://localhost:18888/api/m1/video-metadata'
+      `http://127.0.0.1:${activePort}/api/m1/video-metadata`,
+      `http://localhost:${activePort}/api/m1/video-metadata`
     ];
 
     for (const endpoint of endpoints) {
@@ -2495,27 +2508,9 @@ export default function App() {
                addLog(`[M2] FAILED TO START: ${err.message}`);
                setQueue(q => q.map(x => x.id === job.id ? { ...x, status: 'Failed', failureReason: err.message } : x));
              });
-           } else if (job.mode === 'Mode 3') {
-             addLog(`[M3] STARTING ${job.outputFiles[0]}`);
-             fetch(getApiUrl('/api/m3_v2/render'), {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify(job)
-             })
-             .then(async (res) => {
-               if (!res.ok) throw new Error(`HTTP ${res.status}`);
-               const data = await res.json();
-               addLog(`[M3] RENDER ACCEPTED`);
-               setQueue(q => q.map(x => x.id === job.id ? { ...x, backendJobId: data.jobId || data.id || job.id } : x));
-             })
-             .catch((err) => {
-               console.error(err);
-               addLog(`[M3] FAILED TO START: ${err.message}`);
-               setQueue(q => q.map(x => x.id === job.id ? { ...x, status: 'Failed', failureReason: err.message } : x));
-             });
-           } else if (job.mode === 'Mode 3 V2') {
-              addLog(`[M3 V2] STARTING ${job.outputFiles[0]}`);
-              fetch(getApiUrl('/api/m3_v2/render'), {
+           } else if (job.mode === 'Mode 3' || job.mode === 'Mode 3 V2') {
+              addLog(`[M3] STARTING ${job.outputFiles[0]}`);
+              fetch(getApiUrl('/api/m3/render'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(job)
@@ -2523,12 +2518,12 @@ export default function App() {
               .then(async (res) => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                addLog(`[M3 V2] RENDER ACCEPTED`);
+                addLog(`[M3] RENDER ACCEPTED`);
                 setQueue(q => q.map(x => x.id === job.id ? { ...x, backendJobId: data.jobId || data.id || job.id } : x));
               })
               .catch((err) => {
                 console.error(err);
-                addLog(`[M3 V2] FAILED TO START: ${err.message}`);
+                addLog(`[M3] FAILED TO START: ${err.message}`);
                 setQueue(q => q.map(x => x.id === job.id ? { ...x, status: 'Failed', failureReason: err.message } : x));
               });
             } else if (job.mode === 'Mode 4') {
@@ -2555,7 +2550,7 @@ export default function App() {
 
         if (job.mode === 'Mode 1' || job.mode === 'Mode 2' || job.mode === 'Mode 3' || job.mode === 'Mode 3 V2' || job.mode === 'Mode 4') {
            // Poll backend every 1 second
-           const endpoint = job.mode === 'Mode 1' ? '/api/m1/render/' : (job.mode === 'Mode 2' ? '/api/m2/render/' : (job.mode === 'Mode 3' || job.mode === 'Mode 3 V2' ? '/api/m3_v2/render/' : '/api/m4/render/'));
+           const endpoint = job.mode === 'Mode 1' ? '/api/m1/render/' : (job.mode === 'Mode 2' ? '/api/m2/render/' : (job.mode === 'Mode 3' || job.mode === 'Mode 3 V2' ? '/api/m3/render/' : '/api/m4/render/'));
            fetch(getApiUrl(`${endpoint}${job.backendJobId || job.id}`))
              .then(res => res.ok ? res.json() : null)
              .then(data => {
@@ -2679,10 +2674,10 @@ export default function App() {
         {/* CENTER: Navigation Tabs (Trapezoid) */}
         <div className="flex-1 flex justify-center -mb-[13px] z-30">
           <div className="flex items-end gap-1">
-            {['Mode 1', 'Mode 2', 'Mode 3', 'Mode 3 V2', 'Mode 4', 'Mode 5', 'Mode 6'].map((mode) => {
+            {['Mode 1', 'Mode 2', 'Mode 3', 'Mode 4', 'Mode 5', 'Mode 6'].map((mode) => {
               const isActive = activeMode === mode;
-              const modeId = mode === 'Mode 3 V2' ? 'M3 V2' : mode.replace('Mode ', 'M');
-              const modeTitle = mode === 'Mode 1' ? 'BATCH' : mode === 'Mode 2' ? 'COMPILER' : mode === 'Mode 3' ? 'PLAYLIST V1' : mode === 'Mode 3 V2' ? 'M3 V2' : mode === 'Mode 4' ? 'AMBIENT' : mode === 'Mode 5' ? 'CREATE' : 'COLLECT';
+              const modeId = mode.replace('Mode ', 'M');
+              const modeTitle = mode === 'Mode 1' ? 'BATCH' : mode === 'Mode 2' ? 'COMPILER' : mode === 'Mode 3' ? 'PLAYLIST' : mode === 'Mode 4' ? 'AMBIENT' : mode === 'Mode 5' ? 'CREATE' : 'COLLECT';
               return (
                 <button
                   key={mode}
@@ -2932,32 +2927,6 @@ export default function App() {
               m3SelectedObjectId={m3SelectedObjectId} setM3SelectedObjectId={setM3SelectedObjectId}
               addNotification={addNotification}
               onExportQueue={handleGenerateM3Configuration}
-            />
-          )}
-
-          {activeMode === 'Mode 3 V2' && (
-            <M3V2StudioPanel 
-              m3ProfileId={m3v2ProfileId} setM3ProfileId={setM3v2ProfileId}
-              m3BgPool={m3v2BgPool} setM3BgPool={setM3v2BgPool}
-              m3AudioTracks={m3v2AudioTracks} setM3AudioTracks={setM3v2AudioTracks}
-              m3MotionPreset={m3v2MotionPreset} setM3MotionPreset={setM3v2MotionPreset}
-              m3RenderSettings={m3v2RenderSettings} setM3RenderSettings={setM3v2RenderSettings}
-              m3OutputFilename={m3v2OutputFilename} setM3OutputFilename={setM3v2OutputFilename}
-              m3OverlayWatermark={m3OverlayWatermark} setM3OverlayWatermark={setM3OverlayWatermark}
-              m3OverlaySub={m3OverlaySub} setM3OverlaySub={setM3OverlaySub}
-              m3OverlayPlaylist={m3OverlayPlaylist} setM3OverlayPlaylist={setM3OverlayPlaylist}
-              m3OverlayCurrent={m3OverlayCurrent} setM3OverlayCurrent={setM3OverlayCurrent}
-              m3OverlayCounter={m3OverlayCounter} setM3OverlayCounter={setM3OverlayCounter}
-              m3OverlayNotify={m3OverlayNotify} setM3OverlayNotify={setM3OverlayNotify}
-              m3OverlaySpectrumStyle={m3OverlaySpectrumStyle} setM3OverlaySpectrumStyle={setM3OverlaySpectrumStyle}
-              m3TotalDurationSec={0} 
-              m3EstRenderTimeSec={0} 
-              m3EstStorageMb={0}
-              m3ThumbnailSaved={m3v2ThumbnailSaved} setM3ThumbnailSaved={setM3v2ThumbnailSaved}
-              m3Objects={m3v2Objects} setM3Objects={setM3v2Objects}
-              m3SelectedObjectId={m3v2SelectedObjectId} setM3SelectedObjectId={setM3v2SelectedObjectId}
-              addNotification={addNotification}
-              onExportQueue={handleGenerateM3V2Configuration}
             />
           )}
 

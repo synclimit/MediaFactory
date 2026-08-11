@@ -577,7 +577,7 @@ class BeatEngine {
 
         const tStart = performance.now();
         
-        if (isPlaying && !window.hasStartedCalibrationAuto && window.startCalibrationLog) {
+        if (typeof window !== 'undefined' && isPlaying && !window.hasStartedCalibrationAuto && window.startCalibrationLog) {
             window.hasStartedCalibrationAuto = true;
             window.startCalibrationLog();
         }
@@ -698,7 +698,7 @@ class BeatEngine {
         this.state.features.isSilence        = feat.isSilence;
         this.state.features.density          = feat.density;
 
-        if (window.isRecordingCalibration) {
+        if (typeof window !== 'undefined' && window.isRecordingCalibration) {
             window.beatCalibrationLog.push({
                 time: tStart,
                 beatPhase: tr.beatPhase,
@@ -739,17 +739,19 @@ if (typeof window !== 'undefined') {
 }
 export { beatEngine };
 
-window.startCalibrationLog = () => {
-    window.beatCalibrationLog = [];
-    window.isRecordingCalibration = true;
-    console.log("⏺ Calibration Log STARTED (Auto)! Merekam selama 15 detik...");
-    setTimeout(() => {
-        window.isRecordingCalibration = false;
-        console.log("⏹ Selesai! Mengirim data ke log receiver Gemini...");
-        fetch('http://localhost:13337', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(window.beatCalibrationLog)
-        }).then(() => console.log("✅ Data berhasil dikirim!")).catch(() => {});
-    }, 15000);
-};
+if (typeof window !== 'undefined') {
+    window.startCalibrationLog = () => {
+        window.beatCalibrationLog = [];
+        window.isRecordingCalibration = true;
+        console.log("⏺ Calibration Log STARTED (Auto)! Merekam selama 15 detik...");
+        setTimeout(() => {
+            window.isRecordingCalibration = false;
+            console.log("⏹ Selesai! Mengirim data ke log receiver Gemini...");
+            fetch('http://localhost:13337', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(window.beatCalibrationLog)
+            }).then(() => console.log("✅ Data berhasil dikirim!")).catch(() => {});
+        }, 15000);
+    };
+}

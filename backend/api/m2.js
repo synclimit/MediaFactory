@@ -533,6 +533,12 @@ router.get('/api/m2/stream', async (req, res) => {
             else if (ext === '.ogg') contentType = 'audio/ogg';
             else if (ext === '.flac') contentType = 'audio/flac';
             else if (ext === '.webm') contentType = 'video/webm';
+            else if (ext === '.png') contentType = 'image/png';
+            else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
+            else if (ext === '.webp') contentType = 'image/webp';
+            else if (ext === '.gif') contentType = 'image/gif';
+            else if (ext === '.svg') contentType = 'image/svg+xml';
+            else if (ext === '.bmp') contentType = 'image/bmp';
             
             const range = req.headers.range;
             if (range) {
@@ -564,18 +570,39 @@ router.get('/api/m2/stream', async (req, res) => {
     };
 
     let localPath = uri;
+    const fsSync = require('fs');
+    const pathModule = require('path');
     let isAsset = uri.startsWith('Assets/') || uri.startsWith('Assets\\');
-    if (isAsset || (!require('path').isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:'))) {
+    if (isAsset || (!pathModule.isAbsolute(uri) && !uri.startsWith('http') && !uri.startsWith('ytsearch:'))) {
         try {
             const ServiceRegistry = require('../system/ServiceRegistry');
             const wsService = ServiceRegistry.resolve('WorkspaceService');
             if (wsService && wsService.getCurrentWorkspace()) {
-                localPath = require('path').join(wsService._getActivePath(), uri);
+                localPath = pathModule.join(wsService._getActivePath(), uri);
             } else {
-                localPath = require('path').resolve(uri);
+                localPath = pathModule.resolve(uri);
             }
         } catch (e) {
-            localPath = require('path').resolve(uri);
+            localPath = pathModule.resolve(uri);
+        }
+
+        // Safety Fallback Search for uploaded assets by filename
+        if (!fsSync.existsSync(localPath)) {
+            const fileName = pathModule.basename(uri);
+            const appBase = AppPaths.getAppBase ? AppPaths.getAppBase() : process.cwd();
+            const candidates = [
+                pathModule.join(appBase, 'backend', 'uploads', 'background', fileName),
+                pathModule.join(appBase, 'backend', 'uploads', fileName),
+                pathModule.join(process.cwd(), 'backend', 'uploads', 'background', fileName),
+                pathModule.join(process.cwd(), 'backend', 'uploads', fileName),
+                pathModule.join(os.tmpdir(), fileName)
+            ];
+            for (const cand of candidates) {
+                if (fsSync.existsSync(cand)) {
+                    localPath = cand;
+                    break;
+                }
+            }
         }
     }
 

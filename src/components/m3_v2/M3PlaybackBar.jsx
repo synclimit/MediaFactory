@@ -86,10 +86,10 @@ export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, 
     const sp = trk.sourcePath || trk.path || trk.uri || trk.title || '';
     const cleanSp = sp.replace(/\\/g, '/');
     const apiPath = `/api/m2/stream?uri=${encodeURIComponent(cleanSp)}`;
-    if (window.location.protocol === 'file:' || window.location.port !== '18888') {
-      return 'http://localhost:18888' + apiPath;
-    }
-    return apiPath;
+    const activePort = typeof window !== 'undefined' ? (window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888)) : 18888;
+    const isHttp = typeof window !== 'undefined' && window.location.protocol.startsWith('http');
+    const baseUrl = isHttp ? '' : `http://127.0.0.1:${activePort}`;
+    return `${baseUrl}${apiPath}`;
   };
 
   useEffect(() => {
