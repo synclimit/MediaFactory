@@ -78,7 +78,7 @@ async function createWindow() {
 
     mainWindow.setMenuBarVisibility(false);
 
-    // Inject bound server port into window object when webContents finishes loading
+    // Inject bound server port into window object when webContents starts and finishes loading
     mainWindow.webContents.on('did-finish-load', () => {
         mainWindow.webContents.executeJavaScript(`window.SERVER_PORT = ${serverPort};`).catch(() => {});
     });
@@ -88,7 +88,7 @@ async function createWindow() {
         await mainWindow.webContents.session.clearStorageData();
     } catch(e) {}
 
-    const localUrl = `http://localhost:${serverPort}`;
+    const localUrl = `http://localhost:${serverPort}?serverPort=${serverPort}`;
     console.log('[Electron] Loading UI via Express server:', localUrl);
     mainWindow.loadURL(localUrl).catch((err) => {
         console.error('[Electron] Failed to load URL, falling back to loadFile:', err);

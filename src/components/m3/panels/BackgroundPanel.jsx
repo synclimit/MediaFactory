@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Image as ImageIcon, Video, Shuffle, Plus, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { getApiUrl } from '../../../utils/apiUrl';
 
 export default function BackgroundPanel({ 
     m3BgPool = [], 
@@ -56,9 +57,7 @@ export default function BackgroundPanel({
                 }
 
                 try {
-                    const uploadUrl = typeof window !== 'undefined' && window.location.protocol.startsWith('http')
-                        ? '/api/v1/assets/upload'
-                        : `http://127.0.0.1:${window.SERVER_PORT || 18888}/api/v1/assets/upload`;
+                    const uploadUrl = getApiUrl('/api/v1/assets/upload');
                     const response = await fetch(uploadUrl, {
                         method: 'POST',
                         headers: {

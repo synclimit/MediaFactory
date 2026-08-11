@@ -86,7 +86,7 @@ function startServer(port = 18888) {
 
 // Jika dijalankan langsung dengan `node server.js`
 if (require.main === module) {
-    startServer(3001);
+    startServer(18888);
 }
 
 module.exports = { app, startServer };

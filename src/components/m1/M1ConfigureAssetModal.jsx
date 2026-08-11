@@ -6,6 +6,7 @@ import M1SectionHeader from './ui/M1SectionHeader';
 import M1Input from './ui/M1Input';
 import M1Select from './ui/M1Select';
 import M1Button from './ui/M1Button';
+import { getApiUrl } from '../../utils/apiUrl';
 
 export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeModal }) {
   const [showDescModal, setShowDescModal] = useState(false);
@@ -123,9 +124,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
 
                       if (!selectedPath) {
                         try {
-                          const activePort = window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888);
-                          const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${activePort}`;
-                          const res = await fetch(`${baseUrl}/api/m1/dialog/audio`, { method: 'POST' });
+                          const res = await fetch(getApiUrl('/api/m1/dialog/audio'), { method: 'POST' });
                           const data = await res.json();
                           if (data.path) selectedPath = data.path;
                         } catch (err) {}
@@ -134,9 +133,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                       if (selectedPath) {
                         updateM1Slot(idx, 'audio', selectedPath);
                         try {
-                          const activePort = window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888);
-                          const baseUrl = window.location.protocol.startsWith('http') ? '' : `http://localhost:${activePort}`;
-                          const probeRes = await fetch(`${baseUrl}/api/m1/audio/probe`, { 
+                          const probeRes = await fetch(getApiUrl('/api/m1/audio/probe'), { 
                             method: 'POST', 
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ path: selectedPath }) 
@@ -223,7 +220,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                       updateM1Slot(idx, 'isFetching', true);
                       updateM1Slot(idx, 'fetchStatusText', 'COMMUNICATING WITH SATELLITE...');
                       try {
-                        const res = await fetch('/api/m1/youtube/fetch', { 
+                        const res = await fetch(getApiUrl('/api/m1/youtube/fetch'), { 
                           method: 'POST', 
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ url: slot.youtubeUrl }) 

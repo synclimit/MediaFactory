@@ -68,13 +68,7 @@ function Tooltip({ text }) {
   );
 }
 
-const getApiUrl = (endpoint) => {
-  if (typeof window === 'undefined') return endpoint;
-  const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
-  if (window.location.protocol.startsWith('http')) return path;
-  const port = window.SERVER_PORT || 18888;
-  return `http://127.0.0.1:${port}${path}`;
-};
+import { getApiUrl } from './utils/apiUrl.js';
 
 export default function App() {
   const [lang, setLang] = useState('English');

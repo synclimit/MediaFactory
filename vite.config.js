@@ -17,8 +17,21 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:18888',
-        changeOrigin: true
+        target: 'http://127.0.0.1:18888',
+        changeOrigin: true,
+        router: async () => {
+          const http = await import('http');
+          const ports = [18888, 3001];
+          for (const p of ports) {
+            const alive = await new Promise((resolve) => {
+              const req = http.get(`http://127.0.0.1:${p}/api/v1/diagnostics/health`, { timeout: 300 }, (res) => resolve(res.statusCode < 500));
+              req.on('error', () => resolve(false));
+              req.on('timeout', () => { req.destroy(); resolve(false); });
+            });
+            if (alive) return `http://127.0.0.1:${p}`;
+          }
+          return 'http://127.0.0.1:18888';
+        }
       }
     },
     watch: {
