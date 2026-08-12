@@ -276,6 +276,7 @@ class WorkspaceService {
             this.basePath,
             path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Workspaces'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactoryData', 'Workspaces'),
             path.resolve(process.cwd(), '.mediafactory', 'Workspaces'),
             path.resolve(process.cwd(), '.mediafactory_data', 'Workspaces'),
             'd:/MediaFactory/.mediafactory/Workspaces',
