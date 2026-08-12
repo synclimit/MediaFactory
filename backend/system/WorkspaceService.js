@@ -293,16 +293,15 @@ class WorkspaceService {
                 for (const entry of entries) {
                     if (entry.isDirectory()) {
                         const wsName = entry.name;
-                        if (seenNames.has(wsName)) continue;
+                        if (seenNames.has(wsName) || wsName.startsWith('.')) continue;
 
                         const wsFolder = path.join(basePath, wsName);
                         const manifestPath = path.join(wsFolder, 'workspace.manifest.json');
                         const configPath = path.join(wsFolder, 'Config', 'workspace.json');
 
-                        if (fsSync.existsSync(manifestPath) || fsSync.existsSync(configPath) || fsSync.existsSync(path.join(wsFolder, 'Config'))) {
-                            seenNames.add(wsName);
+                        seenNames.add(wsName);
 
-                            let manifestData = null;
+                        let manifestData = null;
                             try {
                                 if (fsSync.existsSync(manifestPath)) {
                                     manifestData = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
@@ -327,7 +326,6 @@ class WorkspaceService {
                                 renderCount: 0,
                                 storageSizeGB: '0.10'
                             });
-                        }
                     }
                 }
             } catch (e) {

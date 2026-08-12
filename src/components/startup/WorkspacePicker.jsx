@@ -14,14 +14,28 @@ export default function WorkspacePicker({ onWorkspaceSelected, onNewWorkspace })
     const [isLoading, setIsLoading] = useState(true);
 
     const loadWorkspaces = async () => {
+        let cachedList = [];
+        try {
+            cachedList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
+        } catch(e) {}
+
         try {
             const res = await fetch(getApiUrl('/api/v1/system/workspace/list'));
             const data = await res.json();
-            if (data.success) {
-                setWorkspaces(data.data || []);
+            const loaded = (data.success && Array.isArray(data.data)) ? data.data : [];
+
+            // Combine backend list with client-side cache
+            const combined = [...loaded];
+            for (const name of cachedList) {
+                if (!combined.some(w => w.name === name)) {
+                    combined.push({ name, totalProjects: 0, renderCount: 0, storageSizeGB: '0.10' });
+                }
             }
+            setWorkspaces(combined);
         } catch (e) {
             console.error(e);
+            const fallbackList = cachedList.map(name => ({ name, totalProjects: 0, renderCount: 0, storageSizeGB: '0.10' }));
+            setWorkspaces(fallbackList);
         } finally {
             setIsLoading(false);
         }

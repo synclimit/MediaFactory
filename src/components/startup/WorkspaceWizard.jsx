@@ -75,6 +75,13 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
             }
 
             if (!data || data.success || data.workspaceId || (data.validation?.message && data.validation.message.includes('already exists'))) {
+                try {
+                    const existingList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
+                    if (!existingList.includes(name)) {
+                        existingList.push(name);
+                        localStorage.setItem('mf_created_workspaces', JSON.stringify(existingList));
+                    }
+                } catch(e) {}
                 if (outputFolder) {
                     localStorage.setItem(`mf_workspace_output_${name}`, outputFolder);
                 }
@@ -105,19 +112,19 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
     };
 
     const handleBrowseFolder = async () => {
-        try {
-            if (window.require) {
+        if (window.require) {
+            try {
                 const { ipcRenderer } = window.require('electron');
                 const paths = await ipcRenderer.invoke('show-open-dialog', {
                     properties: ['openDirectory', 'createDirectory']
                 });
                 if (paths && paths.length > 0) {
                     setOutputFolder(paths[0]);
-                    return;
                 }
+                return; // STOP HERE! Prevent dialog spam on cancel
+            } catch (e) {
+                console.warn('[WorkspaceWizard] IPC open-dialog fallback:', e);
             }
-        } catch (e) {
-            console.warn('[WorkspaceWizard] IPC open-dialog fallback:', e);
         }
 
         try {
