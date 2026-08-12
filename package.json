@@ -1,7 +1,7 @@
 {
   "name": "mediafactory",
   "private": true,
-  "version": "1.0.25",
+  "version": "1.0.26",
   "description": "MediaFactory Desktop App",
   "author": "MediaFactory",
   "repository": {
@@ -50,7 +50,8 @@
       "allowElevation": true,
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": "always",
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "differentialPackage": true
     },
     "extraResources": [
       {

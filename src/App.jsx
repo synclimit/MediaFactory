@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import packageJson from '../package.json';
 const APP_VERSION = packageJson.version || '1.0.8';
 
@@ -414,6 +414,38 @@ export default function App() {
     Failed: false
   });
   const togglePipelineGroup = (group) => setPipelineGroupsCollapsed(prev => ({ ...prev, [group]: !prev[group] }));
+
+  // --- GLOBAL SCHEDULE ENGINE STATE ---
+  const [isScheduleEnabled, setIsScheduleEnabled] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [scheduleHour, setScheduleHour] = useState('02');
+  const [scheduleMinute, setScheduleMinute] = useState('00');
+  const [scheduleCountdown, setScheduleCountdown] = useState('');
+
+  // Date Dropdown Options Generator (Next 14 Days)
+  const dateOptions = useMemo(() => {
+    const list = [];
+    const now = new Date();
+    const months = ['Agt', 'Sep', 'Okt', 'Nov', 'Des', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'];
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dateVal = `${yyyy}-${mm}-${dd}`;
+
+      let label = '';
+      if (i === 0) label = `Hari Ini (${d.getDate()} ${months[d.getMonth()]})`;
+      else if (i === 1) label = `Besok (${d.getDate()} ${months[d.getMonth()]})`;
+      else if (i === 2) label = `Lusa (${d.getDate()} ${months[d.getMonth()]})`;
+      else label = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${yyyy}`;
+
+      list.push({ value: dateVal, label });
+    }
+    return list;
+  }, []);
 
   // --- Workspace Persistence ---
   
@@ -2600,6 +2632,52 @@ export default function App() {
     }, 250);
   };
 
+  // Global Scheduled Render Countdown & Auto-Trigger Hook (placed AFTER handleStartRender)
+  useEffect(() => {
+    let timerId = null;
+    if (isScheduleEnabled && scheduleDate && scheduleHour !== undefined && scheduleMinute !== undefined) {
+      const updateCountdown = () => {
+        const now = new Date();
+        const [yyyy, mm, dd] = scheduleDate.split('-').map(Number);
+        const h = parseInt(scheduleHour, 10);
+        const m = parseInt(scheduleMinute, 10);
+        
+        const target = new Date(yyyy, mm - 1, dd, h, m, 0, 0);
+        const diffMs = target.getTime() - now.getTime();
+        
+        if (diffMs <= 1000) {
+          // Target date & time reached! Auto-start global queue (renders sequentially 1 by 1)
+          setIsScheduleEnabled(false);
+          addNotification('⏰ Global Schedule Triggered!', `Jadwal render global ${scheduleDate} jam ${scheduleHour}:${scheduleMinute} dimulai secara berurutan.`);
+          addLog(`[GLOBAL SCHEDULE] Target date ${scheduleDate} ${scheduleHour}:${scheduleMinute} reached. Starting sequential render queue...`);
+          if (!isRendering) {
+            handleStartRender();
+          }
+        } else {
+          const totalSec = Math.floor(diffMs / 1000);
+          const daysLeft = Math.floor(totalSec / 86400);
+          const hoursLeft = Math.floor((totalSec % 86400) / 3600);
+          const minsLeft = Math.floor((totalSec % 3600) / 60);
+          const secsLeft = totalSec % 60;
+          
+          let cdStr = '';
+          if (daysLeft > 0) cdStr += `${daysLeft}d `;
+          cdStr += `${String(hoursLeft).padStart(2, '0')}h ${String(minsLeft).padStart(2, '0')}m ${String(secsLeft).padStart(2, '0')}s`;
+          setScheduleCountdown(cdStr);
+        }
+      };
+
+      updateCountdown();
+      timerId = setInterval(updateCountdown, 1000);
+    } else {
+      setScheduleCountdown('');
+    }
+
+    return () => {
+      if (timerId) clearInterval(timerId);
+    };
+  }, [isScheduleEnabled, scheduleDate, scheduleHour, scheduleMinute, isRendering]);
+
   if (appState === 'SPLASH') return <Splash onComplete={checkWorkspaces} />;
   if (appState === 'PICKER') return <WorkspacePicker onWorkspaceSelected={handleWorkspaceSelected} onNewWorkspace={() => setAppState('WIZARD')} />;
   if (appState === 'WIZARD') return <WorkspaceWizard onWorkspaceCreated={handleWorkspaceSelected} onClose={() => setAppState('PICKER')} />;
@@ -3017,6 +3095,110 @@ export default function App() {
                 <span className="text-sm font-jetbrains font-extrabold text-orange-400 neon-text-orange">{formattedETA}</span>
               </div>
             </div>
+          </div>
+
+          {/* GLOBAL RENDER SCHEDULER PANEL */}
+          <div className="mx-2 mt-2 mb-1 p-2.5 bg-gradient-to-r from-[#151822] via-[#1a1d2c] to-[#12141e] border border-orange-500/40 rounded-lg text-gray-300 space-y-2 shadow-[0_0_20px_rgba(249,115,22,0.1)] relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-orange-400">
+                <span className="text-sm drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]">🌐</span>
+                <span>GLOBAL RENDER SCHEDULER</span>
+              </div>
+              
+              {/* Toggle Switch */}
+              <button
+                onClick={() => {
+                  const nextState = !isScheduleEnabled;
+                  setIsScheduleEnabled(nextState);
+                  addLog(`Global Scheduled Render ${nextState ? 'ENABLED' : 'DISABLED'}`);
+                }}
+                className={`px-2.5 py-0.5 rounded-full text-[8.5px] font-bold tracking-wider uppercase transition-all flex items-center gap-1 border ${
+                  isScheduleEnabled 
+                    ? 'bg-orange-500/20 text-orange-400 border-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.5)]' 
+                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${isScheduleEnabled ? 'bg-orange-400 animate-ping shadow-[0_0_8px_rgba(249,115,22,1)]' : 'bg-gray-500'}`}></span>
+                {isScheduleEnabled ? 'SCHEDULER ON' : 'SCHEDULER OFF'}
+              </button>
+            </div>
+
+            {/* 3 Dropdowns Grid: Tanggal, Jam, Menit */}
+            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+              
+              {/* Dropdown 1: Tanggal */}
+              <div className="flex flex-col">
+                <label className="text-[8px] font-bold uppercase text-gray-400 mb-0.5 tracking-wider">📅 Tanggal</label>
+                <select
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  className="w-full bg-[#0a0c10] border border-orange-500/30 hover:border-orange-400 text-orange-200 text-[10px] font-bold rounded px-1.5 py-1 outline-none focus:border-orange-500 cursor-pointer truncate"
+                >
+                  {dateOptions.map(opt => (
+                    <option key={opt.value} value={opt.value} className="bg-[#12141a] text-gray-200">
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Dropdown 2: Jam */}
+              <div className="flex flex-col">
+                <label className="text-[8px] font-bold uppercase text-gray-400 mb-0.5 tracking-wider">🕒 Jam</label>
+                <select
+                  value={scheduleHour}
+                  onChange={(e) => setScheduleHour(e.target.value)}
+                  className="w-full bg-[#0a0c10] border border-orange-500/30 hover:border-orange-400 text-orange-200 text-[10px] font-mono font-bold rounded px-1.5 py-1 outline-none focus:border-orange-500 cursor-pointer"
+                >
+                  {Array.from({ length: 24 }).map((_, i) => {
+                    const hStr = String(i).padStart(2, '0');
+                    return (
+                      <option key={hStr} value={hStr} className="bg-[#12141a] text-gray-200">
+                        {hStr}:00 ({i < 12 ? 'Pagi' : 'Malam'})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Dropdown 3: Menit */}
+              <div className="flex flex-col">
+                <label className="text-[8px] font-bold uppercase text-gray-400 mb-0.5 tracking-wider">⏱️ Menit</label>
+                <select
+                  value={scheduleMinute}
+                  onChange={(e) => setScheduleMinute(e.target.value)}
+                  className="w-full bg-[#0a0c10] border border-orange-500/30 hover:border-orange-400 text-orange-200 text-[10px] font-mono font-bold rounded px-1.5 py-1 outline-none focus:border-orange-500 cursor-pointer"
+                >
+                  {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(mStr => (
+                    <option key={mStr} value={mStr} className="bg-[#12141a] text-gray-200">
+                      {mStr} Menit
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+            </div>
+
+            {/* Status Summary & Countdown Banner */}
+            {isScheduleEnabled ? (
+              <div className="mt-1 bg-gradient-to-r from-orange-950/80 via-amber-950/80 to-orange-950/80 border border-orange-500/60 rounded p-1.5 flex items-center justify-between shadow-[0_0_10px_rgba(249,115,22,0.2)]">
+                <div className="flex flex-col pr-1">
+                  <span className="text-[8px] text-orange-300 font-extrabold uppercase tracking-wider">
+                    ⏳ METODE RENDER: SATU PER SATU (SEQUENTIAL)
+                  </span>
+                  <span className="text-[7.5px] text-gray-300 truncate">
+                    Semua antrean mulai pada {scheduleHour}:{scheduleMinute} ({scheduleDate})
+                  </span>
+                </div>
+                <span className="text-[10.5px] font-jetbrains font-black text-orange-400 bg-black/80 px-2 py-0.5 rounded border border-orange-500/40 shrink-0">
+                  {scheduleCountdown || 'Menghitung...'}
+                </span>
+              </div>
+            ) : (
+              <div className="text-[8px] text-gray-500 italic text-center py-0.5">
+                Jadwal global mati. Klik "SCHEDULER OFF" untuk mengaktifkan jadwal render otomatis.
+              </div>
+            )}
           </div>
 
           {/* Morning Report Stats Summary */}
