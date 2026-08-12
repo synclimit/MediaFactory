@@ -220,11 +220,21 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                       updateM1Slot(idx, 'isFetching', true);
                       updateM1Slot(idx, 'fetchStatusText', 'COMMUNICATING WITH SATELLITE...');
                       try {
-                        const res = await fetch(getApiUrl('/api/m1/youtube/fetch'), { 
+                        const targetApiUrl = getApiUrl('/api/m1/youtube/fetch');
+                        const res = await fetch(targetApiUrl, { 
                           method: 'POST', 
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ url: slot.youtubeUrl }) 
                         });
+
+                        if (!res.ok) {
+                          throw new Error(`HTTP ${res.status}: Server backend error (${res.statusText || 'Endpoint unavailable'})`);
+                        }
+
+                        if (!res.body) {
+                          throw new Error('Streaming response body is unavailable.');
+                        }
+
                         const reader = res.body.getReader();
                         const decoder = new TextDecoder();
                         let buffer = '';
@@ -239,7 +249,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                               try {
                                 const data = JSON.parse(line.substring(6));
                                 if (data.error) {
-                                  alert('Fetch Error: ' + data.error);
+                                  alert('YouTube Fetch Error:\n\n' + data.error + '\n\nTip: You can analyze backend logs and binary dependencies in Diagnostics V5 (Health Check).');
                                   break;
                                 }
                                 if (data.statusText) updateM1Slot(idx, 'fetchStatusText', data.statusText);
@@ -281,7 +291,11 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                           }
                         }
                       } catch (e) {
-                        alert('Fetch error: ' + e.message);
+                        const isNetworkErr = e.name === 'TypeError' || e.message?.includes('Failed to fetch') || e.message?.includes('NetworkError');
+                        const detail = isNetworkErr
+                          ? 'Failed to connect to MediaFactory backend process.\n\nPlease verify that the application backend is active, or run Diagnostics V5 (Health Check) to inspect system connection.'
+                          : e.message;
+                        alert('Fetch Error:\n\n' + detail);
                       } finally {
                         updateM1Slot(idx, 'isFetching', false);
                         updateM1Slot(idx, 'fetchProgress', 0);

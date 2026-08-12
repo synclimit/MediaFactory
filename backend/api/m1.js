@@ -246,7 +246,8 @@ async function fetchMetadataWithFallback(targetUrl) {
     for (let i = 0; i < attempts.length; i++) {
         try {
             const info = await new Promise((resolve, reject) => {
-                const dumpProc = spawn(AppPaths.getYtDlpPath(), attempts[i]);
+                const ytBin = AppPaths.getYtDlpPath();
+                const dumpProc = spawn(ytBin, attempts[i]);
                 let stdoutData = '';
                 let stderrData = '';
                 dumpProc.stdout.on('data', d => stdoutData += d.toString());
@@ -260,7 +261,13 @@ async function fetchMetadataWithFallback(targetUrl) {
                         reject(new Error(cleanErr ? `[Attempt ${i + 1}] ${cleanErr}` : `Attempt ${i + 1} failed with code ${code}`));
                     }
                 });
-                dumpProc.on('error', err => reject(err));
+                dumpProc.on('error', err => {
+                    if (err.code === 'ENOENT') {
+                        reject(new Error(`yt-dlp binary not found at ${ytBin}. Please verify installation or run Diagnostics V5 Health Check.`));
+                    } else {
+                        reject(new Error(`yt-dlp spawn error (${err.code || 'UNKNOWN'}): ${err.message}`));
+                    }
+                });
             });
             if (info && (info.id || info.title)) return info;
         } catch (err) {

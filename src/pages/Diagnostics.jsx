@@ -3,6 +3,7 @@ import DebugActions from '../components/diagnostics/DebugActions.jsx';
 import M3DynamicContentPanel from '../components/m3/M3DynamicContentPanel.jsx';
 import M3ObjectInspector from '../components/m3/M3ObjectInspector.jsx';
 import VisualizerVerificationInspector from '../components/m3/debug/VisualizerVerificationInspector.jsx';
+import { getApiUrl } from '../utils/apiUrl';
 
 export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Props = null }) {
     const [stateData, setStateData] = useState(() => ({
@@ -27,7 +28,7 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
     const runHealthCheck = async () => {
         setTestingHealth(true);
         try {
-            const res = await fetch('/api/v1/diagnostics/health');
+            const res = await fetch(getApiUrl('/api/v1/diagnostics/health'));
             const json = await res.json();
             if (json.success) {
                 setHealthData(json.data);
@@ -41,7 +42,7 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
 
     const fetchState = async () => {
         try {
-            const res = await fetch('/api/v1/diagnostics/state');
+            const res = await fetch(getApiUrl('/api/v1/diagnostics/state'));
             const data = await res.json();
             if (data.success) setStateData(data.data);
         } catch (e) {
@@ -82,8 +83,8 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
     return (
         <div className="flex h-screen w-screen bg-[#0A0C10] text-gray-300 font-sans antialiased overflow-hidden">
             {/* SIDEBAR */}
-            <div className="w-64 bg-[#0D0F14] border-r border-gray-800 flex flex-col shadow-xl z-10">
-                <div className="p-4 flex items-center gap-3 border-b border-gray-800">
+            <div className="w-64 bg-[#0D0F14] border-r border-gray-800 flex flex-col shadow-xl z-10 shrink-0">
+                <div className="p-4 flex items-center gap-3 border-b border-gray-800 shrink-0">
                     <button onClick={onBack} className="text-gray-500 hover:text-white transition-colors">◀</button>
                     <div>
                         <h1 className="font-bold text-white tracking-tight">Diagnostics V5</h1>
@@ -93,7 +94,7 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                     </div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scroll">
                     {/* Featured M3 Diagnostic Tools */}
                     <div className="space-y-1.5 pb-2 border-b border-gray-800">
                         <div className="text-[9px] font-black uppercase text-cyan-400 tracking-widest px-1">M3 VISUALIZER & TOOLS DIAGNOSTIC</div>
@@ -123,25 +124,29 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                     </div>
 
                     <div className="text-[9px] font-black uppercase text-gray-500 tracking-widest px-1 pt-1">SYSTEM TELEMETRY</div>
-                    {tabs.map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`w-full text-left px-3 py-2 rounded text-xs font-semibold transition-all ${
-                                activeTab === tab 
-                                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/50' 
-                                : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
-                            }`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
-                </div>
-                
-                <div className="p-3 border-t border-gray-800">
-                    <DebugActions onRefreshState={fetchState} stateData={stateData} />
+                    <div className="space-y-1 pb-2 border-b border-gray-800/80">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`w-full text-left px-3 py-2 rounded text-xs font-semibold transition-all ${
+                                    activeTab === tab 
+                                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/50 shadow-sm' 
+                                    : 'text-gray-400 hover:bg-gray-800/50 hover:text-gray-200'
+                                }`}
+                            >
+                                {tab}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Integrated Diagnostic Actions Section */}
+                    <div className="pt-1">
+                        <DebugActions onRefreshState={fetchState} stateData={stateData} />
+                    </div>
                 </div>
             </div>
+
 
             {/* MAIN CONTENT */}
             <div className="flex-1 flex flex-col overflow-hidden bg-[#0A0C10]">
