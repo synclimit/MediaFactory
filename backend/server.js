@@ -56,27 +56,34 @@ app.use((req, res, next) => {
     next();
 });
 
-function startServer(port = 18888) {
+function startServer(initialPort = 18888) {
     return new Promise((resolve) => {
-        const tryListen = (targetPort) => {
-            const server = app.listen(targetPort, () => {
+        const candidatePorts = [initialPort, 18888, 3001, 3002, 3003, 8080, 8888, 0];
+        const uniquePorts = Array.from(new Set(candidatePorts));
+        let index = 0;
+
+        const tryNext = () => {
+            if (index >= uniquePorts.length) {
+                console.error('[MediaFactory Backend] All candidate ports failed!');
+                return resolve(null);
+            }
+            const targetPort = uniquePorts[index++];
+            const server = app.listen(targetPort);
+
+            server.once('listening', () => {
                 const boundPort = server.address() ? server.address().port : targetPort;
                 console.log(`[MediaFactory Backend] Running successfully on port ${boundPort}`);
                 resolve(server);
-            }).on('error', (err) => {
-                console.warn(`[Backend] Port ${targetPort} listen error (${err.code}):`, err.message);
-                if (targetPort === 18888) {
-                    console.log(`[Backend] Port 18888 unavailable, trying fallback port 3001...`);
-                    tryListen(3001);
-                } else if (targetPort === 3001) {
-                    console.log(`[Backend] Port 3001 unavailable, allocating dynamic free port (port 0)...`);
-                    tryListen(0);
-                } else {
-                    resolve(null);
-                }
+            });
+
+            server.once('error', (err) => {
+                console.warn(`[Backend] Port ${targetPort} unavailable (${err.code}): ${err.message}`);
+                try { server.close(); } catch(e) {}
+                tryNext();
             });
         };
-        tryListen(port);
+
+        tryNext();
     });
 }
 
