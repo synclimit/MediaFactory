@@ -88,7 +88,7 @@ async function createWindow() {
         await mainWindow.webContents.session.clearStorageData();
     } catch(e) {}
 
-    const localUrl = `http://localhost:${serverPort}?serverPort=${serverPort}`;
+    const localUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
     console.log('[Electron] Loading UI via Express server:', localUrl);
     mainWindow.loadURL(localUrl).catch((err) => {
         console.error('[Electron] Failed to load URL, falling back to loadFile:', err);

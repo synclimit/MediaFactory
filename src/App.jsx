@@ -2012,8 +2012,7 @@ export default function App() {
     const activePort = window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888);
     const endpoints = [
       '/api/m1/video-metadata',
-      `http://127.0.0.1:${activePort}/api/m1/video-metadata`,
-      `http://localhost:${activePort}/api/m1/video-metadata`
+      `http://127.0.0.1:${activePort}/api/m1/video-metadata`
     ];
 
     for (const endpoint of endpoints) {
