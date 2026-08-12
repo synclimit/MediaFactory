@@ -267,9 +267,9 @@ export default function M1CanvaVideoEditor({
         <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
           <button
             onClick={() => {
-              const rawW = selectedVideo?.metadata?.rawWidth || 1080;
-              const rawH = selectedVideo?.metadata?.rawHeight || 1920;
-              const srcRatio = rawW / rawH;
+              const rawW = selectedVideo?.metadata?.rawWidth || (selectedVideo?.metadata?.resolution ? parseInt(selectedVideo.metadata.resolution.split(/[x×]/)[0]) : 1080);
+              const rawH = selectedVideo?.metadata?.rawHeight || (selectedVideo?.metadata?.resolution ? parseInt(selectedVideo.metadata.resolution.split(/[x×]/)[1]) : 1920);
+              const srcRatio = (rawW && rawH) ? (rawW / rawH) : (9 / 16);
               const targetRatio = 16 / 9;
               let coverScale = 100;
               if (srcRatio < targetRatio) {

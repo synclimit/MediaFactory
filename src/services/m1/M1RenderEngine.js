@@ -18,9 +18,23 @@ function resolveYtDlpPath() {
   return 'yt-dlp';
 }
 
+function resolveFFmpegPath() {
+  const candidatePaths = [
+    process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffmpeg.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'ffmpeg.exe') : '',
+    path.join(process.cwd(), 'backend', 'bin', 'ffmpeg.exe'),
+    path.join(process.cwd(), 'bin', 'ffmpeg.exe')
+  ];
+  for (const p of candidatePaths) {
+    if (p && existsSync(p)) return p;
+  }
+  return 'ffmpeg';
+}
+
 function resolveFFmpegDir() {
   const candidatePaths = [
     process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin') : '',
     path.join(process.cwd(), 'backend', 'bin')
   ];
   for (const p of candidatePaths) {
@@ -185,7 +199,8 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     // Helper to run FFmpeg with Deadlock & Memory Overflow Protection
     const runFFmpeg = (args, onProgress) => {
       return new Promise((resolve, reject) => {
-        const proc = spawn('ffmpeg', args);
+        const ffmpegBin = resolveFFmpegPath();
+        const proc = spawn(ffmpegBin, args);
         let stderrLog = '';
         proc.stdout.on('data', (data) => {
           const output = data.toString();
@@ -364,21 +379,24 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
         } catch (err) {
           log('Warning', `Failed to download URL thumbnail: ${err.message}. Falling back to extraction.`);
           const thumbTime = Math.floor(finalTargetDuration / 2);
+          const ffmpegBin = resolveFFmpegPath();
           await new Promise((resolve) => {
-            exec(`ffmpeg -y -ss ${thumbTime} -i "${outVideoPath}" -vframes 1 -q:v 2 "${outThumbPath}"`, resolve);
+            exec(`"${ffmpegBin}" -y -ss ${thumbTime} -i "${outVideoPath}" -vframes 1 -q:v 2 "${outThumbPath}"`, resolve);
           });
         }
       } else {
         const thumbTime = Math.floor(finalTargetDuration / 2);
+        const ffmpegBin = resolveFFmpegPath();
         await new Promise((resolve) => {
-          exec(`ffmpeg -y -ss ${thumbTime} -i "${outVideoPath}" -vframes 1 -q:v 2 "${outThumbPath}"`, resolve);
+          exec(`"${ffmpegBin}" -y -ss ${thumbTime} -i "${outVideoPath}" -vframes 1 -q:v 2 "${outThumbPath}"`, resolve);
         });
       }
     } else {
       // Master Video Extract Fallback
       const thumbTime = Math.floor(finalTargetDuration / 2);
+      const ffmpegBin = resolveFFmpegPath();
       await new Promise((resolve) => {
-        exec(`ffmpeg -y -ss ${thumbTime} -i "${outVideoPath}" -vframes 1 -q:v 2 "${outThumbPath}"`, resolve);
+        exec(`"${ffmpegBin}" -y -ss ${thumbTime} -i "${outVideoPath}" -vframes 1 -q:v 2 "${outThumbPath}"`, resolve);
       });
     }
 

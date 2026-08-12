@@ -2181,8 +2181,8 @@ export default function App() {
       
       const probeData = await fetchVideoMetadataWithFallback(filePath, file);
       
-      const rawW = probeData.rawWidth || (probeData.resolution ? parseInt(probeData.resolution.split('×')[0]) : 1920);
-      const rawH = probeData.rawHeight || (probeData.resolution ? parseInt(probeData.resolution.split('×')[1]) : 1080);
+      const rawW = probeData.rawWidth || (probeData.resolution ? parseInt(probeData.resolution.split(/[x×]/)[0]) : 1920);
+      const rawH = probeData.rawHeight || (probeData.resolution ? parseInt(probeData.resolution.split(/[x×]/)[1]) : 1080);
       const srcRatio = rawW / rawH;
       const targetRatio = 16 / 9;
       let autoScale = 100;
@@ -2247,8 +2247,8 @@ export default function App() {
       const probeData = await fetchVideoMetadataWithFallback(filePath);
       
       const fileName = filePath.split(/[\\/]/).pop();
-      const rawW = probeData.rawWidth || (probeData.resolution ? parseInt(probeData.resolution.split('×')[0]) : 1920);
-      const rawH = probeData.rawHeight || (probeData.resolution ? parseInt(probeData.resolution.split('×')[1]) : 1080);
+      const rawW = probeData.rawWidth || (probeData.resolution ? parseInt(probeData.resolution.split(/[x×]/)[0]) : 1920);
+      const rawH = probeData.rawHeight || (probeData.resolution ? parseInt(probeData.resolution.split(/[x×]/)[1]) : 1080);
       const srcRatio = rawW / rawH;
       const targetRatio = 16 / 9;
       let autoScale = 100;
