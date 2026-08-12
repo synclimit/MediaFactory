@@ -75,6 +75,17 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
             }
 
             if (!data || data.success || data.workspaceId || (data.validation?.message && data.validation.message.includes('already exists'))) {
+                if (outputFolder) {
+                    localStorage.setItem(`mf_workspace_output_${name}`, outputFolder);
+                }
+                if (logoPath || watermarkPath || overlayPath || subscribePath) {
+                    localStorage.setItem(`mf_workspace_branding_${name}`, JSON.stringify({
+                        logo: logoPath,
+                        watermark: watermarkPath,
+                        overlay: overlayPath,
+                        subscribeAnim: subscribePath
+                    }));
+                }
                 setLoadingMsg('Loading Workspace...');
                 setTimeout(() => {
                     setLoadingMsg('Opening Editor...');

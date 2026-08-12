@@ -1,6 +1,7 @@
 import React from 'react';
 import Tooltip from '../ui/Tooltip.jsx';
 import M1CanvaVideoEditor from './M1CanvaVideoEditor.jsx';
+import { getApiUrl } from '../../utils/apiUrl.js';
 
 export default function M1VideoUpload({
   m1VideoProbing,
@@ -33,10 +34,22 @@ export default function M1VideoUpload({
           }
           return;
         }
-      } catch(err) {}
+      } catch(err) {
+        console.warn('[M1] IPC dialog fallback:', err);
+      }
     }
 
-    // 2. Direct HTML File Picker (instant, 100% reliable in any browser or webview)
+    // 2. Backend dialog fallback
+    try {
+      const res = await fetch(getApiUrl('/api/v1/m5/dialog/file'), { method: 'POST' });
+      const data = await res.json();
+      if (data && data.path && handleManualVideoPathChange) {
+        handleManualVideoPathChange({ target: { value: data.path } });
+        return;
+      }
+    } catch(err) {}
+
+    // 3. Direct HTML File Picker (instant, 100% reliable in any browser or webview)
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }

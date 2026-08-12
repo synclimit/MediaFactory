@@ -458,9 +458,19 @@ function installUpdateUnified() {
     }
 }
 
-ipcMain.handle('show-open-dialog', (event, options) => {
-    const { dialog } = require('electron');
-    return dialog.showOpenDialogSync(options || { properties: ['openFile'] });
+ipcMain.handle('show-open-dialog', async (event, options) => {
+    const { dialog, BrowserWindow } = require('electron');
+    const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    try {
+        const res = await dialog.showOpenDialog(win, options || { properties: ['openFile'] });
+        if (!res.canceled && res.filePaths && res.filePaths.length > 0) {
+            return res.filePaths;
+        }
+        return [];
+    } catch(e) {
+        console.error('[Electron] showOpenDialog error:', e);
+        return [];
+    }
 });
 
 ipcMain.handle('get-server-port', () => currentServerPort);

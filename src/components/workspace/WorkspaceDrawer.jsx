@@ -13,17 +13,36 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
         if (!isOpen || !activeWorkspace) return;
         
         const loadSettings = async () => {
+            const cachedOut = localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) || '';
+            let cachedBranding = {};
+            try {
+                cachedBranding = JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`) || '{}');
+            } catch(e) {}
+
             try {
                 const res = await fetch(getApiUrl(`/api/v1/system/workspace/${activeWorkspace}/settings`));
                 const data = await res.json();
-                if (data.success && data.data) {
-                    setSettings(data.data.data || {});
-                } else {
-                    setSettings({ general: { channelName: activeWorkspace }, branding: {}, output: { main: '' } });
+                let loaded = data.success && data.data ? (data.data.data || {}) : {};
+                
+                if (!loaded.output) loaded.output = {};
+                if (!loaded.output.main && cachedOut) {
+                    loaded.output.main = cachedOut;
                 }
+
+                if (!loaded.branding) loaded.branding = {};
+                if (!loaded.branding.logo && cachedBranding.logo) loaded.branding.logo = cachedBranding.logo;
+                if (!loaded.branding.watermark && cachedBranding.watermark) loaded.branding.watermark = cachedBranding.watermark;
+                if (!loaded.branding.overlay && cachedBranding.overlay) loaded.branding.overlay = cachedBranding.overlay;
+                if (!loaded.branding.subscribeAnim && cachedBranding.subscribeAnim) loaded.branding.subscribeAnim = cachedBranding.subscribeAnim;
+
+                setSettings(loaded);
             } catch (e) {
                 console.error(e);
-                setSettings({ general: { channelName: activeWorkspace }, branding: {}, output: { main: '' } });
+                setSettings({ 
+                    general: { channelName: activeWorkspace }, 
+                    branding: cachedBranding || {}, 
+                    output: { main: cachedOut } 
+                });
             }
         };
         loadSettings();
@@ -32,18 +51,23 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            if (settings?.output?.main) {
+                localStorage.setItem(`mf_workspace_output_${activeWorkspace}`, settings.output.main);
+            }
+            if (settings?.branding) {
+                localStorage.setItem(`mf_workspace_branding_${activeWorkspace}`, JSON.stringify(settings.branding));
+            }
             await fetch(getApiUrl(`/api/v1/system/workspace/${activeWorkspace}/settings`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
             });
-            if (settings?.output?.main) {
-                localStorage.setItem(`mf_workspace_output_${activeWorkspace}`, settings.output.main);
-            }
             window.dispatchEvent(new CustomEvent('workspace_settings_updated', { detail: { activeWorkspace, settings } }));
             onClose();
         } catch (e) {
             console.error(e);
+            window.dispatchEvent(new CustomEvent('workspace_settings_updated', { detail: { activeWorkspace, settings } }));
+            onClose();
         } finally {
             setIsSaving(false);
         }

@@ -157,9 +157,21 @@ router.post('/api/v1/system/workspace/create', async (req, res) => {
         const wsService = ServiceRegistry.resolve('WorkspaceService');
         const workspace = await wsService.createWorkspace(req.body.name);
         
-        // Save the configured output folder
+        // Save the configured output folder & branding assets
+        const initialSettings = {};
         if (req.body.outputFolder) {
-            await wsService.saveSettings(req.body.name, { output: { main: req.body.outputFolder } });
+            initialSettings.output = { main: req.body.outputFolder };
+        }
+        if (req.body.assets) {
+            initialSettings.branding = {
+                logo: req.body.assets.logo || null,
+                watermark: req.body.assets.watermark || null,
+                overlay: req.body.assets.overlay || null,
+                subscribeAnim: req.body.assets.subscribe_anim || null
+            };
+        }
+        if (Object.keys(initialSettings).length > 0) {
+            await wsService.saveSettings(req.body.name, initialSettings);
         }
         
         res.json(workspace);
