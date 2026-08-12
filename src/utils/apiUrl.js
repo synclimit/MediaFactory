@@ -37,14 +37,12 @@ export function getApiUrl(endpoint) {
     }
   }
 
-  // When running directly via http/https in browser/Vite dev mode
-  if (window.location && window.location.protocol && window.location.protocol.startsWith('http')) {
-    // Vite dev server uses relative URL through Vite proxy
+  // When running directly inside Vite dev server (port 5173 or 5174)
+  if (typeof window.location !== 'undefined' && (window.location.port === '5173' || window.location.port === '5174')) {
     return path;
   }
 
-  // Fallback for Electron file:// protocol or standalone client
+  // Exact target URL for Electron or Express production server
   const port = activePort || 18888;
   return `http://127.0.0.1:${port}${path}`;
 }
-

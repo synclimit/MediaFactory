@@ -23,35 +23,43 @@ const TextService = require('./m3/text/TextService');
 const ReactiveService = require('./m3/reactive/ReactiveService');
 const BrandingService = require('./m3/branding/BrandingService');
 
+function safeRegister(name, factory) {
+    try {
+        const instance = typeof factory === 'function' ? factory() : factory;
+        if (instance && typeof instance.start === 'function') {
+            try { instance.start(); } catch(e) { console.error(`[ServiceRegistry] ${name}.start() warning:`, e); }
+        }
+        ServiceRegistry.register(name, instance);
+    } catch (e) {
+        console.error(`[ServiceRegistry] Failed to register service ${name}:`, e);
+    }
+}
+
 function bootstrapBackend() {
-    // Prevent double registration if already bootstrapped
     if (ServiceRegistry.services.size > 0) return;
 
-    const cacheCleaner = new CacheCleanerService();
-    cacheCleaner.start();
-    ServiceRegistry.register('CacheCleanerService', cacheCleaner);
-
-    ServiceRegistry.register('ConfigurationService', new ConfigurationService());
-    ServiceRegistry.register('StorageService', new StorageService());
-    ServiceRegistry.register('RuntimeService', new RuntimeService());
-    ServiceRegistry.register('WorkspaceService', new WorkspaceService());
-    ServiceRegistry.register('ValidationService', new ValidationService());
-    ServiceRegistry.register('HardwareService', new HardwareService());
-    ServiceRegistry.register('PluginService', new PluginService());
-    ServiceRegistry.register('JobService', new JobService());
-    ServiceRegistry.register('RecoveryService', new RecoveryService());
-    ServiceRegistry.register('AssetService', new AssetService());
-    ServiceRegistry.register('PresetManagerService', new PresetManagerService());
+    safeRegister('CacheCleanerService', () => new CacheCleanerService());
+    safeRegister('ConfigurationService', () => new ConfigurationService());
+    safeRegister('StorageService', () => new StorageService());
+    safeRegister('RuntimeService', () => new RuntimeService());
+    safeRegister('WorkspaceService', () => new WorkspaceService());
+    safeRegister('ValidationService', () => new ValidationService());
+    safeRegister('HardwareService', () => new HardwareService());
+    safeRegister('PluginService', () => new PluginService());
+    safeRegister('JobService', () => new JobService());
+    safeRegister('RecoveryService', () => new RecoveryService());
+    safeRegister('AssetService', () => new AssetService());
+    safeRegister('PresetManagerService', () => new PresetManagerService());
 
     // Register M3 Panel Services
-    ServiceRegistry.register('BackgroundService', new BackgroundService());
-    ServiceRegistry.register('PlaylistService', new PlaylistService());
-    ServiceRegistry.register('VisualizerService', new VisualizerService());
-    ServiceRegistry.register('EffectsService', new EffectsService());
-    ServiceRegistry.register('OverlayService', new OverlayService());
-    ServiceRegistry.register('TextService', new TextService());
-    ServiceRegistry.register('ReactiveService', new ReactiveService());
-    ServiceRegistry.register('BrandingService', new BrandingService());
+    safeRegister('BackgroundService', () => new BackgroundService());
+    safeRegister('PlaylistService', () => new PlaylistService());
+    safeRegister('VisualizerService', () => new VisualizerService());
+    safeRegister('EffectsService', () => new EffectsService());
+    safeRegister('OverlayService', () => new OverlayService());
+    safeRegister('TextService', () => new TextService());
+    safeRegister('ReactiveService', () => new ReactiveService());
+    safeRegister('BrandingService', () => new BrandingService());
 
     console.log('[MediaFactory] Backend services bootstrapped successfully.');
 }

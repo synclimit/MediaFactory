@@ -6,25 +6,30 @@ app.use(cors());
 app.use(express.json({ limit: '500mb' }));
 
 // Bootstrap backend services
-require('./bootstrap.js')();
+try {
+    require('./bootstrap.js')();
+} catch (e) {
+    console.error('[MediaFactory Backend] Bootstrap error:', e);
+}
 
-// Import the main API router
-const apiRouter = require('./api/router.js');
-app.use(apiRouter);
+// Import & mount API routers safely
+const safeMount = (fn) => {
+    try { fn(); } catch (e) { console.error('[MediaFactory Backend] Router mount warning:', e); }
+};
 
-// Import module routers
-app.use(require('./api/m1.js').router);
-app.use(require('./api/m2.js').router);
-app.use(require('./api/m2-splitter.js').router);
-app.use(require('./api/m2-mode3-assets.js'));
-app.use(require('./api/m3.js'));
-app.use(require('./api/m4.js').router);
-app.use(require('./api/m5.js').router);
-app.use(require('./api/whisper.js'));
-app.use(require('./api/qa.js'));
-app.use(require('./api/diagnostics.js'));
-app.use(require('./routes/sounds.js'));
-app.use('/api/overlays', require('./routes/overlays.js'));
+safeMount(() => app.use(require('./api/router.js')));
+safeMount(() => app.use(require('./api/m1.js').router));
+safeMount(() => app.use(require('./api/m2.js').router));
+safeMount(() => app.use(require('./api/m2-splitter.js').router));
+safeMount(() => app.use(require('./api/m2-mode3-assets.js')));
+safeMount(() => app.use(require('./api/m3.js')));
+safeMount(() => app.use(require('./api/m4.js').router));
+safeMount(() => app.use(require('./api/m5.js').router));
+safeMount(() => app.use(require('./api/whisper.js')));
+safeMount(() => app.use(require('./api/qa.js')));
+safeMount(() => app.use(require('./api/diagnostics.js')));
+safeMount(() => app.use(require('./routes/sounds.js')));
+safeMount(() => app.use('/api/overlays', require('./routes/overlays.js')));
 
 // Serve static frontend in production
 const path = require('path');
