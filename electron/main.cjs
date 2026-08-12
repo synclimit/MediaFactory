@@ -397,17 +397,45 @@ function downloadUpdateUnified() {
     }
 }
 
+function forceKillLingeringProcesses() {
+    cleanupFFmpegOnExit();
+    if (process.platform === 'win32') {
+        const { execSync } = require('child_process');
+        try { execSync('taskkill /F /IM ffmpeg.exe /T', { stdio: 'ignore' }); } catch(e) {}
+        try { execSync('taskkill /F /IM ffprobe.exe /T', { stdio: 'ignore' }); } catch(e) {}
+        try { execSync('taskkill /F /IM yt-dlp.exe /T', { stdio: 'ignore' }); } catch(e) {}
+    }
+}
+
 function installUpdateUnified() {
     console.log('[AutoUpdater] Performing safe shutdown and 1-Click update installation...');
-    cleanupFFmpegOnExit();
+    forceKillLingeringProcesses();
+
     if (backendServer) {
-        try { backendServer.close(); } catch(e) {}
+        try {
+            if (typeof backendServer.closeAllConnections === 'function') {
+                backendServer.closeAllConnections();
+            }
+            backendServer.close();
+        } catch(e) {}
     }
+
+    // Destroy all open windows immediately to release all UI file locks
+    try {
+        const { BrowserWindow } = require('electron');
+        BrowserWindow.getAllWindows().forEach(win => {
+            try { win.removeAllListeners(); win.destroy(); } catch(e) {}
+        });
+    } catch(e) {}
 
     if (app.isPackaged && nativeUpdateAvailable) {
         // Native silent 1-click update: closes app safely, applies update quietly, restarts app
         try {
-            autoUpdater.quitAndInstall(false, true);
+            autoUpdater.quitAndInstall(true, true);
+            // Ensure unconditional hard exit so MediaFactory.exe is not locked in Task Manager
+            setTimeout(() => {
+                app.exit(0);
+            }, 600);
             return;
         } catch (e) {
             console.error('[AutoUpdater] quitAndInstall failed, using fallback:', e);
@@ -418,12 +446,12 @@ function installUpdateUnified() {
         // Run silent NSIS installer with /S flag to prevent file-locking and wizard issues
         const { spawn } = require('child_process');
         try {
-            spawn(pendingUpdateExePath, ['/S'], { detached: true, stdio: 'ignore' }).unref();
-            setTimeout(() => app.quit(), 500);
+            spawn(pendingUpdateExePath, ['/S', '--force-run'], { detached: true, stdio: 'ignore' }).unref();
+            setTimeout(() => app.exit(0), 600);
         } catch (e) {
             const { shell } = require('electron');
             shell.openPath(pendingUpdateExePath);
-            setTimeout(() => app.quit(), 500);
+            setTimeout(() => app.exit(0), 600);
         }
     } else {
         downloadUpdateUnified();

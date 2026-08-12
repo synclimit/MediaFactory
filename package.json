@@ -1,7 +1,7 @@
 {
   "name": "mediafactory",
   "private": true,
-  "version": "1.0.30",
+  "version": "1.0.31",
   "description": "MediaFactory Desktop App",
   "author": "MediaFactory",
   "repository": {
@@ -23,21 +23,19 @@
     "appId": "com.mediafactory.app",
     "productName": "MediaFactory",
     "asar": true,
-    "asarUnpack": [
-      "backend/bin/**/*",
-      "backend/ffmpeg/**/*"
-    ],
     "files": [
       "dist/**/*",
       "backend/**/*",
+      "!backend/bin/**/*",
+      "!backend/ffmpeg/**/*",
       "electron/main.cjs",
       "electron/**/*",
       "src/**/*",
       "node_modules/**/*",
       "package.json",
-      "dummy.mp4",
-      "test_bg.mp4",
-      "test_audio.mp3"
+      "!dummy.mp4",
+      "!test_bg.mp4",
+      "!test_audio.mp3"
     ],
     "directories": {
       "output": "dist-release"
@@ -61,13 +59,6 @@
       {
         "from": "backend/bin",
         "to": "backend/bin",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "backend/ffmpeg",
-        "to": "backend/ffmpeg",
         "filter": [
           "**/*"
         ]
