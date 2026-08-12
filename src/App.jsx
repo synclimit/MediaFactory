@@ -102,7 +102,7 @@ export default function App() {
     return localStorage.getItem('pipelineDrawerCollapsed') === 'true';
   });
 
-  const [appState, setAppState] = useState('EDITOR'); // 'SPLASH' | 'PICKER' | 'WIZARD' | 'EDITOR'
+  const [appState, setAppState] = useState('SPLASH'); // 'SPLASH' | 'PICKER' | 'WIZARD' | 'EDITOR'
   const [activeWorkspace, setActiveWorkspace] = useState(() => localStorage.getItem('mf_active_workspace') || 'Test 1');
   const [hardwareStats, setHardwareStats] = useState({ cpu: 12, gpu: 18, ram: 32 });
   const [fps, setFps] = useState(60);
@@ -132,7 +132,7 @@ export default function App() {
     let interval;
     if (appState === 'EDITOR') {
       interval = setInterval(() => {
-        fetch('/api/v1/system/telemetry')
+        fetch(getApiUrl('/api/v1/system/telemetry'))
           .then(res => res.json())
           .then(data => {
             if (data.success && data.data) {
@@ -161,7 +161,7 @@ export default function App() {
     const ws = wsName || activeWorkspace;
     if (!ws) return;
     try {
-      const res = await fetch(`/api/v1/system/workspace/${ws}/settings`);
+      const res = await fetch(getApiUrl(`/api/v1/system/workspace/${ws}/settings`));
       const data = await res.json();
       if (data.success && data.data) {
         setWorkspaceConfig(data.data.data || {});
@@ -979,7 +979,7 @@ export default function App() {
   const checkWorkspaces = useCallback(async () => {
     try {
       const storedLastWs = localStorage.getItem('mf_active_workspace');
-      const res = await fetch('/api/v1/system/workspace/list');
+      const res = await fetch(getApiUrl('/api/v1/system/workspace/list'));
       const data = await res.json();
       if (data.success && data.data && data.data.length > 0) {
         const targetWs = (storedLastWs && data.data.some(w => w.name === storedLastWs))
@@ -1011,7 +1011,7 @@ export default function App() {
   const handleWorkspaceSelected = async (name) => {
     try {
         localStorage.setItem('mf_active_workspace', name);
-        const res = await fetch(`/api/v1/system/workspace/${name}/settings`);
+        const res = await fetch(getApiUrl(`/api/v1/system/workspace/${name}/settings`));
         const data = await res.json();
         if (data.success && data.data) {
             setWorkspaceConfig(data.data.data || {});

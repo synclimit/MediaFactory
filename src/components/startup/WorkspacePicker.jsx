@@ -6,6 +6,7 @@ import Status from '../ui/Status';
 import Surface from '../ui/Surface';
 import { BackgroundVariants } from '../ui/BackgroundVariants';
 import { Play, Copy, FolderSync, Plus, Trash2 } from 'lucide-react';
+import { getApiUrl } from '../../utils/apiUrl';
 
 export default function WorkspacePicker({ onWorkspaceSelected, onNewWorkspace }) {
     const [workspaces, setWorkspaces] = useState([]);
@@ -14,7 +15,7 @@ export default function WorkspacePicker({ onWorkspaceSelected, onNewWorkspace })
 
     const loadWorkspaces = async () => {
         try {
-            const res = await fetch('/api/v1/system/workspace/list');
+            const res = await fetch(getApiUrl('/api/v1/system/workspace/list'));
             const data = await res.json();
             if (data.success) {
                 setWorkspaces(data.data || []);
@@ -36,7 +37,7 @@ export default function WorkspacePicker({ onWorkspaceSelected, onNewWorkspace })
 
     const handleOpen = async (name) => {
         try {
-            await fetch('/api/v1/system/workspace/active', {
+            await fetch(getApiUrl('/api/v1/system/workspace/active'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ workspaceName: name })
@@ -132,7 +133,7 @@ export default function WorkspacePicker({ onWorkspaceSelected, onNewWorkspace })
                                             e.stopPropagation();
                                             if (window.confirm(`Are you sure you want to delete workspace "${ws.name}"?`)) {
                                                 try {
-                                                    await fetch(`/api/v1/system/workspace/${ws.name}`, { method: 'DELETE' });
+                                                    await fetch(getApiUrl(`/api/v1/system/workspace/${ws.name}`), { method: 'DELETE' });
                                                     loadWorkspaces();
                                                 } catch(err) { console.error(err); }
                                             }

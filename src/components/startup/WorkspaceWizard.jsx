@@ -3,6 +3,7 @@ import Button from '../ui/Button';
 import Surface from '../ui/Surface';
 import { BackgroundVariants } from '../ui/BackgroundVariants';
 import { Image, ImagePlay, MonitorPlay, AlertTriangle, FolderOutput } from 'lucide-react';
+import { getApiUrl } from '../../utils/apiUrl';
 
 export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
     const [step, setStep] = useState(1);
@@ -54,7 +55,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 outputFolder
             };
 
-            const res = await fetch('/api/v1/system/workspace/create', {
+            const res = await fetch(getApiUrl('/api/v1/system/workspace/create'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -165,7 +166,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                                         <button 
                                             onClick={async () => {
                                                 try {
-                                                    const res = await fetch('/api/v1/m5/dialog/folder', { method: 'POST' });
+                                                    const res = await fetch(getApiUrl('/api/v1/m5/dialog/folder'), { method: 'POST' });
                                                     const data = await res.json();
                                                     if (data.path) setOutputFolder(data.path);
                                                 } catch (e) {

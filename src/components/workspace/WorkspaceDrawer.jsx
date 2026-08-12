@@ -3,6 +3,7 @@ import Drawer from '../ui/Drawer';
 import Avatar from '../ui/Avatar';
 import Status from '../ui/Status';
 import Button from '../ui/Button';
+import { getApiUrl } from '../../utils/apiUrl';
 
 export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSwitch }) {
     const [settings, setSettings] = useState(null);
@@ -13,13 +14,16 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
         
         const loadSettings = async () => {
             try {
-                const res = await fetch(`/api/v1/system/workspace/${activeWorkspace}/settings`);
+                const res = await fetch(getApiUrl(`/api/v1/system/workspace/${activeWorkspace}/settings`));
                 const data = await res.json();
                 if (data.success && data.data) {
                     setSettings(data.data.data || {});
+                } else {
+                    setSettings({ general: { channelName: activeWorkspace }, branding: {}, output: { main: '' } });
                 }
             } catch (e) {
                 console.error(e);
+                setSettings({ general: { channelName: activeWorkspace }, branding: {}, output: { main: '' } });
             }
         };
         loadSettings();
@@ -28,7 +32,7 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await fetch(`/api/v1/system/workspace/${activeWorkspace}/settings`, {
+            await fetch(getApiUrl(`/api/v1/system/workspace/${activeWorkspace}/settings`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
@@ -48,7 +52,7 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
     const handleFileBrowse = async (isFolder, callback) => {
         try {
             const endpoint = isFolder ? '/api/v1/m5/dialog/folder' : '/api/v1/m5/dialog/file';
-            const res = await fetch(endpoint, { method: 'POST' });
+            const res = await fetch(getApiUrl(endpoint), { method: 'POST' });
             const data = await res.json();
             if (data && data.path) {
                 callback(data.path);

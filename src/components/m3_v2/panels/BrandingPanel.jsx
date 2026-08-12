@@ -2,6 +2,7 @@ import React from 'react';
 import { useM3Panel } from '../../../hooks/useM3Panel';
 import { ThumbnailCard } from '../../ui/Thumbnails';
 import { m2WorkspaceContext } from '../../../services/m2/WorkspaceContext';
+import { getApiUrl } from '../../../utils/apiUrl';
 
 export default function BrandingPanel({ addObject }) {
     const { initialized, loading, error, settings, markDirty, saveSettings } = useM3Panel('Branding');
@@ -21,7 +22,7 @@ export default function BrandingPanel({ addObject }) {
         
         if (workspaceId && workspaceId !== 'default') {
             try {
-                const res = await fetch(`/api/v1/system/workspace/${workspaceId}/settings`);
+                const res = await fetch(getApiUrl(`/api/v1/system/workspace/${workspaceId}/settings`));
                 const data = await res.json();
                 if (data.success && data.data && data.data.data) {
                     const branding = data.data.data.branding;
