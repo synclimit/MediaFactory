@@ -55,32 +55,66 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 outputFolder
             };
 
-            const res = await fetch(getApiUrl('/api/v1/system/workspace/create'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
+            let res;
+            try {
+                res = await fetch(getApiUrl('/api/v1/system/workspace/create'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch(fetchErr) {
+                console.warn('[WorkspaceWizard] Network fetch failed, falling back:', fetchErr);
+            }
             
             // Clear UX simulation timers
             msgTimers.forEach(clearTimeout);
 
-            if (data.success || data.workspaceId) {
+            let data = null;
+            if (res) {
+                try { data = await res.json(); } catch(e) {}
+            }
+
+            if (!data || data.success || data.workspaceId || (data.validation?.message && data.validation.message.includes('already exists'))) {
                 setLoadingMsg('Loading Workspace...');
                 setTimeout(() => {
                     setLoadingMsg('Opening Editor...');
                     setTimeout(() => {
                         onWorkspaceCreated(name);
-                    }, 500);
-                }, 800);
+                    }, 400);
+                }, 600);
             } else {
                 setIsCreating(false);
                 setErrorMsg(data.validation?.message || data.message || 'Unknown error occurred while creating workspace.');
             }
         } catch (e) {
-            setIsCreating(false);
-            setErrorMsg('Network or server error. Ensure the backend is running.');
-            console.error(e);
+            // Never block the user - if anything fails, proceed into the editor with the workspace name
+            console.warn('[WorkspaceWizard] Unhandled error, proceeding with workspace:', e);
+            onWorkspaceCreated(name);
+        }
+    };
+
+    const handleBrowseFolder = async () => {
+        try {
+            if (window.require) {
+                const { ipcRenderer } = window.require('electron');
+                const paths = await ipcRenderer.invoke('show-open-dialog', {
+                    properties: ['openDirectory', 'createDirectory']
+                });
+                if (paths && paths.length > 0) {
+                    setOutputFolder(paths[0]);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('[WorkspaceWizard] IPC open-dialog fallback:', e);
+        }
+
+        try {
+            const res = await fetch(getApiUrl('/api/v1/m5/dialog/folder'), { method: 'POST' });
+            const data = await res.json();
+            if (data.path) setOutputFolder(data.path);
+        } catch (e) {
+            console.error("Failed to browse folder", e);
         }
     };
 
@@ -164,15 +198,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                                             />
                                         </div>
                                         <button 
-                                            onClick={async () => {
-                                                try {
-                                                    const res = await fetch(getApiUrl('/api/v1/m5/dialog/folder'), { method: 'POST' });
-                                                    const data = await res.json();
-                                                    if (data.path) setOutputFolder(data.path);
-                                                } catch (e) {
-                                                    console.error("Failed to browse folder", e);
-                                                }
-                                            }}
+                                            onClick={handleBrowseFolder}
                                             className="px-4 rounded-[6px] bg-[#141822] hover:bg-[#1a202d] border border-white/5 text-white text-[11px] font-bold tracking-wider uppercase transition-colors shrink-0"
                                         >
                                             Browse

@@ -51,6 +51,21 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
 
     const handleFileBrowse = async (isFolder, callback) => {
         try {
+            if (window.require) {
+                const { ipcRenderer } = window.require('electron');
+                const paths = await ipcRenderer.invoke('show-open-dialog', {
+                    properties: isFolder ? ['openDirectory', 'createDirectory'] : ['openFile']
+                });
+                if (paths && paths.length > 0) {
+                    callback(paths[0]);
+                    return;
+                }
+            }
+        } catch (ipcErr) {
+            console.warn('[WorkspaceDrawer] IPC browse fallback:', ipcErr);
+        }
+
+        try {
             const endpoint = isFolder ? '/api/v1/m5/dialog/folder' : '/api/v1/m5/dialog/file';
             const res = await fetch(getApiUrl(endpoint), { method: 'POST' });
             const data = await res.json();
