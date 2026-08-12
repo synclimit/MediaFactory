@@ -39,7 +39,6 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
         try {
             setLoadingMsg('Creating Workspace...');
             
-            // UX Simulation
             const msgTimers = [];
             msgTimers.push(setTimeout(() => setLoadingMsg('Initializing Folder Structure...'), 600));
             msgTimers.push(setTimeout(() => setLoadingMsg('Preparing Configuration...'), 1200));
@@ -63,10 +62,9 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                     body: JSON.stringify(payload)
                 });
             } catch(fetchErr) {
-                console.warn('[WorkspaceWizard] Network fetch failed, falling back:', fetchErr);
+                console.error('[WorkspaceWizard] Network fetch failed:', fetchErr);
             }
             
-            // Clear UX simulation timers
             msgTimers.forEach(clearTimeout);
 
             let data = null;
@@ -74,7 +72,10 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 try { data = await res.json(); } catch(e) {}
             }
 
-            if (!data || data.success || data.workspaceId || (data.validation?.message && data.validation.message.includes('already exists'))) {
+            const isSuccess = data && (data.success || data.workspaceId || (data.validation?.message && data.validation.message.includes('already exists')));
+
+            if (isSuccess) {
+                localStorage.setItem('mf_active_workspace', name);
                 try {
                     const existingList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
                     if (!existingList.includes(name)) {
@@ -102,12 +103,12 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 }, 600);
             } else {
                 setIsCreating(false);
-                setErrorMsg(data.validation?.message || data.message || 'Unknown error occurred while creating workspace.');
+                setErrorMsg(data?.validation?.message || data?.message || data?.error || 'Failed to create workspace on server.');
             }
         } catch (e) {
-            // Never block the user - if anything fails, proceed into the editor with the workspace name
-            console.warn('[WorkspaceWizard] Unhandled error, proceeding with workspace:', e);
-            onWorkspaceCreated(name);
+            console.error('[WorkspaceWizard] Error:', e);
+            setIsCreating(false);
+            setErrorMsg('Network error connecting to server. Please ensure application backend is running.');
         }
     };
 

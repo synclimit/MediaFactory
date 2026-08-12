@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
+import { getApiUrl } from '../../utils/apiUrl';
 
 export default function WorkspaceSettingsModal({ workspaceName, isOpen, onClose }) {
     const [activeTab, setActiveTab] = useState('General');
@@ -8,11 +9,11 @@ export default function WorkspaceSettingsModal({ workspaceName, isOpen, onClose 
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || !workspaceName) return;
         
         const loadSettings = async () => {
             try {
-                const res = await fetch(`/api/v1/system/workspace/${workspaceName}/settings`);
+                const res = await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(workspaceName)}/settings`));
                 const data = await res.json();
                 if (data.success && data.data) {
                     setSettings(data.data.data || {});
@@ -27,7 +28,7 @@ export default function WorkspaceSettingsModal({ workspaceName, isOpen, onClose 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await fetch(`/api/v1/system/workspace/${workspaceName}/settings`, {
+            await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(workspaceName)}/settings`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)

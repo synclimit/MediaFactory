@@ -147,7 +147,16 @@ export default function WorkspacePicker({ onWorkspaceSelected, onNewWorkspace })
                                             e.stopPropagation();
                                             if (window.confirm(`Are you sure you want to delete workspace "${ws.name}"?`)) {
                                                 try {
-                                                    await fetch(getApiUrl(`/api/v1/system/workspace/${ws.name}`), { method: 'DELETE' });
+                                                    await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(ws.name)}`), { method: 'DELETE' });
+                                                    try {
+                                                        const cached = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
+                                                        const updated = cached.filter(n => n !== ws.name);
+                                                        localStorage.setItem('mf_created_workspaces', JSON.stringify(updated));
+                                                    } catch(e) {}
+                                                    if (localStorage.getItem('mf_active_workspace') === ws.name) {
+                                                        localStorage.removeItem('mf_active_workspace');
+                                                    }
+                                                    setSelected(null);
                                                     loadWorkspaces();
                                                 } catch(err) { console.error(err); }
                                             }

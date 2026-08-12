@@ -740,7 +740,10 @@ export default function App() {
               url: (bg.url && !bg.url.startsWith('blob:')) ? bg.url : null
             })));
           }
-          if (Array.isArray(diskAudio) && diskAudio.length > 0) setM3AudioTracks(diskAudio);
+          if (Array.isArray(diskAudio)) {
+            setM3AudioTracks(diskAudio);
+            try { localStorage.setItem('m3_profile_audio', JSON.stringify(diskAudio)); } catch(e) {}
+          }
           if (Array.isArray(diskObjs) && diskObjs.length > 0) setM3Objects(diskObjs);
         }
         m3InitializedRef.current = true;
@@ -976,27 +979,8 @@ export default function App() {
     );
   }, []);
 
-  const checkWorkspaces = useCallback(async () => {
-    try {
-      const storedLastWs = localStorage.getItem('mf_active_workspace');
-      const res = await fetch(getApiUrl('/api/v1/system/workspace/list'));
-      const data = await res.json();
-      if (data.success && data.data && data.data.length > 0) {
-        const targetWs = (storedLastWs && data.data.some(w => w.name === storedLastWs))
-          ? storedLastWs
-          : data.data[0].name;
-        
-        if (targetWs) {
-          handleWorkspaceSelected(targetWs);
-        } else {
-          setAppState('PICKER');
-        }
-      } else {
-        setAppState('WIZARD');
-      }
-    } catch (e) {
-      setAppState('WIZARD');
-    }
+  const checkWorkspaces = useCallback(() => {
+    setAppState('PICKER');
   }, []);
 
   const [loadingStep, setLoadingStep] = useState(0);
@@ -1920,7 +1904,9 @@ export default function App() {
       const composerObjects = (m3Objects || []).filter(o => o && (o.canvasMode === 'composer' || !o.canvasMode || o.canvasMode !== 'thumbnail'));
       const targetMode = settings?.renderMode ? String(settings.renderMode).toUpperCase() : 'FAST';
       const isFast = targetMode === 'FAST';
-      const safeOutputFilename = (typeof m3OutputFilename === 'string' && m3OutputFilename.trim()) ? m3OutputFilename.trim() : 'M3_Render.mp4';
+      const rawName = settings?.outputFilename || m3OutputFilename;
+      const defaultTitle = (m3AudioTracks && m3AudioTracks[0]) ? (m3AudioTracks[0].title || m3AudioTracks[0].filename || 'My Music Playlist Mix') : 'My Music Playlist Mix';
+      const safeOutputFilename = (typeof rawName === 'string' && rawName.trim()) ? rawName.trim() : defaultTitle;
       const outFileName = safeOutputFilename.endsWith('.mp4') ? safeOutputFilename : `${safeOutputFilename}.mp4`;
       
       const customOutputDir = workspaceConfig?.output?.main || (activeWorkspace ? localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) : '') || 'Output';
@@ -1983,7 +1969,9 @@ export default function App() {
       const composerObjects = (m3v2Objects || []).filter(o => o && (o.canvasMode === 'composer' || !o.canvasMode || o.canvasMode !== 'thumbnail'));
       const targetMode = settings?.renderMode ? String(settings.renderMode).toUpperCase() : 'FAST';
       const isFast = targetMode === 'FAST';
-      const safeOutputFilename = (typeof m3v2OutputFilename === 'string' && m3v2OutputFilename.trim()) ? m3v2OutputFilename.trim() : 'M3_V2_Visualizer_Render.mp4';
+      const rawName = settings?.outputFilename || m3v2OutputFilename;
+      const defaultTitle = (m3v2AudioTracks && m3v2AudioTracks[0]) ? (m3v2AudioTracks[0].title || m3v2AudioTracks[0].filename || 'My Visualizer Mix') : 'My Visualizer Mix';
+      const safeOutputFilename = (typeof rawName === 'string' && rawName.trim()) ? rawName.trim() : defaultTitle;
       const outFileName = safeOutputFilename.endsWith('.mp4') ? safeOutputFilename : `${safeOutputFilename}.mp4`;
       
       const customOutputDir = workspaceConfig?.output?.main || (activeWorkspace ? localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) : '') || 'Output';

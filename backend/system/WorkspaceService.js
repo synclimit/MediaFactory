@@ -9,6 +9,12 @@ class WorkspaceService {
         this.currentWorkspace = null;
         this.storage = null;
         this.config = null;
+        try {
+            const fs = require('fs');
+            if (!fs.existsSync(this.basePath)) {
+                fs.mkdirSync(this.basePath, { recursive: true });
+            }
+        } catch(e) {}
     }
 
     _getStorage() {
@@ -38,7 +44,9 @@ class WorkspaceService {
     }
 
     _getWorkspacePath(name) {
-        return path.join(this.basePath, name);
+        if (!name) return path.join(this.basePath, 'default');
+        const safeName = String(name).replace(/[/\\?%*:|"<>]/g, '_').trim();
+        return path.join(this.basePath, safeName || 'default');
     }
 
     async _initializeFolderTree(workspacePath) {
@@ -318,8 +326,11 @@ class WorkspaceService {
                                 }
                             } catch (e) {}
 
+                            const displayName = manifestData?.data?.name || manifestData?.name || wsName;
+
                             workspaces.push({
-                                name: wsName,
+                                name: displayName,
+                                folderName: wsName,
                                 thumbnail: manifestData?.data?.thumbnail || null,
                                 lastOpened: manifestData?.data?.updatedAt || manifestData?.data?.createdAt || Date.now(),
                                 totalProjects: totalProjects,

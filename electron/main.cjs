@@ -36,6 +36,7 @@ if (!gotTheLock) {
         if (mainWindow) {
             if (mainWindow.isMinimized()) mainWindow.restore();
             mainWindow.focus();
+            try { mainWindow.webContents.reloadIgnoringCache(); } catch(e) {}
         }
     });
 }
@@ -85,25 +86,43 @@ async function createWindow() {
         mainWindow.webContents.executeJavaScript(`window.SERVER_PORT = ${serverPort};`).catch(() => {});
     });
 
-    try {
-        await mainWindow.webContents.session.clearCache();
-        await mainWindow.webContents.session.clearStorageData();
-    } catch(e) {}
+    mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+        if (level >= 2) {
+            console.error(`[Renderer Console Error] ${message} (${sourceId}:${line})`);
+        }
+    });
 
-    const localUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
-    console.log('[Electron] Loading UI via Express server:', localUrl);
-    mainWindow.loadURL(localUrl).catch((err) => {
+    mainWindow.webContents.session.clearCache().catch(() => {});
+
+    // Check if Vite Dev Server is running on port 5173 for Instant HMR
+    let targetUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
+    if (isDev) {
+        targetUrl = `http://127.0.0.1:5173?serverPort=${serverPort}`;
+        try {
+            const http = require('http');
+            for (let attempt = 0; attempt < 15; attempt++) {
+                const isViteRunning = await new Promise((resolve) => {
+                    const req = http.get('http://127.0.0.1:5173', { timeout: 1000 }, (res) => resolve(res.statusCode < 500));
+                    req.on('error', () => resolve(false));
+                    req.on('timeout', () => { req.destroy(); resolve(false); });
+                });
+                if (isViteRunning) {
+                    console.log('[Electron] Connected to Vite Dev Server for Instant HMR:', targetUrl);
+                    break;
+                }
+                await new Promise(r => setTimeout(r, 300));
+            }
+        } catch (e) {}
+    }
+
+    console.log('[Electron] Loading UI via:', targetUrl);
+    mainWindow.loadURL(targetUrl).catch((err) => {
         console.error('[Electron] Failed to load URL, falling back to loadFile:', err);
         const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
         if (fs.existsSync(indexPath)) {
             mainWindow.loadFile(indexPath);
         }
     });
-
-    // Disabled automatic DevTools window opening
-    // if (isDev) {
-    //     mainWindow.webContents.openDevTools();
-    // }
 
     mainWindow.on('closed', () => {
         mainWindow = null;
@@ -374,14 +393,48 @@ async function performUpdateDownloadFallback() {
 }
 
 function checkUpdatesUnified() {
-    if (app.isPackaged) {
-        try {
-            autoUpdater.checkForUpdates().catch(() => performUpdateCheckFallback());
-        } catch (e) {
+    console.log('[AutoUpdater] checkUpdatesUnified triggered');
+    let hasResponded = false;
+
+    const safetyTimer = setTimeout(() => {
+        if (!hasResponded) {
+            console.warn('[AutoUpdater] Native check timed out after 3s, executing REST fallback...');
+            hasResponded = true;
             performUpdateCheckFallback();
         }
+    }, 3000);
+
+    if (mainWindow) {
+        mainWindow.webContents.send('update-status', { status: 'checking' });
+    }
+
+    if (app.isPackaged) {
+        try {
+            autoUpdater.checkForUpdates()
+                .then((res) => {
+                    console.log('[AutoUpdater Native] Check result:', res ? res.updateInfo?.version : 'done');
+                })
+                .catch((err) => {
+                    console.warn('[AutoUpdater Native] checkForUpdates error, falling back:', err);
+                    if (!hasResponded) {
+                        hasResponded = true;
+                        clearTimeout(safetyTimer);
+                        performUpdateCheckFallback();
+                    }
+                });
+        } catch (e) {
+            if (!hasResponded) {
+                hasResponded = true;
+                clearTimeout(safetyTimer);
+                performUpdateCheckFallback();
+            }
+        }
     } else {
-        performUpdateCheckFallback();
+        if (!hasResponded) {
+            hasResponded = true;
+            clearTimeout(safetyTimer);
+            performUpdateCheckFallback();
+        }
     }
 }
 
