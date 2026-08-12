@@ -28,13 +28,33 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
     const runHealthCheck = async () => {
         setTestingHealth(true);
         try {
-            const res = await fetch(getApiUrl('/api/v1/diagnostics/health'));
+            const targetUrl = getApiUrl('/api/v1/diagnostics/health');
+            const res = await fetch(targetUrl);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText || 'Backend Error'}`);
+            }
             const json = await res.json();
             if (json.success) {
                 setHealthData(json.data);
+            } else {
+                setHealthData({
+                    score: 0,
+                    checks: [{ module: 'System Health Engine', status: 'FAIL', detail: json.error || 'Health check execution failed' }]
+                });
             }
         } catch (e) {
             console.error('Health check failed:', e);
+            const targetUrl = getApiUrl('/api/v1/diagnostics/health');
+            setHealthData({
+                score: 0,
+                checks: [
+                    {
+                        module: 'MediaFactory Backend Connection',
+                        status: 'FAIL',
+                        detail: `Failed to reach backend process at (${targetUrl}). Error: ${e.message}. Please ensure Express server is running.`
+                    }
+                ]
+            });
         } finally {
             setTestingHealth(false);
         }
@@ -154,18 +174,18 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                 <div className="px-6 py-4 bg-[#111319] border-b border-gray-800 flex justify-between items-center shrink-0 shadow-sm">
                     <h2 className="text-xl font-bold text-white tracking-tight">{activeTab}</h2>
                     {stateData?.system && (
-                        <div className="flex items-center gap-6">
-                            <div className="flex flex-col items-end">
-                                <span className="text-[10px] text-gray-500 font-bold uppercase">Health Score</span>
-                                <span className={`text-lg font-black font-mono ${stateData.healthScore >= 90 ? 'text-green-500' : stateData.healthScore >= 70 ? 'text-yellow-500' : 'text-red-500'}`}>
-                                    {stateData.healthScore} / 100
+                        <div className="flex items-center gap-4 bg-[#13161D] px-3 py-1.5 rounded border border-gray-800">
+                            <div>
+                                <span className="text-[9px] uppercase font-bold text-gray-500 block">Health Score</span>
+                                <span className={`text-lg font-black font-mono ${(stateData.healthScore || 100) >= 90 ? 'text-green-500' : (stateData.healthScore || 100) >= 70 ? 'text-yellow-500' : 'text-red-500'}`}>
+                                    {stateData.healthScore || 100} / 100
                                 </span>
                             </div>
                             <div className="h-8 w-px bg-gray-700"></div>
                             <div className="text-[10px] font-mono text-gray-400 grid grid-cols-2 gap-x-4 gap-y-1 text-right">
-                                <span>CPU: {stateData.system.cores} Cores</span>
-                                <span>RAM: {stateData.system.ramFree}</span>
-                                <span className="col-span-2 text-gray-500">Uptime: {Math.floor(stateData.system.uptime / 60)}m</span>
+                                <span>CPU: {stateData.system?.cores || 4} Cores</span>
+                                <span>RAM: {stateData.system?.ramFree || 'OK'}</span>
+                                <span className="col-span-2 text-gray-500">Uptime: {Math.floor((stateData.system?.uptime || 0) / 60)}m</span>
                             </div>
                         </div>
                     )}
@@ -193,7 +213,7 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                                         <div className="bg-[#13161D] p-4 rounded-lg border border-gray-800 shadow-sm">
                                             <div className="text-gray-500 font-bold text-[10px] uppercase mb-1">Latest Log</div>
                                             <div className="text-xs font-mono text-gray-300 truncate mt-1">
-                                                {stateData.logs[0]?.message || 'No logs yet'}
+                                                {(stateData.logs || [])[0]?.message || 'No logs yet'}
                                             </div>
                                         </div>
                                     </div>
@@ -202,7 +222,7 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                                         <div className="bg-[#13161D] rounded-lg border border-gray-800 flex flex-col h-96">
                                             <div className="px-4 py-3 border-b border-gray-800 bg-[#1A1D24] font-bold text-sm">Live Logs</div>
                                             <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                                                {stateData.logs.map((log, i) => (
+                                                {(stateData.logs || []).map((log, i) => (
                                                     <div key={i} className={`text-[10px] font-mono leading-tight px-1 py-1 rounded ${getLogColor(log.level)}`}>
                                                         <span className="opacity-50">[{new Date(log.timestamp).toLocaleTimeString()}]</span>{' '}
                                                         <span className="font-bold">[{log.level}]</span>{' '}
@@ -296,7 +316,7 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-800 block overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
-                                            {stateData.requests.map((req, i) => (
+                                            {(stateData.requests || []).map((req, i) => (
                                                 <tr key={i} className="hover:bg-[#1A1D24]/50 table w-full table-fixed">
                                                     <td className="px-4 py-2 text-gray-500 w-32">{new Date(req.timestamp).toLocaleTimeString()}</td>
                                                     <td className="px-4 py-2 font-bold w-24 text-blue-400">{req.method}</td>
@@ -305,7 +325,7 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                                                     <td className="px-4 py-2 text-yellow-500 w-32">{req.duration}ms</td>
                                                 </tr>
                                             ))}
-                                            {stateData.requests.length === 0 && (
+                                            {(!stateData.requests || stateData.requests.length === 0) && (
                                                 <tr><td colSpan="5" className="text-center p-8 text-gray-600">No API requests recorded yet.</td></tr>
                                             )}
                                         </tbody>
@@ -328,7 +348,7 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-800 block overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
-                                            {stateData.sql.map((query, i) => (
+                                            {(stateData.sql || []).map((query, i) => (
                                                 <tr key={i} className="hover:bg-[#1A1D24]/50 table w-full table-fixed">
                                                     <td className="px-3 py-2 text-gray-600 w-24">{new Date(query.timestamp).toLocaleTimeString()}</td>
                                                     <td className="px-3 py-2 w-20">
@@ -342,7 +362,7 @@ export default function DiagnosticsPage({ onBack, initialTab = 'Overview', m3Pro
                                                     <td className="px-3 py-2 text-yellow-500 w-24">{query.duration}ms</td>
                                                 </tr>
                                             ))}
-                                            {stateData.sql.length === 0 && (
+                                            {(!stateData.sql || stateData.sql.length === 0) && (
                                                 <tr><td colSpan="6" className="text-center p-8 text-gray-600">No SQL queries recorded yet.</td></tr>
                                             )}
                                         </tbody>

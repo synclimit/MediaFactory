@@ -7,6 +7,18 @@ if (typeof window !== 'undefined' && window.fetch) {
     if (window.SERVER_PORT) return window.SERVER_PORT;
     if (discoveredPort) return discoveredPort;
     
+    if (typeof window !== 'undefined' && window.require) {
+      try {
+        const { ipcRenderer } = window.require('electron');
+        const syncPort = ipcRenderer.sendSync('get-server-port-sync');
+        if (syncPort && !isNaN(syncPort) && syncPort > 0) {
+          window.SERVER_PORT = syncPort;
+          discoveredPort = syncPort;
+          return syncPort;
+        }
+      } catch(e) {}
+    }
+
     if (typeof window.location !== 'undefined') {
       try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -21,7 +33,7 @@ if (typeof window !== 'undefined' && window.fetch) {
       } catch(e) {}
     }
 
-    const candidatePorts = [18888, 3001];
+    const candidatePorts = [18888, 3001, 3002, 3003, 8080, 8888];
     for (const p of candidatePorts) {
       const isAlive = await new Promise((resolve) => {
         if (window.require) {

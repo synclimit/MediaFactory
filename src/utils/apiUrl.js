@@ -3,6 +3,18 @@ export function getApiUrl(endpoint) {
   const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
 
   let activePort = window.SERVER_PORT || window.__MEDIAFACTORY_PORT__;
+
+  if (!activePort && typeof window !== 'undefined' && window.require) {
+    try {
+      const { ipcRenderer } = window.require('electron');
+      const syncPort = ipcRenderer.sendSync('get-server-port-sync');
+      if (syncPort && !isNaN(syncPort) && syncPort > 0) {
+        activePort = syncPort;
+        window.SERVER_PORT = syncPort;
+        window.__MEDIAFACTORY_PORT__ = syncPort;
+      }
+    } catch (e) {}
+  }
   
   if (!activePort && typeof window.location !== 'undefined') {
     try {

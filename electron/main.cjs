@@ -48,6 +48,7 @@ app.commandLine.appendSwitch('disable-http-cache');
 
 let mainWindow;
 let backendServer;
+let currentServerPort = 18888;
 const isDev = !app.isPackaged;
 
 async function createWindow() {
@@ -58,6 +59,7 @@ async function createWindow() {
         if (backendServer && typeof backendServer.address === 'function' && backendServer.address()) {
             serverPort = backendServer.address().port;
         }
+        currentServerPort = serverPort;
     } catch (err) {
         console.error('[Electron] Backend startServer error:', err);
         writeCrashLog(err);
@@ -433,6 +435,12 @@ ipcMain.handle('show-open-dialog', (event, options) => {
     return dialog.showOpenDialogSync(options || { properties: ['openFile'] });
 });
 
+ipcMain.handle('get-server-port', () => currentServerPort);
+ipcMain.on('get-server-port-sync', (event) => {
+    event.returnValue = currentServerPort;
+});
+
 ipcMain.on('check-for-updates', checkUpdatesUnified);
 ipcMain.on('download-update', downloadUpdateUnified);
 ipcMain.on('install-update', installUpdateUnified);
+
