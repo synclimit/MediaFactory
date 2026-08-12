@@ -22,7 +22,11 @@
   "build": {
     "appId": "com.mediafactory.app",
     "productName": "MediaFactory",
-    "asar": false,
+    "asar": true,
+    "asarUnpack": [
+      "backend/bin/**/*",
+      "backend/ffmpeg/**/*"
+    ],
     "files": [
       "dist/**/*",
       "backend/**/*",
