@@ -59,22 +59,18 @@ app.use((req, res, next) => {
 function startServer(port = 18888) {
     return new Promise((resolve) => {
         const tryListen = (targetPort) => {
-            const server = app.listen(targetPort, '0.0.0.0', () => {
+            const server = app.listen(targetPort, () => {
                 const boundPort = server.address() ? server.address().port : targetPort;
                 console.log(`[MediaFactory Backend] Running successfully on port ${boundPort}`);
                 resolve(server);
             }).on('error', (err) => {
-                console.warn(`[Backend] Port ${targetPort} listen error:`, err.message);
-                if (err.code === 'EADDRINUSE') {
-                    if (targetPort === 18888) {
-                        console.log(`[Backend] Port 18888 in use, trying fallback port 3001...`);
-                        tryListen(3001);
-                    } else if (targetPort === 3001) {
-                        console.log(`[Backend] Port 3001 in use, allocating dynamic free port (port 0)...`);
-                        tryListen(0);
-                    } else {
-                        resolve(null);
-                    }
+                console.warn(`[Backend] Port ${targetPort} listen error (${err.code}):`, err.message);
+                if (targetPort === 18888) {
+                    console.log(`[Backend] Port 18888 unavailable, trying fallback port 3001...`);
+                    tryListen(3001);
+                } else if (targetPort === 3001) {
+                    console.log(`[Backend] Port 3001 unavailable, allocating dynamic free port (port 0)...`);
+                    tryListen(0);
                 } else {
                     resolve(null);
                 }
