@@ -430,7 +430,21 @@ class WorkspaceService {
 
     // --- Path Resolvers ---
     _getActivePath() {
-        if (!this.currentWorkspace) throw new Error("No active workspace set.");
+        if (!this.currentWorkspace) {
+            try {
+                const fs = require('fs');
+                if (fs.existsSync(this.basePath)) {
+                    const entries = fs.readdirSync(this.basePath);
+                    for (const entry of entries) {
+                        if (!entry.startsWith('.')) {
+                            this.currentWorkspace = entry;
+                            break;
+                        }
+                    }
+                }
+            } catch(e) {}
+            if (!this.currentWorkspace) this.currentWorkspace = 'default';
+        }
         return this._getWorkspacePath(this.currentWorkspace);
     }
 

@@ -22,7 +22,7 @@ class AppPaths {
         }
         
         if (!userDataPath) {
-            userDataPath = path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData');
+            userDataPath = path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData');
         }
 
         this.workspaceDir = path.join(userDataPath, 'Workspaces');

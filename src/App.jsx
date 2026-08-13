@@ -2717,21 +2717,21 @@ export default function App() {
         isOpen={isWorkspaceSettingsOpen}
         onClose={() => setIsWorkspaceSettingsOpen(false)} 
       />
-      {/* NEW HEADER (PIXEL-PERFECT REPLICATION) */}
-      <header className="flex items-center justify-between px-6 py-3 bg-[#0A0B10]/80 backdrop-blur-md border-b border-white/5 shrink-0 z-20">
+      {/* NEW HEADER (COMPACT HIGH-DENSITY REPLICATION) */}
+      <header className="flex items-center justify-between px-4 py-1.5 bg-[#0A0B10]/80 backdrop-blur-md border-b border-white/5 shrink-0 z-20">
         {/* LEFT: Logo & Brand */}
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 border border-orange-500 rounded-md flex items-center justify-center bg-orange-500/10 shadow-[0_0_10px_rgba(249,115,22,0.2)]">
-            <span className="text-orange-500 font-black text-xl font-sans tracking-tighter">MF</span>
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 border border-orange-500 rounded-md flex items-center justify-center bg-orange-500/10 shadow-[0_0_8px_rgba(249,115,22,0.2)]">
+            <span className="text-orange-500 font-black text-sm font-sans tracking-tighter">MF</span>
           </div>
           <div className="flex flex-col">
-            <span className="font-black tracking-tight text-white text-lg leading-tight uppercase">MediaFactory</span>
-            <span className="text-[9px] text-orange-500 font-semibold tracking-[0.2em] uppercase leading-none">Ultimate Video Automation</span>
+            <span className="font-black tracking-tight text-white text-sm leading-none uppercase">MediaFactory</span>
+            <span className="text-[7.5px] text-orange-500 font-semibold tracking-[0.18em] uppercase leading-tight mt-0.5">Ultimate Video Automation</span>
           </div>
         </div>
 
         {/* CENTER: Navigation Tabs (Trapezoid) */}
-        <div className="flex-1 flex justify-center -mb-[13px] z-30">
+        <div className="flex-1 flex justify-center -mb-[7px] z-30">
           <div className="flex items-end gap-1">
             {['Mode 1', 'Mode 2', 'Mode 3', 'Mode 4', 'Mode 5', 'Mode 6'].map((mode) => {
               const isActive = activeMode === mode;
@@ -2744,27 +2744,27 @@ export default function App() {
                     setActiveMode(mode);
                     addLog(`Switched Mode: ${mode}`);
                   }}
-                  className="relative px-3 md:px-5 xl:px-7 py-2 group cursor-pointer"
+                  className="relative px-2.5 md:px-4 xl:px-5 py-1 group cursor-pointer"
                 >
                   {/* Skewed Background */}
                   <div className={`absolute inset-0 skew-x-[-15deg] transition-all duration-300 border
                     ${isActive 
-                      ? 'bg-gradient-to-t from-orange-500/20 to-[#1a0b05] border-orange-500/50 border-b-[3px] border-b-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.3)] z-10' 
+                      ? 'bg-gradient-to-t from-orange-500/20 to-[#1a0b05] border-orange-500/50 border-b-[2px] border-b-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] z-10' 
                       : 'bg-[#0A0B10]/80 border-white/5 border-b-transparent group-hover:bg-white/5 z-0'
                     }`}
                   ></div>
                   
                   {/* Glowing Top line for active tab */}
                   {isActive && (
-                    <div className="absolute top-0 left-[10%] right-[10%] h-[1px] bg-orange-400 shadow-[0_0_10px_rgba(249,115,22,1)] skew-x-[-15deg]"></div>
+                    <div className="absolute top-0 left-[10%] right-[10%] h-[1px] bg-orange-400 shadow-[0_0_8px_rgba(249,115,22,1)] skew-x-[-15deg]"></div>
                   )}
 
                   {/* Tab Text (Un-skewed) */}
                   <div className={`relative z-20 flex flex-col items-center justify-center transition-colors duration-300
-                    ${isActive ? 'text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]' : 'text-gray-500 group-hover:text-gray-300'}
+                    ${isActive ? 'text-orange-400 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)]' : 'text-gray-500 group-hover:text-gray-300'}
                   `}>
-                    <span className="text-[9px] md:text-[10px] font-bold tracking-[0.2em]">{modeId}</span>
-                    <span className="text-[8px] md:text-[9px] font-medium tracking-[0.15em] opacity-80">{modeTitle}</span>
+                    <span className="text-[8.5px] md:text-[9.5px] font-bold tracking-[0.18em]">{modeId}</span>
+                    <span className="text-[7.5px] md:text-[8.5px] font-medium tracking-[0.12em] opacity-80">{modeTitle}</span>
                   </div>
                 </button>
               );
@@ -2773,50 +2773,50 @@ export default function App() {
         </div>
 
         {/* RIGHT: Stats & Profile */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {/* Hardware Stats (Minimalist) */}
-          <div className="hidden md:flex items-center gap-2 xl:gap-3 px-3 py-1 bg-black/40 border border-white/5 rounded-full text-[9px] xl:text-[10px] font-mono text-gray-500 transition-all duration-300">
+          <div className="hidden md:flex items-center gap-2 xl:gap-2.5 px-2 py-0.5 bg-black/40 border border-white/5 rounded-full text-[8.5px] xl:text-[9px] font-mono text-gray-500 transition-all duration-300">
             <span className="flex items-center gap-1.5"><span className={`w-1 h-1 rounded-full ${fps >= 50 ? 'bg-green-500' : fps >= 30 ? 'bg-orange-500' : 'bg-red-500 shadow-[0_0_5px_#ef4444]'}`}></span> FPS: {fps}</span>
             <span className="flex items-center gap-1.5"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.cpu) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> CPU: {parseInt(hardwareStats.cpu) || 0}%</span>
             <span className="flex items-center gap-1.5"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.gpu) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> GPU: {parseInt(hardwareStats.gpu) || 0}%</span>
             <span className="flex items-center gap-1.5"><span className={`w-1 h-1 rounded-full ${(parseInt(hardwareStats.ram) || 0) > 80 ? 'bg-red-500 shadow-[0_0_5px_#ef4444]' : 'bg-orange-500'}`}></span> RAM: {parseInt(hardwareStats.ram) || 0}%</span>
           </div>
 
-          <div className="w-px h-5 bg-white/10"></div>
+          <div className="w-px h-4 bg-white/10"></div>
 
           {/* Engine Status */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-400 uppercase font-bold">Engine</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-gray-400 uppercase font-bold">Engine</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]"></span>
           </div>
 
-          <div className="w-px h-6 bg-white/10"></div>
+          <div className="w-px h-4 bg-white/10"></div>
 
           {/* Actions */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2.5">
             {isDevMode && (
               <button
                 onClick={() => setAppState('DIAGNOSTICS')}
-                className="text-amber-500 hover:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-1 rounded flex items-center gap-1.5 transition-colors font-bold uppercase text-[10px]"
+                className="text-amber-500 hover:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1 transition-colors font-bold uppercase text-[9px]"
               >
                 <span>🛠️</span> Developer
               </button>
             )}
             
-            <button className="text-gray-400 hover:text-white transition-colors relative">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-              <span className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full border border-[#0A0B10]"></span>
+            <button className="text-gray-400 hover:text-white transition-colors relative p-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-orange-500 rounded-full border border-[#0A0B10]"></span>
             </button>
             
             <div className="relative">
               <button 
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5 text-gray-400 hover:text-white transition-colors border border-transparent hover:border-white/10"
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/5 text-gray-400 hover:text-white transition-colors border border-transparent hover:border-white/10"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
               </button>
               {isSettingsOpen && (
-                <div className="absolute top-10 right-0 w-60 bg-[#141820]/95 backdrop-blur-md border border-orange-500/20 rounded-xl shadow-[0_0_30px_-5px_rgba(249,115,22,0.15)] z-50 p-2.5 space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute top-9 right-0 w-60 bg-[#141820]/95 backdrop-blur-md border border-orange-500/20 rounded-xl shadow-[0_0_30px_-5px_rgba(249,115,22,0.15)] z-50 p-2.5 space-y-2 animate-in fade-in zoom-in-95 duration-200">
                   <div className="text-[10px] font-bold text-orange-500/80 uppercase tracking-widest border-b border-orange-500/20 pb-2 mb-2 px-1">⚙️ Advanced Options</div>
                   
                   <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer hover:text-white px-1 py-1 rounded transition-colors hover:bg-white/5">
@@ -2882,16 +2882,16 @@ export default function App() {
 
             <button 
               onClick={() => setIsWorkspaceDrawerOpen(true)}
-              className="flex items-center gap-3 hover:bg-white/5 p-1.5 rounded-lg transition-colors cursor-pointer"
+              className="flex items-center gap-2 hover:bg-white/5 p-1 rounded-lg transition-colors cursor-pointer"
             >
               <div className="hidden lg:flex flex-col text-right">
-                 <span className="text-[11px] font-bold text-white leading-tight">{activeWorkspace || 'No Workspace'}</span>
-                 <div className="flex items-center justify-end gap-1.5">
-                    <span className="text-[9px] text-[#738091]">Current</span>
+                 <span className="text-[10px] font-bold text-white leading-tight">{activeWorkspace || 'No Workspace'}</span>
+                 <div className="flex items-center justify-end gap-1">
+                    <span className="text-[8px] text-[#738091]">Current</span>
                     <div className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_5px_rgba(16,185,129,0.8)]"></div>
                  </div>
               </div>
-              <div className="w-8 h-8 rounded-full bg-[#32D8FF]/20 border border-[#32D8FF]/50 text-[#32D8FF] flex items-center justify-center font-bold text-[11px] uppercase shadow-[0_0_15px_rgba(50,216,255,0.2)]">
+              <div className="w-7 h-7 rounded-full bg-[#32D8FF]/20 border border-[#32D8FF]/50 text-[#32D8FF] flex items-center justify-center font-bold text-[10px] uppercase shadow-[0_0_12px_rgba(50,216,255,0.2)]">
                 {activeWorkspace ? activeWorkspace.substring(0, 2) : 'MF'}
               </div>
             </button>
@@ -2900,7 +2900,7 @@ export default function App() {
       </header>
 
       {/* SPLIT LAYOUT */}
-      <div className="flex flex-1 overflow-hidden relative mt-4">
+      <div className="flex flex-1 overflow-hidden relative mt-1.5">
         
         {/* NEW GLOBAL BACKGROUND (PHASE 3.6) */}
         <M1Background />

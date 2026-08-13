@@ -29,7 +29,17 @@ class ConfigurationService {
             this.cache.set(filePath, parsed);
             return parsed;
         } catch (error) {
-            throw new Error(`Failed to parse JSON at ${filePath}: ${error.message}`);
+            console.warn(`[ConfigurationService] Failed to parse JSON at ${filePath}, checking backup...`);
+            const bakPath = `${filePath}.bak`;
+            if (await storage.exists(bakPath)) {
+                try {
+                    const bakRaw = await storage.read(bakPath);
+                    const bakParsed = JSON.parse(bakRaw);
+                    this.cache.set(filePath, bakParsed);
+                    return bakParsed;
+                } catch(e) {}
+            }
+            return null;
         }
     }
 

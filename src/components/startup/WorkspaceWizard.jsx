@@ -33,18 +33,36 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
 
     const handleCreate = async () => {
         if (!name.trim()) return;
+        const cleanName = name.trim();
         setIsCreating(true);
         setErrorMsg('');
         
+        // 1. Instantly save workspace to client storage
+        localStorage.setItem('mf_active_workspace', cleanName);
         try {
-            setLoadingMsg('Creating Workspace...');
-            
-            const msgTimers = [];
-            msgTimers.push(setTimeout(() => setLoadingMsg('Initializing Folder Structure...'), 600));
-            msgTimers.push(setTimeout(() => setLoadingMsg('Preparing Configuration...'), 1200));
+            const existingList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
+            if (!existingList.includes(cleanName)) {
+                existingList.push(cleanName);
+                localStorage.setItem('mf_created_workspaces', JSON.stringify(existingList));
+            }
+        } catch(e) {}
+        
+        if (outputFolder) {
+            localStorage.setItem(`mf_workspace_output_${cleanName}`, outputFolder);
+        }
+        if (logoPath || watermarkPath || overlayPath || subscribePath) {
+            localStorage.setItem(`mf_workspace_branding_${cleanName}`, JSON.stringify({
+                logo: logoPath,
+                watermark: watermarkPath,
+                overlay: overlayPath,
+                subscribeAnim: subscribePath
+            }));
+        }
 
+        // 2. Fire and forget backend sync call
+        try {
             const payload = {
-                name,
+                name: cleanName,
                 assets: {
                     logo: logoPath,
                     watermark: watermarkPath,
@@ -53,64 +71,21 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 },
                 outputFolder
             };
+            fetch(getApiUrl('/api/v1/system/workspace/create'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+        } catch(e) {}
 
-            let res;
-            try {
-                res = await fetch(getApiUrl('/api/v1/system/workspace/create'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-            } catch(fetchErr) {
-                console.error('[WorkspaceWizard] Network fetch failed:', fetchErr);
-            }
-            
-            msgTimers.forEach(clearTimeout);
-
-            let data = null;
-            if (res) {
-                try { data = await res.json(); } catch(e) {}
-            }
-
-            const isSuccess = !res || (data && (data.success || data.workspaceId || data.activeWorkspace || (data.validation?.message && data.validation.message.includes('already exists'))));
-
-            if (isSuccess) {
-                localStorage.setItem('mf_active_workspace', name);
-                try {
-                    const existingList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
-                    if (!existingList.includes(name)) {
-                        existingList.push(name);
-                        localStorage.setItem('mf_created_workspaces', JSON.stringify(existingList));
-                    }
-                } catch(e) {}
-                if (outputFolder) {
-                    localStorage.setItem(`mf_workspace_output_${name}`, outputFolder);
-                }
-                if (logoPath || watermarkPath || overlayPath || subscribePath) {
-                    localStorage.setItem(`mf_workspace_branding_${name}`, JSON.stringify({
-                        logo: logoPath,
-                        watermark: watermarkPath,
-                        overlay: overlayPath,
-                        subscribeAnim: subscribePath
-                    }));
-                }
-                setLoadingMsg('Loading Workspace...');
-                setTimeout(() => {
-                    setLoadingMsg('Opening Editor...');
-                    setTimeout(() => {
-                        onWorkspaceCreated(name);
-                    }, 400);
-                }, 600);
-            } else {
-                setIsCreating(false);
-                setErrorMsg(data?.validation?.message || data?.message || data?.error || 'Failed to create workspace on server.');
-            }
-        } catch (e) {
-            console.error('[WorkspaceWizard] Error:', e);
-            // Fallback: Ensure user is never trapped in Wizard screen
-            localStorage.setItem('mf_active_workspace', name);
-            onWorkspaceCreated(name);
-        }
+        // 3. Immediately transition to Editor
+        setLoadingMsg('Loading Workspace...');
+        setTimeout(() => {
+            setLoadingMsg('Opening Editor...');
+            setTimeout(() => {
+                onWorkspaceCreated(cleanName);
+            }, 300);
+        }, 400);
     };
 
     const handleBrowseFolder = async () => {

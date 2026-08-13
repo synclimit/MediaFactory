@@ -31,8 +31,11 @@ class StorageService {
         await fs.rename(src, dest);
     }
 
-    async rename(src, newName) {
-        const dest = path.join(path.dirname(src), newName);
+    async rename(src, destOrNewName) {
+        const dest = path.isAbsolute(destOrNewName) 
+            ? destOrNewName 
+            : path.join(path.dirname(src), destOrNewName);
+        await this.mkdir(path.dirname(dest));
         await fs.rename(src, dest);
     }
 
