@@ -111,9 +111,17 @@ class WorkspaceService {
         logMsg('Workspace.Validate', logData);
 
         if (await storage.exists(workspacePath)) {
-            const err = new Error(`Workspace ${name} already exists.`);
-            logMsg('Workspace.Create.Error', { ...logData, error: err.message });
-            throw err;
+            const manifestPath = path.join(workspacePath, 'workspace.manifest.json');
+            let existingId = workspaceId;
+            try {
+                const manifestData = await config.load(manifestPath);
+                if (manifestData && manifestData.data && manifestData.data.workspaceId) {
+                    existingId = manifestData.data.workspaceId;
+                }
+            } catch(e) {}
+            this.setCurrentWorkspace(name);
+            logMsg('Workspace.Create.AlreadyExists', { ...logData, workspaceId: existingId });
+            return { success: true, workspaceId: existingId, workspaceName: name, activeWorkspace: name, existing: true };
         }
 
         try {
@@ -200,7 +208,7 @@ class WorkspaceService {
             throw new Error(`Workspace ${newName} already exists.`);
         }
 
-        await storage.rename(oldPath, newName);
+        await storage.rename(oldPath, newPath);
         
         const config = this._getConfig();
         const manifestPath = path.join(newPath, 'workspace.manifest.json');

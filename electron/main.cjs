@@ -31,6 +31,7 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
     console.log('[Electron] Another instance is already running. Quitting new instance...');
     app.quit();
+    process.exit(0);
 } else {
     app.on('second-instance', () => {
         if (mainWindow) {
@@ -79,11 +80,15 @@ async function createWindow() {
         }
     });
 
+    ipcMain.on('get-server-port-sync', (event) => {
+        event.returnValue = currentServerPort || 18888;
+    });
+
     mainWindow.setMenuBarVisibility(false);
 
     // Inject bound server port into window object when webContents starts and finishes loading
     mainWindow.webContents.on('did-finish-load', () => {
-        mainWindow.webContents.executeJavaScript(`window.SERVER_PORT = ${serverPort};`).catch(() => {});
+        mainWindow.webContents.executeJavaScript(`window.SERVER_PORT = ${serverPort}; window.__MEDIAFACTORY_PORT__ = ${serverPort};`).catch(() => {});
     });
 
     mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
@@ -92,37 +97,43 @@ async function createWindow() {
         }
     });
 
-    mainWindow.webContents.session.clearCache().catch(() => {});
-
-    // Check if Vite Dev Server is running on port 5173 for Instant HMR
     let targetUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
     if (isDev) {
-        targetUrl = `http://127.0.0.1:5173?serverPort=${serverPort}`;
         try {
             const http = require('http');
-            for (let attempt = 0; attempt < 15; attempt++) {
-                const isViteRunning = await new Promise((resolve) => {
-                    const req = http.get('http://127.0.0.1:5173', { timeout: 1000 }, (res) => resolve(res.statusCode < 500));
-                    req.on('error', () => resolve(false));
-                    req.on('timeout', () => { req.destroy(); resolve(false); });
-                });
-                if (isViteRunning) {
-                    console.log('[Electron] Connected to Vite Dev Server for Instant HMR:', targetUrl);
-                    break;
-                }
-                await new Promise(r => setTimeout(r, 300));
+            const isViteRunning = await new Promise((resolve) => {
+                const req = http.get('http://127.0.0.1:5173', { timeout: 600 }, (res) => resolve(res.statusCode < 500));
+                req.on('error', () => resolve(false));
+                req.on('timeout', () => { req.destroy(); resolve(false); });
+            });
+            if (isViteRunning) {
+                targetUrl = `http://127.0.0.1:5173?serverPort=${serverPort}`;
+                console.log('[Electron] Connected to Vite Dev Server:', targetUrl);
             }
-        } catch (e) {}
+        } catch(e) {}
     }
 
-    console.log('[Electron] Loading UI via:', targetUrl);
-    mainWindow.loadURL(targetUrl).catch((err) => {
-        console.error('[Electron] Failed to load URL, falling back to loadFile:', err);
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+
+    if (isDev && targetUrl.includes(':5173')) {
+        console.log('[Electron] Loading UI via Vite Dev Server:', targetUrl);
+        mainWindow.loadURL(targetUrl).catch((err) => {
+            console.error('[Electron] loadURL error:', err);
+        });
+    } else {
         const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
         if (fs.existsSync(indexPath)) {
-            mainWindow.loadFile(indexPath);
+            console.log('[Electron] Loading UI via local build file:', indexPath);
+            mainWindow.loadFile(indexPath, { query: { serverPort: String(serverPort) } }).catch((err) => {
+                console.error('[Electron] loadFile error:', err);
+            });
+        } else {
+            console.log('[Electron] Loading UI via URL:', targetUrl);
+            mainWindow.loadURL(targetUrl).catch((err) => {
+                console.error('[Electron] loadURL error:', err);
+            });
         }
-    });
+    }
 
     mainWindow.on('closed', () => {
         mainWindow = null;
@@ -240,6 +251,10 @@ function isVersionGreater(v1, v2) {
         if (p1[i] < p2[i]) return false;
     }
     return false;
+}
+
+function getUpdateToken() {
+    return process.env.GITHUB_TOKEN || '';
 }
 
 function checkGitHubReleasesREST() {

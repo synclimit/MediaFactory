@@ -3021,7 +3021,11 @@ export default function App() {
         {pipelineDrawerCollapsed ? (
           <div className="w-8 shrink-0 flex flex-col glass-panel overflow-hidden border-l-2 border-gray-600/50 relative z-20 font-outfit">
             <button 
-              onClick={() => setPipelineDrawerCollapsed(false)}
+              onClick={() => {
+                setPipelineDrawerCollapsed(false);
+                setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+                setTimeout(() => window.dispatchEvent(new Event('resize')), 250);
+              }}
               className="w-full h-full flex flex-col items-center py-2 text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-300 gap-2"
               title="Expand Pipeline"
             >
@@ -3044,7 +3048,11 @@ export default function App() {
             <div className="flex justify-between items-center text-[10px] uppercase font-bold text-gray-300">
               <div className="flex items-center gap-1.5">
                 <button 
-                  onClick={() => setPipelineDrawerCollapsed(true)}
+                  onClick={() => {
+                    setPipelineDrawerCollapsed(true);
+                    setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+                    setTimeout(() => window.dispatchEvent(new Event('resize')), 250);
+                  }}
                   className="text-gray-400 hover:text-white hover:scale-110 transition-transform flex items-center gap-1 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
                   title="Collapse Queue"
                 >
