@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef export default React.memo(M3SubtitleTimelinePanel); from 'react';
 import { subtitleRuntime } from '../../services/audio/subtitle/SubtitleRuntime';
 import { subtitleEditorService } from '../../services/audio/subtitle/SubtitleEditorService';
 import { renderFrameStore } from '../../services/pipeline/runtime/RenderFrameStore';

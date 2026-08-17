@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useM3Panel } from '../../../hooks/useM3Panel';
 import { Trash2, Music, Folder, PlaySquare as Youtube, Shuffle, XCircle, GripVertical } from 'lucide-react';
 
-export default function PlaylistPanel({ m3AudioTracks, setM3AudioTracks, m3CurrentTrackIndex }) {
+export default function PlaylistPanel({ m3AudioTracks, setM3AudioTracks, m3CurrentTrackIndex, setM3CurrentTrackIndex }) {
     const { 
         initialized, loading, saving, error, 
         settings, capabilities, markDirty, saveSettings 

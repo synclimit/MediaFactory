@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect export default React.memo(M3TimelinePanel); from 'react';
 import { Eye, EyeOff, Lock, Unlock, Volume2, VolumeX, Mic2, MicOff, Search, Layers, ChevronRight, ChevronDown } from 'lucide-react';
 import { fastRenderState } from '../../services/pipeline/fastrender/core/FastRenderState.js';
 

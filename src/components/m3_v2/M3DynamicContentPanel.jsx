@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState export default React.memo(M3DynamicContentPanel); from 'react';
 import Surface from '../ui/Surface';
 import { BackgroundVariants } from '../ui/BackgroundVariants';
 import BackgroundPanel from './panels/BackgroundPanel';

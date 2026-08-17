@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Square, Rewind, FastForward, Volume2 } from 'lucide-react';
 import { emitRuntimeEvent } from '../../services/RuntimeClient';
 
-export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, setCurrentTimeSec, currentTrackIndex = 0, setCurrentTrackIndex, onAnalyserReady }) {
+function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, setCurrentTimeSec, currentTrackIndex = 0, setCurrentTrackIndex, onAnalyserReady }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [internalTrackIndex, setInternalTrackIndex] = useState(0);
   const [toastError, setToastError] = useState(null);
