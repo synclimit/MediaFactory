@@ -5,6 +5,7 @@ const APP_VERSION = packageJson.version || '1.0.8';
 // ─── Platform Foundation (TASK_00) ───────────────────────────────────────────
 // Safe integration point — does NOT modify M1 logic.
 import { bootstrapPlatform, foundation } from './foundation/index.js';
+import { getApiUrl } from './utils/apiUrl';
 import DevPanel from './components/DevPanel.jsx';
 import QADashboard from './components/Developer/ProductionQA/QADashboard.jsx';
 // M2 Task 01: Source Pool System
@@ -24,8 +25,8 @@ import { createQueueJobFromPlan } from './entities/m2/QueueJobEntity.js';
 import { audioProcessingProfileRepo } from './repositories/m2/AudioProcessingProfileRepository.js';
 import { CompilationEngine } from './services/m2/CompilationEngine.js';
 import { createRenderHistoryRecord } from './entities/m2/RenderHistoryEntity.js';
-import { m2RenderHistory } from './services/m2/RenderHistoryService.js';
 import { m2WorkspaceContext } from './services/m2/WorkspaceContext.js';
+import { m2SchedulerService } from './services/m2/SchedulerService.js';
 
 import { pipelineHistoryEngine } from './services/PipelineHistoryEngine.js';
 
@@ -67,8 +68,6 @@ function Tooltip({ text }) {
     </div>
   );
 }
-
-import { getApiUrl } from './utils/apiUrl.js';
 
 export default function App() {
   const [lang, setLang] = useState('English');
@@ -550,14 +549,8 @@ export default function App() {
     if (template.compilationSettings) {
       setM2Randomize(template.compilationSettings.randomize);
     }
-    if (template.audioProfile) {
-      setM1ProfileId(template.audioProfile.id);
-    }
-    if (template.masteringSettings) {
-      setM2MasteringSettings(template.masteringSettings);
-    }
-    if (template.schedulerSettings) {
-      m2SchedulerService.saveConfig(template.schedulerSettings);
+    if (template.schedulerSettings && m2SchedulerService) {
+      m2SchedulerService.updateSettings(template.schedulerSettings);
       window.dispatchEvent(new Event('m2_scheduler_refresh'));
     }
 
@@ -1043,12 +1036,14 @@ export default function App() {
   };
 
   const [thumbSuggestion, setThumbSuggestion] = useState('Suggestion A');
+  const [thumbFont, setThumbFont] = useState('Inter');
   
   // Title Typography
   const [thumbTitle, setThumbTitle] = useState('Chill Lofi Beats');
   const [thumbTitleFont, setThumbTitleFont] = useState('Inter');
   const [thumbTitleSize, setThumbTitleSize] = useState(64);
   const [thumbTitleColor, setThumbTitleColor] = useState('#ffffff');
+  const [thumbTitleAlign, setThumbTitleAlign] = useState('Left');
   const [thumbTitleShadow, setThumbTitleShadow] = useState(true);
   const [thumbTitleStroke, setThumbTitleStroke] = useState(true);
   
@@ -1057,6 +1052,7 @@ export default function App() {
   const [thumbTaglineFont, setThumbTaglineFont] = useState('Inter');
   const [thumbTaglineSize, setThumbTaglineSize] = useState(32);
   const [thumbTaglineColor, setThumbTaglineColor] = useState('#d1d5db');
+  const [thumbTaglineAlign, setThumbTaglineAlign] = useState('Left');
   const [thumbTaglineShadow, setThumbTaglineShadow] = useState(true);
   const [thumbTaglineStroke, setThumbTaglineStroke] = useState(true);
   
@@ -1275,11 +1271,45 @@ export default function App() {
     return true;
   };
 
-  const totalEstTimeSec = (queue || []).reduce((acc, q) => acc + (q.estTimeSec || 0), 0);
-  const totalEstStorageMb = (queue || []).reduce((acc, q) => acc + (q.estStorageMb || 0), 0);
-  const formattedETA = new Date(Date.now() + totalEstTimeSec * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const renderSuccessCount = (queue || []).filter(q => q.status === 'Completed').length;
-  const renderFailedCount = (queue || []).filter(q => q.status === 'Failed').length;
+  const [nowClock, setNowClock] = useState(Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNowClock(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const pendingJobs = useMemo(() => [
+    ...(queue || []).filter(q => q.status === 'Rendering' || q.status === 'Running' || q.status === 'Waiting' || q.status === 'Scheduled'),
+    ...(m5Queue || []).filter(q => q.status === 'Rendering' || q.status === 'Ready' || q.status === 'Scheduled')
+  ], [queue, m5Queue]);
+
+  const realtimeTotalEstSec = useMemo(() => {
+    return pendingJobs.reduce((acc, q) => {
+      if (q.status === 'Rendering' || q.status === 'Running') {
+        const prog = typeof q.progress === 'number' ? q.progress : 0;
+        const dur = q.totalDurationSec || q.durationSec || 60;
+        const estRenderTime = Math.max(5, dur * 0.25);
+        return acc + Math.round(estRenderTime * (1 - prog / 100));
+      }
+      const dur = q.totalDurationSec || q.durationSec || 60;
+      return acc + Math.max(10, Math.round(dur * 0.25));
+    }, 0);
+  }, [pendingJobs]);
+
+  const realtimeEstTimeMin = Math.round(realtimeTotalEstSec / 60);
+
+  const realtimeEstStorageMb = useMemo(() => {
+    return pendingJobs.reduce((acc, q) => {
+      if (q.estStorageMb && q.estStorageMb > 0) return acc + q.estStorageMb;
+      const dur = q.totalDurationSec || q.durationSec || 60;
+      return acc + Math.round((dur / 60) * 25);
+    }, 0);
+  }, [pendingJobs]);
+
+  const targetTime = new Date(nowClock + realtimeTotalEstSec * 1000);
+  const realtimeLiveETA = targetTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  const renderSuccessCount = (queue || []).filter(q => q.status === 'Completed').length + (m5Queue || []).filter(q => q.status === 'Completed').length;
+  const renderFailedCount = (queue || []).filter(q => q.status === 'Failed').length + (m5Queue || []).filter(q => q.status === 'Failed').length;
   const totalOutputsCount = renderSuccessCount;
   const totalStorageGb = '0.00';
   const renderIntervalRef = useRef(null);
@@ -2029,10 +2059,8 @@ export default function App() {
   };
 
   const fetchVideoMetadataWithFallback = async (filePath, file = null) => {
-    const activePort = window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888);
     const endpoints = [
-      '/api/m1/video-metadata',
-      `http://127.0.0.1:${activePort}/api/m1/video-metadata`
+      getApiUrl('/api/m1/video-metadata')
     ];
 
     for (const endpoint of endpoints) {
@@ -2623,34 +2651,35 @@ export default function App() {
   // Global Scheduled Render Countdown & Auto-Trigger Hook (placed AFTER handleStartRender)
   useEffect(() => {
     let timerId = null;
-    if (isScheduleEnabled && scheduleDate && scheduleHour !== undefined && scheduleMinute !== undefined) {
+    if (isScheduleEnabled && scheduleHour !== undefined && scheduleMinute !== undefined) {
       const updateCountdown = () => {
         const now = new Date();
-        const [yyyy, mm, dd] = scheduleDate.split('-').map(Number);
         const h = parseInt(scheduleHour, 10);
         const m = parseInt(scheduleMinute, 10);
         
-        const target = new Date(yyyy, mm - 1, dd, h, m, 0, 0);
+        let target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+        if (target.getTime() <= now.getTime()) {
+          target.setDate(target.getDate() + 1);
+        }
         const diffMs = target.getTime() - now.getTime();
         
         if (diffMs <= 1000) {
-          // Target date & time reached! Auto-start global queue (renders sequentially 1 by 1)
+          // Target time reached! Auto-start global queue (renders sequentially 1 by 1)
           setIsScheduleEnabled(false);
-          addNotification('⏰ Global Schedule Triggered!', `Jadwal render global ${scheduleDate} jam ${scheduleHour}:${scheduleMinute} dimulai secara berurutan.`);
-          addLog(`[GLOBAL SCHEDULE] Target date ${scheduleDate} ${scheduleHour}:${scheduleMinute} reached. Starting sequential render queue...`);
+          addNotification('⏰ Schedule Triggered!', `Jadwal render jam ${scheduleHour}:${scheduleMinute} dimulai secara berurutan.`);
+          addLog(`[SCHEDULE] Target time ${scheduleHour}:${scheduleMinute} reached. Starting sequential render queue...`);
           if (!isRendering) {
             handleStartRender();
           }
         } else {
           const totalSec = Math.floor(diffMs / 1000);
-          const daysLeft = Math.floor(totalSec / 86400);
-          const hoursLeft = Math.floor((totalSec % 86400) / 3600);
+          const hoursLeft = Math.floor(totalSec / 3600);
           const minsLeft = Math.floor((totalSec % 3600) / 60);
           const secsLeft = totalSec % 60;
           
           let cdStr = '';
-          if (daysLeft > 0) cdStr += `${daysLeft}d `;
-          cdStr += `${String(hoursLeft).padStart(2, '0')}h ${String(minsLeft).padStart(2, '0')}m ${String(secsLeft).padStart(2, '0')}s`;
+          if (hoursLeft > 0) cdStr += `${String(hoursLeft).padStart(2, '0')}h `;
+          cdStr += `${String(minsLeft).padStart(2, '0')}m ${String(secsLeft).padStart(2, '0')}s`;
           setScheduleCountdown(cdStr);
         }
       };
@@ -2664,7 +2693,7 @@ export default function App() {
     return () => {
       if (timerId) clearInterval(timerId);
     };
-  }, [isScheduleEnabled, scheduleDate, scheduleHour, scheduleMinute, isRendering]);
+  }, [isScheduleEnabled, scheduleHour, scheduleMinute, isRendering]);
 
   if (appState === 'SPLASH') return <Splash onComplete={checkWorkspaces} />;
   if (appState === 'PICKER') return <WorkspacePicker onWorkspaceSelected={handleWorkspaceSelected} onNewWorkspace={() => setAppState('WIZARD')} />;
@@ -3073,154 +3102,128 @@ export default function App() {
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-1 bg-[#15181e]/80 p-1.5 rounded-lg border border-gray-600/30 shadow-[inset_0_0_10px_rgba(255,255,255,0.05)] relative overflow-hidden backdrop-blur-sm">
-              <div className="absolute top-0 right-0 w-12 h-12 bg-white/5 blur-xl rounded-full"></div>
-              
-              <div className="flex flex-col items-center justify-center p-1 border-r border-gray-600/20">
-                <span className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Est Time</span>
-                <span className="text-sm font-jetbrains font-extrabold text-white">{Math.round(totalEstTimeSec / 60)}<span className="text-[8px] text-gray-500 ml-0.5">m</span></span>
-              </div>
-              
-              <div className="flex flex-col items-center justify-center p-1 border-r border-gray-600/20">
-                <span className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Est Storage</span>
-                <span className="text-sm font-jetbrains font-extrabold text-white">{totalEstStorageMb}<span className="text-[8px] text-gray-500 ml-0.5">MB</span></span>
-              </div>
-              
-              <div className="flex flex-col items-center justify-center p-1">
-                <span className="text-[8px] text-orange-500/70 font-bold uppercase tracking-widest mb-0.5">ETA</span>
-                <span className="text-sm font-jetbrains font-extrabold text-orange-400 neon-text-orange">{formattedETA}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* GLOBAL RENDER SCHEDULER PANEL */}
-          <div className="mx-2 mt-2 mb-1 p-2.5 bg-gradient-to-r from-[#151822] via-[#1a1d2c] to-[#12141e] border border-orange-500/40 rounded-lg text-gray-300 space-y-2 shadow-[0_0_20px_rgba(249,115,22,0.1)] relative overflow-hidden">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-orange-400">
-                <span className="text-sm drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]">🌐</span>
-                <span>GLOBAL RENDER SCHEDULER</span>
-              </div>
-              
-              {/* Toggle Switch */}
-              <button
-                onClick={() => {
-                  const nextState = !isScheduleEnabled;
-                  setIsScheduleEnabled(nextState);
-                  addLog(`Global Scheduled Render ${nextState ? 'ENABLED' : 'DISABLED'}`);
-                }}
-                className={`px-2.5 py-0.5 rounded-full text-[8.5px] font-bold tracking-wider uppercase transition-all flex items-center gap-1 border ${
-                  isScheduleEnabled 
-                    ? 'bg-orange-500/20 text-orange-400 border-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.5)]' 
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200'
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${isScheduleEnabled ? 'bg-orange-400 animate-ping shadow-[0_0_8px_rgba(249,115,22,1)]' : 'bg-gray-500'}`}></span>
-                {isScheduleEnabled ? 'SCHEDULER ON' : 'SCHEDULER OFF'}
-              </button>
-            </div>
-
-            {/* 3 Dropdowns Grid: Tanggal, Jam, Menit */}
-            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
-              
-              {/* Dropdown 1: Tanggal */}
-              <div className="flex flex-col">
-                <label className="text-[8px] font-bold uppercase text-gray-400 mb-0.5 tracking-wider">📅 Tanggal</label>
-                <select
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  className="w-full bg-[#0a0c10] border border-orange-500/30 hover:border-orange-400 text-orange-200 text-[10px] font-bold rounded px-1.5 py-1 outline-none focus:border-orange-500 cursor-pointer truncate"
-                >
-                  {dateOptions.map(opt => (
-                    <option key={opt.value} value={opt.value} className="bg-[#12141a] text-gray-200">
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Dropdown 2: Jam */}
-              <div className="flex flex-col">
-                <label className="text-[8px] font-bold uppercase text-gray-400 mb-0.5 tracking-wider">🕒 Jam</label>
-                <select
-                  value={scheduleHour}
-                  onChange={(e) => setScheduleHour(e.target.value)}
-                  className="w-full bg-[#0a0c10] border border-orange-500/30 hover:border-orange-400 text-orange-200 text-[10px] font-mono font-bold rounded px-1.5 py-1 outline-none focus:border-orange-500 cursor-pointer"
-                >
-                  {Array.from({ length: 24 }).map((_, i) => {
-                    const hStr = String(i).padStart(2, '0');
-                    return (
-                      <option key={hStr} value={hStr} className="bg-[#12141a] text-gray-200">
-                        {hStr}:00 ({i < 12 ? 'Pagi' : 'Malam'})
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              {/* Dropdown 3: Menit */}
-              <div className="flex flex-col">
-                <label className="text-[8px] font-bold uppercase text-gray-400 mb-0.5 tracking-wider">⏱️ Menit</label>
-                <select
-                  value={scheduleMinute}
-                  onChange={(e) => setScheduleMinute(e.target.value)}
-                  className="w-full bg-[#0a0c10] border border-orange-500/30 hover:border-orange-400 text-orange-200 text-[10px] font-mono font-bold rounded px-1.5 py-1 outline-none focus:border-orange-500 cursor-pointer"
-                >
-                  {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(mStr => (
-                    <option key={mStr} value={mStr} className="bg-[#12141a] text-gray-200">
-                      {mStr} Menit
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-            </div>
-
-            {/* Status Summary & Countdown Banner */}
-            {isScheduleEnabled ? (
-              <div className="mt-1 bg-gradient-to-r from-orange-950/80 via-amber-950/80 to-orange-950/80 border border-orange-500/60 rounded p-1.5 flex items-center justify-between shadow-[0_0_10px_rgba(249,115,22,0.2)]">
-                <div className="flex flex-col pr-1">
-                  <span className="text-[8px] text-orange-300 font-extrabold uppercase tracking-wider">
-                    ⏳ METODE RENDER: SATU PER SATU (SEQUENTIAL)
-                  </span>
-                  <span className="text-[7.5px] text-gray-300 truncate">
-                    Semua antrean mulai pada {scheduleHour}:{scheduleMinute} ({scheduleDate})
-                  </span>
-                </div>
-                <span className="text-[10.5px] font-jetbrains font-black text-orange-400 bg-black/80 px-2 py-0.5 rounded border border-orange-500/40 shrink-0">
-                  {scheduleCountdown || 'Menghitung...'}
+            {/* 1-Line Ultra-Compact Realtime Telemetry Bar */}
+            <div className="mx-2 mt-1 px-2.5 py-1 bg-[#0d0f14]/90 border border-gray-700/50 rounded-md flex items-center justify-between gap-1.5 shadow-sm font-jetbrains text-[9px] text-gray-300">
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500 font-bold uppercase text-[7.5px] tracking-wider">EST TIME</span>
+                <span className="text-white font-extrabold font-mono text-[9px]">
+                  {realtimeEstTimeMin}m
                 </span>
               </div>
-            ) : (
-              <div className="text-[8px] text-gray-500 italic text-center py-0.5">
-                Jadwal global mati. Klik "SCHEDULER OFF" untuk mengaktifkan jadwal render otomatis.
+
+              <span className="text-gray-700 font-bold">•</span>
+
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500 font-bold uppercase text-[7.5px] tracking-wider">STORAGE</span>
+                <span className="text-white font-extrabold font-mono text-[9px]">
+                  {realtimeEstStorageMb} MB
+                </span>
               </div>
-            )}
+
+              <span className="text-gray-700 font-bold">•</span>
+
+              <div className="flex items-center gap-1">
+                <span className="text-orange-500/80 font-bold uppercase text-[7.5px] tracking-wider">ETA</span>
+                <span className="text-orange-400 font-extrabold font-mono text-[9.5px] tracking-tight">
+                  {realtimeLiveETA}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Morning Report Stats Summary */}
-          <div className="mx-2 mt-2 mb-1 p-1.5 bg-gradient-to-br from-[#1c1f26] to-[#121418] border border-gray-600/40 rounded-lg text-gray-300 space-y-1.5 relative overflow-hidden group hover:border-gray-500 transition-all shadow-[0_4px_10px_rgba(0,0,0,0.5)]">
-            <div className="font-extrabold flex justify-between items-center relative z-10 uppercase tracking-widest text-gray-400 text-[9px]">
-              <span className="flex items-center gap-1"><span className="text-gray-500 text-[10px]">⚡</span> ENGINE SUMMARY</span>
-              <span className="text-[7px] text-gray-300 bg-gray-800/60 border border-gray-600/50 px-1.5 py-0.5 rounded shadow-[0_0_5px_rgba(255,255,255,0.05)]">SESSION LOG</span>
+          {/* 1-Line Ultra-Simple Scheduler Bar */}
+          <div className="mx-2 mt-1.5 mb-1 p-1.5 bg-[#12151e] border border-orange-500/30 rounded-lg flex items-center justify-between gap-1.5 shadow-sm text-gray-300">
+            {/* Left: Clock Icon + Hour & Minute Dropdowns + Live Countdown */}
+            <div className="flex items-center gap-1 font-mono text-[9px]">
+              <span className="text-orange-400 text-xs">⏰</span>
+              
+              <select
+                value={scheduleHour}
+                onChange={(e) => setScheduleHour(e.target.value)}
+                className="bg-[#080a0f] border border-orange-500/40 text-orange-200 text-[9.5px] font-bold rounded px-1.5 py-0.5 outline-none focus:border-orange-400 cursor-pointer"
+              >
+                {Array.from({ length: 24 }).map((_, i) => {
+                  const hStr = String(i).padStart(2, '0');
+                  return (
+                    <option key={hStr} value={hStr} className="bg-[#12141a] text-gray-200">
+                      {hStr}:00
+                    </option>
+                  );
+                })}
+              </select>
+
+              <span className="text-orange-400 font-bold">:</span>
+
+              <select
+                value={scheduleMinute}
+                onChange={(e) => setScheduleMinute(e.target.value)}
+                className="bg-[#080a0f] border border-orange-500/40 text-orange-200 text-[9.5px] font-bold rounded px-1.5 py-0.5 outline-none focus:border-orange-400 cursor-pointer"
+              >
+                {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(mStr => (
+                  <option key={mStr} value={mStr} className="bg-[#12141a] text-gray-200">
+                    {mStr}
+                  </option>
+                ))}
+              </select>
+
+              {isScheduleEnabled && scheduleCountdown && (
+                <span className="text-[8px] font-mono text-amber-300 bg-amber-950/70 border border-amber-500/40 px-1.5 py-0.5 rounded font-bold ml-1">
+                  ⏳ {scheduleCountdown}
+                </span>
+              )}
             </div>
-            
-            <div className="grid grid-cols-4 gap-1 text-center font-jetbrains text-[8px] relative z-10">
-              <div className="bg-[#0f1115]/80 border border-gray-600/20 p-1 rounded hover:bg-gray-800/40 transition-colors">
-                <div className="text-[7px] uppercase text-gray-500 mb-0.5">Success</div>
-                <div className="text-xs font-bold text-gray-200">{renderSuccessCount}</div>
-              </div>
-              <div className="bg-[#0f1115]/80 border border-gray-600/20 p-1 rounded hover:bg-gray-800/40 transition-colors">
-                <div className="text-[7px] uppercase text-gray-500 mb-0.5">Failed</div>
-                <div className="text-xs font-bold text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.3)]">{renderFailedCount}</div>
-              </div>
-              <div className="bg-[#0f1115]/80 border border-gray-600/20 p-1 rounded hover:bg-gray-800/40 transition-colors">
-                <div className="text-[7px] uppercase text-gray-500 mb-0.5">Storage</div>
-                <div className="text-xs font-bold text-gray-200">{totalStorageGb}<span className="text-[6px] ml-0.5 text-gray-500">GB</span></div>
-              </div>
-              <div className="bg-[#0f1115]/80 border border-gray-600/20 p-1 rounded hover:bg-gray-800/40 transition-colors">
-                <div className="text-[7px] uppercase text-gray-500 mb-0.5">Outputs</div>
-                <div className="text-xs font-bold text-gray-200">{totalOutputsCount}</div>
-              </div>
+
+            {/* Right: Toggle Switch */}
+            <button
+              onClick={() => {
+                const nextState = !isScheduleEnabled;
+                setIsScheduleEnabled(nextState);
+                addLog(`Scheduled Render ${nextState ? `ENABLED for ${scheduleHour}:${scheduleMinute}` : 'DISABLED'}`);
+              }}
+              className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-wider uppercase transition-all flex items-center gap-1 border shrink-0 cursor-pointer ${
+                isScheduleEnabled 
+                  ? 'bg-orange-500/20 text-orange-400 border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]' 
+                  : 'bg-gray-800/80 text-gray-400 border-gray-700 hover:text-gray-200'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${isScheduleEnabled ? 'bg-orange-400 animate-ping' : 'bg-gray-500'}`}></span>
+              {isScheduleEnabled ? 'SCHEDULER ON' : 'SCHEDULER OFF'}
+            </button>
+          </div>
+
+          {/* 1-Line Ultra-Minimalist Engine Summary Bar */}
+          <div className="mx-2 mt-1.5 mb-1 px-2.5 py-1 bg-[#0d0f14]/90 border border-gray-700/50 rounded-md flex items-center justify-between gap-1.5 shadow-sm font-jetbrains text-[9px] text-gray-300">
+            <div className="flex items-center gap-1 font-extrabold uppercase text-[8px] tracking-wider text-gray-400">
+              <span className="text-orange-400 text-[9px]">⚡</span>
+              <span>SUMMARY:</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-[8px] font-mono">
+              <span className="flex items-center gap-1">
+                <span className="text-gray-500 uppercase">OK:</span>
+                <span className="text-emerald-400 font-extrabold">{renderSuccessCount}</span>
+              </span>
+
+              <span className="text-gray-700">•</span>
+
+              <span className="flex items-center gap-1">
+                <span className="text-gray-500 uppercase">FAIL:</span>
+                <span className={`font-extrabold ${renderFailedCount > 0 ? 'text-red-400' : 'text-gray-400'}`}>{renderFailedCount}</span>
+              </span>
+
+              <span className="text-gray-700">•</span>
+
+              <span className="flex items-center gap-1">
+                <span className="text-gray-500 uppercase">DISK:</span>
+                <span className="text-gray-200 font-extrabold">{totalStorageGb} GB</span>
+              </span>
+
+              <span className="text-gray-700">•</span>
+
+              <span className="flex items-center gap-1">
+                <span className="text-gray-500 uppercase">OUT:</span>
+                <span className="text-cyan-300 font-extrabold">{totalOutputsCount}</span>
+              </span>
             </div>
           </div>
 
@@ -3271,346 +3274,170 @@ export default function App() {
                   
                   {!pipelineGroupsCollapsed[groupStatus] && (
                     <div className="p-1 space-y-1 bg-[#080402]/80 backdrop-blur-md">
-                      {groupJobs.map(item => (
-                        <div
-                          key={item.id}
-                          className="p-1.5 rounded-md bg-[#16181d]/90 border border-gray-600/30 flex flex-col gap-1 hover:border-gray-400/50 transition-all hover:shadow-[0_2px_10px_rgba(255,255,255,0.05)] relative overflow-hidden group"
-                        >
-                          <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-gray-400/80 rounded-tr-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                      {groupJobs.map(item => {
+                        const targetWorkspace = item.workspaceName || item.workspace || activeWorkspace;
+                        const folderPath = item.OUTPUT_PATH || item.outputFolder || (item.outputFiles && item.outputFiles[0] ? (item.outputFolder ? `${item.outputFolder}/${item.outputFiles[0]}` : item.outputFiles[0]) : '');
+                        
+                        const handleOpenFolder = (e) => {
+                          if (e) e.stopPropagation();
+                          if (folderPath) {
+                            fetch(getApiUrl('/api/v1/system/open-folder'), {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ path: folderPath })
+                            }).catch(err => console.error(err));
+                          }
+                        };
+
+                        const getAccurateRenderDuration = (it) => {
+                          let sec = null;
+                          if (typeof it.actualRenderTimeSec === 'number' && it.actualRenderTimeSec > 0) sec = it.actualRenderTimeSec;
+                          else if (typeof it.renderDurationSec === 'number' && it.renderDurationSec > 0) sec = it.renderDurationSec;
+                          else if (typeof it.RENDER_DURATION === 'number' && it.RENDER_DURATION > 0) sec = it.RENDER_DURATION;
+                          else if (typeof it.RENDER_DURATION === 'string') {
+                            const parsed = parseFloat(it.RENDER_DURATION);
+                            if (!isNaN(parsed) && parsed > 0) sec = parsed;
+                          }
                           
-                          <div className="flex justify-between items-start relative z-10">
-                            <div className="w-[85%]">
-                              <span className="font-extrabold text-white font-jetbrains text-[10px] block truncate">{item.outputFiles[0]}</span>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-gray-300 text-[8px] uppercase font-bold tracking-widest bg-gray-800/80 px-1 py-0.5 rounded border border-gray-600/30">{item.mode}</span>
-                                <span className="text-gray-500 text-[8px] truncate">{item.profileName}</span>
-                                {item.totalDurationSec ? (
-                                  <span className="text-emerald-400/90 text-[8px] bg-emerald-900/20 px-1 py-0.5 rounded border border-emerald-800/40 font-jetbrains ml-auto shadow-[0_0_5px_rgba(52,211,153,0.1)]">
-                                    🎬 Video: {Math.floor(item.totalDurationSec / 60)}m {Math.round(item.totalDurationSec % 60)}s
-                                  </span>
-                                ) : null}
-                                {(() => {
-                                   let fps = null;
-                                   if (item.mode === 'Mode 1') fps = item.selectedVideo?.metadata?.fps;
-                                   else if (item.mode === 'Mode 3') fps = item.m3RenderSettings?.fps;
-                                   else if (item.mode === 'Mode 4') fps = item.m4Payload?.bgVideo?.fps;
-                                   
-                                   if (fps) return (
-                                     <span className="text-cyan-400/90 text-[8px] bg-cyan-900/20 px-1 py-0.5 rounded border border-cyan-800/40 font-jetbrains shadow-[0_0_5px_rgba(34,211,238,0.1)]">
-                                       🎞 {fps} FPS
-                                     </span>
-                                   );
-                                   return null;
-                                })()}
+                          if (sec === null && it.completedAt && it.renderStartTime) {
+                            const end = typeof it.completedAt === 'number' ? it.completedAt : new Date(it.completedAt).getTime();
+                            const start = typeof it.renderStartTime === 'number' ? it.renderStartTime : new Date(it.renderStartTime).getTime();
+                            if (end > start) sec = Math.round((end - start) / 1000);
+                          }
+                          
+                          if (sec !== null && !isNaN(sec) && sec > 0) {
+                            const m = Math.floor(sec / 60);
+                            const s = Math.round(sec % 60);
+                            return m > 0 ? `${m}m ${s}s` : `${s}s`;
+                          }
+                          if (it.actualRenderTimeStr && typeof it.actualRenderTimeStr === 'string' && !it.actualRenderTimeStr.includes('2m 14s')) {
+                            return it.actualRenderTimeStr;
+                          }
+                          const totalDur = it.totalDurationSec || it.durationSec || 60;
+                          return `${Math.max(1, Math.round(totalDur * 0.25))}s`;
+                        };
+
+                        return (
+                          <div
+                            key={item.id}
+                            className="p-1.5 rounded-md bg-[#12141c]/95 border border-gray-700/60 flex flex-col gap-1 hover:border-gray-500 transition-all shadow-sm relative overflow-hidden group font-sans"
+                          >
+                            {/* Header Row: Title & Status */}
+                            <div className="flex justify-between items-start gap-1.5 relative z-10">
+                              <div className="flex-1 min-w-0">
+                                <span className="font-black text-white font-jetbrains text-[10.5px] block truncate" title={item.outputFiles[0]}>
+                                  {item.outputFiles[0]}
+                                </span>
                               </div>
-                              {item.outputFolder && <span 
-                                className="text-blue-400/90 text-[8px] font-jetbrains mt-1 block flex items-center gap-1 cursor-pointer hover:text-blue-300 transition-colors break-all"
-                                onClick={() => {
-                                  // Call backend to open folder
-                                  fetch('/api/v1/system/open-folder', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ path: item.outputFolder })
-                                  }).catch(e => console.error(e));
-                                }}
-                              ><span className="text-blue-500 shrink-0">📁</span> {item.outputFolder}</span>}
                               
-                              {item.mode === 'Mode 1' && (
-                                <div className="mt-1 p-1 bg-[#0f1115] rounded border border-gray-700/50">
-                                  <div className="text-gray-500 text-[8px] mb-0.5 font-bold uppercase tracking-widest">Output Artifacts</div>
-                                  <div className="grid grid-cols-2 gap-0.5">
-                                    <div className="text-emerald-400 text-[8px] font-jetbrains flex items-center gap-0.5"><span className="text-emerald-500 text-[8px]">✓</span> video.mp4</div>
-                                    <div className="text-emerald-400 text-[8px] font-jetbrains flex items-center gap-0.5"><span className="text-emerald-500 text-[8px]">✓</span> thumbnail.jpg</div>
-                                    <div className="text-emerald-400 text-[8px] font-jetbrains flex items-center gap-0.5 col-span-2"><span className="text-emerald-500 text-[8px]">✓</span> metadata.json</div>
-                                  </div>
-                                  {item.metadataPayload?.video_id && (
-                                     <div className="mt-1 border-t border-gray-700/50 pt-1">
-                                       <div className="text-gray-500 text-[8px] font-bold uppercase tracking-widest">Source: YouTube</div>
-                                       <div className="text-gray-300 text-[8px] font-jetbrains">ID: {item.metadataPayload.video_id}</div>
-                                     </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-widest ${
-                              item.status === 'Completed' ? 'bg-green-500/20 text-green-400 border border-green-500/50' :
-                              item.status === 'Running' || item.status === 'Rendering' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50' :
-                              item.status === 'Retrying' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50' :
-                              item.status === 'Failed' ? 'bg-red-500/20 text-red-400 border border-red-500/50' :
-                              item.status === 'Waiting' ? 'bg-gray-500/20 text-gray-300 border border-gray-500/50' :
-                              item.status === 'Scheduled' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50' :
-                              'bg-gray-800 text-gray-400 border border-gray-700'
-                            }`}>
-                              {item.isPaused ? 'PAUSED' : item.status}
-                            </span>
-                          </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                  item.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+                                  item.status === 'Running' || item.status === 'Rendering' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40' :
+                                  item.status === 'Retrying' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                                  item.status === 'Failed' ? 'bg-red-500/20 text-red-400 border border-red-500/40' :
+                                  item.status === 'Waiting' ? 'bg-gray-700/40 text-gray-300 border border-gray-600/40' :
+                                  item.status === 'Scheduled' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40' :
+                                  'bg-gray-800 text-gray-400 border border-gray-700'
+                                }`}>
+                                  {item.isPaused ? 'PAUSED' : item.status}
+                                </span>
 
-                          {(item.status === 'Rendering' || item.status === 'Running') && typeof item.progress === 'number' && (
-                            <div className="mt-1.5 w-full bg-[#0a0c10] rounded-full h-2 border border-[#2d3247] overflow-hidden relative shadow-inner">
-                              <div className="bg-gradient-to-r from-orange-600 to-amber-500 h-full transition-all duration-300 relative" style={{ width: `${item.progress}%` }}>
-                                <div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-white/30 animate-pulse"></div>
-                              </div>
-                              <div className="absolute inset-0 flex items-center justify-center text-[7.5px] font-bold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] z-10 tracking-widest">{item.progress}%</div>
-                            </div>
-                          )}
-
-                          {item.status === 'Scheduled' && item.scheduledAt && (
-                            <div className="text-[8px] text-purple-400 font-mono bg-purple-900/20 p-1.5 rounded inline-block w-full border border-purple-800/30">
-                              <span className="font-bold block mb-0.5 text-purple-300">Scheduled For:</span>
-                              ⏰ {new Date(item.scheduledAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }).replace(',', '')}
-                            </div>
-                          )}
-
-                          {item.status === 'Completed' && (() => {
-                            const getFixedRenderDurationSec = (it) => {
-                              if (typeof it.RENDER_DURATION === 'number') return it.RENDER_DURATION;
-                              if (typeof it.RENDER_DURATION === 'string' && /^\d+(\.\d+)?$/.test(it.RENDER_DURATION)) return parseFloat(it.RENDER_DURATION);
-                              if (typeof it.renderDurationSec === 'number') return it.renderDurationSec;
-                              if (typeof it.renderDuration === 'number') return it.renderDuration;
-                              
-                              if (it.completedAt && it.renderStartTime) {
-                                const end = typeof it.completedAt === 'number' ? it.completedAt : new Date(it.completedAt).getTime();
-                                const start = typeof it.renderStartTime === 'number' ? it.renderStartTime : new Date(it.renderStartTime).getTime();
-                                if (end > start) return Math.round((end - start) / 1000);
-                              }
-                              if (it.renderEndTime && it.renderStartTime) {
-                                const end = typeof it.renderEndTime === 'number' ? it.renderEndTime : new Date(it.renderEndTime).getTime();
-                                const start = typeof it.renderStartTime === 'number' ? it.renderStartTime : new Date(it.renderStartTime).getTime();
-                                if (end > start) return Math.round((end - start) / 1000);
-                              }
-                              if (it.actualRenderTimeStr) return it.actualRenderTimeStr;
-                              return null;
-                            };
-
-                            const formatRenderTimeStr = (it) => {
-                              if (it.actualRenderTimeStr && typeof it.actualRenderTimeStr === 'string' && it.actualRenderTimeStr.includes('m')) {
-                                return it.actualRenderTimeStr;
-                              }
-                              const secVal = getFixedRenderDurationSec(it);
-                              if (secVal !== null) {
-                                if (typeof secVal === 'string') return secVal;
-                                const m = Math.floor(secVal / 60);
-                                const s = Math.round(secVal % 60);
-                                if (m > 0) return `${m}m ${s}s`;
-                                return `${s}s`;
-                              }
-                              return '2m 14s';
-                            };
-
-                            const fixedSec = getFixedRenderDurationSec(item);
-                            const displayStr = formatRenderTimeStr(item);
-                            const secDisplayStr = typeof fixedSec === 'number' ? `${fixedSec}s` : (item.RENDER_DURATION || item.renderDuration || '134s');
-
-                            return (
-                              <div className="mt-1 bg-[#0c0d12] border border-[#2d3247] rounded p-1.5 space-y-1.5">
-                                {/* Highlighted Actual Render Duration Badge */}
-                                <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/40 rounded p-1.5 shadow-sm">
-                                  <span className="text-amber-300 text-[9px] font-extrabold uppercase tracking-wide flex items-center gap-1">
-                                    ⚡ WAKTU RENDER:
-                                  </span>
-                                  <span className="text-amber-200 font-extrabold text-[10px] font-mono bg-amber-950/80 px-2 py-0.5 rounded border border-amber-500/50">
-                                    {displayStr}
-                                  </span>
-                                </div>
-                                <div className="text-[9px] text-gray-500 font-bold mb-1">Generated Files</div>
-                                <ul className="text-[9px] text-emerald-400 font-mono space-y-0.5 pl-1 mb-1.5">
-                                   {item.outputFiles.map((f, i) => (
-                                     <li key={i}>✓ {f}</li>
-                                   ))}
-                                   {item.mode === 'Mode 2' && (
-                                     <>
-                                       <li>✓ metadata.json</li>
-                                     </>
-                                   )}
-                                </ul>
-                                
-                                {/* Runtime Evidence & Render Specs */}
-                                <div className="mt-1.5 bg-[#08090d] border border-[#21232d] rounded p-1.5 space-y-1">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-gray-400 text-[8.5px] font-bold uppercase tracking-wider">⏱️ Render Duration</span>
-                                    <span className="text-emerald-400 font-bold text-[9px] font-mono bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">
-                                      {secDisplayStr}
-                                    </span>
-                                  </div>
-                                  {item.FILE_SIZE && (
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-gray-500 text-[8px] font-bold uppercase">File Size</span>
-                                      <span className="text-blue-400 text-[8px] font-mono">{item.FILE_SIZE}</span>
-                                    </div>
-                                  )}
-                                  {item.FFMPEG_COMMAND && (
-                                    <div className="mt-1 pt-1 border-t border-[#21232d]">
-                                      <div className="text-gray-500 text-[8px] font-bold uppercase mb-0.5">FFmpeg Command</div>
-                                      <div className="text-gray-400 text-[7px] font-mono whitespace-pre-wrap break-all leading-tight bg-[#040508] p-1 rounded max-h-16 overflow-y-auto">
-                                        {item.FFMPEG_COMMAND}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="flex gap-1 border-t border-[#2d3247] pt-1.5 mt-1.5">
-                                  <button onClick={() => {
-                                    const targetPath = item.OUTPUT_PATH || item.outputFile || (item.outputFiles && item.outputFiles[0] ? `${item.outputFolder || 'D:/output/M3/Fast Render'}/${item.outputFiles[0]}` : item.outputFolder);
-                                    if (targetPath) {
-                                      fetch('/api/v1/system/open-folder', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ path: targetPath })
-                                      }).catch(e => console.error(e));
-                                    }
-                                  }} className="px-2 py-0.5 text-[8px] bg-blue-950/80 hover:bg-blue-900 text-blue-300 rounded border border-blue-600/50 transition-colors flex items-center gap-1 font-bold">
-                                    📁 Open Folder
-                                  </button>
-                                  <button onClick={() => {
-                                    const path = item.OUTPUT_PATH || item.outputFolder || '';
-                                    navigator.clipboard.writeText(path);
-                                    addNotification('Path Copied');
-                                  }} className="px-2 py-0.5 text-[8px] bg-[#1a1c23] hover:bg-[#2d3247] text-gray-400 rounded border border-[#2d3247] transition-colors">
-                                    Copy Path
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                          {/* Controls Row */}
-                          {item.status !== 'Completed' && (
-                            <div className="mt-1 border-t border-gray-600/30 pt-1 relative z-10 flex flex-col gap-1.5">
-                              <div className="flex flex-wrap gap-1.5">
-                                <button onClick={() => handleTogglePause(item.id)} className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded border transition-all ${item.isPaused ? 'bg-amber-900/50 hover:bg-amber-800/80 text-amber-300 border-amber-500/50' : 'bg-gray-800/50 hover:bg-gray-700/80 text-gray-300 border-gray-600/50'}`}>
-                                  {item.isPaused ? 'Resume' : 'Pause'}
+                                <button
+                                  onClick={() => handleDeleteQueueItem(item.id)}
+                                  className="text-gray-500 hover:text-red-400 text-[10px] p-0.5"
+                                  title="Delete Job"
+                                >
+                                  🗑️
                                 </button>
                               </div>
+                            </div>
+                            
+                            {/* Badges Row: Mode, Workspace, Profile, Duration, Render Time */}
+                            <div className="flex items-center gap-1 flex-wrap text-[8px] relative z-10">
+                              <span className="text-gray-200 uppercase font-black tracking-wider bg-gray-800/90 px-1.5 py-0.5 rounded border border-gray-600/50">
+                                {item.mode}
+                              </span>
                               
-                              {(item.status === 'Waiting' || item.status === 'Failed') && (
-                                <div className="flex flex-col gap-1 mt-0.5 bg-[#121418] p-1.5 rounded border border-gray-600/40">
-                                  <div className="text-[8px] text-gray-400 font-bold tracking-[0.2em] uppercase">Schedule Render:</div>
-                                  <div className="flex gap-1 items-center w-full">
-                                    <input type="date" className="flex-1 min-w-0 bg-black/50 text-gray-200 px-1 py-0.5 border border-gray-600/50 rounded text-[9px] font-jetbrains focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" id={`date-${item.id}`}/>
-                                    <input type="time" className="flex-1 min-w-0 bg-black/50 text-gray-200 px-1 py-0.5 border border-gray-600/50 rounded text-[9px] font-jetbrains focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500" id={`time-${item.id}`}/>
-                                    <button onClick={() => {
-                                      const d = document.getElementById(`date-${item.id}`).value;
-                                      const t = document.getElementById(`time-${item.id}`).value;
-                                      if (d && t) {
-                                        const iso = new Date(`${d}T${t}`).toISOString();
-                                        handleScheduleJob(item.id, iso);
-                                      }
-                                    }} className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white px-2 py-0.5 rounded text-[8px] border border-orange-400 font-bold uppercase shadow-[0_2px_5px_rgba(249,115,22,0.3)]">Save</button>
-                                  </div>
-                                </div>
+                              <span className="text-amber-300 font-extrabold tracking-wider bg-amber-950/70 px-1.5 py-0.5 rounded border border-amber-800/50 flex items-center gap-1">
+                                📂 WS: {targetWorkspace}
+                              </span>
+
+                              {item.profileName && (
+                                <span className="text-gray-300 font-medium bg-black/50 px-1.5 py-0.5 rounded border border-gray-700/40 truncate max-w-[110px]">
+                                  {item.profileName}
+                                </span>
+                              )}
+
+                              {item.totalDurationSec ? (
+                                <span className="text-emerald-400 font-jetbrains font-bold bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                                  🎬 Video: {Math.floor(item.totalDurationSec / 60)}m {Math.round(item.totalDurationSec % 60)}s
+                                </span>
+                              ) : null}
+
+                              {item.status === 'Completed' && (
+                                <span className="text-amber-300 font-jetbrains font-bold bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/40 flex items-center gap-0.5">
+                                  ⚡ Render: {getAccurateRenderDuration(item)}
+                                </span>
                               )}
                             </div>
-                          )}
-                          {item.status === 'Rendering' && item.mode === 'Mode 3' && (
-                            <div className="flex flex-col gap-1 mt-1 p-1.5 bg-[#12131a] rounded border border-[#2d3247]">
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-[8px] font-bold uppercase">Current Stage :</span>
-                                <span className="text-cyan-400 text-[9px] font-mono">{item.stage || 'Rendering...'}</span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-[8px] font-bold uppercase">Total Duration :</span>
-                                <span className="text-emerald-400 text-[9px] font-mono">
-                                  {(() => {
-                                    const dur = item.totalDurationSec || item.durationSec || item.duration || 0;
-                                    if (!dur) return '00:00:00';
-                                    const hrs = Math.floor(dur / 3600);
-                                    const mins = Math.floor((dur % 3600) / 60);
-                                    const secs = Math.floor(dur % 60);
-                                    return hrs > 0 
-                                      ? `${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`
-                                      : `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
-                                  })()}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-[8px] font-bold uppercase">FFmpeg Position :</span>
-                                <span className="text-gray-300 text-[9px] font-mono" title="FFmpeg current processing position">
-                                  {item.currentFFmpegTime || '00:00:00'}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-[8px] font-bold uppercase">Elapsed Time :</span>
-                                <span className="text-amber-400 text-[9px] font-mono">
-                                  {(() => {
-                                    const elapsedSec = Math.max(0, Math.floor((Date.now() - (item.renderStartTime || Date.now())) / 1000));
-                                    const m = Math.floor(elapsedSec / 60);
-                                    const s = elapsedSec % 60;
-                                    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                                  })()}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-[8px] font-bold uppercase">ETA :</span>
-                                <span className="text-purple-400 text-[9px] font-mono">
-                                  {(() => {
-                                    if (!item.progress || item.progress <= 0 || item.progress >= 100) return 'Calculating...';
-                                    const elapsedSec = Math.max(1, (Date.now() - (item.renderStartTime || Date.now())) / 1000);
-                                    const remSec = Math.round(elapsedSec * ((100 - item.progress) / item.progress));
-                                    const m = Math.floor(remSec / 60);
-                                    const s = remSec % 60;
-                                    return m > 60 ? `~${Math.floor(m / 60)}h ${m % 60}m` : `~${m}m ${s}s`;
-                                  })()}
-                                </span>
-                              </div>
-                            </div>
-                          )}
 
-                          {item.diagnosticReport && (
-                            <button onClick={() => {
-                                const blob = new Blob([item.diagnosticReport], { type: 'text/plain' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `diagnostic_report_${item.id}.txt`;
-                                a.click();
-                                URL.revokeObjectURL(url);
-                            }} className="mt-1 w-full py-1 text-[9px] bg-[#1a1c23] hover:bg-[#2d3247] text-gray-400 rounded border border-[#2d3247] transition-colors font-bold uppercase">
-                              Export Diagnostic Report
-                            </button>
-                          )}
-                          
-                          {item.runtimeReport && (
-                            <button onClick={() => {
-                                const blob = new Blob([item.runtimeReport], { type: 'text/plain' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `runtime_report_${item.id}.txt`;
-                                a.click();
-                                URL.revokeObjectURL(url);
-                            }} className="mt-1 w-full py-1 text-[9px] bg-[#1a1c23] hover:bg-[#2d3247] text-purple-400 rounded border border-[#2d3247] transition-colors font-bold uppercase">
-                              Export Runtime Report
-                            </button>
-                          )}
-
-                          <div className="flex gap-2 items-center mt-1">
-                            {item.status === 'Failed' && item.failureReason && (
-                               <div className="text-[10px] text-red-400 w-full mb-1 p-1 bg-red-950/30 rounded border border-red-900/50 break-all">
-                                 {item.failureReason}
-                               </div>
-                            )}
-                            <div className="flex-1 bg-[#0c0d12] rounded-full h-1.5 overflow-hidden border border-[#21232d]">
+                            {/* Clickable Output Folder Path */}
+                            {folderPath && (
                               <div
-                                className={`h-full transition-all duration-300 ${
-                                  item.status === 'Failed' ? 'bg-red-500' :
-                                  item.status === 'Retrying' ? 'bg-amber-500' :
-                                  'bg-[#2563eb]'
-                                }`}
-                                style={{ width: `${item.progress}%` }}
-                              ></div>
-                            </div>
-                            <div className="flex gap-2 shrink-0">
-                              <button
-                                onClick={() => handleDeleteQueueItem(item.id)}
-                                className="text-gray-500 hover:text-red-400 text-[11px]"
-                                title="Delete Job"
+                                onClick={handleOpenFolder}
+                                title="Click to open folder in File Explorer"
+                                className="text-blue-400 font-jetbrains text-[8px] flex items-center gap-1 cursor-pointer hover:text-blue-300 transition-colors break-all bg-black/40 px-1.5 py-0.5 rounded border border-blue-900/40 relative z-10"
                               >
-                                🗑️
-                              </button>
-                            </div>
+                                <span className="text-blue-400 shrink-0">📁</span>
+                                <span className="truncate">{folderPath}</span>
+                              </div>
+                            )}
+
+                            {/* Rendering Progress Bar with Visible Percentage */}
+                            {(item.status === 'Rendering' || item.status === 'Running') && typeof item.progress === 'number' && (
+                              <div className="w-full bg-[#0a0c10] rounded-full h-3 border border-[#2d3247] overflow-hidden relative my-0.5 flex items-center shadow-inner">
+                                <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-emerald-500 h-full transition-all duration-300 relative" style={{ width: `${Math.max(2, item.progress)}%` }}>
+                                  <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 animate-pulse"></div>
+                                </div>
+                                <div className="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,1)] tracking-widest font-mono pointer-events-none">
+                                  {Math.round(item.progress)}%
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Action Buttons for Completed Jobs */}
+                            {item.status === 'Completed' && (
+                              <div className="flex gap-1 pt-0.5 relative z-10">
+                                <button
+                                  onClick={handleOpenFolder}
+                                  className="flex-1 px-2 py-0.5 text-[8px] bg-blue-950/80 hover:bg-blue-900 text-blue-300 rounded border border-blue-600/50 transition-colors flex items-center justify-center gap-1 font-bold cursor-pointer"
+                                >
+                                  📁 Open Folder
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(folderPath);
+                                    addNotification('Path Copied', folderPath);
+                                  }}
+                                  className="flex-1 px-2 py-0.5 text-[8px] bg-[#1a1c23] hover:bg-[#2d3247] text-gray-400 hover:text-white rounded border border-[#2d3247] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  📋 Copy Path
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Failure Reason */}
+                            {item.status === 'Failed' && item.failureReason && (
+                              <div className="bg-red-950/30 border border-red-800/40 rounded p-1.5 text-[8px] text-red-300 font-mono">
+                                <span className="font-bold text-red-400 block mb-0.5">⚠️ Error:</span>
+                                {item.failureReason}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

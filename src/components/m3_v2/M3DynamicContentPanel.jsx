@@ -4,6 +4,8 @@ import { BackgroundVariants } from '../ui/BackgroundVariants';
 import BackgroundPanel from './panels/BackgroundPanel';
 import PlaylistPanel from './panels/PlaylistPanel';
 import VisualizerPanel from './panels/VisualizerPanel';
+import Visualizer2Panel from './panels/Visualizer2Panel';
+import Visualizer3Panel from './panels/Visualizer3Panel';
 import EffectsPanel from './panels/EffectsPanel';
 import OverlayPanel from './panels/OverlayPanel';
 import TextPanel from './panels/TextPanel';
@@ -12,6 +14,7 @@ import BrandingPanel from './panels/BrandingPanel';
 import ParticlesPanel from './panels/ParticlesPanel';
 import LyricsPanel from './panels/LyricsPanel';
 import VisualizerV4Panel from './panels/VisualizerV4Panel';
+import VisualizerV5Panel from './panels/VisualizerV5Panel';
 import { ThumbnailCard, GridThumbnail } from '../ui/Thumbnails';
 
 // Thumbnails are now imported from ../ui/Thumbnails.jsx
@@ -42,6 +45,7 @@ export default function M3DynamicContentPanel({
         setM3BgPool={setM3BgPool}
         m3SelectedObjectId={m3SelectedObjectId} 
         setM3SelectedObjectId={setM3SelectedObjectId} 
+        isThumbnailMode={editorMode === 'Thumbnail'}
     />
   );
 
@@ -73,7 +77,9 @@ export default function M3DynamicContentPanel({
     case 'Background': content = renderBackground(); break;
     case 'Playlist Audio': content = renderPlaylistAudio(); break;
     case 'Lyrics': content = renderLyrics(); break;
-    case 'Visualizer V4': content = <VisualizerV4Panel addObject={addObject} m3Objects={m3Objects || []} setM3Objects={setM3Objects} />; break;
+    case 'Visualizer V5':
+    case 'Visualizer V4':
+    case 'Visualizer': content = <VisualizerV5Panel addObject={addObject} m3Objects={m3Objects || []} setM3Objects={setM3Objects} />; break;
     case 'Particle': content = renderParticle(); break;
     case 'Effects': content = renderEffects(); break;
     case 'Overlay': content = renderOverlay(); break;
