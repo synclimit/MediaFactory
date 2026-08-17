@@ -31,7 +31,7 @@ import { pipelineHistoryEngine } from './services/PipelineHistoryEngine.js';
 
 import M1StudioPanel from './components/m1/M1StudioPanel.jsx';
 import M2StudioPanel from './components/m2/M2StudioPanel.jsx';
-import M3StudioPanel from './components/m3/M3StudioPanel.jsx';
+import M3StudioPanel from './components/m3_v2/M3V2StudioPanel.jsx';
 import html2canvas from 'html2canvas';
 import M4StudioPanel from './components/m4/M4StudioPanel.jsx';
 import M5StudioPanel from './components/m5/M5StudioPanel.jsx';
