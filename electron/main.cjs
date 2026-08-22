@@ -97,42 +97,36 @@ async function createWindow() {
         }
     });
 
-    let targetUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
-    if (isDev) {
-        try {
-            const http = require('http');
-            const isViteRunning = await new Promise((resolve) => {
-                const req = http.get('http://127.0.0.1:5173', { timeout: 600 }, (res) => resolve(res.statusCode < 500));
-                req.on('error', () => resolve(false));
-                req.on('timeout', () => { req.destroy(); resolve(false); });
-            });
-            if (isViteRunning) {
-                targetUrl = `http://127.0.0.1:5173?serverPort=${serverPort}`;
-                console.log('[Electron] Connected to Vite Dev Server:', targetUrl);
-            }
-        } catch(e) {}
-    }
+    let isViteRunning = false;
+    try {
+        const http = require('http');
+        isViteRunning = await new Promise((resolve) => {
+            const req = http.get('http://127.0.0.1:5173', { timeout: 600 }, (res) => resolve(res.statusCode < 500));
+            req.on('error', () => resolve(false));
+            req.on('timeout', () => { req.destroy(); resolve(false); });
+        });
+    } catch(e) {}
 
     if (!mainWindow || mainWindow.isDestroyed()) return;
 
-    if (isDev && targetUrl.includes(':5173')) {
-        console.log('[Electron] Loading UI via Vite Dev Server:', targetUrl);
+    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+    if (isViteRunning) {
+        const viteUrl = `http://127.0.0.1:5173?serverPort=${serverPort}`;
+        console.log('[Electron] Loading UI via active Vite Dev Server:', viteUrl);
+        mainWindow.loadURL(viteUrl).catch((err) => {
+            console.error('[Electron] loadURL error:', err);
+        });
+    } else if (fs.existsSync(indexPath)) {
+        console.log('[Electron] Loading UI via local build file:', indexPath);
+        mainWindow.loadFile(indexPath, { query: { serverPort: String(serverPort) } }).catch((err) => {
+            console.error('[Electron] loadFile error:', err);
+        });
+    } else {
+        const targetUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
+        console.log('[Electron] Loading UI via backend server URL:', targetUrl);
         mainWindow.loadURL(targetUrl).catch((err) => {
             console.error('[Electron] loadURL error:', err);
         });
-    } else {
-        const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
-        if (fs.existsSync(indexPath)) {
-            console.log('[Electron] Loading UI via local build file:', indexPath);
-            mainWindow.loadFile(indexPath, { query: { serverPort: String(serverPort) } }).catch((err) => {
-                console.error('[Electron] loadFile error:', err);
-            });
-        } else {
-            console.log('[Electron] Loading UI via URL:', targetUrl);
-            mainWindow.loadURL(targetUrl).catch((err) => {
-                console.error('[Electron] loadURL error:', err);
-            });
-        }
     }
 
     mainWindow.on('closed', () => {

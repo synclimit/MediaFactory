@@ -7,7 +7,19 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+node_modules/**
+**/node_modules/**
+astrofox-standalone
+astrofox-standalone/**
+m7-astrofox/node_modules
+m7-astrofox/node_modules/**
+m7-astrofox/build
+m7-astrofox/build/**
+m7-astrofox/bin
+m7-astrofox/bin/**
+
 dist
 dist-ssr
 *.local
@@ -22,16 +34,23 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-# Ignored heavy folders
+.claude/
+
+# Ignored heavy and diagnostic folders
 .mediafactory/
+.mediafactory_data/
 /Output/
 Workspaces/
 dist-electron/
 dist/
 Cache/
+Cachee/
 *.mp4
 *.mp3
 *.wav
+*.zip
+*.part
+*.rgba
 Test_Output/
 dummy_bg.jpg
 dummy_audio.mp3
@@ -40,3 +59,15 @@ backend/bin/
 backend/ffmpeg/
 *.exe
 production_report.*
+
+# Scratch and test render frames
+scratch/*.png
+scratch/*.rgba
+test_svg_frames/
+test_out*.png
+test_fscale_*.png
+m3 fast render/
+m3 render batch/
+m3 render normal/
+m4 render engine/
+m3 output/

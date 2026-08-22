@@ -6,11 +6,14 @@ import VisualizerRenderer from '../widgets/VisualizerRenderer.jsx';
 import Visualizer2Renderer from '../widgets/Visualizer2Renderer.jsx';
 import Visualizer3Renderer from '../widgets/Visualizer3Renderer.jsx';
 import VisualizerV4Renderer from '../widgets/VisualizerV4Renderer.jsx';
+import VisualizerV5Renderer from '../widgets/VisualizerV5Renderer.jsx';
 import ChromaKeyImage from '../widgets/ChromaKeyImage';
 import ChromaKeyVideo from '../widgets/ChromaKeyVideo';
 import ProceduralSpeaker from '../overlays/ProceduralSpeaker';
 import { reactiveObjectProcessor } from '../../../services/audio/ReactiveObjectProcessor';
 import { interactionStore, useInteractionStore } from '../../../services/interaction/InteractionStore';
+import { fastWorkspaceManager } from '../../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
+import { fastRenderState } from '../../../services/pipeline/fastrender/core/FastRenderState.js';
 
 // SmartVideoRenderer handles both regular and chroma key videos, with support for display intervals
 const SmartVideoRenderer = ({ el }) => {
@@ -379,12 +382,18 @@ const CanvasObjectNode = React.memo(({
                     )}
                 </div>
             )}
-            {el.type === 'social-widget' && <SocialWidgetRenderer config={el} currentTime={currentTime} />}
-            {el.type === 'visualizer' && <VisualizerRenderer config={el} currentTime={currentTime} audioState={frame?.states?.audioState} />}
-            {el.type === 'visualizer2' && <Visualizer2Renderer config={el} id={el.id} currentTime={currentTime} audioState={frame?.states?.audioState} />}
-            {el.type === 'visualizer3' && <Visualizer3Renderer config={el} id={el.id} currentTime={currentTime} audioState={frame?.states?.audioState} />}
-            {el.type === 'visualizer4' && <VisualizerV4Renderer object={el} currentTimeSec={currentTime} analyser={frame?.analyser} width={el.width} height={el.height} />}
-            {el.type === 'playlist' && <PlaylistRenderer config={el} id={el.id} frame={frame} />}
+            {(() => {
+              const isFastWorkspace = fastWorkspaceManager.isFastWorkspaceActive() || fastRenderState.getMode() === 'FAST';
+              const effectiveConfig = { ...el, renderMode: isFastWorkspace ? 'fast' : 'normal' };
+              if (el.type === 'social-widget') return <SocialWidgetRenderer config={effectiveConfig} currentTime={currentTime} />;
+              if (el.type === 'visualizer') return <VisualizerRenderer config={effectiveConfig} currentTime={currentTime} audioState={frame?.states?.audioState} />;
+              if (el.type === 'visualizer2') return <Visualizer2Renderer config={effectiveConfig} id={el.id} currentTime={currentTime} audioState={frame?.states?.audioState} />;
+              if (el.type === 'visualizer3') return <Visualizer3Renderer config={effectiveConfig} id={el.id} currentTime={currentTime} audioState={frame?.states?.audioState} />;
+              if (el.type === 'visualizer4') return <VisualizerV4Renderer object={effectiveConfig} currentTimeSec={currentTime} analyser={frame?.analyser} width={el.width} height={el.height} />;
+              if (el.type === 'visualizer5') return <VisualizerV5Renderer object={effectiveConfig} currentTimeSec={currentTime} width={el.width} height={el.height} />;
+              if (el.type === 'playlist') return <PlaylistRenderer config={effectiveConfig} id={el.id} frame={frame} />;
+              return null;
+            })()}
             {(el.type === 'procedural-speaker' || el.mediaType === 'procedural') && (
                 <div className="w-full h-full relative" style={{ mixBlendMode: el.blend === 'Normal' ? 'normal' : el.blend?.toLowerCase() }}>
                     <ProceduralSpeaker 

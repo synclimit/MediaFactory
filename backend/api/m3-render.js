@@ -33,6 +33,52 @@ async function getVisualizerV4Core() {
   return visualizerV4CoreModule;
 }
 
+let visualizerV5CoreModule = null;
+async function getVisualizerV5Core() {
+  if (!visualizerV5CoreModule) {
+    const { VisualizerV5Core } = await import('../../src/visualizers/v5/VisualizerV5Core.js');
+    visualizerV5CoreModule = VisualizerV5Core;
+  }
+  return visualizerV5CoreModule;
+}
+
+let visualizerV5AudioModule = null;
+async function getVisualizerV5Audio() {
+  if (!visualizerV5AudioModule) {
+    const { VisualizerV5Audio } = await import('../../src/visualizers/v5/VisualizerV5Audio.js');
+    visualizerV5AudioModule = VisualizerV5Audio;
+  }
+  return visualizerV5AudioModule;
+}
+
+let deterministicMotionEngineModule = null;
+async function getDeterministicMotionEngine() {
+  if (!deterministicMotionEngineModule) {
+    const { DeterministicMotionEngine } = await import('../../src/services/audio/DeterministicMotionEngine.js');
+    deterministicMotionEngineModule = DeterministicMotionEngine;
+  }
+  return deterministicMotionEngineModule;
+}
+
+let particleCoreModule = null;
+async function getParticleCore() {
+  if (!particleCoreModule) {
+    const { ParticleCore } = await import('../../src/engine/particles/ParticleCore.js');
+    particleCoreModule = ParticleCore;
+  }
+  return particleCoreModule;
+}
+
+let unifiedSceneRendererModule = null;
+async function getUnifiedSceneRenderer() {
+  if (!unifiedSceneRendererModule) {
+    const { UnifiedSceneRenderer } = await import('../../src/engine/pipeline/UnifiedSceneRenderer.js');
+    unifiedSceneRendererModule = UnifiedSceneRenderer;
+  }
+  return unifiedSceneRendererModule;
+}
+
+
 let lastCpuTimesM3 = null;
 const getSystemStats = () => new Promise(resolve => {
   try {
@@ -221,147 +267,90 @@ async function resolveAssetPath(sp, category = '') {
       assetPathCache.delete(cacheKey);
     }
   }
-  
-  if (typeof sp === 'string' && sp.includes('uri=')) {
-    const match = sp.match(/uri=([^&]+)/);
-    if (match) sp = decodeURIComponent(match[1]);
-  }
 
-  let cleanPath = sp.replace(/^file:\/\/\/?/, '');
-  
+  let cleanPath = String(sp).replace(/^file:\/\/\/?/, '').replace(/^blob:[^\/]+\//, '');
+  if (cleanPath.includes('uri=')) {
+    const match = cleanPath.match(/uri=([^&]+)/);
+    if (match) cleanPath = decodeURIComponent(match[1]);
+  }
+  cleanPath = cleanPath.replace(/^file:\/\/\/?/, '');
+
+  const rawBase = path.basename(cleanPath);
+  const sanitizedBase = rawBase.replace(/^\d+[\.\s\-]+/, '').trim();
+
   const testCandidate = async (cand) => {
     if (!cand) return null;
-    try {
-      const stats = await fs.stat(cand);
-      if (stats.size > 0) {
-        assetPathCache.set(cacheKey, cand);
-        return cand;
-      }
-    } catch (e) {}
-    try {
-      const stats = await fs.stat(cand + '.mp3');
-      if (stats.size > 0) {
-        assetPathCache.set(cacheKey, cand + '.mp3');
-        return cand + '.mp3';
-      }
-    } catch (e) {}
+    const exts = ['', '.mp3', '.m4a', '.wav', '.ogg', '.flac', '.aac', '.mp4', '.png', '.jpg', '.jpeg', '.webp'];
+    for (const ext of exts) {
+      const target = cand + ext;
+      try {
+        const stats = await fs.stat(target);
+        if (stats.size > 0) {
+          assetPathCache.set(cacheKey, target);
+          return target;
+        }
+      } catch (e) {}
+    }
     return null;
   };
 
-  // 1. Direct check
-  let cand = await testCandidate(cleanPath);
-  if (cand) return cand;
+  const candidateBases = Array.from(new Set([cleanPath, rawBase, sanitizedBase])).filter(Boolean);
 
-  // 2. Try WorkspaceService active workspace path
+  // 1. Direct candidate checks
+  for (const cb of candidateBases) {
+    let cand = await testCandidate(cb);
+    if (cand) return cand;
+  }
+
+  // 2. Data dirs & Cache subdirectories
+  const cacheBase = AppPaths.getCacheBase ? AppPaths.getCacheBase() : path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Cache');
+  const mediaFactoryDataDir = AppPaths.getMediaFactoryDataDir ? AppPaths.getMediaFactoryDataDir() : path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData');
+
+  const searchDirs = [
+    path.join(os.homedir(), 'Desktop'),
+    path.join(os.homedir(), 'Downloads'),
+    path.join(os.homedir(), 'Pictures'),
+    path.join(os.homedir(), 'Music'),
+    path.join(cacheBase, 'm3'),
+    cacheBase,
+    path.join(mediaFactoryDataDir, 'Cache', 'm3'),
+    path.join(mediaFactoryDataDir, 'Cache'),
+    path.join(mediaFactoryDataDir, 'Uploads'),
+    path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Cache', 'm3'),
+    path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Cache', 'm3'),
+    path.resolve(process.cwd(), 'public'),
+    path.resolve(process.cwd(), 'dist'),
+    path.resolve(process.cwd(), 'src', 'assets'),
+    path.resolve(process.cwd(), 'experiments', 'artifacts')
+  ];
+
+  for (const dir of searchDirs) {
+    for (const cb of candidateBases) {
+      let cand = await testCandidate(path.join(dir, cb));
+      if (cand) return cand;
+      if (category === 'Background') {
+        cand = await testCandidate(path.join(dir, 'bg_' + cb));
+        if (cand) return cand;
+      }
+    }
+  }
+
+  // 3. Workspace active paths
   try {
     const ServiceRegistry = require('../system/ServiceRegistry');
     const wsService = ServiceRegistry.resolve('WorkspaceService');
     if (wsService) {
-      const currentWsName = wsService.getCurrentWorkspace();
-      if (currentWsName) {
-        const activeWsPath = wsService._getActivePath();
-        cand = await testCandidate(path.join(activeWsPath, cleanPath));
+      const activeWsPath = wsService._getActivePath();
+      for (const cb of candidateBases) {
+        let cand = await testCandidate(path.join(activeWsPath, cb));
         if (cand) return cand;
-
-        const baseName = path.basename(cleanPath);
         if (category) {
-          cand = await testCandidate(path.join(activeWsPath, 'Assets', category, baseName));
-          if (cand) return cand;
-          cand = await testCandidate(path.join(activeWsPath, 'Assets', category.toLowerCase(), baseName));
-          if (cand) return cand;
-        }
-
-        if (cleanPath.includes('Assets/audio') || cleanPath.includes('Assets\\audio') || cleanPath.includes('Assets/Audio') || cleanPath.includes('Assets\\Audio')) {
-          const altPath1 = cleanPath.replace(/Assets[\\\/]audio/i, 'Assets/Audio');
-          cand = await testCandidate(path.join(activeWsPath, altPath1));
-          if (cand) return cand;
-          const altPath2 = cleanPath.replace(/Assets[\\\/]audio/i, 'Assets/audio');
-          cand = await testCandidate(path.join(activeWsPath, altPath2));
+          cand = await testCandidate(path.join(activeWsPath, 'Assets', category, cb));
           if (cand) return cand;
         }
       }
     }
   } catch (e) {}
-
-  // Gather all possible data directories (including AppData Roaming and dev mode dirs)
-  const possibleDataDirs = [
-    AppPaths.getMediaFactoryDataDir(),
-    path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData'),
-    path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData'),
-    path.resolve(process.cwd(), '.mediafactory_data'),
-    path.resolve(process.cwd(), '.mediafactory')
-  ];
-
-  // 3. Scan all subfolders in Workspaces directory under possible dataDirs
-  for (const dataDir of possibleDataDirs) {
-    try {
-      const workspacesDir = path.join(dataDir, 'Workspaces');
-      const wsEntries = await fs.readdir(workspacesDir, { withFileTypes: true }).catch(() => []);
-      for (const wsEntry of wsEntries) {
-        if (wsEntry.isDirectory()) {
-          const wsPath = path.join(workspacesDir, wsEntry.name);
-          cand = await testCandidate(path.join(wsPath, cleanPath));
-          if (cand) return cand;
-
-          const baseName = path.basename(cleanPath);
-          if (category) {
-            cand = await testCandidate(path.join(wsPath, 'Assets', category, baseName));
-            if (cand) return cand;
-            cand = await testCandidate(path.join(wsPath, 'Assets', category.toLowerCase(), baseName));
-            if (cand) return cand;
-          }
-
-          if (cleanPath.includes('Assets/audio') || cleanPath.includes('Assets\\audio') || cleanPath.includes('Assets/Audio') || cleanPath.includes('Assets\\Audio')) {
-            const altPath1 = cleanPath.replace(/Assets[\\\/]audio/i, 'Assets/Audio');
-            cand = await testCandidate(path.join(wsPath, altPath1));
-            if (cand) return cand;
-            const altPath2 = cleanPath.replace(/Assets[\\\/]audio/i, 'Assets/audio');
-            cand = await testCandidate(path.join(wsPath, altPath2));
-            if (cand) return cand;
-          }
-        }
-      }
-    } catch (e) {}
-
-    // 4. Try candidate in dataDir directly
-    cand = await testCandidate(path.join(dataDir, cleanPath));
-    if (cand) return cand;
-
-    if (cleanPath.includes('Assets/audio') || cleanPath.includes('Assets\\audio') || cleanPath.includes('Assets/Audio') || cleanPath.includes('Assets\\Audio')) {
-      const altPath1 = cleanPath.replace(/Assets[\\\/]audio/i, 'Assets/Audio');
-      cand = await testCandidate(path.join(dataDir, altPath1));
-      if (cand) return cand;
-    }
-  }
-
-  // 5. Try candidate relative to cwd / public / .mediafactory / dev path
-  cand = await testCandidate(path.resolve(process.cwd(), cleanPath));
-  if (cand) return cand;
-
-  const baseNameOnly = path.basename(cleanPath);
-  cand = await testCandidate(path.resolve('d:/MediaFactory/public', baseNameOnly));
-  if (cand) return cand;
-
-  cand = await testCandidate(path.resolve('d:/MediaFactory/dist', baseNameOnly));
-  if (cand) return cand;
-
-  cand = await testCandidate(path.resolve(process.cwd(), 'dist', baseNameOnly));
-  if (cand) return cand;
-
-  cand = await testCandidate(path.resolve(process.cwd(), 'public', baseNameOnly));
-  if (cand) return cand;
-
-  cand = await testCandidate(path.resolve('public', cleanPath));
-  if (cand) return cand;
-
-  cand = await testCandidate(path.resolve('public/assets', cleanPath));
-  if (cand) return cand;
-
-  cand = await testCandidate(path.resolve(process.cwd(), '.mediafactory', cleanPath));
-  if (cand) return cand;
-
-  cand = await testCandidate(path.resolve(process.cwd(), '.mediafactory_data', cleanPath));
-  if (cand) return cand;
 
   return null;
 }
@@ -371,9 +360,29 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
   const queueId = job.queueId;
   const audioPlan = job.jobPlan ? job.jobPlan.audioPlan : null;
 
-  if (payload.playlist && Array.isArray(payload.playlist)) {
+  let playlist = null;
+  if (Array.isArray(payload.playlist) && payload.playlist.length > 0) playlist = payload.playlist;
+  else if (Array.isArray(payload.tracks) && payload.tracks.length > 0) playlist = payload.tracks;
+  else if (Array.isArray(payload.playlistTracks) && payload.playlistTracks.length > 0) playlist = payload.playlistTracks;
+  else if (Array.isArray(payload.m3Playlist) && payload.m3Playlist.length > 0) playlist = payload.m3Playlist;
+  else if (Array.isArray(payload.audioList) && payload.audioList.length > 0) playlist = payload.audioList;
+  else if (Array.isArray(payload.audioTracks) && payload.audioTracks.length > 0) playlist = payload.audioTracks;
+  else if (Array.isArray(payload.audio) && payload.audio.length > 0) playlist = payload.audio;
+  else if (payload.audio && Array.isArray(payload.audio.tracks) && payload.audio.tracks.length > 0) playlist = payload.audio.tracks;
+  else if (payload.composer && Array.isArray(payload.composer.playlist) && payload.composer.playlist.length > 0) playlist = payload.composer.playlist;
+  else if (payload.composer && Array.isArray(payload.composer.tracks) && payload.composer.tracks.length > 0) playlist = payload.composer.tracks;
+  else {
+    const objs = payload.objects || payload.m3Objects || (payload.composer && payload.composer.objects) || [];
+    const plObj = objs.find(o => o && (o.type === 'playlist' || o.type === 'track_list_column') && (Array.isArray(o.tracks) || Array.isArray(o.playlist)));
+    if (plObj) {
+      playlist = plObj.tracks || plObj.playlist;
+    }
+  }
+  if (!playlist) playlist = Array.isArray(payload.playlist) ? payload.playlist : [];
+
+  if (playlist && Array.isArray(playlist)) {
     let sumSec = 0;
-    for (const trk of payload.playlist) {
+    for (const trk of playlist) {
       if (trk.duration && typeof trk.duration === 'string') {
         const parts = trk.duration.split(':').map(Number);
         if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
@@ -401,76 +410,94 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
   }
 
   const concatPath = path.join(cacheDir, `concat_q_${queueId}.txt`);
-  const resolvedPaths = [];
+  let resolvedPaths = [];
   logRuntimeEvent(job, 'fs.stat TRY (Resolving Playlist)');
   try {
-    const totalTracks = payload.playlist ? payload.playlist.length : 1;
+    const totalTracks = playlist.length;
     let trackIdx = 0;
-    for (const track of payload.playlist) {
+    for (const track of playlist) {
       trackIdx++;
       if (totalTracks > 0) {
         job.progress = Math.min(8, 3 + Math.round((trackIdx / totalTracks) * 5));
       }
-      let sp = typeof track === 'string' ? track : (track?.sourcePath || track?.sourceUrl || track?.uri || track?.path || track?.file || track?.url || track?.localPath || track?.title);
-      if (!sp) continue;
-      
-      if (sp.startsWith('http')) {
-        const ytIdMatch = sp.match(/[?&]v=([^&]+)/) || sp.match(/youtu\.be\/([^?]+)/);
-        const ytId = ytIdMatch ? ytIdMatch[1] : crypto.randomBytes(4).toString('hex');
-        const ytOut = path.join(cacheDir, `yt_${ytId}.mp3`);
-        
-        try {
-          const stats = await fs.stat(ytOut);
-          if (stats.size > 0) {
-            resolvedPaths.push(ytOut);
-          } else {
-            throw new Error('empty cache');
-          }
-        } catch (e) {
-          logRuntimeEvent(job, 'ffmpeg spawn TRY (yt-dlp)');
-          console.log(`[M3] Downloading YouTube audio: ${sp}`);
-          await new Promise((resolve, reject) => {
-            const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', sp];
-            const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
-            ytProc.stdout.on('data', () => {});
-            ytProc.stderr.on('data', () => {});
-            
-            const timeoutId = setTimeout(() => {
-                ytProc.kill();
-                reject(new Error('yt-dlp timeout after 120s'));
-            }, 120000);
+      let candidateNames = [];
+      if (typeof track === 'string') {
+        candidateNames.push(track);
+      } else if (track && typeof track === 'object') {
+        if (track.sourcePath) candidateNames.push(track.sourcePath);
+        if (track.path) candidateNames.push(track.path);
+        if (track.filename) candidateNames.push(track.filename);
+        if (track.url) candidateNames.push(track.url);
+        if (track.uri) candidateNames.push(track.uri);
+        if (track.title) candidateNames.push(track.title);
+        if (track.name) candidateNames.push(track.name);
+        if (track.blobUrl) candidateNames.push(track.blobUrl);
+      }
 
-            ytProc.on('close', (code) => {
-              clearTimeout(timeoutId);
-              if (code === 0) resolve();
-              else reject(new Error(`yt-dlp exited with code ${code}`));
-            });
-            ytProc.on('error', (err) => {
+      let resolvedPath = null;
+      for (const sp of candidateNames) {
+        if (!sp) continue;
+        if (typeof sp === 'string' && sp.startsWith('http')) {
+          const ytIdMatch = sp.match(/[?&]v=([^&]+)/) || sp.match(/youtu\.be\/([^?]+)/);
+          const ytId = ytIdMatch ? ytIdMatch[1] : crypto.randomBytes(4).toString('hex');
+          const ytOut = path.join(cacheDir, `yt_${ytId}.mp3`);
+          
+          try {
+            const stats = await fs.stat(ytOut);
+            if (stats.size > 0) {
+              resolvedPath = ytOut;
+              break;
+            } else {
+              throw new Error('empty cache');
+            }
+          } catch (e) {
+            logRuntimeEvent(job, 'ffmpeg spawn TRY (yt-dlp)');
+            console.log(`[M3] Downloading YouTube audio: ${sp}`);
+            await new Promise((resolve, reject) => {
+              const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', sp];
+              const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+              ytProc.stdout.on('data', () => {});
+              ytProc.stderr.on('data', () => {});
+              
+              const timeoutId = setTimeout(() => {
+                  ytProc.kill();
+                  reject(new Error('yt-dlp timeout after 120s'));
+              }, 120000);
+
+              ytProc.on('close', (code) => {
                 clearTimeout(timeoutId);
-                reject(err);
+                if (code === 0) resolve();
+                else reject(new Error(`yt-dlp exited with code ${code}`));
+              });
+              ytProc.on('error', (err) => {
+                  clearTimeout(timeoutId);
+                  reject(err);
+              });
             });
-          });
-          resolvedPaths.push(ytOut);
-        }
-      } else {
-        let resolvedPath = await resolveAssetPath(sp, 'Audio');
-        if (!resolvedPath && sp && (fsSync.existsSync(sp) || (typeof sp === 'string' && sp.startsWith('C:')))) {
-          resolvedPath = sp;
-        }
-        if (!resolvedPath) {
-          const silentAudioPath = path.join(cacheDir, 'dummy_silent_audio.mp3');
-          if (!fsSync.existsSync(silentAudioPath)) {
-            try {
-              execSync(`ffmpeg -y -f lavfi -i anullsrc=r=44100:cl=stereo -t 5 -c:a mp3 "${silentAudioPath}"`);
-            } catch (e) {}
+            resolvedPath = ytOut;
+            break;
           }
-          if (fsSync.existsSync(silentAudioPath)) {
-            resolvedPath = silentAudioPath;
-          }
+        } else {
+          resolvedPath = await resolveAssetPath(sp, 'Audio');
+          if (resolvedPath) break;
         }
-        if (resolvedPath) {
-          resolvedPaths.push(resolvedPath);
+      }
+
+      if (!resolvedPath) {
+        const targetDur = Math.max(30, Math.ceil(job.totalDurationSec || payload?.totalDurationSec || 60));
+        const silentAudioPath = path.join(cacheDir, `dummy_silent_audio_${targetDur}s.mp3`);
+        if (!fsSync.existsSync(silentAudioPath)) {
+          try {
+            execSync(`ffmpeg -y -f lavfi -i anullsrc=r=44100:cl=stereo -t ${targetDur} -c:a mp3 "${silentAudioPath}"`);
+          } catch (e) {}
         }
+        if (fsSync.existsSync(silentAudioPath)) {
+          resolvedPath = silentAudioPath;
+        }
+      }
+      if (resolvedPath) {
+        resolvedPaths.push(resolvedPath);
+        console.log(`[M3 Audio Resolved] ${resolvedPath}`);
       }
     }
     logRuntimeEvent(job, 'fs.stat SUCCESS');
@@ -479,10 +506,11 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
   }
 
   if (!resolvedPaths || resolvedPaths.length === 0) {
-    const silentAudioPath = path.join(cacheDir, 'dummy_silent_audio.mp3');
+    const targetDur = Math.max(30, Math.ceil(job.totalDurationSec || payload?.totalDurationSec || 60));
+    const silentAudioPath = path.join(cacheDir, `dummy_silent_audio_${targetDur}s.mp3`);
     if (!fsSync.existsSync(silentAudioPath)) {
       try {
-        execSync(`ffmpeg -y -f lavfi -i anullsrc=r=44100:cl=stereo -t 5 -c:a mp3 "${silentAudioPath}"`);
+        execSync(`ffmpeg -y -f lavfi -i anullsrc=r=44100:cl=stereo -t ${targetDur} -c:a mp3 "${silentAudioPath}"`);
       } catch (e) {}
     }
     resolvedPaths = [silentAudioPath];
@@ -869,7 +897,130 @@ function getFFmpegEncodingFlags(metadata = {}) {
   };
 }
 
-async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targetHeight = 1080, totalDur = 10, job = null) {
+async function extractAudioPCM(audioFilePath) {
+  if (!audioFilePath || !fsSync.existsSync(audioFilePath)) return null;
+  try {
+    const { spawn } = require('child_process');
+    return new Promise((resolve) => {
+      const proc = spawn('ffmpeg', [
+        '-y', '-i', audioFilePath,
+        '-f', 'f32le',
+        '-ac', '1',
+        '-ar', '44100',
+        'pipe:1'
+      ], { stdio: ['ignore', 'pipe', 'ignore'] });
+
+      const chunks = [];
+      proc.stdout.on('data', chunk => chunks.push(chunk));
+      proc.on('close', code => {
+        if (code === 0 && chunks.length > 0) {
+          const totalBuffer = Buffer.concat(chunks);
+          const floatArray = new Float32Array(totalBuffer.buffer, totalBuffer.byteOffset, totalBuffer.byteLength / 4);
+          resolve(floatArray);
+        } else {
+          resolve(null);
+        }
+      });
+      proc.on('error', () => resolve(null));
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+function computeFFTFromPCM(pcmData, timestamp, numBins = 64) {
+  if (!pcmData || pcmData.length === 0) {
+    return {
+      frequencies: new Float32Array(numBins),
+      waveform: new Float32Array(numBins),
+      energy: 0,
+      subBass: 0,
+      bass: 0,
+      lowMid: 0,
+      mid: 0,
+      highMid: 0,
+      treble: 0,
+      kick: false,
+      snare: false,
+      RMS: 0
+    };
+  }
+
+  const sampleRate = 44100;
+  const centerSample = Math.floor(timestamp * sampleRate);
+  const N = 2048;
+  const halfN = N / 2;
+  const startSample = Math.max(0, centerSample - halfN);
+
+  const real = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const sIdx = startSample + i;
+    if (sIdx < pcmData.length) {
+      const w = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (N - 1)));
+      real[i] = pcmData[sIdx] * w;
+    }
+  }
+
+  const minBin = 1;
+  const maxBin = Math.min(halfN - 1, Math.floor(halfN * 0.75));
+  const frequencies = new Float32Array(numBins);
+
+  for (let b = 0; b < numBins; b++) {
+    const startPct = Math.pow(b / numBins, 2.0);
+    const endPct = Math.pow((b + 1) / numBins, 2.0);
+    const kLow = Math.min(halfN - 1, Math.max(0, Math.floor(minBin + startPct * (maxBin - minBin))));
+    const kHigh = Math.min(halfN - 1, Math.max(kLow + 1, Math.floor(minBin + endPct * (maxBin - minBin))));
+
+    let magSum = 0, count = 0;
+    for (let k = kLow; k <= kHigh; k++) {
+      let cosVal = 0, sinVal = 0;
+      const angle = (2 * Math.PI * k) / N;
+      for (let n = 0; n < N; n += 4) {
+        cosVal += real[n] * Math.cos(angle * n);
+        sinVal -= real[n] * Math.sin(angle * n);
+      }
+      magSum += Math.sqrt(cosVal * cosVal + sinVal * sinVal) / (N / 4);
+      count++;
+    }
+    const avgMag = count > 0 ? magSum / count : 0;
+    const freqWeight = 1.0 + (b / numBins) * 1.5;
+    frequencies[b] = Math.min(1.0, Math.max(0.02, Math.pow(avgMag * 3.5 * freqWeight, 0.75)));
+  }
+
+  const waveform = new Float32Array(numBins);
+  const step = Math.floor(N / numBins);
+  for (let i = 0; i < numBins; i++) {
+    waveform[i] = real[i * step] || 0;
+  }
+
+  let totalEnergy = 0;
+  for (let i = 0; i < numBins; i++) totalEnergy += frequencies[i];
+  const energy = totalEnergy / numBins;
+
+  const subBass = frequencies[0] || 0;
+  const bass = (frequencies[1] + frequencies[2] + frequencies[3]) / 3;
+  const lowMid = frequencies[Math.min(10, numBins - 1)] || 0;
+  const mid = frequencies[Math.min(25, numBins - 1)] || 0;
+  const highMid = frequencies[Math.min(40, numBins - 1)] || 0;
+  const treble = frequencies[Math.min(55, numBins - 1)] || 0;
+
+  return {
+    frequencies,
+    waveform,
+    energy,
+    subBass,
+    bass,
+    lowMid,
+    mid,
+    highMid,
+    treble,
+    kick: bass > 0.45,
+    snare: highMid > 0.4,
+    RMS: energy
+  };
+}
+
+async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targetHeight = 1080, totalDur = 10, job = null, audioPath = null) {
   if (!objects || objects.length === 0) return { inputs: '', filter: '', map: '', overlaysCount: 0 };
   
   const validObjects = objects
@@ -881,13 +1032,12 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
   const scaleX = (targetWidth || 1920) / 1920;
   const scaleY = (targetHeight || 1080) / 1080;
 
-  // First pass: resolve asset paths and classify overlay types
   const resolvedOverlays = [];
   for (const ov of validObjects) {
-    const isVis = ov.type === 'visualizer' || ov.type === 'visualizer2' || ov.type === 'visualizer3' || ov.type === 'spectrum' || ov.type === 'audio-visualizer' || ov.visualizerId || (ov.name && (ov.name.toLowerCase().includes('spectrum') || ov.name.toLowerCase().includes('visualizer')));
+    const isVis = ov.type === 'visualizer' || ov.type === 'visualizer2' || ov.type === 'visualizer3' || ov.type === 'visualizer4' || ov.type === 'visualizer5' || ov.type === 'spectrum' || ov.type === 'audio-visualizer' || ov.visualizerId || (ov.name && (ov.name.toLowerCase().includes('spectrum') || ov.name.toLowerCase().includes('visualizer')));
     if (isVis) {
       resolvedOverlays.push({ type: 'visualizer', ov });
-    } else if (ov.type === 'overlay' || ov.type === 'image' || ov.type === 'video' || ov.type === 'particle' || ov.type === 'effect') {
+    } else if (ov.type === 'overlay' || ov.type === 'image' || ov.type === 'video' || ov.type === 'gif') {
       let ovPath = ov.source || ov.url || ov.uri;
       if (!ovPath) continue;
 
@@ -913,7 +1063,8 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
     }
   }
 
-  if (!resolvedOverlays.some(item => item.type === 'visualizer' || item.type === 'visualizer2' || item.type === 'visualizer3')) {
+  // Ensure default visualizer if none specified
+  if (!resolvedOverlays.some(item => item.type === 'visualizer')) {
     resolvedOverlays.push({
       type: 'visualizer',
       ov: {
@@ -928,16 +1079,7 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
     });
   }
 
-  // Ensure file overlays (images/backgrounds) are processed first, and visualizer is overlaid LAST on top of everything
-  const sortedOverlays = [
-    ...resolvedOverlays.filter(item => item.type === 'file'),
-    ...resolvedOverlays.filter(item => item.type === 'visualizer' || item.type === 'visualizer2' || item.type === 'visualizer3' || item.type === 'visualizer4')
-  ];
-
-  const fileOverlays = sortedOverlays.filter(item => item.type === 'file');
-  const fileInputCount = fileOverlays.length;
-  const audioStreamIdx = 1 + fileInputCount; // Background is input 0, fileOverlays are 1..fileInputCount, audio is input 1+fileInputCount
-
+  const fileOverlays = resolvedOverlays.filter(item => item.type === 'file');
   let inputs = '';
   fileOverlays.forEach(item => {
     const isVideoOverlay = item.ov.mediaType === 'video' || (item.resolvedPath && item.resolvedPath.match(/\.(mp4|webm|mov|mkv)$/i));
@@ -950,173 +1092,141 @@ async function generateOverlayFilter(objects, fps = 30, targetWidth = 1920, targ
   let overlayIdx = 0;
   let fileInputIdx = 0;
 
-  for (const item of sortedOverlays) {
+  // File Overlays (images/videos)
+  for (const item of fileOverlays) {
     overlayIdx++;
+    fileInputIdx++;
+    const ov = item.ov;
+    const speed = ov.playbackRate || 1.0;
+    const opacity = (ov.opacity !== undefined ? ov.opacity : 100) / 100;
+    const parseCoord = (val, dim, def) => {
+      if (val === undefined || val === null || val === '') return def;
+      const s = String(val).trim();
+      if (s.endsWith('%')) return (parseFloat(s) / 100) * dim;
+      const num = parseFloat(s);
+      return isNaN(num) ? def : num;
+    };
+    const rawCx = parseCoord(ov.x, 1920, 960);
+    const rawCy = parseCoord(ov.y, 1080, 540);
+    const rawW = parseCoord(ov.width, 1920, 0);
+    const rawH = parseCoord(ov.height, 1080, 0);
+    const cx = Math.round(rawCx * scaleX);
+    const cy = Math.round(rawCy * scaleY);
+    const w = Math.round(rawW * scaleX);
+    const h = Math.round(rawH * scaleY);
+    const ovX = w > 0 ? Math.round(cx - (w / 2)) : cx;
+    const ovY = h > 0 ? Math.round(cy - (h / 2)) : cy;
 
-    if (item.type === 'visualizer' || item.type === 'visualizer2' || item.type === 'visualizer3' || item.type === 'visualizer4') {
-      const ov = item.ov;
-      
-      const parseStageCoord = (val, stageDim, defaultVal) => {
-        if (val === undefined || val === null || val === '') return defaultVal;
-        const str = String(val).trim();
-        if (str.endsWith('%')) {
-          const pct = parseFloat(str);
-          return isNaN(pct) ? defaultVal : (pct / 100) * stageDim;
-        }
-        const num = parseFloat(str);
-        return isNaN(num) ? defaultVal : num;
-      };
+    filter += `[${fileInputIdx}:v]setpts=PTS/${speed},format=rgba,colorchannelmixer=aa=${opacity}[ov${overlayIdx}];`;
+    filter += `${lastOutput}[ov${overlayIdx}]overlay=x=${ovX}:y=${ovY}:eof_action=repeat[bg${overlayIdx}];`;
+    lastOutput = `[bg${overlayIdx}]`;
+  }
 
-      let rawW = parseStageCoord(ov.width, 1920, 600);
-      let rawH = parseStageCoord(ov.height, 1080, 300);
-      let rawCx = parseStageCoord(ov.x, 1920, 960);
-      let rawCy = parseStageCoord(ov.y, 1080, 540);
+  // --- UNIFIED MASTER SCENE CANVAS RENDERER (Particles + Visualizers + Text + Subtitles + Playlists) ---
+  const activeRenderMode = String(
+    (job && job.m3Payload && (job.m3Payload.metadata?.renderMode || job.m3Payload.renderMode)) ||
+    (job && (job.metadata?.renderMode || job.renderMode)) ||
+    'normal'
+  ).toLowerCase();
 
-      let w = Math.round(rawW * scaleX);
-      let h = Math.round(rawH * scaleY);
-      let cx = Math.round(rawCx * scaleX);
-      let cy = Math.round(rawCy * scaleY);
+  console.log(`[M3 Export Engine] Active Render Mode: ${activeRenderMode.toUpperCase()}`);
 
-      const topLeftX = Math.round(cx - (w / 2));
-      const topLeftY = Math.round(cy - (h / 2));
-
-      const primaryColor = ov.primaryColor || (ov.colorLeft ? (ov.colorLeft.startsWith('#') ? ov.colorLeft : `#${ov.colorLeft}`) : '#00f2fe');
-      const secondaryColor = ov.secondaryColor || (ov.colorRight ? (ov.colorRight.startsWith('#') ? ov.colorRight : `#${ov.colorRight}`) : '#4facfe');
-
-const col1 = parseColorRgba(primaryColor, '00f2fe');
-      const col2 = parseColorRgba(secondaryColor, '4facfe');
-
-      const uniqueObjId = ov.id || `viz_${overlayIdx}`;
-      const viz2CacheDir = path.join(process.cwd(), 'experiments', 'artifacts', 'v2_export_cache', String(uniqueObjId));
-      if (!fsSync.existsSync(viz2CacheDir)) fsSync.mkdirSync(viz2CacheDir, { recursive: true });
-
-      const { createCanvas } = require('canvas');
-      const PipelineEngine = await getVisualizerPipelineV3();
-      const exportCanvas = createCanvas(w, h);
-      const exportCtx = exportCanvas.getContext('2d');
-      const nativeCanvas = createCanvas(1920, 1080);
-      const nativeCtx = nativeCanvas.getContext('2d');
-
-      let pluginIdMode = 'spectrum-bars';
-      const modeStr = (ov.mode || ov.pluginId || ov.visualizerId || ov.name || '').toLowerCase();
-      if (modeStr.includes('wave') || modeStr.includes('cyberpunk')) pluginIdMode = 'cyberpunk-waveform';
-      else if (modeStr.includes('bar') || modeStr.includes('spectrum')) pluginIdMode = 'spectrum-bars';
-      else if (modeStr.includes('particle') || modeStr.includes('orbit')) pluginIdMode = 'particle-orbit';
-      else if (modeStr.includes('circular') || modeStr.includes('circle') || modeStr.includes('pulse')) pluginIdMode = 'circular-pulse';
-
-      const durationSec = totalDur || 10;
-      const totalFramesToRender = Math.max(30, Math.ceil(durationSec * fps));
-
-      const v3Config = {
-        colorLeft: ov.colorLeft || ov.primaryColor || '#AB55F7',
-        colorRight: ov.colorRight || ov.secondaryColor || '#F59E0B',
-        colorMid: ov.colorMid || '#06B6D4',
-        colorMode: ov.colorMode || '2 Gradient',
-        frequencyOrder: ov.frequencyOrder || 'Bass -> Treble',
-        barCount: parseInt(ov.barCount) || 64,
-        thickness: parseInt(ov.thickness) || parseInt(ov.barThickness) || 4,
-        ...ov
-      };
-
-      for (let f = 0; f < totalFramesToRender; f++) {
-        const frameTimestamp = (f / fps) % 3600;
-
-        // PARITY FIX: Use the SAME deterministic FFT formula as Visualizer3Renderer.jsx (frontend).
-        // This is the single source of truth for audio visualization data.
-        // DO NOT change this formula without updating frontend generateDeterministicFFT identically.
-        const numBins = parseInt(v3Config.barCount) || 64;
-        const frameCount = totalFramesToRender;
-        const normalizedLoopTime = (f % frameCount) / frameCount;
-        const tAngle = normalizedLoopTime * Math.PI * 2;
-
-        const frequencies = new Float32Array(numBins);
-        for (let i = 0; i < numBins; i++) {
-          const freqNorm = i / numBins;
-          const barPhase = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
-          const barSeed = barPhase - Math.floor(barPhase);
-          const oct1 = Math.sin(tAngle * 3 + barSeed * 6.28);
-          const oct2 = Math.cos(tAngle * 7 + freqNorm * 18.84 + barSeed * 3.14);
-          const envelope = Math.exp(-freqNorm * 2.2);
-          const rawVal = (0.5 * oct1 + 0.5 * oct2) * envelope;
-          frequencies[i] = Math.min(1.0, Math.max(0.05, Math.abs(rawVal)));
-        }
-
-        const waveform = new Float32Array(numBins);
-        for (let i = 0; i < numBins; i++) {
-          waveform[i] = Math.sin(frameTimestamp * 20 + (i / numBins) * Math.PI * 4) * 0.5;
-        }
-
-        let energySum = 0;
-        for (let i = 0; i < numBins; i++) energySum += frequencies[i];
-        const energy = energySum / numBins;
-
-        const audioState = {
-          time: frameTimestamp,
-          subBass: frequencies[0],
-          bass: frequencies[Math.min(2, numBins - 1)],
-          lowMid: frequencies[Math.min(12, numBins - 1)],
-          mid: frequencies[Math.min(25, numBins - 1)],
-          highMid: frequencies[Math.min(40, numBins - 1)],
-          treble: frequencies[Math.min(55, numBins - 1)],
-          energy,
-          RMS: energy,
-          kick: false,
-          snare: false,
-          beatStrength: energy,
-          spectralFlux: energy,
-          frequencies,
-          waveform
-        };
-
-        // PARITY FIX: Both Live Editor (Visualizer3Renderer.jsx) and Export (m3-render.js) render directly on canvas of size w x h (bounding box).
-        exportCtx.clearRect(0, 0, w, h);
-        if (item.type === 'visualizer4' || ov.type === 'visualizer4') {
-          const V4Core = await getVisualizerV4Core();
-          V4Core.renderFrame(exportCtx, w, h, audioState, ov);
-        } else {
-          PipelineEngine.renderPipelineFrame(exportCanvas, frameTimestamp, audioState, pluginIdMode, v3Config);
-        }
-
-        // EVENT-LOOP UNBLOCK & REALTIME PROGRESS: Update progress and yield to Node.js event loop every 10 frames
-        if (f % 10 === 0) {
-          if (job && job.queueId && jobs[job.queueId]) {
-            const frameProgress = Math.round(5 + (f / totalFramesToRender) * 20);
-            jobs[job.queueId].progress = Math.max(jobs[job.queueId].progress || 0, frameProgress);
-            jobs[job.queueId].stage = `Generating Visualizer Frames (${f}/${totalFramesToRender})`;
-          }
-          await new Promise(resolve => setImmediate(resolve));
-        }
-
-        const framePath = path.join(viz2CacheDir, `v3_viz_${String(f).padStart(6, '0')}.png`);
-        fsSync.writeFileSync(framePath, exportCanvas.toBuffer('image/png'));
-      }
-
-      fileInputIdx++;
-      const vizSeqPattern = path.join(viz2CacheDir, 'v3_viz_%06d.png').replace(/\\/g, '/');
-      inputs += ` -framerate ${fps} -i "${vizSeqPattern}"`;
-      filter += `${lastOutput}[${fileInputIdx}:v]overlay=x=${topLeftX}:y=${topLeftY}[bg${overlayIdx}];`;
-      lastOutput = `[bg${overlayIdx}]`;
-    } else if (item.type === 'file') {
-      fileInputIdx++;
-      const ov = item.ov;
-      const speed = ov.playbackRate || 1.0;
-      const opacity = (ov.opacity !== undefined ? ov.opacity : 100) / 100;
-      const rawCx = parseStageCoord(ov.x, 1920, 960);
-      const rawCy = parseStageCoord(ov.y, 1080, 540);
-      const rawW = parseStageCoord(ov.width, 1920, 0);
-      const rawH = parseStageCoord(ov.height, 1080, 0);
-      const cx = Math.round(rawCx * scaleX);
-      const cy = Math.round(rawCy * scaleY);
-      const w = Math.round(rawW * scaleX);
-      const h = Math.round(rawH * scaleY);
-      const ovX = w > 0 ? Math.round(cx - (w / 2)) : cx;
-      const ovY = h > 0 ? Math.round(cy - (h / 2)) : cy;
-
-      filter += `[${fileInputIdx}:v]setpts=PTS/${speed},format=rgba,colorchannelmixer=aa=${opacity}[ov${overlayIdx}];`;
-      filter += `${lastOutput}[ov${overlayIdx}]overlay=x=${ovX}:y=${ovY}:eof_action=repeat[bg${overlayIdx}];`;
-      lastOutput = `[bg${overlayIdx}]`;
+  let pcmData = null;
+  if (activeRenderMode === 'normal' && audioPath) {
+    console.log(`[M3 Export Engine] Extracting PCM FFT audio samples for Normal Mode export: ${audioPath}`);
+    pcmData = await extractAudioPCM(audioPath);
+    if (pcmData) {
+      console.log(`[M3 Export Engine] PCM extraction complete (${(pcmData.length / 44100).toFixed(2)}s).`);
     }
   }
+
+  const { createCanvas, loadImage } = require('canvas');
+  const fullCanvas = createCanvas(targetWidth, targetHeight);
+  const fullCtx = fullCanvas.getContext('2d');
+
+  let loadedBgImg = null;
+  const renderPayload = (job && job.m3Payload) || {};
+  const mainBgObj = validObjects.find(o => o.type === 'background') || (renderPayload.m3BgPool && renderPayload.m3BgPool[0]) || null;
+  const rawBgSrc = (mainBgObj && (mainBgObj.sourcePath || mainBgObj.url || mainBgObj.uri || mainBgObj.filename)) || renderPayload.imagePath || renderPayload.bgImage || null;
+
+  if (rawBgSrc) {
+    try {
+      const resolvedBg = await resolveAssetPath(rawBgSrc, 'Background');
+      if (resolvedBg && fsSync.existsSync(resolvedBg) && !resolvedBg.match(/\.(mp4|webm|mov|mkv)$/i)) {
+        loadedBgImg = await loadImage(resolvedBg);
+        console.log(`[M3 Export Engine] Preloaded background image for 1:1 motion dance: ${resolvedBg}`);
+      }
+    } catch (e) {
+      console.warn('[M3 Export Engine] Unable to preload background image:', e.message);
+    }
+  }
+  const UnifiedSceneRenderer = await getUnifiedSceneRenderer();
+  const V5Audio = await getVisualizerV5Audio();
+
+  const uniqueSceneId = `scene_${job ? job.queueId : Date.now()}`;
+  const sceneCacheDir = path.join(process.cwd(), 'experiments', 'artifacts', 'v2_export_cache', uniqueSceneId);
+  if (!fsSync.existsSync(sceneCacheDir)) fsSync.mkdirSync(sceneCacheDir, { recursive: true });
+
+  const durationSec = totalDur || 10;
+  const totalFramesToRender = Math.max(30, Math.ceil(durationSec * fps));
+
+  const audioTracks = (job && job.m3Payload && (job.m3Payload.playlist || job.m3Payload.audioTracks || job.m3Payload.m3AudioTracks)) || [];
+
+  let prevFrequencies = null;
+
+  for (let f = 0; f < totalFramesToRender; f++) {
+    const frameTimestamp = f / fps;
+
+    // 1. Audio State Calculation
+    let audioState = null;
+
+    if (activeRenderMode === 'normal' && pcmData) {
+      const numBins = 64;
+      const rawAudio = computeFFTFromPCM(pcmData, frameTimestamp, numBins);
+      if (!prevFrequencies || prevFrequencies.length !== numBins) {
+        prevFrequencies = new Float32Array(rawAudio.frequencies);
+      } else {
+        const alpha = 0.8;
+        for (let b = 0; b < numBins; b++) {
+          prevFrequencies[b] = alpha * prevFrequencies[b] + (1 - alpha) * rawAudio.frequencies[b];
+        }
+      }
+      audioState = { time: frameTimestamp, ...rawAudio, frequencies: new Float32Array(prevFrequencies) };
+      audioState = V5Audio.getAudioState(frameTimestamp, 'normal', {}, audioState.frequencies, true);
+    } else {
+      audioState = V5Audio.getAudioState(frameTimestamp, 'fast', {}, null, true);
+    }
+
+    await UnifiedSceneRenderer.renderFrame(fullCtx, targetWidth, targetHeight, frameTimestamp, {
+      objects: validObjects,
+      bgImage: loadedBgImg,
+      m3BgPool: renderPayload.m3BgPool,
+      audioTracks,
+      renderMode: activeRenderMode,
+      pcmData,
+      overrideAudioState: audioState
+    });
+
+    if (f % 15 === 0) {
+      if (job && job.queueId && jobs[job.queueId]) {
+        const frameProgress = Math.round(5 + (f / totalFramesToRender) * 25);
+        jobs[job.queueId].progress = Math.max(jobs[job.queueId].progress || 0, frameProgress);
+        jobs[job.queueId].stage = `Generating Unified Scene Frames (${f}/${totalFramesToRender})`;
+      }
+      await new Promise(resolve => setImmediate(resolve));
+    }
+
+    const framePath = path.join(sceneCacheDir, `scene_frame_${String(f).padStart(6, '0')}.png`);
+    fsSync.writeFileSync(framePath, fullCanvas.toBuffer('image/png'));
+  }
+
+  overlayIdx++;
+
+  fileInputIdx++;
+  const sceneSeqPattern = path.join(sceneCacheDir, 'scene_frame_%06d.png').replace(/\\/g, '/');
+  inputs += ` -framerate ${fps} -i "${sceneSeqPattern}"`;
+  filter += `${lastOutput}[${fileInputIdx}:v]overlay=0:0[bg${overlayIdx}];`;
+  lastOutput = `[bg${overlayIdx}]`;
 
   return { inputs, filter, map: lastOutput, overlaysCount: fileInputIdx };
 }
@@ -1311,6 +1421,8 @@ async function generateSingleEngineCanvasClip(job, imagePath, objects, enc, shor
   });
 }
 
+const isVisObj = (o) => o && o.visible !== false && (o.type === 'visualizer' || o.type === 'visualizer2' || o.type === 'visualizer3' || o.type === 'visualizer4' || o.type === 'visualizer5' || o.type === 'spectrum' || o.type === 'audio-visualizer');
+
 async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
   logRuntimeEvent(job, 'buildImageVideo STARTED');
   const enc = getFFmpegEncodingFlags(payload.metadata);
@@ -1320,7 +1432,6 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
   const bgPlan = job.jobPlan ? job.jobPlan.bgPlan : null;
 
   const cacheDir = path.join(AppPaths.getCacheBase(), 'm3');
-  const isVisObj = (o) => o && o.visible !== false && (o.type === 'visualizer' || o.type === 'visualizer2' || o.type === 'visualizer3' || o.type === 'spectrum' || o.type === 'audio-visualizer');
   const hasVis = objects && objects.some(isVisObj);
 
   const USE_OSR_ENGINE = false;
@@ -1355,11 +1466,11 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
       logRuntimeEvent(job, 'buildImageVideo CACHE_HIT', `Reusing cached background master: ${bgPlan.cachedPath}`);
       console.log(`[M3] Planner Execution Strategy: CACHE_HIT (-c:v copy -c:a copy)`);
 
-      const fastMuxCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${bgPlan.cachedPath}" -i "${audioPath}" -c:v copy -c:a copy -shortest "${outputPath}"`;
+      const fastMuxCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${bgPlan.cachedPath}" -i "${audioPath}" -map 0:v -map 1:a:0? -c:v copy -c:a copy -shortest "${outputPath}"`;
       try {
         await spawnFFmpegM3(fastMuxCmd, job);
       } catch (copyErr) {
-        const fallbackMuxCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${bgPlan.cachedPath}" -i "${audioPath}" -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}"`;
+        const fallbackMuxCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${bgPlan.cachedPath}" -i "${audioPath}" -map 0:v -map 1:a:0? -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}"`;
         await spawnFFmpegM3(fallbackMuxCmd, job);
       }
       logRuntimeEvent(job, 'buildImageVideo END (Cache Hit Stream Copy Success)');
@@ -1385,11 +1496,11 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
       }
 
       // Step 2: Stream copy muxing (-c:v copy -c:a copy)
-      const fastMuxCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${shortBgPath}" -i "${audioPath}" -c:v copy -c:a copy -shortest "${outputPath}"`;
+      const fastMuxCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${shortBgPath}" -i "${audioPath}" -map 0:v -map 1:a:0? -c:v copy -c:a copy -shortest "${outputPath}"`;
       try {
         await spawnFFmpegM3(fastMuxCmd, job);
       } catch(e) {
-        const fallbackMuxCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${shortBgPath}" -i "${audioPath}" -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}"`;
+        const fallbackMuxCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${shortBgPath}" -i "${audioPath}" -map 0:v -map 1:a:0? -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}"`;
         await spawnFFmpegM3(fallbackMuxCmd, job);
       }
       logRuntimeEvent(job, 'buildImageVideo END (Minimal Encode Stream Copy Success)');
@@ -1399,10 +1510,12 @@ async function buildImageVideo(job, imagePath, audioPath, outputPath, payload) {
 
   // Fallback / Normal Mode full encode
   const durationSec = job.totalDurationSec || payload?.totalDurationSec || 180;
-  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h, durationSec, job);
+  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h, durationSec, job, audioPath);
   const baseScale = `scale=${w}:${h}`;
-  const audioMap = `-map ${1 + overlaysCount}:a`;
-  const filterFlag = filter ? `-filter_complex "[0:v]${baseScale}[base];${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}" ${audioMap}` : `-vf "${baseScale}"`;
+  const audioInputIdx = 1 + overlaysCount;
+  const filterFlag = filter 
+    ? `-filter_complex "[0:v]${baseScale}[base];${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}" -map ${audioInputIdx}:a:0?`
+    : `-vf "${baseScale}" -map 0:v -map ${audioInputIdx}:a:0?`;
 
   const cmd = `ffmpeg -y -fflags +genpts -loop 1 -framerate ${enc.fps} -i "${imagePath}"${inputs} -i "${audioPath}" ${filterFlag} ${enc.flags} -c:a aac -b:a 192k -shortest "${outputPath}"`;
   await spawnFFmpegM3(cmd, job);
@@ -1446,14 +1559,14 @@ async function buildLoopVideo(job, videoPath, audioPath, loopType, cacheDir, out
     logRuntimeEvent(job, 'buildLoopVideo STREAM_COPY', `Executing fast stream copy for compatible video background: ${finalSource}`);
     console.log(`[M3] Planner Execution Strategy: STREAM_COPY (-c:v copy -c:a copy)`);
 
-    const fastCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${finalSource}" -i "${audioPath}" -c:v copy -c:a copy -shortest "${outputPath}"`;
+    const fastCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${finalSource}" -i "${audioPath}" -map 0:v -map 1:a:0? -c:v copy -c:a copy -shortest "${outputPath}"`;
     try {
       await spawnFFmpegM3(fastCmd, job);
       logRuntimeEvent(job, 'buildLoopVideo END (Stream Copy Success)');
       return;
     } catch (copyErr) {
       logRuntimeEvent(job, 'buildLoopVideo (Stream copy retry with AAC audio mux)');
-      const fallbackCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${finalSource}" -i "${audioPath}" -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}"`;
+      const fallbackCmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${finalSource}" -i "${audioPath}" -map 0:v -map 1:a:0? -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}"`;
       try {
         await spawnFFmpegM3(fallbackCmd, job);
         logRuntimeEvent(job, 'buildLoopVideo END (Stream Copy Video + AAC Audio Success)');
@@ -1466,10 +1579,12 @@ async function buildLoopVideo(job, videoPath, audioPath, loopType, cacheDir, out
 
   // Full Encode Fallback
   const loopDurationSec = job.totalDurationSec || payload?.totalDurationSec || 180;
-  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h, loopDurationSec);
+  const { inputs, filter, map, overlaysCount } = await generateOverlayFilter(objects, enc.fps, w, h, loopDurationSec, job, audioPath);
   const baseScale = `scale=${w}:${h}`;
-  const audioMap = `-map ${1 + overlaysCount}:a`;
-  const filterFlag = filter ? `-filter_complex "[0:v]${baseScale}[base];${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}" ${audioMap}` : `-vf "${baseScale}"`;
+  const audioInputIdx = 1 + overlaysCount;
+  const filterFlag = filter 
+    ? `-filter_complex "[0:v]${baseScale}[base];${filter.replace(/\[0:v\]/g, '[base]')}" -map "${map}" -map ${audioInputIdx}:a:0?`
+    : `-vf "${baseScale}" -map 0:v -map ${audioInputIdx}:a:0?`;
 
   const cmd = `ffmpeg -y -fflags +genpts -stream_loop -1 -i "${finalSource}"${inputs} -i "${audioPath}" ${filterFlag} ${enc.flags} -c:a aac -b:a 192k -shortest "${outputPath}"`;
   await spawnFFmpegM3(cmd, job);
@@ -1492,6 +1607,7 @@ async function buildFinalRender(job, cacheDir, outputDir, payload) {
     const parsedDur = parseFloat(stdout.trim());
     if (parsedDur > 0) {
       job.totalDurationSec = parsedDur;
+      payload.totalDurationSec = parsedDur;
       console.log(`[M3] Probed compiled audio duration: ${parsedDur}s`);
     }
   } catch(e) {}
@@ -1615,6 +1731,8 @@ async function buildFinalRender(job, cacheDir, outputDir, payload) {
 
 async function processM3Job(job) {
   const startTime = Date.now();
+  if (!job.queueId) job.queueId = job.id || 'job_' + Date.now();
+  if (!jobs[job.queueId]) jobs[job.queueId] = job;
   setJobStatus(job.queueId, 'RENDERING');
   logRuntimeEvent(job, 'Queue Lifecycle: RENDERING');
   console.log('M3_RENDER_START', job.queueId, job.m3Payload?.metadata?.outputName);

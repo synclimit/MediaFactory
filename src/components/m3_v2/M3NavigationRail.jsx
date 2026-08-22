@@ -5,7 +5,7 @@ const CATEGORIES = [
   { id: 'Background', icon: <Image size={18} strokeWidth={1.75} />, label: 'Background' },
   { id: 'Playlist Audio', icon: <Music size={18} strokeWidth={1.75} />, label: 'Playlist' },
   { id: 'Lyrics', icon: <Subtitles size={18} strokeWidth={1.75} />, label: 'Lyrics' },
-  { id: 'Visualizer V4', icon: <Activity size={18} strokeWidth={1.75} className="text-orange-400" />, label: 'Visualizer V4' },
+  { id: 'Visualizer V5', icon: <Activity size={18} strokeWidth={1.75} className="text-cyan-400" />, label: 'Visualizer V5' },
   { id: 'Particle', icon: <Star size={18} strokeWidth={1.75} />, label: 'Particle' },
   { id: 'Effects', icon: <Zap size={18} strokeWidth={1.75} />, label: 'Visual FX' },
   { id: 'Overlay', icon: <MonitorPlay size={18} strokeWidth={1.75} />, label: 'Overlay' },
@@ -13,7 +13,7 @@ const CATEGORIES = [
   { id: 'Branding', icon: <Layers size={18} strokeWidth={1.75} />, label: 'Branding' },
 ];
 
-export default function M3NavigationRail({ activeCategory, setActiveCategory, isPanelOpen = true, setIsPanelOpen }) {
+export default function M3NavigationRail({ activeCategory, setActiveCategory, isPanelOpen = true, setIsPanelOpen, editorMode = 'Composer' }) {
   const handleCategoryClick = (catId) => {
     if (activeCategory === catId) {
       if (setIsPanelOpen) {
@@ -27,6 +27,10 @@ export default function M3NavigationRail({ activeCategory, setActiveCategory, is
     }
   };
 
+  const visibleCategories = editorMode === 'Thumbnail'
+    ? CATEGORIES.filter(cat => cat.id === 'Background' || cat.id === 'Text Objects')
+    : CATEGORIES;
+
   return (
     <div className="w-[72px] shrink-0 relative bg-[#0b0c10] border-r border-[#21232d] flex flex-col items-center h-full py-2 overflow-y-auto custom-scrollbar select-none z-20">
       <div className="absolute top-0 right-0 w-[1px] h-full bg-gradient-to-b from-transparent via-white/5 to-transparent z-0 pointer-events-none"></div>
@@ -38,7 +42,7 @@ export default function M3NavigationRail({ activeCategory, setActiveCategory, is
       </div>
 
       <div className="relative z-10 flex flex-col gap-1 w-full px-1">
-      {CATEGORIES.map((cat) => {
+      {visibleCategories.map((cat) => {
         const isActive = activeCategory === cat.id;
         const isShowing = isActive && isPanelOpen;
         return (

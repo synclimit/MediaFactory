@@ -30,6 +30,12 @@ safeMount(() => app.use(require('./api/qa.js')));
 safeMount(() => app.use(require('./api/diagnostics.js')));
 safeMount(() => app.use(require('./routes/sounds.js')));
 safeMount(() => app.use('/api/overlays', require('./routes/overlays.js')));
+safeMount(() => app.use(require('./api/m7.js')));
+
+// Serve isolated M7 Astrofox app
+const m7AppPath = require('path').join(__dirname, '..', 'm7-astrofox', 'app');
+app.use('/m7-app', express.static(m7AppPath));
+
 
 // Serve static frontend in production
 const path = require('path');

@@ -42,6 +42,9 @@ export default function M3StudioPanel({
   onExportQueue
 }) {
   const [editorMode, setEditorMode] = useState('Composer'); // Composer | Thumbnail
+  const [m3ThumbnailBgPool, setM3ThumbnailBgPool] = useState([]);
+  const [m3ThumbnailObjects, setM3ThumbnailObjects] = useState([]);
+  const [m3ThumbnailSelectedObjectId, setM3ThumbnailSelectedObjectId] = useState(null);
   const [m3CurrentTimeSec, setM3CurrentTimeSec] = useState(0);
   const [m3CurrentTrackIndex, setM3CurrentTrackIndex] = useState(0);
   const [activeContextCategory, setActiveContextCategory] = useState('Background');
@@ -58,6 +61,11 @@ export default function M3StudioPanel({
 
   const setRenderMode = (mode) => {
     try {
+      if (typeof window !== 'undefined') {
+        window.m3RenderMode = String(mode).toLowerCase();
+        window.__m3FastWorkspaceActive = String(mode).toUpperCase() === 'FAST';
+        window.dispatchEvent(new CustomEvent('m3_render_mode_change', { detail: { mode } }));
+      }
       const projectState = { m3BgPool, m3AudioTracks, m3Objects, m3RenderSettings };
       const result = fastWorkspaceManager.switchWorkspace(mode, projectState);
       if (result && result.adaptedState) {
@@ -71,9 +79,38 @@ export default function M3StudioPanel({
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.m3RenderMode = String(renderMode).toLowerCase();
+      window.__m3FastWorkspaceActive = String(renderMode).toUpperCase() === 'FAST';
+      window.dispatchEvent(new CustomEvent('m3_render_mode_change', { detail: { mode: renderMode } }));
+    }
+    if (editorMode === 'Thumbnail') {
+      if (activeContextCategory !== 'Background' && activeContextCategory !== 'Text Objects') {
+        setActiveContextCategory('Background');
+      }
+      setM3ThumbnailSelectedObjectId(null);
+
+      // Default thumbnail background to composer background if thumbnail bg pool is empty
+      setM3ThumbnailBgPool((prev) => {
+        if (prev && prev.length > 0) return prev;
+        if (m3BgPool && m3BgPool.length > 0) {
+          // If video bg, ensure type or clone so thumbnail editor can use image
+          return m3BgPool.map(bg => ({ ...bg, type: bg.type === 'video' ? 'image' : (bg.type || 'image') }));
+        }
+        return prev;
+      });
+    }
+  }, [editorMode, renderMode, m3BgPool]);
+
+  useEffect(() => {
     const unsubscribe = fastWorkspaceManager.subscribe((event) => {
       if (event.type === 'WORKSPACE_SWITCH') {
         setRenderModeState(event.mode);
+        if (typeof window !== 'undefined') {
+          window.m3RenderMode = String(event.mode).toLowerCase();
+          window.__m3FastWorkspaceActive = String(event.mode).toUpperCase() === 'FAST';
+          window.dispatchEvent(new CustomEvent('m3_render_mode_change', { detail: { mode: event.mode } }));
+        }
       }
     });
     
@@ -206,7 +243,7 @@ export default function M3StudioPanel({
       const obj = m3Objects.find(o => o.id === id);
       if (obj) {
         if (obj.type === 'text') setActiveContextCategory('Text Objects');
-        else if (obj.type === 'visualizer' || obj.type === 'visualizer2' || obj.type === 'visualizer3' || obj.type === 'visualizer4') setActiveContextCategory('Visualizer V4');
+        else if (obj.type === 'visualizer' || obj.type === 'visualizer2' || obj.type === 'visualizer3' || obj.type === 'visualizer4' || obj.type === 'visualizer5') setActiveContextCategory('Visualizer V5');
         else if (obj.type === 'image' || obj.type === 'video' || obj.type === 'gif') setActiveContextCategory('Overlay');
         else if (obj.type === 'social-widget') setActiveContextCategory('Branding');
         else if (obj.type === 'background') setActiveContextCategory('Background');
@@ -282,10 +319,15 @@ export default function M3StudioPanel({
         <div className="flex flex-1 overflow-hidden relative">
           {/* 1. Navigation Rail */}
           <M3NavigationRail 
+            editorMode={editorMode}
             activeCategory={activeContextCategory} 
             setActiveCategory={(cat) => {
               setActiveContextCategory(cat);
-              setM3SelectedObjectId(null);
+              if (editorMode === 'Thumbnail') {
+                setM3ThumbnailSelectedObjectId(null);
+              } else {
+                setM3SelectedObjectId(null);
+              }
               setIsPanelOpen(true);
             }} 
             isPanelOpen={isPanelOpen}
@@ -295,15 +337,15 @@ export default function M3StudioPanel({
           {/* 2. Asset / Tools Content Drawer Panel */}
           {isPanelOpen && (
             <M3DynamicContentPanel
-              m3BgPool={m3BgPool}
-              setM3BgPool={setM3BgPool}
+              m3BgPool={editorMode === 'Thumbnail' ? m3ThumbnailBgPool : m3BgPool}
+              setM3BgPool={editorMode === 'Thumbnail' ? setM3ThumbnailBgPool : setM3BgPool}
               m3AudioTracks={m3AudioTracks}
-              setM3AudioTracks={setM3AudioTracks}
+              setM3AudioTracks={editorMode === 'Thumbnail' ? () => {} : setM3AudioTracks}
               m3CurrentTrackIndex={m3CurrentTrackIndex}
-              m3Objects={m3Objects}
-              setM3Objects={setM3Objects}
-              m3SelectedObjectId={m3SelectedObjectId}
-              setM3SelectedObjectId={handleSetM3SelectedObjectId}
+              m3Objects={editorMode === 'Thumbnail' ? m3ThumbnailObjects : m3Objects}
+              setM3Objects={editorMode === 'Thumbnail' ? setM3ThumbnailObjects : setM3Objects}
+              m3SelectedObjectId={editorMode === 'Thumbnail' ? m3ThumbnailSelectedObjectId : m3SelectedObjectId}
+              setM3SelectedObjectId={editorMode === 'Thumbnail' ? setM3ThumbnailSelectedObjectId : handleSetM3SelectedObjectId}
               canvasMode={editorMode === 'Composer' ? 'composer' : 'thumbnail'}
               editorMode={editorMode}
               activeContextCategory={activeContextCategory}
@@ -312,20 +354,22 @@ export default function M3StudioPanel({
 
           {/* 3. Object Inspector Panel */}
           <M3ObjectInspector 
-            m3Objects={m3Objects}
-            setM3Objects={setM3Objects}
-            m3SelectedObjectId={m3SelectedObjectId}
-            setM3SelectedObjectId={handleSetM3SelectedObjectId}
-            m3BgPool={m3BgPool}
-            setM3BgPool={setM3BgPool}
+            m3Objects={editorMode === 'Thumbnail' ? m3ThumbnailObjects : m3Objects}
+            setM3Objects={editorMode === 'Thumbnail' ? setM3ThumbnailObjects : setM3Objects}
+            m3SelectedObjectId={editorMode === 'Thumbnail' ? m3ThumbnailSelectedObjectId : m3SelectedObjectId}
+            setM3SelectedObjectId={editorMode === 'Thumbnail' ? setM3ThumbnailSelectedObjectId : handleSetM3SelectedObjectId}
+            m3BgPool={editorMode === 'Thumbnail' ? m3ThumbnailBgPool : m3BgPool}
+            setM3BgPool={editorMode === 'Thumbnail' ? setM3ThumbnailBgPool : setM3BgPool}
             m3AudioTracks={m3AudioTracks}
-            setM3AudioTracks={setM3AudioTracks}
+            setM3AudioTracks={editorMode === 'Thumbnail' ? () => {} : setM3AudioTracks}
             m3CurrentTrackIndex={m3CurrentTrackIndex}
             renderSettings={m3RenderSettings}
             setRenderSettings={setM3RenderSettings}
             activeCategory={activeContextCategory}
             renderMode={renderMode}
             setRenderMode={setRenderMode}
+            isThumbnailMode={editorMode === 'Thumbnail'}
+            editorMode={editorMode}
           />
           
           {/* 4. Live Preview Canvas & Export Settings Panel (Far Right) */}
@@ -347,6 +391,7 @@ export default function M3StudioPanel({
                   m3EstRenderTimeSec={m3EstRenderTimeSec}
                   m3EstStorageMb={m3EstStorageMb}
                   analyser={analyser}
+                  renderMode={renderMode}
                 >
                   <div className="w-full bg-[#0a0a0a] border border-[#1a1b26] rounded-b-lg overflow-hidden shadow-lg mb-1">
                     <M3PlaybackBar
@@ -360,20 +405,29 @@ export default function M3StudioPanel({
                   </div>
                   
                   {/* Export Settings */}
-                  <M3ExportSettingsPanel renderMode={renderMode} onAddToQueue={(opts) => handleExport(opts)} />
+                  <M3ExportSettingsPanel 
+                    renderMode={renderMode} 
+                    outputFilename={m3OutputFilename}
+                    setOutputFilename={setM3OutputFilename}
+                    onAddToQueue={(opts) => handleExport(opts)} 
+                  />
                 </M3PreviewCanvas>
               </>
             ) : (
               <M3ThumbnailEditor 
-                m3BgPool={m3BgPool} 
+                m3BgPool={m3ThumbnailBgPool} 
                 m3AudioTracks={m3AudioTracks}
                 m3ThumbnailSaved={m3ThumbnailSaved} 
                 setM3ThumbnailSaved={setM3ThumbnailSaved} 
                 addNotification={addNotification}
-                m3Objects={m3Objects}
-                setM3Objects={setM3Objects}
-                m3SelectedObjectId={m3SelectedObjectId}
-                setM3SelectedObjectId={setM3SelectedObjectId}
+                m3Objects={m3ThumbnailObjects}
+                setM3Objects={setM3ThumbnailObjects}
+                m3SelectedObjectId={m3ThumbnailSelectedObjectId}
+                setM3SelectedObjectId={setM3ThumbnailSelectedObjectId}
+                renderMode={renderMode}
+                outputFilename={m3OutputFilename}
+                setOutputFilename={setM3OutputFilename}
+                onExportQueue={handleExport}
               />
             )}
           </div>

@@ -45,7 +45,8 @@ export default function M3DynamicContentPanel({
         setM3BgPool={setM3BgPool}
         m3SelectedObjectId={m3SelectedObjectId} 
         setM3SelectedObjectId={setM3SelectedObjectId} 
-        isThumbnailMode={editorMode === 'Thumbnail'}
+        isThumbnailMode={editorMode === 'Thumbnail' || canvasMode === 'thumbnail'}
+        editorMode={editorMode}
     />
   );
 

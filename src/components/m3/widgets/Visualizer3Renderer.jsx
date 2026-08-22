@@ -12,6 +12,9 @@
 import React, { useRef, useEffect } from 'react';
 import { VisualizerPipeline } from '../../../visualizers/v3/pipeline/VisualizerPipeline.js';
 import { BeatEngine } from '../../../visualizers/v3/audio/BeatEngine.js';
+import { VisualizerV5Audio } from '../../../visualizers/v5/VisualizerV5Audio.js';
+import { fastWorkspaceManager } from '../../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
+import { fastRenderState } from '../../../services/pipeline/fastrender/core/FastRenderState.js';
 
 // Auto-register V3 plugins
 import '../../../visualizers/v3/plugins/SpectrumBarsPlugin.js';
@@ -19,128 +22,122 @@ import '../../../visualizers/v3/plugins/CircularPulsePlugin.js';
 import '../../../visualizers/v3/plugins/CyberpunkWaveformPlugin.js';
 import '../../../visualizers/v3/plugins/ParticleOrbitPlugin.js';
 
-// Native export resolution — preview canvas MUST always match this.
-const NATIVE_WIDTH = 1920;
-const NATIVE_HEIGHT = 1080;
-
 const beatEngineInstance = new BeatEngine();
 
-/**
- * Generates the same deterministic FFT used by CanvasKitRenderer.js export engine.
- * Both preview fallback and export MUST use this identical formula for static-frame parity.
- * @param {number} frameIndex  Integer frame index (0-based)
- * @param {number} frameCount  Total frame count in timeline
- * @param {number} barCount    Number of frequency bins
- * @returns {Float32Array}     Normalized frequencies [0.0, 1.0]
- */
-function generateDeterministicFFT(frameIndex = 0, frameCount = 300, barCount = 64) {
-  const data = new Float32Array(barCount);
-  const normalizedLoopTime = (frameIndex % frameCount) / frameCount;
-  const tAngle = normalizedLoopTime * Math.PI * 2;
-
-  for (let i = 0; i < barCount; i++) {
-    const freqNorm = i / barCount;
-    const barPhase = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
-    const barSeed = barPhase - Math.floor(barPhase);
-
-    const oct1 = Math.sin(tAngle * 3 + barSeed * 6.28);
-    const oct2 = Math.cos(tAngle * 7 + freqNorm * 18.84 + barSeed * 3.14);
-    const envelope = Math.exp(-freqNorm * 2.2);
-
-    const rawVal = (0.5 * oct1 + 0.5 * oct2) * envelope;
-    data[i] = Math.min(1.0, Math.max(0.05, Math.abs(rawVal)));
-  }
-  return data;
-}
-
-export default function Visualizer3Renderer({ config, id, currentTime, audioState }) {
+export default function Visualizer3Renderer({ config = {}, id, currentTime = 0, audioState }) {
   const canvasRef = useRef(null);
+  const paramsRef = useRef({});
+
+  paramsRef.current = {
+    config,
+    currentTime,
+    audioState
+  };
 
   useEffect(() => {
     let animId;
+    let isCancelled = false;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // PARITY FIX: Canvas pixel dimensions are ALWAYS the native export resolution.
-    // CSS (width: 100%, height: 100%) handles visual scaling — never change canvas.width/height.
-    // This ensures plugin geometry math (startX, barWidth, centerY, etc.) produces identical
-    // results in preview and in CanvasKitRenderer.js export (which always uses 1920×1080).
-    const parent = canvas.parentElement;
-    const width = parent && parent.clientWidth > 0 ? parent.clientWidth : (parseInt(config.width) || 600);
-    const height = parent && parent.clientHeight > 0 ? parent.clientHeight : (parseInt(config.height) || 300);
-    canvas.width = width;
-    canvas.height = height;
+    const render = () => {
+      if (isCancelled) return;
 
-    const isPausedSnapshot = typeof currentTime === 'number' && !window.m3IsPlaying;
-    const timestamp = typeof currentTime === 'number' ? currentTime : (performance.now() / 1000) % 3600;
+      const { config: curConfig = {}, currentTime: curTime = 0, audioState: curAudioState } = paramsRef.current;
+      const parent = canvas.parentElement;
+      const width = parent && parent.clientWidth > 0 ? parent.clientWidth : (parseInt(curConfig.width) || 600);
+      const height = parent && parent.clientHeight > 0 ? parent.clientHeight : (parseInt(curConfig.height) || 300);
 
-    // Resolve plugin mode — same logic as CanvasKitDrawVisualizer PLUGIN_MAPPING
-    const resolveMode = () => {
-      let mode = config.mode || config.pluginId || config.visualizerId || 'spectrum-bars';
-      const mStr = String(mode).toLowerCase();
-      if (mStr.includes('wave') || mStr.includes('cyberpunk')) return 'cyberpunk-waveform';
-      if (mStr.includes('particle') || mStr.includes('orbit')) return 'particle-orbit';
-      if (mStr.includes('circular') || mStr.includes('circle') || mStr.includes('pulse')) return 'circular-pulse';
-      return 'spectrum-bars'; // default — covers bar/bars/spectrum/classic
-    };
-    const mode = resolveMode();
-
-    // Merge config with explicit color keys always present
-    const visualizerConfig = {
-      colorLeft: config.colorLeft || config.primaryColor || '#AB55F7',
-      colorRight: config.colorRight || config.secondaryColor || '#F59E0B',
-      colorMid: config.colorMid || '#06B6D4',
-      ...config
-    };
-
-    const renderSingleFrame = (ts) => {
-      let stateToUse = audioState;
-
-      // PARITY FIX: When no live audio is available, use the SAME deterministic FFT formula
-      // as CanvasKitRenderer.js so paused/idle preview frames are pixel-identical to export.
-      if (!stateToUse || !stateToUse.frequencies || stateToUse.frequencies.length === 0) {
-        const barCount = visualizerConfig.barCount || 64;
-        const frameCount = 300; // default timeline length assumption
-        const frameIndex = Math.floor(ts * 60) % frameCount;
-        const detFreqs = generateDeterministicFFT(frameIndex, frameCount, barCount);
-
-        // Wrap in a minimal AudioState shape that VisualizerPipeline plugins accept
-        const rawWave = new Uint8Array(barCount);
-        stateToUse = beatEngineInstance.processFrame(ts, detFreqs, rawWave, 44100);
-        // Override frequencies with deterministic data (processFrame may overwrite it)
-        if (stateToUse) {
-          stateToUse = { ...stateToUse, frequencies: detFreqs };
-        } else {
-          stateToUse = { frequencies: detFreqs };
-        }
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
       }
 
+      const isFastMode = (typeof window !== 'undefined' && window.m3RenderMode === 'fast') ||
+        (typeof fastWorkspaceManager !== 'undefined' && fastWorkspaceManager.isFastWorkspaceActive()) ||
+        (typeof fastRenderState !== 'undefined' && fastRenderState.isFastMode()) ||
+        String(curConfig.renderMode).toLowerCase() === 'fast';
+
+      const isPlaying = typeof window !== 'undefined' && Boolean(window.m3IsPlaying);
+      const renderMode = isFastMode ? 'fast' : String(curConfig.renderMode || 'normal').toLowerCase();
+
+      const timestamp = renderMode === 'fast'
+        ? (performance.now() / 1000) % 3600
+        : (typeof curTime === 'number' && curTime > 0 ? curTime : (performance.now() / 1000) % 3600);
+
+      const resolveMode = () => {
+        let mode = curConfig.mode || curConfig.pluginId || curConfig.visualizerId || 'spectrum-bars';
+        const mStr = String(mode).toLowerCase();
+        if (mStr.includes('wave') || mStr.includes('cyberpunk')) return 'cyberpunk-waveform';
+        if (mStr.includes('particle') || mStr.includes('orbit')) return 'particle-orbit';
+        if (mStr.includes('circular') || mStr.includes('circle') || mStr.includes('pulse')) return 'circular-pulse';
+        return 'spectrum-bars';
+      };
+      const mode = resolveMode();
+
+      const visualizerConfig = {
+        colorLeft: curConfig.colorLeft || curConfig.primaryColor || '#AB55F7',
+        colorRight: curConfig.colorRight || curConfig.secondaryColor || '#F59E0B',
+        colorMid: curConfig.colorMid || '#06B6D4',
+        ...curConfig
+      };
+
+      let liveFrequencies = null;
+      if (renderMode === 'normal' && isPlaying) {
+        try {
+          if (window.m3Analyser) {
+            if (typeof window.m3Analyser.getFrequencyData === 'function') {
+              liveFrequencies = window.m3Analyser.getFrequencyData();
+            } else if (typeof window.m3Analyser.getByteFrequencyData === 'function') {
+              if (!window._m3FreqBuf || window._m3FreqBuf.length !== window.m3Analyser.frequencyBinCount) {
+                window._m3FreqBuf = new Uint8Array(window.m3Analyser.frequencyBinCount);
+              }
+              window.m3Analyser.getByteFrequencyData(window._m3FreqBuf);
+              liveFrequencies = window._m3FreqBuf;
+            }
+          }
+          if (!liveFrequencies && beatEngineInstance && typeof beatEngineInstance.getSpectrum === 'function') {
+            liveFrequencies = beatEngineInstance.getSpectrum();
+          }
+        } catch (e) {}
+      }
+
+      const stateToUse = VisualizerV5Audio.getAudioState(timestamp, renderMode, visualizerConfig, liveFrequencies, isPlaying);
+
       try {
-        VisualizerPipeline.renderPipelineFrame(canvas, ts, stateToUse, mode, visualizerConfig);
+        VisualizerPipeline.renderPipelineFrame(canvas, timestamp, stateToUse, mode, visualizerConfig);
       } catch (err) {
         console.warn('[Visualizer3Renderer] Frame render warning:', err);
       }
+
+      if (!isCancelled) {
+        animId = requestAnimationFrame(render);
+      }
     };
 
-    if (isPausedSnapshot) {
-      renderSingleFrame(timestamp);
-    } else {
-      const renderLoop = () => {
-        animId = requestAnimationFrame(renderLoop);
-        const ts = (performance.now() / 1000) % 3600;
-        renderSingleFrame(ts);
-      };
-      renderLoop();
-    }
+    render();
+
+    const handleWakeUp = () => {
+      if (!isCancelled) {
+        cancelAnimationFrame(animId);
+        render();
+      }
+    };
+
+    const unsubscribeWorkspace = fastWorkspaceManager.subscribe(handleWakeUp);
+    window.addEventListener('m3_render_mode_change', handleWakeUp);
+    window.addEventListener('m3_playback_change', handleWakeUp);
 
     return () => {
+      isCancelled = true;
       if (animId) cancelAnimationFrame(animId);
+      unsubscribeWorkspace();
+      window.removeEventListener('m3_render_mode_change', handleWakeUp);
+      window.removeEventListener('m3_playback_change', handleWakeUp);
     };
-  }, [config, currentTime, audioState]);
+  }, []);
 
   return (
-    // PARITY FIX: CSS scales canvas visually; pixel canvas is always 1920×1080.
-    // object-fit: contain preserves 16:9 aspect ratio inside any container.
     <div className="w-full h-full flex items-center justify-center pointer-events-none overflow-hidden">
       <canvas
         ref={canvasRef}

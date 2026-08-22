@@ -36,6 +36,7 @@ import LightPulseEngine from './engines/LightPulseEngine';
 import StageLightEngine from './engines/StageLightEngine';
 import LaserEngine from './engines/LaserEngine';
 import { createScheduler } from '../../services/pipeline/scheduler/RenderScheduler.js';
+import { DeterministicMotionEngine } from '../../services/audio/DeterministicMotionEngine.js';
 
 export const previewScheduler = createScheduler({ fps: 30, frameCount: 300, width: 1920, height: 1080 });
 
@@ -121,8 +122,10 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
   }, []);
 
   useEffect(() => {
-    beatEngine.setSource(analyser);
-    return () => beatEngine.setSource(null);
+    const src = analyser || (typeof window !== 'undefined' ? window.m3Analyser : null);
+    if (src) {
+      beatEngine.setSource(src);
+    }
   }, [analyser]);
 
   // Extract FX Engine Configs
@@ -177,6 +180,11 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
             const dt = Math.min((now - lastTime) / 1000, 0.1);
             lastTime = now;
 
+            // Ensure beatEngine has live Analyser source
+            if (!beatEngine.analyser && (analyser || (typeof window !== 'undefined' && window.m3Analyser))) {
+                beatEngine.setSource(analyser || window.m3Analyser);
+            }
+
             // --- Render Pipeline & Audio DSP Runtime ---
             beatEngine.update(Boolean(window.m3IsPlaying));
             frameInput.setInputs(latestObjectsRef.current || [], { 
@@ -207,94 +215,28 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
                 let currentVPos = s.verticalPosition || 0;
                 let currentRotation = 0;
 
-                const renderingContext = fastWorkspaceManager.getRenderingContext({
-                    m3BgPool: latestBgPoolRef.current,
-                    m3AudioTracks: audioTracksRef.current,
-                    m3Objects: latestObjectsRef.current
-                }, currentTimeSecRef.current);
+                if (canvasMode === 'thumbnail') {
+                    bgMediaRef.current.style.transform = `scale(${baseScale}) translate(${currentHPos}%, ${currentVPos}%) rotate(0deg)`;
+                } else {
+                    const renderingContext = fastWorkspaceManager.getRenderingContext({
+                        m3BgPool: latestBgPoolRef.current,
+                        m3AudioTracks: audioTracksRef.current,
+                        m3Objects: latestObjectsRef.current
+                    }, currentTimeSecRef.current);
 
-                if (renderingContext.isFastWorkspace) {
-                    const adaptedBg = renderingContext.adaptObject(bg, currentTimeSecRef.current);
-                    const shake = adaptedBg.adaptedObject?._shake || { x: 0, y: 0, rotation: 0 };
-                    baseScale += (adaptedBg.adaptedObject?._pulseScale || 0);
-                    currentHPos += shake.x;
-                    currentVPos += shake.y;
-                    currentRotation += shake.rotation;
-                } else if (danceMode !== 'Off') {
-                    const bs = beatEngine.getState();
-                    const reactsTo = s.danceReactsTo || 'Whole song';
-                    
-                    let danceStyle = s.danceStyle || 'Calm Pulse';
-                    if (danceStyle === 'Subtle Sway') danceStyle = 'Calm Pulse';
-                    if (danceStyle === 'Pulse') danceStyle = 'Deep Kick';
-                    if (danceStyle === 'Heartbeat') danceStyle = 'Rhythmic Float';
-                    if (danceStyle === 'Shake') danceStyle = 'Adrenaline';
-                    
-                    const reactLevel = s.danceReactLevel !== undefined ? s.danceReactLevel : 45;
-                    const smoothing = s.danceSmoothing !== undefined ? s.danceSmoothing : 0.70;
-                    
-                    let rawVal = bs.energy;
-                    if (reactsTo === 'Bass (Low)') rawVal = bs.bass;
-                    else if (reactsTo === 'Mid') rawVal = bs.mid;
-                    else if (reactsTo === 'Treble (High)') rawVal = bs.treble;
-                    
-                    const sensitivity = reactLevel / 50; 
-                    let power = rawVal * sensitivity * intensity;
-                    
-                    // Parse Presets or Custom
-                    let cfg = { zoom: 0, swayX: 0, swayY: 0, rotate: 0, shake: 0 };
-                    
-                    if (danceStyle === 'Custom (Advanced)') {
-                        if (s.motionEnZoom !== false) cfg.zoom = s.motionValZoom !== undefined ? s.motionValZoom : 12;
-                        if (s.motionEnSwayX) cfg.swayX = s.motionValSwayX !== undefined ? s.motionValSwayX : 2.0;
-                        if (s.motionEnSwayY) cfg.swayY = s.motionValSwayY !== undefined ? s.motionValSwayY : 1.2;
-                        if (s.motionEnRotate) cfg.rotate = s.motionValRotate !== undefined ? s.motionValRotate : 1.5;
-                        if (s.motionEnShake) cfg.shake = s.motionValShake !== undefined ? s.motionValShake : 4;
-                    } else if (danceStyle === 'Deep Kick') {
-                        cfg.zoom = 10;
-                    } else if (danceStyle === 'Rhythmic Float') {
-                        cfg.swayX = 4; cfg.swayY = 3; cfg.rotate = 2; cfg.zoom = 1;
-                    } else if (danceStyle === 'Adrenaline') {
-                        cfg.swayX = 3; cfg.swayY = 3; cfg.rotate = 3; cfg.zoom = 8; cfg.shake = 6;
-                    } else {
-                        // Default Calm Pulse
-                        cfg.swayX = 2; cfg.swayY = 1; cfg.zoom = 2; cfg.rotate = 0.5;
+                    if (renderingContext.isFastWorkspace) {
+                        const adaptedBg = renderingContext.adaptObject(bg, currentTimeSecRef.current);
+                        const shake = adaptedBg.adaptedObject?._shake || { x: 0, y: 0, rotation: 0 };
+                        baseScale += (adaptedBg.adaptedObject?._pulseScale || 0);
+                        currentHPos += shake.x;
+                        currentVPos += shake.y;
+                        currentRotation += shake.rotation;
+                    } else if (danceMode !== 'Off') {
+                        const bs = beatEngine.getState() || {};
+                        const tf = DeterministicMotionEngine.calculateBackgroundTransform(currentTimeSecRef.current, s, bs);
+                        bgMediaRef.current.style.transform = `scale(${tf.scale}) translate(${tf.hPos}%, ${tf.vPos}%) rotate(${tf.rotation}deg)`;
                     }
-                    
-                    // Edge Compensation (Pre-scale so edges don't show)
-                    const maxPan = Math.max(cfg.swayX, cfg.swayY) + cfg.shake;
-                    if (maxPan > 0 || cfg.rotate > 0) {
-                        const panScale = 1 + (maxPan * 2.5 / 100);
-                        const rotScale = 1 + (cfg.rotate * 0.015);
-                        baseScale *= (panScale * rotScale);
-                    }
-                    
-                    const lerpFactor = 1.0 - (smoothing * 0.95);
-                    const time = performance.now() / 1000;
-                    
-                    // Calculate target targets
-                    const targetZoom = power * cfg.zoom * 0.01;
-                    const targetSwayX = Math.sin(time * 1.2) * cfg.swayX * power;
-                    const targetSwayY = Math.cos(time * 0.9) * cfg.swayY * power;
-                    const targetRotate = Math.sin(time * 0.8) * cfg.rotate * power;
-                    
-                    // Shake uses slow pseudo-random wave
-                    const targetShakeX = (Math.sin(time * 3.1) * 0.5 + Math.cos(time * 2.3) * 0.5) * cfg.shake * power;
-                    const targetShakeY = (Math.cos(time * 2.7) * 0.5 + Math.sin(time * 3.4) * 0.5) * cfg.shake * power;
-                    
-                    // Apply lerp
-                    smoothedMotion.zoom += (targetZoom - smoothedMotion.zoom) * lerpFactor;
-                    smoothedMotion.swayX += (targetSwayX - smoothedMotion.swayX) * lerpFactor;
-                    smoothedMotion.swayY += (targetSwayY - smoothedMotion.swayY) * lerpFactor;
-                    smoothedMotion.rotate += (targetRotate - smoothedMotion.rotate) * lerpFactor;
-                    
-                    baseScale += smoothedMotion.zoom;
-                    currentHPos += smoothedMotion.swayX + targetShakeX;
-                    currentVPos += smoothedMotion.swayY + targetShakeY;
-                    currentRotation += smoothedMotion.rotate;
-                }
-                
-                bgMediaRef.current.style.transform = `scale(${baseScale}) translate(${currentHPos}%, ${currentVPos}%) rotate(${currentRotation}deg)`;
+            }
             }
             // -----------------------------
 

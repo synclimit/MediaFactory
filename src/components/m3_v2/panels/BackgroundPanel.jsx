@@ -5,7 +5,8 @@ export default function BackgroundPanel({
     m3BgPool = [], 
     setM3BgPool, 
     m3SelectedObjectId, 
-    setM3SelectedObjectId 
+    setM3SelectedObjectId,
+    isThumbnailMode = false
 }) {
     const [activeTab, setActiveTab] = useState('BG Image');
 
@@ -130,13 +131,15 @@ export default function BackgroundPanel({
                     <span className="text-[14px]">🖼️</span> Image
                     {activeTab === 'BG Image' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#f97316] to-transparent shadow-[0_-2px_8px_rgba(249,115,22,0.5)]" />}
                 </button>
-                <button 
-                    onClick={() => setActiveTab('Video')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-[10px] font-bold uppercase tracking-widest transition-all relative ${activeTab === 'Video' ? 'text-[#f97316]' : 'text-gray-400 hover:text-gray-200'}`}
-                >
-                    <span className="text-[14px]">🎞️</span> Video
-                    {activeTab === 'Video' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#f97316] to-transparent shadow-[0_-2px_8px_rgba(249,115,22,0.5)]" />}
-                </button>
+                {!isThumbnailMode && (
+                    <button 
+                        onClick={() => setActiveTab('Video')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-[10px] font-bold uppercase tracking-widest transition-all relative ${activeTab === 'Video' ? 'text-[#f97316]' : 'text-gray-400 hover:text-gray-200'}`}
+                    >
+                        <span className="text-[14px]">🎞️</span> Video
+                        {activeTab === 'Video' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#f97316] to-transparent shadow-[0_-2px_8px_rgba(249,115,22,0.5)]" />}
+                    </button>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
@@ -147,11 +150,13 @@ export default function BackgroundPanel({
                     >
                         <span className="text-lg">+</span> Add {activeTab === 'Video' ? 'Video' : 'Image'}
                     </button>
-                    <button 
-                        className="bg-[#161822]/90 hover:bg-[#1a1c25] border border-orange-500/20 hover:border-orange-500/40 text-gray-200 font-bold px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-[11px] uppercase tracking-wider shadow-inner"
-                    >
-                        <Shuffle size={14} className="text-[#f97316]" /> Shuffle
-                    </button>
+                    {!isThumbnailMode && (
+                        <button 
+                            className="bg-[#161822]/90 hover:bg-[#1a1c25] border border-orange-500/20 hover:border-orange-500/40 text-gray-200 font-bold px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-[11px] uppercase tracking-wider shadow-inner"
+                        >
+                            <Shuffle size={14} className="text-[#f97316]" /> Shuffle
+                        </button>
+                    )}
                 </div>
 
                 <div className="relative bg-[#161822] border-[3px] border-orange-500/50 px-4 py-3 rounded-lg flex items-center justify-between mt-8 mb-4 shadow-[0_4px_20px_rgba(249,115,22,0.15)]">

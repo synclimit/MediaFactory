@@ -1,2 +1,2 @@
-import VisualizerV4Panel from './VisualizerV4Panel';
-export default VisualizerV4Panel;
+import VisualizerV5Panel from './VisualizerV5Panel';
+export default VisualizerV5Panel;

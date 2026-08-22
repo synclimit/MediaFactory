@@ -5,7 +5,7 @@ const CATEGORIES = [
   { id: 'Background', icon: <Image size={18} strokeWidth={1.75} />, label: 'Background' },
   { id: 'Playlist Audio', icon: <Music size={18} strokeWidth={1.75} />, label: 'Playlist' },
   { id: 'Lyrics', icon: <Subtitles size={18} strokeWidth={1.75} />, label: 'Lyrics' },
-  { id: 'Visualizer', icon: <Settings2 size={18} strokeWidth={1.75} />, label: 'Visualizer' },
+  { id: 'Visualizer V5', icon: <Activity size={18} strokeWidth={1.75} className="text-cyan-400" />, label: 'Visualizer V5' },
   { id: 'Particle', icon: <Star size={18} strokeWidth={1.75} />, label: 'Particle' },
   { id: 'Effects', icon: <Zap size={18} strokeWidth={1.75} />, label: 'Visual FX' },
   { id: 'Overlay', icon: <MonitorPlay size={18} strokeWidth={1.75} />, label: 'Overlay' },

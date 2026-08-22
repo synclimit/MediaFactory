@@ -668,7 +668,7 @@ const INSPECTOR_MAP = {
     'scanline': InspectorScanline,
     'light-leak': InspectorLightLeak,
 };
-export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPool = [], setM3BgPool, m3SelectedObjectId, activeCategory, renderSettings = {}, setRenderSettings, renderMode = 'FAST', setRenderMode }) {
+export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPool = [], setM3BgPool, m3SelectedObjectId, activeCategory, renderSettings = {}, setRenderSettings, renderMode = 'FAST', setRenderMode, isThumbnailMode = false, editorMode = 'Composer' }) {
   const [demoState, setDemoState] = React.useState({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   
@@ -836,21 +836,23 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         <SliderRow label="Vertical Position" min={-100} max={100} value={getProp('verticalPosition', 0)} onChange={e => updateProp('verticalPosition', Number(e.target.value))} />
       </SettingGroup>
 
-      <SettingGroup title="🔊 Audio Reactivity" headerClass="text-[#10b981] border-[#10b981]/30">
-        <ToggleRow label="Enable Audio Motion" checked={getProp('danceMode', 'Off') !== 'Off'} onChange={e => updateProp('danceMode', e.target.checked ? 'Performance Mode' : 'Off')} />
-        
-        {getProp('danceMode', 'Off') !== 'Off' && (
-          <div className="mt-4 pt-2 border-t border-[#2d3247]/50">
-            <SelectRow 
-                label="Engine Mode" 
-                options={['Performance Mode', 'Quality Mode']} 
-                value={(getProp('danceMode') === 'Ringan (Pixel) — cepat di CPU') ? 'Performance Mode' : (getProp('danceMode') === 'Penuh (Transform) — mulus di GPU' ? 'Quality Mode' : getProp('danceMode', 'Performance Mode'))} 
-                onChange={e => updateProp('danceMode', e.target.value)} 
-            />
-            {renderAudioReactivityParams()}
-          </div>
-        )}
-      </SettingGroup>
+      {!isThumbnailMode && editorMode !== 'Thumbnail' && (
+        <SettingGroup title="🔊 Audio Reactivity" headerClass="text-[#10b981] border-[#10b981]/30">
+          <ToggleRow label="Enable Audio Motion" checked={getProp('danceMode', 'Off') !== 'Off'} onChange={e => updateProp('danceMode', e.target.checked ? 'Performance Mode' : 'Off')} />
+          
+          {getProp('danceMode', 'Off') !== 'Off' && (
+            <div className="mt-4 pt-2 border-t border-[#2d3247]/50">
+              <SelectRow 
+                  label="Engine Mode" 
+                  options={['Performance Mode', 'Quality Mode']} 
+                  value={(getProp('danceMode') === 'Ringan (Pixel) — cepat di CPU') ? 'Performance Mode' : (getProp('danceMode') === 'Penuh (Transform) — mulus di GPU' ? 'Quality Mode' : getProp('danceMode', 'Performance Mode'))} 
+                  onChange={e => updateProp('danceMode', e.target.value)} 
+              />
+              {renderAudioReactivityParams()}
+            </div>
+          )}
+        </SettingGroup>
+      )}
     </>
   );
 
@@ -1420,11 +1422,13 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         <ToggleRow label="Outline / Border" checked={getProp('hasBorder', false)} onChange={e => updateProp('hasBorder', e.target.checked)} />
       </SettingGroup>
 
-      <SettingGroup title="🔊 Audio Reactivity" headerClass="text-[#10b981] border-[#10b981]/30">
-        <ToggleRow label="Enable Audio Motion" checked={getProp('beatZoom', false)} onChange={e => updateProp('beatZoom', e.target.checked)} />
-        <ToggleRow label="Bass Pumping / Kempang-Kempis" checked={getProp('beatPump', false)} onChange={e => updateProp('beatPump', e.target.checked)} />
-        {getProp('beatZoom', false) && renderAudioReactivityParams()}
-      </SettingGroup>
+      {!isThumbnailMode && editorMode !== 'Thumbnail' && (
+        <SettingGroup title="🔊 Audio Reactivity" headerClass="text-[#10b981] border-[#10b981]/30">
+          <ToggleRow label="Enable Audio Motion" checked={getProp('beatZoom', false)} onChange={e => updateProp('beatZoom', e.target.checked)} />
+          <ToggleRow label="Bass Pumping / Kempang-Kempis" checked={getProp('beatPump', false)} onChange={e => updateProp('beatPump', e.target.checked)} />
+          {getProp('beatZoom', false) && renderAudioReactivityParams()}
+        </SettingGroup>
+      )}
 
       {(obj?.type === 'procedural-speaker' || obj?.mediaType === 'procedural') && (
         <SettingGroup title="🔊 Subwoofer Model & Style" headerClass="text-[#00ffcc] border-[#00ffcc]/30">
@@ -1962,9 +1966,7 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
       const obj = m3Objects.find(o => o.id === m3SelectedObjectId);
       if (obj) {
         if (obj.type === 'text') return 'Text Objects';
-        if (obj.type === 'visualizer') return 'Visualizer';
-        if (obj.type === 'visualizer2') return 'Visualizer 2';
-        if (obj.type === 'visualizer3') return 'Visualizer 3';
+        if (obj.type === 'visualizer' || obj.type === 'visualizer2' || obj.type === 'visualizer3' || obj.type === 'visualizer4' || obj.type === 'visualizer5') return 'Visualizer';
         if (obj.type === 'image' || obj.type === 'widget' || obj.type === 'logo') return 'Overlay';
         if (obj.type === 'social-widget') return 'Social Widget';
         if (obj.type === 'background') return 'Background';
@@ -1978,6 +1980,7 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         if (obj.type === 'particle') return 'Particle';
       }
     }
+    if (activeCategory && (activeCategory.toLowerCase().includes('visualizer') || activeCategory.toLowerCase().includes('visualiz'))) return 'Visualizer';
     return activeCategory;
   };
 
@@ -1998,6 +2001,9 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
 
   const renderContent = () => {
     const categoryToRender = getInspectorCategory();
+    if (categoryToRender && (categoryToRender.toLowerCase().includes('visualizer') || categoryToRender.toLowerCase().includes('visualiz'))) {
+      return renderVisualizerInspector();
+    }
     switch (categoryToRender) {
       case 'Background': return renderBackgroundInspector();
       case 'Playlist Audio': {
@@ -2007,6 +2013,8 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         }
         return renderAudioSettingsInspector();
       }
+      case 'Visualizer V5':
+      case 'Visualizer V4':
       case 'Visualizer': return renderVisualizerInspector();
       case 'Visualizer 2': return renderVisualizerInspector();
       case 'Visualizer 3': return renderVisualizerInspector();

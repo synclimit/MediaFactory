@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Play, CheckSquare, Square, Layers, ChevronDown, HelpCircle } from 'lucide-react';
 
-export default function M3ExportSettingsPanel({ renderMode = 'FAST', onAddToQueue }) {
+export default function M3ExportSettingsPanel({ renderMode = 'FAST', onAddToQueue, outputFilename: propFilename, setOutputFilename: propSetFilename, initialFilename = '', isThumbnailMode = false }) {
+  const [internalFilename, setInternalFilename] = useState(initialFilename || 'Chill Lofi Playlist Mix.mp4');
+  
+  const outputFilename = propFilename !== undefined ? propFilename : internalFilename;
+  const setOutputFilename = propSetFilename || setInternalFilename;
+
   const [resolution, setResolution] = useState('1080p');
   const [fps, setFps] = useState('60');
   const [codec, setCodec] = useState('H.264');
   const [bitrate, setBitrate] = useState('auto');
   const [audioBitrate, setAudioBitrate] = useState('192k');
-  const [renderPerSong, setRenderPerSong] = useState(false);
   const [bFrame, setBFrame] = useState('Otomatis');
-  
-  // Realtime logging or state dispatch could go here if needed for 'realtime' requirement
-  useEffect(() => {
-    // Notify parent of realtime changes if needed, but for now state is kept local until 'Add to Queue'
-  }, [resolution, fps, codec, bitrate, audioBitrate, bFrame, renderPerSong, renderMode]);
 
   return (
     <div className="w-full flex flex-col select-none px-5 py-2">
@@ -151,28 +150,32 @@ export default function M3ExportSettingsPanel({ renderMode = 'FAST', onAddToQueu
 
       </div>
 
-      {/* ROW 3: Checkbox & Button */}
-      <div className="flex items-center justify-between border-t border-[#1a1b26] pt-2.5 mt-2.5">
-        
-        <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2 cursor-pointer text-gray-300 hover:text-white transition-colors text-[11px] font-semibold group">
-            <div className="relative flex items-center justify-center text-orange-500" onClick={() => setRenderPerSong(!renderPerSong)}>
-              {renderPerSong ? <CheckSquare size={14} /> : <Square size={14} className="text-gray-500 group-hover:text-gray-400" />}
-            </div>
-            Render per song (resumable)
-          </label>
+      {/* ROW 3: Filename Rename Input & Add to Queue Button (Identical to Composer) */}
+      <div className="flex items-center justify-between border-t border-[#1a1b26] pt-2.5 mt-2.5 gap-3">
+        <div className="flex-1 flex items-center gap-2 bg-[#12131a] border border-[#2d3247] hover:border-gray-500 focus-within:border-orange-500 rounded px-2.5 py-1 transition-colors">
+          <span className="text-[10px] font-black text-orange-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+            🎬 Output:
+          </span>
+          <input 
+            type="text"
+            value={outputFilename}
+            onChange={(e) => setOutputFilename(e.target.value)}
+            placeholder="Chill Lofi Playlist Mix.mp4"
+            className="bg-transparent text-white font-mono text-[11px] outline-none flex-1 w-full"
+          />
         </div>
 
         <button 
           onClick={() => {
             if (onAddToQueue) {
-              // Pass the render settings payload out
               onAddToQueue({
-                resolution, fps, codec, bitrate, audioBitrate, bFrame, renderPerSong, renderMode
+                filename: outputFilename || 'Chill Lofi Playlist Mix.mp4',
+                outputFilename: outputFilename || 'Chill Lofi Playlist Mix.mp4',
+                resolution, fps, codec, bitrate, audioBitrate, bFrame, renderMode
               });
             }
           }}
-          className="bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white text-[11px] font-bold px-8 py-2 rounded shadow-[0_0_15px_rgba(234,88,12,0.3)] flex items-center gap-1.5 transition-all"
+          className="bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white text-[11px] font-bold px-7 py-2 rounded shadow-[0_0_15px_rgba(234,88,12,0.3)] flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
         >
           <Play size={12} className="fill-current" />
           Add to Queue

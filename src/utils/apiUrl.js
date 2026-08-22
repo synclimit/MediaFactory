@@ -1,48 +1,77 @@
-export function getApiUrl(endpoint) {
-  if (typeof window === 'undefined') return endpoint;
-  const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+/**
+ * MediaFactory Dynamic API URL Resolver
+ * Guarantees 100% dynamic frontend-backend communication across all end-user environments:
+ * - Electron production (reads bound server port dynamically via IPC / window.SERVER_PORT / query params)
+ * - Express production bundle (uses window.location.origin)
+ * - Vite dev server (uses relative proxy paths)
+ */
 
-  let activePort = window.SERVER_PORT || window.__MEDIAFACTORY_PORT__;
+export function getApiPort() {
+  if (typeof window === 'undefined') return null;
 
-  if (!activePort && typeof window !== 'undefined' && window.require) {
+  // 1. Check global window variables set by Electron main process
+  let port = window.SERVER_PORT || window.__MEDIAFACTORY_PORT__;
+  if (port && !isNaN(port) && port > 0) return parseInt(port, 10);
+
+  // 2. Synchronously query Electron IPC if available
+  if (window.require) {
     try {
       const { ipcRenderer } = window.require('electron');
       const syncPort = ipcRenderer.sendSync('get-server-port-sync');
       if (syncPort && !isNaN(syncPort) && syncPort > 0) {
-        activePort = syncPort;
         window.SERVER_PORT = syncPort;
         window.__MEDIAFACTORY_PORT__ = syncPort;
+        return parseInt(syncPort, 10);
       }
     } catch (e) {}
   }
-  
-  if (!activePort && typeof window.location !== 'undefined') {
+
+  // 3. Check URL query params (?serverPort=... or ?port=...)
+  if (typeof window.location !== 'undefined') {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('serverPort')) {
-        activePort = parseInt(urlParams.get('serverPort'), 10);
+        port = parseInt(urlParams.get('serverPort'), 10);
       } else if (urlParams.has('port')) {
-        activePort = parseInt(urlParams.get('port'), 10);
+        port = parseInt(urlParams.get('port'), 10);
       } else if (window.location.port && window.location.port !== '5173' && window.location.port !== '5174') {
         const parsedLocPort = parseInt(window.location.port, 10);
         if (!isNaN(parsedLocPort) && parsedLocPort > 0) {
-          activePort = parsedLocPort;
+          port = parsedLocPort;
         }
       }
     } catch (e) {}
 
-    if (activePort) {
-      window.SERVER_PORT = activePort;
-      window.__MEDIAFACTORY_PORT__ = activePort;
+    if (port && !isNaN(port) && port > 0) {
+      window.SERVER_PORT = port;
+      window.__MEDIAFACTORY_PORT__ = port;
+      return parseInt(port, 10);
     }
   }
 
-  // When running directly inside Vite dev server (port 5173 or 5174)
+  return null;
+}
+
+export function getApiUrl(endpoint) {
+  if (typeof window === 'undefined') return endpoint;
+  const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+
+  // When running inside Vite dev server (port 5173 / 5174), use relative paths for Vite proxying
   if (typeof window.location !== 'undefined' && (window.location.port === '5173' || window.location.port === '5174')) {
     return path;
   }
 
-  // Exact target URL for Electron or Express production server
-  const port = activePort || 18888;
-  return `http://127.0.0.1:${port}${path}`;
+  // Check dynamically allocated server port
+  const activePort = getApiPort();
+  if (activePort) {
+    return `http://127.0.0.1:${activePort}${path}`;
+  }
+
+  // If served directly via HTTP/HTTPS (e.g. Express production static server)
+  if (typeof window.location !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')) {
+    return `${window.location.origin}${path}`;
+  }
+
+  // Fallback to default port if all dynamic detection mechanisms are unavailable
+  return `http://127.0.0.1:18888${path}`;
 }

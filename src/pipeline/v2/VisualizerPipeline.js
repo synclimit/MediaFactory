@@ -4,19 +4,7 @@
  * Pure Delegator -> Fetches Plugin from Registry and renders via RenderContext.
  */
 
-import { IVisualizerPlugin } from '../../engine/v2/contracts/IVisualizerPlugin.js';
-import { VisualizerRegistry } from '../../engine/v2/registry/VisualizerRegistry.js';
-import { createRenderContext } from '../../engine/v2/contracts/RenderContext.js';
-import { CircularPulsePlugin } from '../../engine/v2/plugins/CircularPulsePlugin.js';
-import { CyberpunkWaveformPlugin } from '../../engine/v2/plugins/CyberpunkWaveformPlugin.js';
-import { SpectrumBarsPlugin } from '../../engine/v2/plugins/SpectrumBarsPlugin.js';
-import { ParticleOrbitPlugin } from '../../engine/v2/plugins/ParticleOrbitPlugin.js';
-
-// Auto-register built-in plugins
-VisualizerRegistry.register(new CircularPulsePlugin());
-VisualizerRegistry.register(new CyberpunkWaveformPlugin());
-VisualizerRegistry.register(new SpectrumBarsPlugin());
-VisualizerRegistry.register(new ParticleOrbitPlugin());
+import { VisualizerV5Core } from '../../visualizers/v5/VisualizerV5Core.js';
 
 export const VISUALIZER2_MODES = {
   CIRCULAR_PULSE: 'CIRCULAR_PULSE',
@@ -51,23 +39,15 @@ export function renderPipelineFrame(canvas, timestamp, audioState, mode = VISUAL
     ctx.translate(-width / 2, -height / 2);
   }
 
-  // 1. Fetch plugin from Registry
-  const plugin = VisualizerRegistry.getPlugin(mode);
+  // Single Source of Truth: delegate to VisualizerV5Core
+  const modeStr = String(mode || config.mode || config.visualizerId || '').toLowerCase();
+  let pluginIdMode = 'spectrum-bars';
+  if (modeStr.includes('wave') || modeStr.includes('cyberpunk')) pluginIdMode = 'cyberpunk-waveform';
+  else if (modeStr.includes('particle') || modeStr.includes('orbit')) pluginIdMode = 'particle-orbit';
+  else if (modeStr.includes('circular') || modeStr.includes('circle') || modeStr.includes('pulse')) pluginIdMode = 'circular-pulse';
 
-  // 2. Build Immutable RenderContext
-  const renderContext = createRenderContext({
-    canvas,
-    ctx,
-    viewport: { width, height, pixelRatio: 1 },
-    timeline: { timestamp, fps: 60, duration: 30 },
-    audioState: audioState || {},
-    config
-  });
-
-  // 3. Delegate rendering to Plugin
-  if (plugin && typeof plugin.render === 'function') {
-    plugin.render(renderContext);
-  }
+  VisualizerV5Core.renderFrame(ctx, width, height, audioState || {}, { ...config, mode: pluginIdMode });
 
   ctx.restore();
 }
+

@@ -1077,6 +1077,7 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
     return (
       <>
         <SettingGroup title="General Properties">
+          <SelectRow label="Render Mode" options={['normal', 'fast']} value={getProp('renderMode', 'normal')} onChange={e => updateProps({ renderMode: e.target.value })} />
           <SelectRow label="Color Mode" options={['Solid', 'Dynamic Color', '2 Gradient', '3 Gradient', 'Rainbow', 'Neon']} value={mode} onChange={e => updateProp('colorMode', e.target.value)} />
           
           <div className="space-y-2 mt-3 pt-3 border-t border-[#21232d]">
@@ -1962,7 +1963,7 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
       const obj = m3Objects.find(o => o.id === m3SelectedObjectId);
       if (obj) {
         if (obj.type === 'text') return 'Text Objects';
-        if (obj.type === 'visualizer' || obj.type === 'visualizer2' || obj.type === 'visualizer3' || obj.type === 'visualizer4') return 'Visualizer';
+        if (obj.type === 'visualizer' || obj.type === 'visualizer2' || obj.type === 'visualizer3' || obj.type === 'visualizer4' || obj.type === 'visualizer5') return 'Visualizer';
         if (obj.type === 'image' || obj.type === 'widget' || obj.type === 'logo') return 'Overlay';
         if (obj.type === 'social-widget') return 'Social Widget';
         if (obj.type === 'background') return 'Background';
@@ -1976,6 +1977,7 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         if (obj.type === 'particle') return 'Particle';
       }
     }
+    if (activeCategory && (activeCategory.toLowerCase().includes('visualizer') || activeCategory.toLowerCase().includes('visualiz'))) return 'Visualizer';
     return activeCategory;
   };
 
@@ -2005,6 +2007,8 @@ export default function M3ObjectInspector({ m3Objects = [], setM3Objects, m3BgPo
         }
         return renderAudioSettingsInspector();
       }
+      case 'Visualizer V5':
+      case 'Visualizer V4':
       case 'Visualizer': return renderVisualizerInspector();
       case 'Visualizer 2': return renderVisualizerInspector();
       case 'Visualizer 3': return renderVisualizerInspector();

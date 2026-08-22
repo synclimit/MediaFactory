@@ -21,7 +21,7 @@ export default defineConfig({
         changeOrigin: true,
         router: async () => {
           const http = await import('http');
-          const ports = [18888, 3001];
+          const ports = [18888, 3001, 3002, 3003, 8080, 8888];
           for (const p of ports) {
             const alive = await new Promise((resolve) => {
               const req = http.get(`http://127.0.0.1:${p}/api/v1/diagnostics/health`, { timeout: 300 }, (res) => resolve(res.statusCode < 500));
@@ -39,6 +39,7 @@ export default defineConfig({
     }
   },
   build: {
+    emptyOutDir: false,
     assetsDir: 'app-assets',
     rollupOptions: {
       external: ['canvaskit-wasm']

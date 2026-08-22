@@ -1,76 +1,74 @@
 import React, { useRef, useEffect } from 'react';
 import { renderPipelineFrame } from '../../../pipeline/v2/VisualizerPipeline.js';
 import { beatEngine } from '../../../services/audio/BeatEngine.js';
+import { VisualizerV5Audio } from '../../../visualizers/v5/VisualizerV5Audio.js';
+import { fastWorkspaceManager } from '../../../services/pipeline/fastrender/workspace/FastWorkspaceManager.js';
+import { fastRenderState } from '../../../services/pipeline/fastrender/core/FastRenderState.js';
 
-export default function Visualizer2Renderer({ config, id, currentTime, audioState }) {
+export default function Visualizer2Renderer({ config = {}, id, currentTime = 0, audioState }) {
   const canvasRef = useRef(null);
+  const paramsRef = useRef({});
+
+  paramsRef.current = {
+    config,
+    currentTime,
+    audioState
+  };
 
   useEffect(() => {
     let animId;
+    let isCancelled = false;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const parent = canvas.parentElement;
-    const width = parent && parent.clientWidth > 0 ? parent.clientWidth : (config.width || 600);
-    const height = parent && parent.clientHeight > 0 ? parent.clientHeight : (config.height || 300);
-    canvas.width = width;
-    canvas.height = height;
+    const render = () => {
+      if (isCancelled) return;
 
-    const isPausedSnapshot = typeof currentTime === 'number' && !window.m3IsPlaying;
-    const timestamp = typeof currentTime === 'number' ? currentTime : (performance.now() / 1000) % 3600;
+      const { config: curConfig = {}, currentTime: curTime = 0 } = paramsRef.current;
+      const parent = canvas.parentElement;
+      const width = parent && parent.clientWidth > 0 ? parent.clientWidth : (curConfig.width || 600);
+      const height = parent && parent.clientHeight > 0 ? parent.clientHeight : (curConfig.height || 300);
 
-    const renderSingleFrame = (ts) => {
-      if (beatEngine && typeof beatEngine.update === 'function') {
-        beatEngine.update(Boolean(window.m3IsPlaying));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
       }
 
-      let stateToUse = audioState;
-      if (!stateToUse || Object.keys(stateToUse).length === 0) {
-        const b = beatEngine.getState() || { bass: 0, mid: 0, treble: 0, energy: 0, kick: false };
-        const isLivePlaying = Boolean(window.m3IsPlaying);
-        const hasRealAudio = isLivePlaying && b.energy > 0.005;
+      const isFastMode = (typeof window !== 'undefined' && window.m3RenderMode === 'fast') ||
+        (typeof fastWorkspaceManager !== 'undefined' && fastWorkspaceManager.isFastWorkspaceActive()) ||
+        (typeof fastRenderState !== 'undefined' && fastRenderState.isFastMode()) ||
+        String(curConfig.renderMode).toLowerCase() === 'fast';
 
-        const currentEnergy = hasRealAudio ? b.energy : (isLivePlaying ? 0.65 : 0.4);
+      const renderMode = isFastMode ? 'fast' : String(curConfig.renderMode || 'normal').toLowerCase();
+      const isPlaying = typeof window !== 'undefined' && Boolean(window.m3IsPlaying);
 
-        const generateFrequencies = (timeSec, baseEnergy) => {
-          const arr = new Float32Array(64);
-          for (let i = 0; i < 64; i++) {
-            const wave1 = Math.sin(timeSec * 3.5 + i * 0.15);
-            const wave2 = Math.cos(timeSec * 5.2 + i * 0.28);
-            const val = Math.abs(wave1 * 0.6 + wave2 * 0.4) * (baseEnergy || 0.4);
-            arr[i] = Math.min(1.0, Math.max(0.05, val));
+      const timestamp = renderMode === 'fast'
+        ? (performance.now() / 1000) % 3600
+        : (typeof curTime === 'number' && curTime > 0 ? curTime : (performance.now() / 1000) % 3600);
+
+      let liveFrequencies = null;
+      if (renderMode === 'normal' && isPlaying) {
+        try {
+          if (window.m3Analyser) {
+            if (typeof window.m3Analyser.getFrequencyData === 'function') {
+              liveFrequencies = window.m3Analyser.getFrequencyData();
+            } else if (typeof window.m3Analyser.getByteFrequencyData === 'function') {
+              if (!window._m3FreqBuf || window._m3FreqBuf.length !== window.m3Analyser.frequencyBinCount) {
+                window._m3FreqBuf = new Uint8Array(window.m3Analyser.frequencyBinCount);
+              }
+              window.m3Analyser.getByteFrequencyData(window._m3FreqBuf);
+              liveFrequencies = window._m3FreqBuf;
+            }
           }
-          return arr;
-        };
-
-        const generateWaveform = (timeSec, baseEnergy) => {
-          const arr = new Float32Array(64);
-          for (let i = 0; i < 64; i++) {
-            arr[i] = Math.sin(timeSec * 6 + (i / 64) * Math.PI * 4) * (baseEnergy || 0.35);
+          if (!liveFrequencies && beatEngine && typeof beatEngine.getSpectrum === 'function') {
+            liveFrequencies = beatEngine.getSpectrum();
           }
-          return arr;
-        };
-
-        stateToUse = {
-          time: ts,
-          subBass: hasRealAudio ? b.bass : Math.abs(Math.sin(ts * 2.2)) * currentEnergy,
-          bass: hasRealAudio ? b.bass : Math.abs(Math.sin(ts * 2.8)) * currentEnergy,
-          lowMid: hasRealAudio ? b.mid : Math.abs(Math.cos(ts * 3.3)) * currentEnergy,
-          mid: hasRealAudio ? b.mid : Math.abs(Math.sin(ts * 3.8)) * currentEnergy,
-          highMid: hasRealAudio ? b.treble : Math.abs(Math.cos(ts * 4.2)) * currentEnergy,
-          treble: hasRealAudio ? b.treble : Math.abs(Math.sin(ts * 4.8)) * currentEnergy,
-          energy: currentEnergy,
-          RMS: currentEnergy,
-          kick: b.kick || Math.sin(ts * 5) > 0.6,
-          snare: false,
-          beatStrength: currentEnergy,
-          spectralFlux: currentEnergy,
-          frequencies: hasRealAudio && b.frequencies ? b.frequencies : generateFrequencies(ts, currentEnergy),
-          waveform: hasRealAudio && b.waveform ? b.waveform : generateWaveform(ts, currentEnergy)
-        };
+        } catch (e) {}
       }
 
-      let mode = config.mode || config.visualizerId;
+      const stateToUse = VisualizerV5Audio.getAudioState(timestamp, renderMode, curConfig, liveFrequencies, isPlaying);
+
+      let mode = curConfig.mode || curConfig.visualizerId;
       if (mode) {
         const mStr = String(mode).toUpperCase();
         if (mStr.includes('WAVE') || mStr.includes('CYBERPUNK')) mode = 'CYBERPUNK_WAVEFORM';
@@ -80,29 +78,39 @@ export default function Visualizer2Renderer({ config, id, currentTime, audioStat
       }
       if (!mode) mode = 'CIRCULAR_PULSE';
       const visualizerConfig = {
-        primaryColor: config.primaryColor || '#00f2fe',
-        secondaryColor: config.secondaryColor || '#4facfe',
-        ...config
+        primaryColor: curConfig.primaryColor || '#00f2fe',
+        secondaryColor: curConfig.secondaryColor || '#4facfe',
+        ...curConfig
       };
 
-      renderPipelineFrame(canvas, ts, stateToUse, mode, visualizerConfig);
+      renderPipelineFrame(canvas, timestamp, stateToUse, mode, visualizerConfig);
+
+      if (!isCancelled) {
+        animId = requestAnimationFrame(render);
+      }
     };
 
-    if (isPausedSnapshot) {
-      renderSingleFrame(timestamp);
-    } else {
-      const renderLoop = () => {
-        animId = requestAnimationFrame(renderLoop);
-        const ts = (performance.now() / 1000) % 3600;
-        renderSingleFrame(ts);
-      };
-      renderLoop();
-    }
+    render();
+
+    const handleWakeUp = () => {
+      if (!isCancelled) {
+        cancelAnimationFrame(animId);
+        render();
+      }
+    };
+
+    const unsubscribeWorkspace = fastWorkspaceManager.subscribe(handleWakeUp);
+    window.addEventListener('m3_render_mode_change', handleWakeUp);
+    window.addEventListener('m3_playback_change', handleWakeUp);
 
     return () => {
+      isCancelled = true;
       if (animId) cancelAnimationFrame(animId);
+      unsubscribeWorkspace();
+      window.removeEventListener('m3_render_mode_change', handleWakeUp);
+      window.removeEventListener('m3_playback_change', handleWakeUp);
     };
-  }, [config, currentTime, audioState]);
+  }, []);
 
   return (
     <div className="w-full h-full flex items-center justify-center pointer-events-none overflow-hidden">

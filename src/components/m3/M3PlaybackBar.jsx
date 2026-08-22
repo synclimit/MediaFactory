@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Square, Rewind, FastForward, Volume2 } from 'lucide-react';
 import { emitRuntimeEvent } from '../../services/RuntimeClient';
 
+import { getApiUrl } from '../../utils/apiUrl';
+
 export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, setCurrentTimeSec, currentTrackIndex = 0, setCurrentTrackIndex, onAnalyserReady }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [internalTrackIndex, setInternalTrackIndex] = useState(0);
@@ -85,11 +87,7 @@ export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, 
     }
     const sp = trk.sourcePath || trk.path || trk.uri || trk.title || '';
     const cleanSp = sp.replace(/\\/g, '/');
-    const apiPath = `/api/m2/stream?uri=${encodeURIComponent(cleanSp)}`;
-    const activePort = typeof window !== 'undefined' ? (window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888)) : 18888;
-    const isHttp = typeof window !== 'undefined' && window.location.protocol.startsWith('http');
-    const baseUrl = isHttp ? '' : `http://127.0.0.1:${activePort}`;
-    return `${baseUrl}${apiPath}`;
+    return getApiUrl(`/api/m2/stream?uri=${encodeURIComponent(cleanSp)}`);
   };
 
   useEffect(() => {
@@ -236,10 +234,17 @@ export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, 
       source.connect(analyser);
       analyser.connect(ctx.destination);
       
+      analyser.getFrequencyData = function() {
+        if (!this._freqBuffer || this._freqBuffer.length !== this.frequencyBinCount) {
+          this._freqBuffer = new Uint8Array(this.frequencyBinCount);
+        }
+        this.getByteFrequencyData(this._freqBuffer);
+        return this._freqBuffer;
+      };
+
       audioCtxRef.current = ctx;
       analyserRef.current = analyser;
-
-
+      window.m3Analyser = analyser;
 
       if (onAnalyserReady) onAnalyserReady(analyser);
     } catch(e) {
@@ -255,11 +260,17 @@ export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, 
       if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
           audioCtxRef.current.resume();
       }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('m3_playback_change', { detail: { isPlaying: true } }));
+      }
       emitRuntimeEvent('Playlist.Play'); 
   };
   const onPreviewPause = () => { 
       window.m3IsPlaying = false;
       setIsPlaying(false); 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('m3_playback_change', { detail: { isPlaying: false } }));
+      }
       emitRuntimeEvent('Playlist.Pause'); 
   };
   const onPreviewStop = () => {
@@ -268,6 +279,9 @@ export default function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, 
     updateTrackIndex(0);
     setCurrentTimeSec(0);
     if (audioRef.current) audioRef.current.currentTime = 0;
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('m3_playback_change', { detail: { isPlaying: false } }));
+    }
     emitRuntimeEvent('Playlist.Stop');
   };
   const onPreviewNext = () => {

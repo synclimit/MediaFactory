@@ -68,7 +68,8 @@ export function renderCanvasKitPrimitives(CanvasKit, skCanvas, primitives = [], 
     paint.delete();
   }
 
-  if (global._currentFrameIndex === 100) {
+  const _g = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : {});
+  if (_g._currentFrameIndex === 100) {
     console.log('=== [RUNTIME DEBUG FRAME 100 - CANVASKIT RENDERER] ===');
     console.log('5. Primitives Input to CanvasKit:', primitives.length);
     console.log('6. CanvasKit Rendered Counts -> drawRect:', drawRectCount, '| drawPath:', drawPathCount, '| drawCircle:', drawCircleCount, '| drawArc:', drawArcCount);

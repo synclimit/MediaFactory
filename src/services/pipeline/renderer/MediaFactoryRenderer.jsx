@@ -7,6 +7,7 @@ import VisualizerRenderer from '../../../components/m3/widgets/VisualizerRendere
 import Visualizer2Renderer from '../../../components/m3/widgets/Visualizer2Renderer';
 import Visualizer3Renderer from '../../../components/m3/widgets/Visualizer3Renderer';
 import VisualizerV4Renderer from '../../../components/m3_v2/widgets/VisualizerV4Renderer';
+import VisualizerV5Renderer from '../../../components/m3_v2/widgets/VisualizerV5Renderer';
 import ParticleRenderer from '../../../components/m3/widgets/ParticleRenderer';
 import IntroSequenceRenderer from '../../../components/m3/widgets/IntroSequenceRenderer';
 import ProceduralSpeaker from '../../../components/m3/overlays/ProceduralSpeaker';
@@ -14,6 +15,7 @@ import { renderFrameStore } from '../runtime/RenderFrameStore';
 import { beatEngine } from '../../audio/BeatEngine';
 import { fastWorkspaceManager } from '../fastrender/workspace/FastWorkspaceManager.js';
 import { seededNoiseAdapter } from '../fastrender/core/SeededNoiseAdapter.js';
+import { DeterministicMotionEngine } from '../../audio/DeterministicMotionEngine.js';
 
 import { RenderContextAdapter } from '../../../engine/adapters/RenderContextAdapter.js';
 import { AudioStateAdapter } from '../../../engine/adapters/AudioStateAdapter.js';
@@ -25,11 +27,13 @@ export default function MediaFactoryRenderer({
     frame: propFrame, 
     renderContext: propRenderContext,
     renderMode = 'Preview', 
+    workspaceRenderMode,
     targetRef,
     onPointerDown,
     handleHandleDown,
     m3SelectedObjectId
 }) {
+    const isThumbnailMode = renderMode === 'thumbnail' || renderMode === 'Thumbnail';
     const [localFrame, setLocalFrame] = useState(() => renderFrameStore.getFrame());
 
     useEffect(() => {
@@ -54,8 +58,9 @@ export default function MediaFactoryRenderer({
 
     // Sprint 14 Official Preview Swap Driver Hook (Default: LEGACY_ACTIVE when useReferenceEngine = false)
     const driverResult = referencePreviewDriver.renderPreviewFrame(activeRenderContext, null);
-    if (!global._sprint14Logged) {
-        global._sprint14Logged = true;
+    const _g = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : {});
+    if (!_g._sprint14Logged) {
+        _g._sprint14Logged = true;
         console.log(`================================================================================`);
         console.log(`[Sprint 14 Official Preview Swap Driver] Driver Mode: ${driverResult.driverMode}`);
         console.log(`  -> Reference Engine Active = ${driverResult.isReferenceActive}`);
@@ -98,6 +103,12 @@ export default function MediaFactoryRenderer({
             {objects && objects.filter(el => el.name !== 'Intro Sequence' && el.name !== 'Outro Sequence').sort((a,b) => a.layer - b.layer).map(el => {
                 if (!el.visible && renderMode !== 'Export') return null;
                 if (!el.visible) return null;
+
+                const isThumbnailMode = renderMode === 'thumbnail' || renderMode === 'Thumbnail';
+                if (isThumbnailMode) {
+                    const isDynamicType = el.type === 'visualizer' || el.type === 'visualizer2' || el.type === 'visualizer3' || el.type === 'visualizer4' || el.type === 'visualizer5' || el.type === 'particle' || el.type === 'effect' || el.type === 'procedural-speaker' || el.mediaType === 'procedural';
+                    if (isDynamicType) return null;
+                }
                 
                 // Hide non-branding elements during Intro
                 if (isIntroPlaying) {
@@ -110,6 +121,7 @@ export default function MediaFactoryRenderer({
                 if (currentTime < start || currentTime > end) return null;
 
                 if (el.type === 'subtitle') {
+                    if (isThumbnailMode) return null;
                     return (
                         <div key={el.id} className="absolute inset-0 pointer-events-none z-40" style={{ left: '50%', top: '50%' }}>
                             <SubtitleRenderer config={el} id={el.id} />
@@ -125,89 +137,13 @@ export default function MediaFactoryRenderer({
 
                 // --- Audio Reactivity Math ---
                 let mScale = 0, mSwayX = 0, mSwayY = 0, mRotate = 0;
-                const isFastMode = fastWorkspaceManager.isFastWorkspaceActive();
-                if (el.beatZoom && el.type !== 'procedural-speaker' && el.mediaType !== 'procedural') {
+                if (!isThumbnailMode && (el.beatZoom || el.beatPump) && el.type !== 'procedural-speaker' && el.mediaType !== 'procedural') {
                     const b = beatEngine.getState() || { bass: 0, mid: 0, treble: 0, energy: 0 };
-                    let danceStyle = el.danceStyle || 'Calm Pulse';
-                    if (danceStyle === 'Subtle Sway') danceStyle = 'Calm Pulse';
-                    if (danceStyle === 'Pulse') danceStyle = 'Deep Kick';
-                    if (danceStyle === 'Heartbeat') danceStyle = 'Rhythmic Float';
-                    if (danceStyle === 'Shake') danceStyle = 'Adrenaline';
-                    
-                    const reactLevel = el.danceReactLevel !== undefined ? el.danceReactLevel : 45;
-                    const smoothing = el.danceSmoothing !== undefined ? el.danceSmoothing : 0.70;
-                    const intensity = (el.danceIntensity !== undefined ? el.danceIntensity : 100) / 100;
-                    const reactsTo = el.danceReactsTo || 'Bass (Low)';
-                    
-                    let rawVal = 0;
-                    if (isFastMode) {
-                        const loopTime = currentTime % 10.0;
-                        const seed = el.id ? String(el.id).charCodeAt(0) : 1337;
-                        rawVal = Math.abs(seededNoiseAdapter.getPeriodicNoise(loopTime, 10.0, 1.0, seed));
-                    } else {
-                        rawVal = reactsTo === 'Bass (Low)' ? b.bass :
-                                 reactsTo === 'Mid' ? b.mid :
-                                 reactsTo === 'Treble (High)' ? b.treble :
-                                 b.energy;
-                    }
-                    
-                    const power = (rawVal || 0) * (reactLevel / 50) * intensity;
-                    let cfg = { zoom: 0, swayX: 0, swayY: 0, rotate: 0, shake: 0 };
-                    
-                    if (danceStyle === 'Custom (Advanced)') {
-                        if (el.motionEnZoom !== false) cfg.zoom = el.motionValZoom !== undefined ? el.motionValZoom : 12;
-                        if (el.motionEnSwayX) cfg.swayX = el.motionValSwayX !== undefined ? el.motionValSwayX : 2.0;
-                        if (el.motionEnSwayY) cfg.swayY = el.motionValSwayY !== undefined ? el.motionValSwayY : 1.2;
-                        if (el.motionEnRotate) cfg.rotate = el.motionValRotate !== undefined ? el.motionValRotate : 1.5;
-                        if (el.motionEnShake) cfg.shake = el.motionValShake !== undefined ? el.motionValShake : 4;
-                    } else if (danceStyle === 'Deep Kick') {
-                        cfg.zoom = 10;
-                    } else if (danceStyle === 'Rhythmic Float') {
-                        cfg.swayX = 4; cfg.swayY = 3; cfg.rotate = 2; cfg.zoom = 1;
-                    } else if (danceStyle === 'Adrenaline') {
-                        cfg.swayX = 3; cfg.swayY = 3; cfg.rotate = 3; cfg.zoom = 8; cfg.shake = 6;
-                    } else {
-                        cfg.swayX = 2; cfg.swayY = 1; cfg.zoom = 2; cfg.rotate = 0.5;
-                    }
-                    
-                    const time = currentTime;
-                    // Amplify motion for overlays (since they use px instead of % like background)
-                    const zoomBoost = 3.0; // 3x stronger zoom for small elements
-                    const panBoost = 20.0; // 20x stronger pan (converts roughly 1 unit to 20px)
-                    
-                    const targetZoom = power * cfg.zoom * 0.01 * zoomBoost;
-                    const targetSwayX = Math.sin(time * 1.2) * cfg.swayX * power * panBoost;
-                    const targetSwayY = Math.cos(time * 0.9) * cfg.swayY * power * panBoost;
-                    const targetRotate = Math.sin(time * 0.8) * cfg.rotate * power * 2.0; // 2x stronger rotation
-                    const targetShakeX = (Math.sin(time * 3.1) * 0.5 + Math.cos(time * 2.3) * 0.5) * cfg.shake * power * panBoost;
-                    const targetShakeY = (Math.cos(time * 2.7) * 0.5 + Math.sin(time * 3.4) * 0.5) * cfg.shake * power * panBoost;
-                    
-                    if (!motionState.current[el.id]) motionState.current[el.id] = { zoom: 0, swayX: 0, swayY: 0, rotate: 0 };
-                    const state = motionState.current[el.id];
-                    const lerpFactor = 1.0 - (smoothing * 0.95);
-                    
-                    state.zoom += (targetZoom - state.zoom) * lerpFactor;
-                    state.swayX += (targetSwayX - state.swayX) * lerpFactor;
-                    state.swayY += (targetSwayY - state.swayY) * lerpFactor;
-                    state.rotate += (targetRotate - state.rotate) * lerpFactor;
-                    
-                    mScale = state.zoom;
-                    mSwayX = state.swayX + targetShakeX;
-                    mSwayY = state.swayY + targetShakeY;
-                    mRotate = state.rotate;
-                }
-                
-                if (el.beatPump && el.type !== 'procedural-speaker' && el.mediaType !== 'procedural') {
-                    let pumpVal = 0;
-                    if (isFastMode) {
-                        const loopTime = currentTime % 10.0;
-                        pumpVal = Math.abs(seededNoiseAdapter.getPeriodicNoise(loopTime, 10.0, 1.0, 1337));
-                    } else {
-                        const b = beatEngine.getState() || { bass: 0, kick: 0, beatStrength: 0 };
-                        pumpVal = (b.kick || 0) * 0.4 + (b.bass || 0) * 0.3 + (b.beatStrength || 0) * 0.15;
-                    }
-                    const intensity = el.pumpIntensity !== undefined ? el.pumpIntensity : 1.5;
-                    mScale += pumpVal * 0.04 * intensity;
+                    const objTf = DeterministicMotionEngine.calculateObjectTransform(currentTime, el, b);
+                    mScale = objTf.finalScale - (el.scale !== undefined ? el.scale : 1);
+                    mSwayX = objTf.swayX;
+                    mSwayY = objTf.swayY;
+                    mRotate = objTf.finalRotation - (el.rotation || 0);
                 }
 
                 const finalScale = (el.scale !== undefined ? el.scale : 1) + mScale;
@@ -335,7 +271,12 @@ export default function MediaFactoryRenderer({
                             )}
                             {el.type === 'visualizer4' && (
                                 <div className="w-full h-full">
-                                    <VisualizerV4Renderer object={el} currentTimeSec={currentTime} width={el.width} height={el.height} />
+                                    <VisualizerV4Renderer object={{ ...el, renderMode: (workspaceRenderMode ? workspaceRenderMode.toLowerCase() : (el.renderMode || 'normal')) }} currentTimeSec={currentTime} width={el.width} height={el.height} />
+                                </div>
+                            )}
+                            {el.type === 'visualizer5' && (
+                                <div className="w-full h-full">
+                                    <VisualizerV5Renderer object={{ ...el, renderMode: (workspaceRenderMode ? workspaceRenderMode.toLowerCase() : (el.renderMode || 'normal')) }} currentTimeSec={currentTime} width={el.width} height={el.height} />
                                 </div>
                             )}
                             {el.type === 'particle' && (

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Square, Rewind, FastForward, Volume2 } from 'lucide-react';
 import { emitRuntimeEvent } from '../../services/RuntimeClient';
+import { beatEngine } from '../../services/audio/BeatEngine';
+import { getApiUrl } from '../../utils/apiUrl';
 
 function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, setCurrentTimeSec, currentTrackIndex = 0, setCurrentTrackIndex, onAnalyserReady }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -85,11 +87,7 @@ function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, setCurrentTimeS
     }
     const sp = trk.sourcePath || trk.path || trk.uri || trk.title || '';
     const cleanSp = sp.replace(/\\/g, '/');
-    const apiPath = `/api/m2/stream?uri=${encodeURIComponent(cleanSp)}`;
-    const activePort = typeof window !== 'undefined' ? (window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888)) : 18888;
-    const isHttp = typeof window !== 'undefined' && window.location.protocol.startsWith('http');
-    const baseUrl = isHttp ? '' : `http://127.0.0.1:${activePort}`;
-    return `${baseUrl}${apiPath}`;
+    return getApiUrl(`/api/m2/stream?uri=${encodeURIComponent(cleanSp)}`);
   };
 
   useEffect(() => {
@@ -236,15 +234,22 @@ function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, setCurrentTimeS
       source.connect(analyser);
       analyser.connect(ctx.destination);
       
+      analyser.getFrequencyData = function() {
+        if (!this._freqBuffer || this._freqBuffer.length !== this.frequencyBinCount) {
+          this._freqBuffer = new Uint8Array(this.frequencyBinCount);
+        }
+        this.getByteFrequencyData(this._freqBuffer);
+        return this._freqBuffer;
+      };
+
       audioCtxRef.current = ctx;
       analyserRef.current = analyser;
-
-
+      window.m3Analyser = analyser;
+      try { beatEngine.setSource(analyser); } catch(e) {}
 
       if (onAnalyserReady) onAnalyserReady(analyser);
     } catch(e) {
       console.error("AudioContext init failed:", e);
-
     }
   };
 
@@ -254,6 +259,9 @@ function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, setCurrentTimeS
       initAudioContext();
       if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
           audioCtxRef.current.resume();
+      }
+      if (analyserRef.current || window.m3Analyser) {
+          try { beatEngine.setSource(analyserRef.current || window.m3Analyser); } catch(e) {}
       }
       emitRuntimeEvent('Playlist.Play'); 
   };
@@ -377,3 +385,5 @@ function M3PlaybackBar({ m3AudioTracks = [], currentTimeSec = 0, setCurrentTimeS
     </div>
   );
 }
+
+export default M3PlaybackBar;

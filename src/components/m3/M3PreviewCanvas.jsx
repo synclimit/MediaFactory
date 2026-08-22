@@ -108,7 +108,7 @@ const CanvasKitPreviewAdapter = ({
   );
 };
 
-export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3CurrentTrackIndex = 0, m3Objects, setM3Objects, m3SelectedObjectId, setM3SelectedObjectId, canvasMode = 'composer', m3CurrentTimeSec = 0, m3TotalDurationSec = 1, setM3CurrentTimeSec, m3EstRenderTimeSec, m3EstStorageMb, analyser, children }) {
+export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3CurrentTrackIndex = 0, m3Objects, setM3Objects, m3SelectedObjectId, setM3SelectedObjectId, canvasMode = 'composer', m3CurrentTimeSec = 0, m3TotalDurationSec = 1, setM3CurrentTimeSec, m3EstRenderTimeSec, m3EstStorageMb, analyser, renderMode = 'FAST', children }) {
   const containerRef = useRef(null);
   const effectTargetRef = useRef(null);
   const [canvasStyle, setCanvasStyle] = useState({ width: 800, height: 450 });
@@ -713,6 +713,7 @@ export default function M3PreviewCanvas({ m3BgPool, m3AudioTracks = [], m3Curren
           {/* Unified Render Pipeline */}
           <MediaFactoryRenderer 
               renderMode={canvasMode} 
+              workspaceRenderMode={renderMode}
               targetRef={effectTargetRef}
               onPointerDown={handlePointerDown}
               handleHandleDown={handleHandleDown}

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Play, Pause, SkipBack, SkipForward, Upload, Eye, Activity, CheckCircle, Cpu, Film, Table, Download, Music, ShieldCheck } from 'lucide-react';
 import { VisualizerV4Core } from '../../visualizers/v4/VisualizerV4Core';
 import { VisualizerV4Audio } from '../../visualizers/v4/VisualizerV4Audio';
+import { getApiUrl } from '../../utils/apiUrl';
 
 export default function M3ParityDebuggerModal({
   isOpen,
@@ -154,7 +155,7 @@ export default function M3ParityDebuggerModal({
   const fetchBackendTelemetry = async () => {
     try {
       setLogStatus('Memuat data backend...');
-      const res = await fetch('http://localhost:18888/api/v1/m3/latest-telemetry');
+      const res = await fetch(getApiUrl('/api/v1/m3/latest-telemetry'));
       const data = await res.json();
       if (data.success && data.telemetry) {
         setBackendLogs(data.telemetry);

@@ -6,6 +6,7 @@ import VisualizerRenderer from '../widgets/VisualizerRenderer.jsx';
 import Visualizer2Renderer from '../widgets/Visualizer2Renderer.jsx';
 import Visualizer3Renderer from '../widgets/Visualizer3Renderer.jsx';
 import VisualizerV4Renderer from '../../m3_v2/widgets/VisualizerV4Renderer.jsx';
+import VisualizerV5Renderer from '../widgets/VisualizerV5Renderer.jsx';
 import ChromaKeyImage from '../widgets/ChromaKeyImage';
 import ChromaKeyVideo from '../widgets/ChromaKeyVideo';
 import ProceduralSpeaker from '../overlays/ProceduralSpeaker';
@@ -383,7 +384,8 @@ const CanvasObjectNode = React.memo(({
             {el.type === 'visualizer' && <VisualizerRenderer config={el} currentTime={currentTime} audioState={frame?.states?.audioState} />}
             {el.type === 'visualizer2' && <Visualizer2Renderer config={el} id={el.id} currentTime={currentTime} audioState={frame?.states?.audioState} />}
             {el.type === 'visualizer3' && <Visualizer3Renderer config={el} id={el.id} currentTime={currentTime} audioState={frame?.states?.audioState} />}
-            {el.type === 'visualizer4' && <VisualizerV4Renderer object={el} currentTimeSec={currentTime} width={el.width} height={el.height} />}
+            {el.type === 'visualizer4' && <VisualizerV4Renderer object={{ ...el, renderMode: (typeof window !== 'undefined' && window.m3RenderMode === 'fast' ? 'fast' : (el.renderMode || 'normal')) }} currentTimeSec={currentTime} width={el.width} height={el.height} />}
+            {el.type === 'visualizer5' && <VisualizerV5Renderer object={{ ...el, renderMode: (typeof window !== 'undefined' && window.m3RenderMode === 'fast' ? 'fast' : (el.renderMode || 'normal')) }} currentTimeSec={currentTime} width={el.width} height={el.height} />}
             {el.type === 'playlist' && <PlaylistRenderer config={el} id={el.id} frame={frame} />}
             {(el.type === 'procedural-speaker' || el.mediaType === 'procedural') && (
                 <div className="w-full h-full relative" style={{ mixBlendMode: el.blend === 'Normal' ? 'normal' : el.blend?.toLowerCase() }}>

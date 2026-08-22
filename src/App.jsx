@@ -37,6 +37,7 @@ import html2canvas from 'html2canvas';
 import M4StudioPanel from './components/m4/M4StudioPanel.jsx';
 import M5StudioPanel from './components/m5/M5StudioPanel.jsx';
 import M6StudioPanel from './components/m6/M6StudioPanel.jsx';
+import M7StudioPanel from './components/m7/M7StudioPanel.jsx';
 import M1Background from './components/m1/M1Background.jsx';
 import M1HardwareFrame from './components/m1/M1HardwareFrame.jsx';
 import Splash from './components/startup/Splash.jsx';
@@ -2762,10 +2763,10 @@ export default function App() {
         {/* CENTER: Navigation Tabs (Trapezoid) */}
         <div className="flex-1 flex justify-center -mb-[7px] z-30">
           <div className="flex items-end gap-1">
-            {['Mode 1', 'Mode 2', 'Mode 3', 'Mode 4', 'Mode 5', 'Mode 6'].map((mode) => {
+            {['Mode 1', 'Mode 2', 'Mode 3', 'Mode 4', 'Mode 5', 'Mode 6', 'Mode 7'].map((mode) => {
               const isActive = activeMode === mode;
               const modeId = mode.replace('Mode ', 'M');
-              const modeTitle = mode === 'Mode 1' ? 'BATCH' : mode === 'Mode 2' ? 'COMPILER' : mode === 'Mode 3' ? 'PLAYLIST' : mode === 'Mode 4' ? 'AMBIENT' : mode === 'Mode 5' ? 'CREATE' : 'COLLECT';
+              const modeTitle = mode === 'Mode 1' ? 'BATCH' : mode === 'Mode 2' ? 'COMPILER' : mode === 'Mode 3' ? 'PLAYLIST' : mode === 'Mode 4' ? 'AMBIENT' : mode === 'Mode 5' ? 'CREATE' : mode === 'Mode 6' ? 'COLLECT' : 'ASTROFOX';
               return (
                 <button
                   key={mode}
@@ -3038,6 +3039,10 @@ export default function App() {
 
           {activeMode === 'Mode 6' && (
             <M6StudioPanel m5Queue={m5Queue} setM5Queue={setM5Queue} />
+          )}
+
+          {activeMode === 'Mode 7' && (
+            <M7StudioPanel addNotification={addNotification} />
           )}
 
           {/* END MODES CONTENT */}

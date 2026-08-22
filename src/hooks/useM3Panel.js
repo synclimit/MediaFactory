@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getApiUrl } from '../utils/apiUrl';
 
 /**
  * Generic React Hook for MediaFactory Panels
@@ -22,9 +23,7 @@ export function useM3Panel(panelName, baseRoute = '/api/v1/m3') {
         _settingsHash: null
     });
 
-    const activePort = typeof window !== 'undefined' ? (window.SERVER_PORT || (window.location.port ? parseInt(window.location.port, 10) : 18888)) : 18888;
-    const apiHost = typeof window !== 'undefined' && window.location.origin.startsWith('http') ? '' : `http://127.0.0.1:${activePort}`;
-    const endpoint = `${apiHost}${baseRoute}/${panelName.toLowerCase()}`;
+    const endpoint = getApiUrl(`${baseRoute}/${panelName.toLowerCase()}`);
 
     const updateState = (updates) => {
         setState(prev => ({ ...prev, ...updates }));
