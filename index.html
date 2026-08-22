@@ -8,9 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto+Mono:wght@400;500;700&family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Pacifico&family=Playball&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="root"></div>
     <script>
       window.addEventListener('error', function(event) {
         var errorDiv = document.createElement('div');
@@ -24,7 +21,7 @@
         errorDiv.style.zIndex = '999999';
         errorDiv.style.fontFamily = 'monospace';
         errorDiv.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;"><h2 style="margin:0;font-size:16px;">CRITICAL ERROR</h2><button onclick="this.parentElement.parentElement.remove()" style="background:#fff;color:#000;border:none;padding:4px 12px;cursor:pointer;border-radius:4px;font-weight:bold;">Tutup X</button></div><p style="margin:8px 0 0 0;">' + event.message + '</p><pre style="max-height:100px;overflow:auto;margin:8px 0 0 0;">' + (event.error ? event.error.stack : '') + '</pre>';
-        document.body.appendChild(errorDiv);
+        document.body ? document.body.appendChild(errorDiv) : window.addEventListener('DOMContentLoaded', () => document.body.appendChild(errorDiv));
       });
       window.addEventListener('unhandledrejection', function(event) {
         if (!event || !event.reason || (typeof event.reason === 'object' && (event.reason.name === 'UnknownError' || event.reason.name === 'NotAllowedError' || event.reason.message === 'Internal error.'))) {
@@ -41,9 +38,12 @@
         errorDiv.style.zIndex = '999999';
         errorDiv.style.fontFamily = 'monospace';
         errorDiv.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;"><h2 style="margin:0;font-size:16px;">UNHANDLED PROMISE REJECTION</h2><button onclick="this.parentElement.parentElement.remove()" style="background:#fff;color:#000;border:none;padding:4px 12px;cursor:pointer;border-radius:4px;font-weight:bold;">Close X</button></div><p style="margin:8px 0 0 0;">' + (event.reason ? (event.reason.message || event.reason) : 'Unknown') + '</p>';
-        document.body.appendChild(errorDiv);
+        document.body ? document.body.appendChild(errorDiv) : window.addEventListener('DOMContentLoaded', () => document.body.appendChild(errorDiv));
       });
     </script>
+  </head>
+  <body>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

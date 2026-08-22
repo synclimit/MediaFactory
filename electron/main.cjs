@@ -80,18 +80,6 @@ async function createWindow() {
         }
     });
 
-    ipcMain.on('get-server-port-sync', (event) => {
-        event.returnValue = currentServerPort || 18888;
-    });
-
-    ipcMain.handle('show-save-dialog', async (event, options) => {
-        return await dialog.showSaveDialog(mainWindow, options || {});
-    });
-
-    ipcMain.handle('show-open-dialog', async (event, options) => {
-        return await dialog.showOpenDialog(mainWindow, options || {});
-    });
-
     mainWindow.setMenuBarVisibility(false);
 
     // Inject bound server port into window object when webContents starts and finishes loading
@@ -102,6 +90,13 @@ async function createWindow() {
     mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
         if (level >= 2) {
             console.error(`[Renderer Console Error] ${message} (${sourceId}:${line})`);
+        }
+    });
+
+    // Enable DevTools shortcut (F12 or Ctrl+Shift+I) for debugging
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+            mainWindow.webContents.toggleDevTools();
         }
     });
 
@@ -118,11 +113,22 @@ async function createWindow() {
     if (!mainWindow || mainWindow.isDestroyed()) return;
 
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
+    const targetUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
+
     if (isViteRunning) {
         const viteUrl = `http://127.0.0.1:5173?serverPort=${serverPort}`;
         console.log('[Electron] Loading UI via active Vite Dev Server:', viteUrl);
         mainWindow.loadURL(viteUrl).catch((err) => {
-            console.error('[Electron] loadURL error:', err);
+            console.error('[Electron] Vite loadURL error, falling back to backend server:', err);
+            mainWindow.loadURL(targetUrl).catch((e2) => console.error('[Electron] Backend loadURL error:', e2));
+        });
+    } else if (serverPort && backendServer) {
+        console.log('[Electron] Loading UI via local HTTP backend server:', targetUrl);
+        mainWindow.loadURL(targetUrl).catch((err) => {
+            console.error('[Electron] HTTP loadURL error, falling back to local file:', err);
+            if (fs.existsSync(indexPath)) {
+                mainWindow.loadFile(indexPath, { query: { serverPort: String(serverPort) } }).catch((e2) => console.error('[Electron] loadFile error:', e2));
+            }
         });
     } else if (fs.existsSync(indexPath)) {
         console.log('[Electron] Loading UI via local build file:', indexPath);
@@ -130,8 +136,7 @@ async function createWindow() {
             console.error('[Electron] loadFile error:', err);
         });
     } else {
-        const targetUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
-        console.log('[Electron] Loading UI via backend server URL:', targetUrl);
+        console.log('[Electron] Fallback: Loading UI via default backend URL:', targetUrl);
         mainWindow.loadURL(targetUrl).catch((err) => {
             console.error('[Electron] loadURL error:', err);
         });
@@ -528,6 +533,7 @@ function installUpdateUnified() {
     }
 }
 
+try { ipcMain.removeHandler('show-open-dialog'); } catch(e) {}
 ipcMain.handle('show-open-dialog', async (event, options) => {
     const { dialog, BrowserWindow } = require('electron');
     const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
@@ -543,12 +549,32 @@ ipcMain.handle('show-open-dialog', async (event, options) => {
     }
 });
 
+try { ipcMain.removeHandler('show-save-dialog'); } catch(e) {}
+ipcMain.handle('show-save-dialog', async (event, options) => {
+    const { dialog, BrowserWindow } = require('electron');
+    const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    try {
+        return await dialog.showSaveDialog(win, options || {});
+    } catch(e) {
+        console.error('[Electron] showSaveDialog error:', e);
+        return { canceled: true };
+    }
+});
+
+try { ipcMain.removeHandler('get-server-port'); } catch(e) {}
 ipcMain.handle('get-server-port', () => currentServerPort);
+
+ipcMain.removeAllListeners('get-server-port-sync');
 ipcMain.on('get-server-port-sync', (event) => {
     event.returnValue = currentServerPort;
 });
 
+ipcMain.removeAllListeners('check-for-updates');
 ipcMain.on('check-for-updates', checkUpdatesUnified);
+
+ipcMain.removeAllListeners('download-update');
 ipcMain.on('download-update', downloadUpdateUnified);
+
+ipcMain.removeAllListeners('install-update');
 ipcMain.on('install-update', installUpdateUnified);
 
