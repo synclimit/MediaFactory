@@ -1,0 +1,44 @@
+{
+  "matrix1": {
+    "totalPixels": 921600,
+    "pixelDiffCount": 0,
+    "pixelDiffPercentage": "0.0000%",
+    "ssim": 1,
+    "psnr": "Infinity dB",
+    "avgRGBDelta": "0.0000",
+    "maxDelta": 0,
+    "firstMismatchCoord": null,
+    "sha256A": "0f908e501e2dd8cfbacd4ceb34c7f8c21ba5a828baf297b2aee457b1202797e3",
+    "sha256B": "0f908e501e2dd8cfbacd4ceb34c7f8c21ba5a828baf297b2aee457b1202797e3"
+  },
+  "matrix2": {
+    "totalPixels": 921600,
+    "pixelDiffCount": 920634,
+    "pixelDiffPercentage": "99.8952%",
+    "ssim": 0.0010481770833333792,
+    "psnr": "46.93 dB",
+    "avgRGBDelta": "1.3178",
+    "maxDelta": 159,
+    "firstMismatchCoord": {
+      "x": 0,
+      "y": 0,
+      "colorA": "rgba(5,5,5,255)",
+      "colorB": "rgba(4,4,4,255)"
+    }
+  },
+  "matrix3": {
+    "totalPixels": 921600,
+    "pixelDiffCount": 920634,
+    "pixelDiffPercentage": "99.8952%",
+    "ssim": 0.0010481770833333792,
+    "psnr": "46.93 dB",
+    "avgRGBDelta": "1.3178",
+    "maxDelta": 159,
+    "firstMismatchCoord": {
+      "x": 0,
+      "y": 0,
+      "colorA": "rgba(5,5,5,255)",
+      "colorB": "rgba(4,4,4,255)"
+    }
+  }
+}

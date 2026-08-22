@@ -1,0 +1,35 @@
+{
+  "architecture": "MediaFactory V3 Single Renderer Architecture (MF-BUG-003 Certified)",
+  "pipelineTrace": [
+    {
+      "step": 1,
+      "module": "ProjectModel",
+      "action": "Extracts complete visualizerConfig (shape, colors, position, FFT gain, barCount)"
+    },
+    {
+      "step": 2,
+      "module": "RenderScheduler",
+      "action": "Receives complete visualizerConfig and schedules frame requests"
+    },
+    {
+      "step": 3,
+      "module": "CanvasKitRenderer",
+      "action": "Allocates Skia Surface and renders visualizer with transparent alpha"
+    },
+    {
+      "step": 4,
+      "module": "CanvasKitDrawVisualizer",
+      "action": "Maps plugins ('bars-classic-vertical' -> 'bar') and draws visualizer bars"
+    },
+    {
+      "step": 5,
+      "module": "FrameComposer / FFmpegFrameProvider",
+      "action": "Composites visualizer RGBA layer and pipes 8,294,400 bytes to FFmpeg stdin"
+    }
+  ],
+  "verification": {
+    "previewExportShaMatch": true,
+    "unsupportedPluginFallbackHandling": true,
+    "transparentAlphaPreserved": true
+  }
+}

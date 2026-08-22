@@ -1,0 +1,96 @@
+[
+  {
+    "stage": "STAGE_2_SCHEDULER_REQUEST",
+    "options": {
+      "fps": 30,
+      "frameCount": 300,
+      "width": 1920,
+      "height": 1080,
+      "visualizerConfig": {
+        "visualizerId": "bars-classic-vertical",
+        "shape": "bar",
+        "style": "Vertical",
+        "geometry": {
+          "shape": "bar",
+          "thickness": 4,
+          "spacing": 2,
+          "center": true,
+          "mirror": false,
+          "radius": 100
+        },
+        "colors": [
+          "#AB55F7",
+          "#F59E0B"
+        ],
+        "gradients": [
+          "#AB55F7",
+          "#F59E0B"
+        ],
+        "fftGain": 100,
+        "barCount": 256,
+        "thickness": 4,
+        "spacing": 2,
+        "mirror": false,
+        "center": true,
+        "opacity": 100,
+        "transform": {
+          "x": 0,
+          "y": 0,
+          "scale": 1,
+          "rotation": 0
+        },
+        "blendMode": "normal",
+        "position": {
+          "x": 960,
+          "y": 540
+        },
+        "size": {
+          "width": 1920,
+          "height": 1080
+        },
+        "colorLeft": "#AB55F7",
+        "colorRight": "#F59E0B",
+        "id": "track_1",
+        "name": "Audio Visualizer Track",
+        "type": "visualizer",
+        "enabled": true,
+        "locked": false,
+        "clips": []
+      }
+    },
+    "paramsPassed": {
+      "visualizerConfigPassed": true,
+      "fftDataPassed": false,
+      "layerListIncluded": false
+    }
+  },
+  {
+    "stage": "STAGE_7_DIVERGENCE_ANALYSIS",
+    "analysis": {
+      "previewPipeline": "M3PreviewCanvas.jsx -> MediaFactoryRenderer.jsx -> VisualizerRenderer.jsx (React DOM component rendering via WebGL/Canvas2D in browser DOM)",
+      "exportPipeline": "FFmpegFrameProvider.js -> RenderScheduler.js -> CanvasKitRenderer.js (WASM Skia standalone rasterizer)",
+      "divergencePoints": [
+        {
+          "id": "DIVERGENCE_1_DOM_DEPENDENCY",
+          "issue": "Preview relies on React DOM component <VisualizerRenderer /> to mount browser Canvas2D/WebGL plugins. In offline/headless export (FFmpeg), React DOM components are NOT rendered.",
+          "impact": "The visualizer React DOM element is never captured during export."
+        },
+        {
+          "id": "DIVERGENCE_2_STANDALONE_CANVASKIT_ISOLATION",
+          "issue": "FFmpegFrameProvider and RenderScheduler invoke CanvasKitRenderer.renderFrame() as a standalone function with empty visualizerConfig {}. It does NOT composite background/foreground layers from ProjectModel or RenderPipeline.",
+          "impact": "CanvasKitRenderer generates a standalone visualizer image on a solid dark #111216 background, completely disconnected from the multi-layer composition pipeline."
+        },
+        {
+          "id": "DIVERGENCE_3_SHAPE_SUPPORT_GAP",
+          "issue": "CanvasKitDrawVisualizer.js ONLY implements shape === 'bar'. If a project specifies any other visualizer shape (e.g. 'circle', 'wave', 'line', or plugin ID 'bars-classic-vertical'), CanvasKitDrawVisualizer silently skips rendering.",
+          "impact": "CanvasKitDrawVisualizer produces 0 bars for all non-bar shapes."
+        },
+        {
+          "id": "DIVERGENCE_4_UNPASSED_TIMELINE_AND_FFT_STATE",
+          "issue": "RenderScheduler.requestFrame() takes only (targetFrameIndex, overrideOptions). It does NOT receive or pass ProjectModel scene objects, layer lists, enabled flags, or real audio FFT data.",
+          "impact": "Renderer has no awareness of timeline layers or real audio spectrum."
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "title": "normal_mode_output.mp4",
+  "playlist": [
+    {
+      "title": "Cosmic Journey",
+      "duration": 3,
+      "uri": "D:\\MediaFactory\\experiments\\artifacts\\parity_test\\test_song.wav"
+    }
+  ],
+  "duration": 3,
+  "thumbnail": "",
+  "background": "",
+  "renderProfile": "Standard",
+  "timestamps": [
+    "00:00 Cosmic Journey"
+  ]
+}

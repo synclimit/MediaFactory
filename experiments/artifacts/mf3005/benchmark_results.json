@@ -1,0 +1,34 @@
+{
+  "benchmarkConfig": {
+    "resolution": "1920x1080",
+    "totalFrames": 1000,
+    "pixelFormat": "RGBA32",
+    "framebufferSizeBytes": 8294400
+  },
+  "performanceMetrics": {
+    "initDurationMs": 42,
+    "totalBenchmarkDurationMs": 58231,
+    "avgRenderTimeMs": 58.2,
+    "medianRenderTimeMs": 55,
+    "minRenderTimeMs": 46,
+    "maxRenderTimeMs": 155,
+    "p95RenderTimeMs": 79,
+    "p99RenderTimeMs": 114,
+    "avgFps": 17.18
+  },
+  "memoryMetrics": {
+    "initialHeapMB": 7.14,
+    "finalHeapMB": 6.66,
+    "heapDeltaMB": -0.49,
+    "initialRssMB": 64.65,
+    "finalRssMB": 101.43,
+    "rssDeltaMB": 36.78,
+    "peakHeapMB": 9.23,
+    "peakRssMB": 166.88
+  },
+  "determinismVerification": {
+    "frameIndexTested": 500,
+    "sha256": "788ae0147bdf979a6575938ca2d7d4403788588f7be2010f03776c968fd1ab49",
+    "isDeterministic": true
+  }
+}

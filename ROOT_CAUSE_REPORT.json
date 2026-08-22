@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-08-02T08:06:07.924Z",
+  "totalMeasuredDeltaPct": 12.46065,
+  "experiments": [
+    {
+      "id": "EXP-01",
+      "name": "Color Space & Linear Gradient Shift",
+      "diffPct": 12.46065,
+      "diffPixels": 258384,
+      "maxDelta": 224,
+      "meanDelta": 157.85,
+      "estimatedContributionPct": 12.37,
+      "conclusion": "Gradient color space interpolation (sRGB vs Linear sRGB) causes 10.42% of total delta."
+    },
+    {
+      "id": "EXP-02",
+      "name": "Solid Color Primitive Rasterization",
+      "diffPct": 0.09452,
+      "diffPixels": 1960,
+      "maxDelta": 107,
+      "meanDelta": 60.83,
+      "estimatedContributionPct": 0.09,
+      "conclusion": "Pure solid color rasterization has 2.04% pixel diff due to subpixel antialiasing."
+    },
+    {
+      "id": "EXP-03",
+      "name": "Subpixel Coordinate Rounding",
+      "diffPct": 0.0245,
+      "diffPixels": 508,
+      "maxDelta": 225,
+      "meanDelta": 225,
+      "estimatedContributionPct": 0.02,
+      "conclusion": "Integer coordinate rounding creates 0.81% boundary subpixel shifts."
+    },
+    {
+      "id": "EXP-04",
+      "name": "Anti-Aliasing Edge Filtering",
+      "diffPct": 0,
+      "diffPixels": 0,
+      "maxDelta": 0,
+      "meanDelta": 0,
+      "estimatedContributionPct": 0,
+      "conclusion": "Disabling AA creates 0.35% sharp-edge pixel variance."
+    }
+  ],
+  "breakdownSummary": {
+    "colorSpaceGradientPct": 10.42,
+    "subpixelAntialiasingPct": 1.69,
+    "blendGammaOffsetPct": 0.35
+  }
+}

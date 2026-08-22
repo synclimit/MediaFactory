@@ -1,0 +1,10 @@
+{
+  "exportSessionId": "EXPORT_SESSION_SPRINT26",
+  "videoCodec": "H.264 (libx264)",
+  "pixelFormat": "yuv420p",
+  "resolution": "1920x1080",
+  "fps": 60,
+  "totalFramesPiped": 5,
+  "engineArchitecture": "ReferenceRenderPipeline -> CoreEngine -> CanvasKit2DAdapter -> CanvasKit WASM",
+  "status": "MP4_EXPORT_SUCCESS"
+}

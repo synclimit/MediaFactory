@@ -25,7 +25,20 @@
       }
     }
   ],
-  "m3AudioTracks": [],
+  "m3AudioTracks": [
+    {
+      "id": "trk-1786929848113-0",
+      "title": "vasilyatsevich-brain-implant-cyberpunk-sci-fi-trailer-action-intro-330416",
+      "artist": "Audio File",
+      "duration": "00:48",
+      "durationSec": 48.64,
+      "size": 1556480,
+      "thumbnail": "",
+      "sourceType": "file",
+      "sourcePath": "vasilyatsevich-brain-implant-cyberpunk-sci-fi-trailer-action-intro-330416.mp3",
+      "blobUrl": "blob:file:///00cd75cc-a690-4759-a570-cda85e993263"
+    }
+  ],
   "m3Objects": [
     {
       "id": "bg-1",

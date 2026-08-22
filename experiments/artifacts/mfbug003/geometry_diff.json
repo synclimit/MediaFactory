@@ -1,0 +1,1538 @@
+[
+  {
+    "barIndex": 0,
+    "preview": {
+      "x": 0,
+      "y": 856,
+      "width": 26,
+      "height": 184,
+      "color": "#f59e0b"
+    },
+    "export": {
+      "x": 0,
+      "y": 928,
+      "width": 26,
+      "height": 152,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 0,
+      "dy": 72,
+      "dw": 0,
+      "dh": 32,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 1,
+    "preview": {
+      "x": 30,
+      "y": 867,
+      "width": 26,
+      "height": 173,
+      "color": "#f474ea"
+    },
+    "export": {
+      "x": 30,
+      "y": 938,
+      "width": 26,
+      "height": 142,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 0,
+      "dy": 71,
+      "dw": 0,
+      "dh": 31,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 2,
+    "preview": {
+      "x": 60,
+      "y": 880,
+      "width": 26,
+      "height": 160,
+      "color": "#f34bca"
+    },
+    "export": {
+      "x": 60,
+      "y": 948,
+      "width": 26,
+      "height": 132,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 0,
+      "dy": 68,
+      "dw": 0,
+      "dh": 28,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 3,
+    "preview": {
+      "x": 90,
+      "y": 895,
+      "width": 26,
+      "height": 145,
+      "color": "#f222aa"
+    },
+    "export": {
+      "x": 90,
+      "y": 960,
+      "width": 26,
+      "height": 120,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 0,
+      "dy": 65,
+      "dw": 0,
+      "dh": 25,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 4,
+    "preview": {
+      "x": 120,
+      "y": 911,
+      "width": 26,
+      "height": 129,
+      "color": "#f0f989"
+    },
+    "export": {
+      "x": 120,
+      "y": 973,
+      "width": 26,
+      "height": 107,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 0,
+      "dy": 62,
+      "dw": 0,
+      "dh": 22,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 5,
+    "preview": {
+      "x": 150,
+      "y": 928,
+      "width": 26,
+      "height": 112,
+      "color": "#efd069"
+    },
+    "export": {
+      "x": 150,
+      "y": 988,
+      "width": 26,
+      "height": 92,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 0,
+      "dy": 60,
+      "dw": 0,
+      "dh": 20,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 6,
+    "preview": {
+      "x": 180,
+      "y": 946,
+      "width": 26,
+      "height": 94,
+      "color": "#eea749"
+    },
+    "export": {
+      "x": 180,
+      "y": 1003,
+      "width": 26,
+      "height": 77,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 0,
+      "dy": 57,
+      "dw": 0,
+      "dh": 17,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 7,
+    "preview": {
+      "x": 210,
+      "y": 965,
+      "width": 26,
+      "height": 75,
+      "color": "#ed7e28"
+    },
+    "export": {
+      "x": 210,
+      "y": 1018,
+      "width": 26,
+      "height": 62,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 0,
+      "dy": 53,
+      "dw": 0,
+      "dh": 13,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 8,
+    "preview": {
+      "x": 241,
+      "y": 985,
+      "width": 26,
+      "height": 55,
+      "color": "#ec5508"
+    },
+    "export": {
+      "x": 240,
+      "y": 1035,
+      "width": 26,
+      "height": 45,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 50,
+      "dw": 0,
+      "dh": 10,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 9,
+    "preview": {
+      "x": 271,
+      "y": 1005,
+      "width": 26,
+      "height": 35,
+      "color": "#eb2be8"
+    },
+    "export": {
+      "x": 270,
+      "y": 1051,
+      "width": 26,
+      "height": 29,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 46,
+      "dw": 0,
+      "dh": 6,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 10,
+    "preview": {
+      "x": 301,
+      "y": 1026,
+      "width": 26,
+      "height": 14,
+      "color": "#ea02c7"
+    },
+    "export": {
+      "x": 300,
+      "y": 1069,
+      "width": 26,
+      "height": 11,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 43,
+      "dw": 0,
+      "dh": 3,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 11,
+    "preview": {
+      "x": 331,
+      "y": 1033,
+      "width": 26,
+      "height": 7,
+      "color": "#e8d9a7"
+    },
+    "export": {
+      "x": 330,
+      "y": 1074,
+      "width": 26,
+      "height": 6,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 41,
+      "dw": 0,
+      "dh": 1,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 12,
+    "preview": {
+      "x": 361,
+      "y": 1012,
+      "width": 26,
+      "height": 28,
+      "color": "#e7b087"
+    },
+    "export": {
+      "x": 360,
+      "y": 1057,
+      "width": 26,
+      "height": 23,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 45,
+      "dw": 0,
+      "dh": 5,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 13,
+    "preview": {
+      "x": 391,
+      "y": 992,
+      "width": 26,
+      "height": 48,
+      "color": "#e68766"
+    },
+    "export": {
+      "x": 390,
+      "y": 1040,
+      "width": 26,
+      "height": 40,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 48,
+      "dw": 0,
+      "dh": 8,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 14,
+    "preview": {
+      "x": 421,
+      "y": 972,
+      "width": 26,
+      "height": 68,
+      "color": "#e55e46"
+    },
+    "export": {
+      "x": 420,
+      "y": 1024,
+      "width": 26,
+      "height": 56,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 52,
+      "dw": 0,
+      "dh": 12,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 15,
+    "preview": {
+      "x": 451,
+      "y": 952,
+      "width": 26,
+      "height": 88,
+      "color": "#e43526"
+    },
+    "export": {
+      "x": 450,
+      "y": 1008,
+      "width": 26,
+      "height": 72,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 56,
+      "dw": 0,
+      "dh": 16,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 16,
+    "preview": {
+      "x": 481,
+      "y": 934,
+      "width": 26,
+      "height": 106,
+      "color": "#e30c06"
+    },
+    "export": {
+      "x": 480,
+      "y": 992,
+      "width": 26,
+      "height": 88,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 58,
+      "dw": 0,
+      "dh": 18,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 17,
+    "preview": {
+      "x": 511,
+      "y": 916,
+      "width": 26,
+      "height": 124,
+      "color": "#e1e2e5"
+    },
+    "export": {
+      "x": 510,
+      "y": 978,
+      "width": 26,
+      "height": 102,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 62,
+      "dw": 0,
+      "dh": 22,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 18,
+    "preview": {
+      "x": 541,
+      "y": 900,
+      "width": 26,
+      "height": 140,
+      "color": "#e0b9c5"
+    },
+    "export": {
+      "x": 540,
+      "y": 965,
+      "width": 26,
+      "height": 115,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 65,
+      "dw": 0,
+      "dh": 25,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 19,
+    "preview": {
+      "x": 571,
+      "y": 885,
+      "width": 26,
+      "height": 155,
+      "color": "#df90a5"
+    },
+    "export": {
+      "x": 570,
+      "y": 952,
+      "width": 26,
+      "height": 128,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 67,
+      "dw": 0,
+      "dh": 27,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 20,
+    "preview": {
+      "x": 601,
+      "y": 871,
+      "width": 26,
+      "height": 169,
+      "color": "#de6784"
+    },
+    "export": {
+      "x": 600,
+      "y": 941,
+      "width": 26,
+      "height": 139,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 70,
+      "dw": 0,
+      "dh": 30,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 21,
+    "preview": {
+      "x": 631,
+      "y": 860,
+      "width": 26,
+      "height": 180,
+      "color": "#dd3e64"
+    },
+    "export": {
+      "x": 630,
+      "y": 931,
+      "width": 26,
+      "height": 149,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 71,
+      "dw": 0,
+      "dh": 31,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 22,
+    "preview": {
+      "x": 661,
+      "y": 849,
+      "width": 26,
+      "height": 191,
+      "color": "#dc1544"
+    },
+    "export": {
+      "x": 660,
+      "y": 923,
+      "width": 26,
+      "height": 157,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 74,
+      "dw": 0,
+      "dh": 34,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 23,
+    "preview": {
+      "x": 691,
+      "y": 841,
+      "width": 26,
+      "height": 199,
+      "color": "#daec23"
+    },
+    "export": {
+      "x": 690,
+      "y": 916,
+      "width": 26,
+      "height": 164,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 1,
+      "dy": 75,
+      "dw": 0,
+      "dh": 35,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 24,
+    "preview": {
+      "x": 722,
+      "y": 835,
+      "width": 26,
+      "height": 205,
+      "color": "#d9c303"
+    },
+    "export": {
+      "x": 720,
+      "y": 911,
+      "width": 26,
+      "height": 169,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 76,
+      "dw": 0,
+      "dh": 36,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 25,
+    "preview": {
+      "x": 752,
+      "y": 830,
+      "width": 26,
+      "height": 210,
+      "color": "#d899e3"
+    },
+    "export": {
+      "x": 750,
+      "y": 907,
+      "width": 26,
+      "height": 173,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 26,
+    "preview": {
+      "x": 782,
+      "y": 828,
+      "width": 26,
+      "height": 212,
+      "color": "#d770c2"
+    },
+    "export": {
+      "x": 780,
+      "y": 905,
+      "width": 26,
+      "height": 175,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 27,
+    "preview": {
+      "x": 812,
+      "y": 828,
+      "width": 26,
+      "height": 212,
+      "color": "#d647a2"
+    },
+    "export": {
+      "x": 810,
+      "y": 905,
+      "width": 26,
+      "height": 175,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 28,
+    "preview": {
+      "x": 842,
+      "y": 829,
+      "width": 26,
+      "height": 211,
+      "color": "#d51e82"
+    },
+    "export": {
+      "x": 840,
+      "y": 906,
+      "width": 26,
+      "height": 174,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 29,
+    "preview": {
+      "x": 872,
+      "y": 833,
+      "width": 26,
+      "height": 207,
+      "color": "#d3f561"
+    },
+    "export": {
+      "x": 870,
+      "y": 910,
+      "width": 26,
+      "height": 170,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 30,
+    "preview": {
+      "x": 902,
+      "y": 839,
+      "width": 26,
+      "height": 201,
+      "color": "#d2cc41"
+    },
+    "export": {
+      "x": 900,
+      "y": 914,
+      "width": 26,
+      "height": 166,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 75,
+      "dw": 0,
+      "dh": 35,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 31,
+    "preview": {
+      "x": 932,
+      "y": 846,
+      "width": 26,
+      "height": 194,
+      "color": "#d1a321"
+    },
+    "export": {
+      "x": 930,
+      "y": 921,
+      "width": 26,
+      "height": 159,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 75,
+      "dw": 0,
+      "dh": 35,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 32,
+    "preview": {
+      "x": 962,
+      "y": 856,
+      "width": 26,
+      "height": 184,
+      "color": "#d07a01"
+    },
+    "export": {
+      "x": 960,
+      "y": 928,
+      "width": 26,
+      "height": 152,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 72,
+      "dw": 0,
+      "dh": 32,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 33,
+    "preview": {
+      "x": 992,
+      "y": 867,
+      "width": 26,
+      "height": 173,
+      "color": "#cf50e0"
+    },
+    "export": {
+      "x": 990,
+      "y": 938,
+      "width": 26,
+      "height": 142,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 71,
+      "dw": 0,
+      "dh": 31,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 34,
+    "preview": {
+      "x": 1022,
+      "y": 880,
+      "width": 26,
+      "height": 160,
+      "color": "#ce27c0"
+    },
+    "export": {
+      "x": 1020,
+      "y": 948,
+      "width": 26,
+      "height": 132,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 68,
+      "dw": 0,
+      "dh": 28,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 35,
+    "preview": {
+      "x": 1052,
+      "y": 895,
+      "width": 26,
+      "height": 145,
+      "color": "#ccfea0"
+    },
+    "export": {
+      "x": 1050,
+      "y": 960,
+      "width": 26,
+      "height": 120,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 65,
+      "dw": 0,
+      "dh": 25,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 36,
+    "preview": {
+      "x": 1082,
+      "y": 911,
+      "width": 26,
+      "height": 129,
+      "color": "#cbd57f"
+    },
+    "export": {
+      "x": 1080,
+      "y": 973,
+      "width": 26,
+      "height": 107,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 62,
+      "dw": 0,
+      "dh": 22,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 37,
+    "preview": {
+      "x": 1112,
+      "y": 928,
+      "width": 26,
+      "height": 112,
+      "color": "#caac5f"
+    },
+    "export": {
+      "x": 1110,
+      "y": 988,
+      "width": 26,
+      "height": 92,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 60,
+      "dw": 0,
+      "dh": 20,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 38,
+    "preview": {
+      "x": 1142,
+      "y": 946,
+      "width": 26,
+      "height": 94,
+      "color": "#c9833f"
+    },
+    "export": {
+      "x": 1140,
+      "y": 1003,
+      "width": 26,
+      "height": 77,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 57,
+      "dw": 0,
+      "dh": 17,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 39,
+    "preview": {
+      "x": 1172,
+      "y": 965,
+      "width": 26,
+      "height": 75,
+      "color": "#c85a1e"
+    },
+    "export": {
+      "x": 1170,
+      "y": 1018,
+      "width": 26,
+      "height": 62,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 2,
+      "dy": 53,
+      "dw": 0,
+      "dh": 13,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 40,
+    "preview": {
+      "x": 1203,
+      "y": 985,
+      "width": 26,
+      "height": 55,
+      "color": "#c730fe"
+    },
+    "export": {
+      "x": 1200,
+      "y": 1035,
+      "width": 26,
+      "height": 45,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 50,
+      "dw": 0,
+      "dh": 10,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 41,
+    "preview": {
+      "x": 1233,
+      "y": 1005,
+      "width": 26,
+      "height": 35,
+      "color": "#c607de"
+    },
+    "export": {
+      "x": 1230,
+      "y": 1051,
+      "width": 26,
+      "height": 29,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 46,
+      "dw": 0,
+      "dh": 6,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 42,
+    "preview": {
+      "x": 1263,
+      "y": 1026,
+      "width": 26,
+      "height": 14,
+      "color": "#c4debd"
+    },
+    "export": {
+      "x": 1260,
+      "y": 1069,
+      "width": 26,
+      "height": 11,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 43,
+      "dw": 0,
+      "dh": 3,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 43,
+    "preview": {
+      "x": 1293,
+      "y": 1033,
+      "width": 26,
+      "height": 7,
+      "color": "#c3b59d"
+    },
+    "export": {
+      "x": 1290,
+      "y": 1074,
+      "width": 26,
+      "height": 6,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 41,
+      "dw": 0,
+      "dh": 1,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 44,
+    "preview": {
+      "x": 1323,
+      "y": 1012,
+      "width": 26,
+      "height": 28,
+      "color": "#c28c7d"
+    },
+    "export": {
+      "x": 1320,
+      "y": 1057,
+      "width": 26,
+      "height": 23,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 45,
+      "dw": 0,
+      "dh": 5,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 45,
+    "preview": {
+      "x": 1353,
+      "y": 992,
+      "width": 26,
+      "height": 48,
+      "color": "#c1635c"
+    },
+    "export": {
+      "x": 1350,
+      "y": 1040,
+      "width": 26,
+      "height": 40,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 48,
+      "dw": 0,
+      "dh": 8,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 46,
+    "preview": {
+      "x": 1383,
+      "y": 972,
+      "width": 26,
+      "height": 68,
+      "color": "#c03a3c"
+    },
+    "export": {
+      "x": 1380,
+      "y": 1024,
+      "width": 26,
+      "height": 56,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 52,
+      "dw": 0,
+      "dh": 12,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 47,
+    "preview": {
+      "x": 1413,
+      "y": 952,
+      "width": 26,
+      "height": 88,
+      "color": "#bf111c"
+    },
+    "export": {
+      "x": 1410,
+      "y": 1008,
+      "width": 26,
+      "height": 72,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 56,
+      "dw": 0,
+      "dh": 16,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 48,
+    "preview": {
+      "x": 1443,
+      "y": 934,
+      "width": 26,
+      "height": 106,
+      "color": "#bde7fc"
+    },
+    "export": {
+      "x": 1440,
+      "y": 992,
+      "width": 26,
+      "height": 88,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 58,
+      "dw": 0,
+      "dh": 18,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 49,
+    "preview": {
+      "x": 1473,
+      "y": 916,
+      "width": 26,
+      "height": 124,
+      "color": "#bcbedb"
+    },
+    "export": {
+      "x": 1470,
+      "y": 978,
+      "width": 26,
+      "height": 102,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 62,
+      "dw": 0,
+      "dh": 22,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 50,
+    "preview": {
+      "x": 1503,
+      "y": 900,
+      "width": 26,
+      "height": 140,
+      "color": "#bb95bb"
+    },
+    "export": {
+      "x": 1500,
+      "y": 965,
+      "width": 26,
+      "height": 115,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 65,
+      "dw": 0,
+      "dh": 25,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 51,
+    "preview": {
+      "x": 1533,
+      "y": 885,
+      "width": 26,
+      "height": 155,
+      "color": "#ba6c9b"
+    },
+    "export": {
+      "x": 1530,
+      "y": 952,
+      "width": 26,
+      "height": 128,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 67,
+      "dw": 0,
+      "dh": 27,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 52,
+    "preview": {
+      "x": 1563,
+      "y": 871,
+      "width": 26,
+      "height": 169,
+      "color": "#b9437a"
+    },
+    "export": {
+      "x": 1560,
+      "y": 941,
+      "width": 26,
+      "height": 139,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 70,
+      "dw": 0,
+      "dh": 30,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 53,
+    "preview": {
+      "x": 1593,
+      "y": 860,
+      "width": 26,
+      "height": 180,
+      "color": "#b81a5a"
+    },
+    "export": {
+      "x": 1590,
+      "y": 931,
+      "width": 26,
+      "height": 149,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 71,
+      "dw": 0,
+      "dh": 31,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 54,
+    "preview": {
+      "x": 1623,
+      "y": 849,
+      "width": 26,
+      "height": 191,
+      "color": "#b6f13a"
+    },
+    "export": {
+      "x": 1620,
+      "y": 923,
+      "width": 26,
+      "height": 157,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 74,
+      "dw": 0,
+      "dh": 34,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 55,
+    "preview": {
+      "x": 1653,
+      "y": 841,
+      "width": 26,
+      "height": 199,
+      "color": "#b5c819"
+    },
+    "export": {
+      "x": 1650,
+      "y": 916,
+      "width": 26,
+      "height": 164,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 3,
+      "dy": 75,
+      "dw": 0,
+      "dh": 35,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 56,
+    "preview": {
+      "x": 1684,
+      "y": 835,
+      "width": 26,
+      "height": 205,
+      "color": "#b49ef9"
+    },
+    "export": {
+      "x": 1680,
+      "y": 911,
+      "width": 26,
+      "height": 169,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 4,
+      "dy": 76,
+      "dw": 0,
+      "dh": 36,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 57,
+    "preview": {
+      "x": 1714,
+      "y": 830,
+      "width": 26,
+      "height": 210,
+      "color": "#b375d9"
+    },
+    "export": {
+      "x": 1710,
+      "y": 907,
+      "width": 26,
+      "height": 173,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 4,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 58,
+    "preview": {
+      "x": 1744,
+      "y": 828,
+      "width": 26,
+      "height": 212,
+      "color": "#b24cb8"
+    },
+    "export": {
+      "x": 1740,
+      "y": 905,
+      "width": 26,
+      "height": 175,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 4,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 59,
+    "preview": {
+      "x": 1774,
+      "y": 828,
+      "width": 26,
+      "height": 212,
+      "color": "#b12398"
+    },
+    "export": {
+      "x": 1770,
+      "y": 905,
+      "width": 26,
+      "height": 175,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 4,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 60,
+    "preview": {
+      "x": 1804,
+      "y": 829,
+      "width": 26,
+      "height": 211,
+      "color": "#affa78"
+    },
+    "export": {
+      "x": 1800,
+      "y": 906,
+      "width": 26,
+      "height": 174,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 4,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 61,
+    "preview": {
+      "x": 1834,
+      "y": 833,
+      "width": 26,
+      "height": 207,
+      "color": "#aed157"
+    },
+    "export": {
+      "x": 1830,
+      "y": 910,
+      "width": 26,
+      "height": 170,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 4,
+      "dy": 77,
+      "dw": 0,
+      "dh": 37,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 62,
+    "preview": {
+      "x": 1864,
+      "y": 839,
+      "width": 26,
+      "height": 201,
+      "color": "#ada837"
+    },
+    "export": {
+      "x": 1860,
+      "y": 914,
+      "width": 26,
+      "height": 166,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 4,
+      "dy": 75,
+      "dw": 0,
+      "dh": 35,
+      "isMatch": false
+    }
+  },
+  {
+    "barIndex": 63,
+    "preview": {
+      "x": 1894,
+      "y": 846,
+      "width": 26,
+      "height": 194,
+      "color": "#ac7f17"
+    },
+    "export": {
+      "x": 1890,
+      "y": 921,
+      "width": 26,
+      "height": 159,
+      "color": "#AB55F7"
+    },
+    "delta": {
+      "dx": 4,
+      "dy": 75,
+      "dw": 0,
+      "dh": 35,
+      "isMatch": false
+    }
+  }
+]

@@ -1,0 +1,59 @@
+{
+  "instanceLog": [
+    {
+      "check": "PASS_1_SINGLETON_RENDERER",
+      "durationMs": 45,
+      "status": "SUCCESS"
+    },
+    {
+      "check": "PASS_2_INSTANCE_COEXISTENCE",
+      "status": "SUCCESS"
+    },
+    {
+      "check": "PASS_3_STATE_ISOLATION",
+      "stateA": {
+        "isInitialized": true,
+        "isPlaying": false,
+        "currentFrame": 150,
+        "currentTimeSec": 5,
+        "fps": 30,
+        "frameCount": 300,
+        "width": 1920,
+        "height": 1080
+      },
+      "stateB": {
+        "isInitialized": true,
+        "isPlaying": false,
+        "currentFrame": 0,
+        "currentTimeSec": 0,
+        "fps": 30,
+        "frameCount": 300,
+        "width": 1920,
+        "height": 1080
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "check": "PASS_4_PREVIEW_SCHEDULER_INSTANCE",
+      "status": "SUCCESS"
+    },
+    {
+      "check": "PASS_5_FFMPEG_SCHEDULER_INSTANCE",
+      "status": "SUCCESS"
+    },
+    {
+      "check": "PASS_6_SHA256_PARITY",
+      "sha256": "788ae0147bdf979a6575938ca2d7d4403788588f7be2010f03776c968fd1ab49",
+      "status": "SUCCESS"
+    },
+    {
+      "check": "PASS_7_SCHEDULER_PURITY",
+      "status": "SUCCESS"
+    },
+    {
+      "check": "PASS_8_RENDERER_CORE_INTEGRITY",
+      "status": "SUCCESS"
+    }
+  ],
+  "timestamp": "2026-08-02T09:26:05.578Z"
+}

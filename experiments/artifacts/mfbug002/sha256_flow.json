@@ -1,0 +1,32 @@
+[
+  {
+    "stage": "1. CanvasKitRenderer Output",
+    "sha256": "788ae0147bdf979a6575938ca2d7d4403788588f7be2010f03776c968fd1ab49",
+    "bytes": 8294400,
+    "matchWithCanvasKit": true
+  },
+  {
+    "stage": "2. RenderScheduler Output",
+    "sha256": "788ae0147bdf979a6575938ca2d7d4403788588f7be2010f03776c968fd1ab49",
+    "bytes": 8294400,
+    "matchWithCanvasKit": true
+  },
+  {
+    "stage": "3. FrameComposer Output",
+    "sha256": "NO_RGBA_BUFFER (0 bytes)",
+    "bytes": 0,
+    "matchWithCanvasKit": false
+  },
+  {
+    "stage": "4. OutputManager Output",
+    "sha256": "NO_RGBA_BUFFER (0 bytes)",
+    "bytes": 0,
+    "matchWithCanvasKit": false
+  },
+  {
+    "stage": "5. FFmpeg Stdin Input",
+    "sha256": "788ae0147bdf979a6575938ca2d7d4403788588f7be2010f03776c968fd1ab49",
+    "bytes": 8294400,
+    "matchWithCanvasKit": true
+  }
+]

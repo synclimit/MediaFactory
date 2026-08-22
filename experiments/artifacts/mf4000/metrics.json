@@ -1,0 +1,16 @@
+{
+  "frameIndex": 100,
+  "resolution": "1280x720",
+  "totalPixels": 921600,
+  "differingPixels": 0,
+  "pixelDifferencePercentage": "0.0000%",
+  "SSIM": 1,
+  "PSNR": "Infinity dB",
+  "firstMismatchCoord": null,
+  "fileSizes": {
+    "preview_frame100": "7.83 KB",
+    "export_frame100": "4.25 KB",
+    "difference_png": "3.58 KB",
+    "overlay_png": "7.83 KB"
+  }
+}

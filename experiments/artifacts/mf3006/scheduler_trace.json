@@ -1,0 +1,51 @@
+{
+  "traceLog": [
+    {
+      "step": "PASS_1_INIT",
+      "durationMs": 41,
+      "status": "SUCCESS"
+    },
+    {
+      "step": "PASS_2_PREVIEW_SCHEDULER_MIGRATION",
+      "status": "SUCCESS"
+    },
+    {
+      "step": "PASS_3_FFMPEG_SCHEDULER_MIGRATION",
+      "status": "SUCCESS"
+    },
+    {
+      "step": "PASS_4_SCHEDULER_PURITY",
+      "status": "SUCCESS"
+    },
+    {
+      "step": "PASS_5_CONTROLS",
+      "stateSeek": {
+        "isInitialized": true,
+        "isPlaying": false,
+        "currentFrame": 150,
+        "currentTimeSec": 5,
+        "fps": 30,
+        "frameCount": 300,
+        "width": 1920,
+        "height": 1080
+      },
+      "status": "SUCCESS"
+    },
+    {
+      "step": "PASS_6_TIMELINE",
+      "frameCount": 300,
+      "fps": 30,
+      "status": "SUCCESS"
+    },
+    {
+      "step": "PASS_7_SHA256_PARITY",
+      "sha256": "788ae0147bdf979a6575938ca2d7d4403788588f7be2010f03776c968fd1ab49",
+      "status": "SUCCESS"
+    },
+    {
+      "step": "PASS_8_RENDERER_CORE_INTEGRITY",
+      "status": "SUCCESS"
+    }
+  ],
+  "timestamp": "2026-08-02T09:22:25.740Z"
+}

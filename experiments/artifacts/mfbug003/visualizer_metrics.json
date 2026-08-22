@@ -1,0 +1,72 @@
+{
+  "visualizerPixelCount": 109760,
+  "transparentPixelCount": 1963840,
+  "barCount": 256,
+  "barPositions": [
+    {
+      "barIndex": 0,
+      "x": 192,
+      "width": 4
+    },
+    {
+      "barIndex": 1,
+      "x": 198,
+      "width": 4
+    },
+    {
+      "barIndex": 2,
+      "x": 204,
+      "width": 4
+    },
+    {
+      "barIndex": 3,
+      "x": 210,
+      "width": 4
+    },
+    {
+      "barIndex": 4,
+      "x": 216,
+      "width": 4
+    },
+    {
+      "barIndex": 5,
+      "x": 222,
+      "width": 4
+    },
+    {
+      "barIndex": 6,
+      "x": 228,
+      "width": 4
+    },
+    {
+      "barIndex": 7,
+      "x": 234,
+      "width": 4
+    },
+    {
+      "barIndex": 8,
+      "x": 240,
+      "width": 4
+    },
+    {
+      "barIndex": 9,
+      "x": 246,
+      "width": 4
+    }
+  ],
+  "totalBarWidthPx": 1536,
+  "colors": [
+    "#AB55F7",
+    "#F59E0B"
+  ],
+  "alphaValues": {
+    "background": 0,
+    "visualizerBars": 255
+  },
+  "layerOrder": [
+    "Background (Image/Video)",
+    "Audio Visualizer (CanvasKit Skia Layer)",
+    "Foreground (Subtitles/Text)"
+  ],
+  "sha256": "0021635d26ed52008c56a817a72bc60d564110f90ad8172c85c1fdc5a135667d"
+}

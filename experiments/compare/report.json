@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-08-02T08:11:02.287Z",
+  "baselineSource": "Live Editor HTML5 Canvas2D Renderer (drawVisualizer.js)",
+  "candidateSource": "CanvasKit (Google Skia WASM) Renderer (render_visualizer.js)",
+  "totalPixels": 2073600,
+  "differentPixels": 751986,
+  "differencePercentage": 36.26476,
+  "maxColorDelta": 114,
+  "meanColorDelta": 37.73,
+  "status": "FAIL",
+  "auditVerdict": "VALID",
+  "selfComparisonCheck": false
+}

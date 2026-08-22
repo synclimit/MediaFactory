@@ -1,0 +1,86 @@
+[
+  {
+    "stage": "STAGE_3_RENDERER_INVOCATION",
+    "metrics": {
+      "frameIndex": 100,
+      "visualizerConfig": {
+        "visualizerId": "bars-classic-vertical",
+        "shape": "bar",
+        "style": "Vertical",
+        "geometry": {
+          "shape": "bar",
+          "thickness": 4,
+          "spacing": 2,
+          "center": true,
+          "mirror": false,
+          "radius": 100
+        },
+        "colors": [
+          "#AB55F7",
+          "#F59E0B"
+        ],
+        "gradients": [
+          "#AB55F7",
+          "#F59E0B"
+        ],
+        "fftGain": 100,
+        "barCount": 256,
+        "thickness": 4,
+        "spacing": 2,
+        "mirror": false,
+        "center": true,
+        "opacity": 100,
+        "transform": {
+          "x": 0,
+          "y": 0,
+          "scale": 1,
+          "rotation": 0
+        },
+        "blendMode": "normal",
+        "position": {
+          "x": 960,
+          "y": 540
+        },
+        "size": {
+          "width": 1920,
+          "height": 1080
+        },
+        "colorLeft": "#AB55F7",
+        "colorRight": "#F59E0B",
+        "id": "track_1",
+        "name": "Audio Visualizer Track",
+        "type": "visualizer",
+        "enabled": true,
+        "locked": false,
+        "clips": []
+      },
+      "fftLength": 256,
+      "receivedVisualizerData": true,
+      "sha256": "788ae0147bdf979a6575938ca2d7d4403788588f7be2010f03776c968fd1ab49"
+    }
+  },
+  {
+    "stage": "STAGE_4_CANVASKIT_RENDERER",
+    "callsDrawVisualizer": true,
+    "location": "src/services/pipeline/renderer/CanvasKitRenderer.js:118"
+  },
+  {
+    "stage": "STAGE_5_DRAW_VISUALIZER_AUDIT",
+    "findings": {
+      "functionExecuted": true,
+      "skippedIfShapeNotBar": true,
+      "earlyReturnConditions": [
+        "!CanvasKit",
+        "!canvas",
+        "!dataArray",
+        "width === 0",
+        "height === 0",
+        "geometry.shape !== \"bar\" (silent skip)"
+      ],
+      "zeroBarsDrawnWhenNotBarShape": true,
+      "alphaClearingBehavior": "Fills surface with solid opaque #111216 (alpha 255), breaking layer alpha composition if rendered in multi-layer pipeline",
+      "offscreenClipped": false,
+      "scalingIssue": false
+    }
+  }
+]

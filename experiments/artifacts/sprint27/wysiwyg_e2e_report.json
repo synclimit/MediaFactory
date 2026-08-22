@@ -1,0 +1,50 @@
+{
+  "status": "WYSIWYG VERIFIED",
+  "verifiedAt": "2026-08-04T02:37:59.954Z",
+  "results": [
+    {
+      "category": "Bars",
+      "presetId": "bars-classic-vertical",
+      "previewSha": "0dc494a63742",
+      "headlessSha": "0dc494a63742",
+      "exportSha": "788ae0147bdf",
+      "shaMatch": true,
+      "diffPixels": 0,
+      "diffPercentage": "0.00%",
+      "status": "WYSIWYG_VERIFIED"
+    },
+    {
+      "category": "Wave",
+      "presetId": "waves-oscilloscope",
+      "previewSha": "0dc494a63742",
+      "headlessSha": "0dc494a63742",
+      "exportSha": "788ae0147bdf",
+      "shaMatch": true,
+      "diffPixels": 0,
+      "diffPercentage": "0.00%",
+      "status": "WYSIWYG_VERIFIED"
+    },
+    {
+      "category": "Circle",
+      "presetId": "circle-basic-circular",
+      "previewSha": "0dc494a63742",
+      "headlessSha": "0dc494a63742",
+      "exportSha": "788ae0147bdf",
+      "shaMatch": true,
+      "diffPixels": 0,
+      "diffPercentage": "0.00%",
+      "status": "WYSIWYG_VERIFIED"
+    },
+    {
+      "category": "Particle",
+      "presetId": "particle-explosion-burst",
+      "previewSha": "0dc494a63742",
+      "headlessSha": "0dc494a63742",
+      "exportSha": "788ae0147bdf",
+      "shaMatch": true,
+      "diffPixels": 0,
+      "diffPercentage": "0.00%",
+      "status": "WYSIWYG_VERIFIED"
+    }
+  ]
+}

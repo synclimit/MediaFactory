@@ -1,0 +1,514 @@
+[
+  {
+    "barIndex": 0,
+    "x": 0,
+    "y": 856,
+    "width": 26,
+    "height": 184,
+    "color": "#f59e0b"
+  },
+  {
+    "barIndex": 1,
+    "x": 30,
+    "y": 867,
+    "width": 26,
+    "height": 173,
+    "color": "#f474ea"
+  },
+  {
+    "barIndex": 2,
+    "x": 60,
+    "y": 880,
+    "width": 26,
+    "height": 160,
+    "color": "#f34bca"
+  },
+  {
+    "barIndex": 3,
+    "x": 90,
+    "y": 895,
+    "width": 26,
+    "height": 145,
+    "color": "#f222aa"
+  },
+  {
+    "barIndex": 4,
+    "x": 120,
+    "y": 911,
+    "width": 26,
+    "height": 129,
+    "color": "#f0f989"
+  },
+  {
+    "barIndex": 5,
+    "x": 150,
+    "y": 928,
+    "width": 26,
+    "height": 112,
+    "color": "#efd069"
+  },
+  {
+    "barIndex": 6,
+    "x": 180,
+    "y": 946,
+    "width": 26,
+    "height": 94,
+    "color": "#eea749"
+  },
+  {
+    "barIndex": 7,
+    "x": 210,
+    "y": 965,
+    "width": 26,
+    "height": 75,
+    "color": "#ed7e28"
+  },
+  {
+    "barIndex": 8,
+    "x": 241,
+    "y": 985,
+    "width": 26,
+    "height": 55,
+    "color": "#ec5508"
+  },
+  {
+    "barIndex": 9,
+    "x": 271,
+    "y": 1005,
+    "width": 26,
+    "height": 35,
+    "color": "#eb2be8"
+  },
+  {
+    "barIndex": 10,
+    "x": 301,
+    "y": 1026,
+    "width": 26,
+    "height": 14,
+    "color": "#ea02c7"
+  },
+  {
+    "barIndex": 11,
+    "x": 331,
+    "y": 1033,
+    "width": 26,
+    "height": 7,
+    "color": "#e8d9a7"
+  },
+  {
+    "barIndex": 12,
+    "x": 361,
+    "y": 1012,
+    "width": 26,
+    "height": 28,
+    "color": "#e7b087"
+  },
+  {
+    "barIndex": 13,
+    "x": 391,
+    "y": 992,
+    "width": 26,
+    "height": 48,
+    "color": "#e68766"
+  },
+  {
+    "barIndex": 14,
+    "x": 421,
+    "y": 972,
+    "width": 26,
+    "height": 68,
+    "color": "#e55e46"
+  },
+  {
+    "barIndex": 15,
+    "x": 451,
+    "y": 952,
+    "width": 26,
+    "height": 88,
+    "color": "#e43526"
+  },
+  {
+    "barIndex": 16,
+    "x": 481,
+    "y": 934,
+    "width": 26,
+    "height": 106,
+    "color": "#e30c06"
+  },
+  {
+    "barIndex": 17,
+    "x": 511,
+    "y": 916,
+    "width": 26,
+    "height": 124,
+    "color": "#e1e2e5"
+  },
+  {
+    "barIndex": 18,
+    "x": 541,
+    "y": 900,
+    "width": 26,
+    "height": 140,
+    "color": "#e0b9c5"
+  },
+  {
+    "barIndex": 19,
+    "x": 571,
+    "y": 885,
+    "width": 26,
+    "height": 155,
+    "color": "#df90a5"
+  },
+  {
+    "barIndex": 20,
+    "x": 601,
+    "y": 871,
+    "width": 26,
+    "height": 169,
+    "color": "#de6784"
+  },
+  {
+    "barIndex": 21,
+    "x": 631,
+    "y": 860,
+    "width": 26,
+    "height": 180,
+    "color": "#dd3e64"
+  },
+  {
+    "barIndex": 22,
+    "x": 661,
+    "y": 849,
+    "width": 26,
+    "height": 191,
+    "color": "#dc1544"
+  },
+  {
+    "barIndex": 23,
+    "x": 691,
+    "y": 841,
+    "width": 26,
+    "height": 199,
+    "color": "#daec23"
+  },
+  {
+    "barIndex": 24,
+    "x": 722,
+    "y": 835,
+    "width": 26,
+    "height": 205,
+    "color": "#d9c303"
+  },
+  {
+    "barIndex": 25,
+    "x": 752,
+    "y": 830,
+    "width": 26,
+    "height": 210,
+    "color": "#d899e3"
+  },
+  {
+    "barIndex": 26,
+    "x": 782,
+    "y": 828,
+    "width": 26,
+    "height": 212,
+    "color": "#d770c2"
+  },
+  {
+    "barIndex": 27,
+    "x": 812,
+    "y": 828,
+    "width": 26,
+    "height": 212,
+    "color": "#d647a2"
+  },
+  {
+    "barIndex": 28,
+    "x": 842,
+    "y": 829,
+    "width": 26,
+    "height": 211,
+    "color": "#d51e82"
+  },
+  {
+    "barIndex": 29,
+    "x": 872,
+    "y": 833,
+    "width": 26,
+    "height": 207,
+    "color": "#d3f561"
+  },
+  {
+    "barIndex": 30,
+    "x": 902,
+    "y": 839,
+    "width": 26,
+    "height": 201,
+    "color": "#d2cc41"
+  },
+  {
+    "barIndex": 31,
+    "x": 932,
+    "y": 846,
+    "width": 26,
+    "height": 194,
+    "color": "#d1a321"
+  },
+  {
+    "barIndex": 32,
+    "x": 962,
+    "y": 856,
+    "width": 26,
+    "height": 184,
+    "color": "#d07a01"
+  },
+  {
+    "barIndex": 33,
+    "x": 992,
+    "y": 867,
+    "width": 26,
+    "height": 173,
+    "color": "#cf50e0"
+  },
+  {
+    "barIndex": 34,
+    "x": 1022,
+    "y": 880,
+    "width": 26,
+    "height": 160,
+    "color": "#ce27c0"
+  },
+  {
+    "barIndex": 35,
+    "x": 1052,
+    "y": 895,
+    "width": 26,
+    "height": 145,
+    "color": "#ccfea0"
+  },
+  {
+    "barIndex": 36,
+    "x": 1082,
+    "y": 911,
+    "width": 26,
+    "height": 129,
+    "color": "#cbd57f"
+  },
+  {
+    "barIndex": 37,
+    "x": 1112,
+    "y": 928,
+    "width": 26,
+    "height": 112,
+    "color": "#caac5f"
+  },
+  {
+    "barIndex": 38,
+    "x": 1142,
+    "y": 946,
+    "width": 26,
+    "height": 94,
+    "color": "#c9833f"
+  },
+  {
+    "barIndex": 39,
+    "x": 1172,
+    "y": 965,
+    "width": 26,
+    "height": 75,
+    "color": "#c85a1e"
+  },
+  {
+    "barIndex": 40,
+    "x": 1203,
+    "y": 985,
+    "width": 26,
+    "height": 55,
+    "color": "#c730fe"
+  },
+  {
+    "barIndex": 41,
+    "x": 1233,
+    "y": 1005,
+    "width": 26,
+    "height": 35,
+    "color": "#c607de"
+  },
+  {
+    "barIndex": 42,
+    "x": 1263,
+    "y": 1026,
+    "width": 26,
+    "height": 14,
+    "color": "#c4debd"
+  },
+  {
+    "barIndex": 43,
+    "x": 1293,
+    "y": 1033,
+    "width": 26,
+    "height": 7,
+    "color": "#c3b59d"
+  },
+  {
+    "barIndex": 44,
+    "x": 1323,
+    "y": 1012,
+    "width": 26,
+    "height": 28,
+    "color": "#c28c7d"
+  },
+  {
+    "barIndex": 45,
+    "x": 1353,
+    "y": 992,
+    "width": 26,
+    "height": 48,
+    "color": "#c1635c"
+  },
+  {
+    "barIndex": 46,
+    "x": 1383,
+    "y": 972,
+    "width": 26,
+    "height": 68,
+    "color": "#c03a3c"
+  },
+  {
+    "barIndex": 47,
+    "x": 1413,
+    "y": 952,
+    "width": 26,
+    "height": 88,
+    "color": "#bf111c"
+  },
+  {
+    "barIndex": 48,
+    "x": 1443,
+    "y": 934,
+    "width": 26,
+    "height": 106,
+    "color": "#bde7fc"
+  },
+  {
+    "barIndex": 49,
+    "x": 1473,
+    "y": 916,
+    "width": 26,
+    "height": 124,
+    "color": "#bcbedb"
+  },
+  {
+    "barIndex": 50,
+    "x": 1503,
+    "y": 900,
+    "width": 26,
+    "height": 140,
+    "color": "#bb95bb"
+  },
+  {
+    "barIndex": 51,
+    "x": 1533,
+    "y": 885,
+    "width": 26,
+    "height": 155,
+    "color": "#ba6c9b"
+  },
+  {
+    "barIndex": 52,
+    "x": 1563,
+    "y": 871,
+    "width": 26,
+    "height": 169,
+    "color": "#b9437a"
+  },
+  {
+    "barIndex": 53,
+    "x": 1593,
+    "y": 860,
+    "width": 26,
+    "height": 180,
+    "color": "#b81a5a"
+  },
+  {
+    "barIndex": 54,
+    "x": 1623,
+    "y": 849,
+    "width": 26,
+    "height": 191,
+    "color": "#b6f13a"
+  },
+  {
+    "barIndex": 55,
+    "x": 1653,
+    "y": 841,
+    "width": 26,
+    "height": 199,
+    "color": "#b5c819"
+  },
+  {
+    "barIndex": 56,
+    "x": 1684,
+    "y": 835,
+    "width": 26,
+    "height": 205,
+    "color": "#b49ef9"
+  },
+  {
+    "barIndex": 57,
+    "x": 1714,
+    "y": 830,
+    "width": 26,
+    "height": 210,
+    "color": "#b375d9"
+  },
+  {
+    "barIndex": 58,
+    "x": 1744,
+    "y": 828,
+    "width": 26,
+    "height": 212,
+    "color": "#b24cb8"
+  },
+  {
+    "barIndex": 59,
+    "x": 1774,
+    "y": 828,
+    "width": 26,
+    "height": 212,
+    "color": "#b12398"
+  },
+  {
+    "barIndex": 60,
+    "x": 1804,
+    "y": 829,
+    "width": 26,
+    "height": 211,
+    "color": "#affa78"
+  },
+  {
+    "barIndex": 61,
+    "x": 1834,
+    "y": 833,
+    "width": 26,
+    "height": 207,
+    "color": "#aed157"
+  },
+  {
+    "barIndex": 62,
+    "x": 1864,
+    "y": 839,
+    "width": 26,
+    "height": 201,
+    "color": "#ada837"
+  },
+  {
+    "barIndex": 63,
+    "x": 1894,
+    "y": 846,
+    "width": 26,
+    "height": 194,
+    "color": "#ac7f17"
+  }
+]

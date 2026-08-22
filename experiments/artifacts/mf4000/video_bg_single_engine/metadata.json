@@ -1,0 +1,17 @@
+{
+  "title": "video_bg_single_engine.mp4",
+  "playlist": [
+    {
+      "title": "test_sine.wav",
+      "duration": 3,
+      "uri": "D:\\MediaFactory\\experiments\\artifacts\\mf4000\\test_sine.wav"
+    }
+  ],
+  "duration": 3,
+  "thumbnail": "",
+  "background": "D:\\MediaFactory\\experiments\\artifacts\\mf4000\\test_bg.mp4",
+  "renderProfile": "Standard",
+  "timestamps": [
+    "00:00 D:\\MediaFactory\\experiments\\artifacts\\mf4000\\test_sine.wav"
+  ]
+}

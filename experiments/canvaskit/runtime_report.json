@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-08-02T07:53:14.126Z",
+  "status": "PASS",
+  "wasmVersion": "0.39.1",
+  "backendType": "Skia WASM / CPU Software Surface",
+  "initializationTimeMs": 81,
+  "renderDurationMs": 161,
+  "totalDurationMs": 242,
+  "resolution": "1920x1080",
+  "outputFile": "hello.png",
+  "memoryUsageMB": {
+    "rss": 87.95,
+    "heapTotal": 11.41,
+    "heapUsed": 7.2,
+    "external": 136.74
+  },
+  "verification": {
+    "rectangleRendered": true,
+    "circleRendered": true,
+    "lineRendered": true,
+    "textRendered": true
+  }
+}
