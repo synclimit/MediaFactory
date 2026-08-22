@@ -119,9 +119,16 @@ export default function M7StudioPanel({ addNotification = () => {} }) {
         <div className="flex-1 flex flex-col p-2 bg-[#090b10] overflow-hidden relative">
           <div className="flex-1 w-full h-full rounded-xl overflow-hidden border border-white/10 shadow-2xl relative bg-[#111319]">
             <iframe
-              src="/m7-app/index.html"
+              src={getApiUrl('/m7-app/index.html')}
               title="Astrofox M7 Runtime"
               className="w-full h-full border-0"
+              onLoad={(e) => {
+                try {
+                  if (window.require && e.target.contentWindow) {
+                    e.target.contentWindow.require = window.require;
+                  }
+                } catch (err) {}
+              }}
               style={{ display: 'block', width: '100%', height: '100%' }}
             />
           </div>

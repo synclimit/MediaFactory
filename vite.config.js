@@ -32,6 +32,10 @@ export default defineConfig({
           }
           return 'http://127.0.0.1:18888';
         }
+      },
+      '/m7-app': {
+        target: 'http://127.0.0.1:18888',
+        changeOrigin: true
       }
     },
     watch: {

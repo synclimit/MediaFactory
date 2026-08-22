@@ -11,14 +11,10 @@ lerna-debug.log*
 node_modules
 node_modules/**
 **/node_modules/**
-astrofox-standalone
+astrofox-standalone/
 astrofox-standalone/**
-m7-astrofox/node_modules
-m7-astrofox/node_modules/**
-m7-astrofox/build
-m7-astrofox/build/**
-m7-astrofox/bin
-m7-astrofox/bin/**
+m7-astrofox/
+m7-astrofox/**
 
 dist
 dist-ssr
@@ -61,8 +57,9 @@ backend/ffmpeg/
 production_report.*
 
 # Scratch and test render frames
-scratch/*.png
-scratch/*.rgba
+scratch/
+scratch/**
+scratch_*
 test_svg_frames/
 test_out*.png
 test_fscale_*.png
