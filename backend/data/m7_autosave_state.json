@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "timestamp": 1787476928716,
+  "timestamp": 1787477355852,
   "activeCategory": "visualizer",
   "currentBgType": "image",
   "activeSelectedBgIndex": 0,
   "activeBackgrounds": [
     {
-      "id": "2d254f700a0f601759a4bbf33dd4932af08149bf",
+      "id": "c0577884a30405524416ae4f3c943c38eee165d9",
       "name": "m7_1787471960511_1786495168.png",
       "type": "image",
       "src": "D:\\MediaFactory\\Output\\Temp\\m7_1787471960511_1786495168.png"
@@ -22,8 +22,65 @@
     "audioMotion": true
   },
   "currentPlaylistSource": "folder",
-  "activeSelectedTrackIndex": -1,
-  "playlistTracks": [],
+  "activeSelectedTrackIndex": 0,
+  "playlistTracks": [
+    {
+      "id": "track_1787477214076_ikcu0",
+      "name": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
+      "path": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
+      "duration": 748.2433106575963,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477214080_bbic9",
+      "name": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
+      "path": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
+      "duration": 748.232146,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477214094_s4ctt",
+      "name": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
+      "path": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
+      "duration": 748.23875,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477214119_6n7fg",
+      "name": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
+      "path": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
+      "duration": 748.232146,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477214079_5cux9",
+      "name": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
+      "path": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
+      "duration": 748.243313,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477214134_q88qy",
+      "name": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
+      "path": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
+      "duration": 748.232146,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477214081_zcef5",
+      "name": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
+      "path": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
+      "duration": 748.232146,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477214123_060bu",
+      "name": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
+      "path": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
+      "duration": 748.23875,
+      "durationStr": "12:28"
+    }
+  ],
   "audioSettings": {
     "masterVolume": "70",
     "fadeIn": "2.1",
@@ -32,24 +89,54 @@
     "removeSilence": true,
     "pitch": "0"
   },
-  "currentVizType": "HarmonicsSpectrumDisplay",
+  "currentVizType": "BarSpectrumDisplay",
   "activeSelectedVizIndex": 0,
-  "activeVisualizers": [],
+  "activeVisualizers": [
+    {
+      "id": "dade2084202215e011f185c5aad6fb7bab927973",
+      "name": "Astrofox Bar EQ",
+      "type": "BarSpectrumDisplay",
+      "preset": "stereo glow",
+      "gradient": "rainbow",
+      "bands": 80,
+      "glow": 0.35,
+      "reflexRatio": 0.15,
+      "radial": false,
+      "ledBars": false,
+      "stereo": true,
+      "width": 459,
+      "height": 255,
+      "x": -163,
+      "y": -129,
+      "smoothing": 0.4,
+      "barWidth": -1,
+      "barSpacing": -1
+    }
+  ],
   "vizState": {
     "preset": "stereo glow",
     "gradient": "rainbow",
     "bands": 80,
-    "glow": 1,
-    "reflexRatio": 0.35,
+    "glow": 0.35,
+    "reflexRatio": 0.15,
     "radial": false,
     "ledBars": false,
     "stereo": true,
     "barWidth": 8,
     "barSpacing": 4,
-    "height": 280,
-    "posX": 0,
-    "posY": 0,
-    "smoothing": 0.65
+    "height": 255,
+    "posX": -38,
+    "posY": 54,
+    "smoothing": 0.4
+  },
+  "vizColorState": {
+    "mode": "Theme",
+    "solid": "#ab55f7",
+    "left": "#ab55f7",
+    "mid": "#06b6d4",
+    "right": "#f59e0b",
+    "neon": "#00f3ff",
+    "theme": "classic"
   },
   "particleState": {
     "shape": "Icosahedron",

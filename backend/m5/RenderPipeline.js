@@ -398,18 +398,18 @@ class RenderPipeline {
 
         let currentVideoPad = '[bg]';
         
-        // Composite foreground image
+        // Composite foreground image with cinematic Ken Burns slow zoom
         if (fgImagePath) {
             const baseW = Math.round(1080 * 0.85); // 918
             const imgScale = (layout.imageScale || 100) / 100;
             const targetW = Math.round(baseW * imgScale);
-            filters.push(`[1:v]scale=w=${targetW}:h=-1:force_original_aspect_ratio=decrease,setsar=1[fg]`);
+            filters.push(`[1:v]scale=w='${targetW}*(1+0.08*t/${durSec})':h=-1:eval=frame,setsar=1[fg]`);
             
             const posX = layout.imagePosX !== undefined ? `81+(918-w)*${layout.imagePosX/100}` : '(1080-w)/2';
             const posY = layout.imagePosY !== undefined ? `(1920-h)*${layout.imagePosY/100}` : '(1920-h)/2';
             
             filters.push(`${currentVideoPad}split=2[bg_clean][bg_for_overlay]`);
-            filters.push(`[bg_for_overlay][fg]overlay=x=${posX}:y=${posY}[bg_spilled]`);
+            filters.push(`[bg_for_overlay][fg]overlay=x=${posX}:y=${posY}:eval=frame[bg_spilled]`);
             filters.push(`[bg_spilled]crop=918:1920:81:0[bg_cropped]`);
             filters.push(`[bg_clean][bg_cropped]overlay=x=81:y=0[bg_fg]`);
             

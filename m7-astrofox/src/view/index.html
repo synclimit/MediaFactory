@@ -3873,20 +3873,27 @@
         }
       }
 
-      function m7OnFolderSelect(e) {
+      async function m7OnFolderSelect(e) {
         if (e.target && e.target.files) {
           const files = Array.from(e.target.files).filter(f => f.type.startsWith('audio/') || /\.(mp3|wav|ogg|flac|m4a|aac|opus)$/i.test(f.name));
+          if (files.length === 0) {
+            alert('No supported audio files (.mp3, .wav, .flac, .m4a, .ogg) found in chosen folder.');
+            return;
+          }
           m7FolderFiles = files;
           const statusEl = document.getElementById('m7-folder-status');
           const btnLabel = document.getElementById('m7-folder-btn-label');
           if (statusEl) {
             statusEl.style.display = 'block';
-            statusEl.innerText = `${files.length} audio file(s) found in folder`;
+            statusEl.innerText = `📂 ${files.length} audio files detected in folder. Selecting random sample...`;
           }
           if (btnLabel) {
             btnLabel.innerText = `Folder (${files.length})`;
           }
           e.target.value = null;
+
+          // Automatically generate random playlist based on LIMIT input immediately
+          await m7GeneratePlaylistFromFolder();
         }
       }
 
@@ -4009,15 +4016,25 @@
         }
       }
 
-      // Fast Folder Generation (Instant Synchronization)
+      // True Unbiased Random Array Shuffle (Fisher-Yates)
+      function m7ShuffleArray(arr) {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      // Fast Folder Generation (Instant Synchronization & Unbiased Random Selection)
       async function m7GeneratePlaylistFromFolder() {
         if (!m7FolderFiles || m7FolderFiles.length === 0) {
-          alert('Please click "Select Folder" first to choose a folder with audio files.');
+          alert('Please click "Choose Music Folder" first to choose a folder with audio files.');
           return;
         }
 
         const limitInput = document.getElementById('m7-folder-limit-input');
-        const limit = parseInt(limitInput?.value || '15', 10) || 15;
+        const limit = Math.max(1, parseInt(limitInput?.value || '15', 10) || 15);
 
         const genBtn = document.getElementById('m7-folder-gen-btn');
         if (genBtn) {
@@ -4032,18 +4049,11 @@
         }
 
         try {
-          let attempts = 0;
-          let finalFiles = [];
-          let hash = '';
-          do {
-            const temp = [...m7FolderFiles].sort(() => Math.random() - 0.5);
-            finalFiles = temp.slice(0, Math.min(limit, temp.length));
-            hash = finalFiles.map(f => f.name).join('|');
-            attempts++;
-          } while (m7PlaylistHistory.has(hash) && attempts < 10);
-          m7PlaylistHistory.add(hash);
+          // Shuffle full folder files using Fisher-Yates and take limit
+          const shuffled = m7ShuffleArray(m7FolderFiles);
+          const finalFiles = shuffled.slice(0, Math.min(limit, shuffled.length));
 
-          // Clear old playlist & replace with newly chosen folder tracks
+          // Clear old playlist & replace with newly randomized folder tracks
           playlistTracks = [];
           const trackPromises = finalFiles.map(async (file) => {
             const duration = await m7GetFastAudioDuration(file);
@@ -4070,6 +4080,12 @@
 
           if (playlistTracks.length > 0) {
             await m7LoadTrackToPlayer(0, false);
+          }
+
+          const statusEl = document.getElementById('m7-folder-status');
+          if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.innerText = `🎲 Randomly selected ${playlistTracks.length} of ${m7FolderFiles.length} tracks.`;
           }
         } catch(err) {
           console.error('[M7 Folder Generate] Error:', err);
