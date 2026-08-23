@@ -1770,10 +1770,27 @@ export default function App() {
           rotation: m1VideoRotation || 0,
           effects: {
             rotation: m1VideoRotation || 0,
-            logo: { enabled: slot.useLogoChannel || false, asset: workspaceConfig?.branding?.logo || 'logo.png', opacity: 1, position: 'bottom-right' },
-            subscribe: { enabled: slot.useSubscribe || false, asset: workspaceConfig?.branding?.subscribeAnim || 'subscribe.webm', position: 'center' },
-            overlay: { enabled: slot.useOverlay || false, asset: workspaceConfig?.branding?.overlay || 'overlay.png', position: 'bottom-left' },
-            watermark: { enabled: slot.useWatermark || false, asset: workspaceConfig?.branding?.watermark || 'watermark.png', position: 'top-left' }
+            logo: { 
+              enabled: Boolean(slot.useLogoChannel), 
+              asset: slot.customLogo || workspaceConfig?.branding?.logo || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).logo } catch(e) { return 'logo.png' } })() || 'logo.png', 
+              opacity: 1, 
+              position: slot.logoPosition || 'bottom-right' 
+            },
+            subscribe: { 
+              enabled: Boolean(slot.useSubscribe), 
+              asset: slot.customSubscribe || workspaceConfig?.branding?.subscribeAnim || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).subscribeAnim } catch(e) { return 'subscribe.webm' } })() || 'subscribe.webm', 
+              position: slot.subscribePosition || 'center' 
+            },
+            overlay: { 
+              enabled: Boolean(slot.useOverlay), 
+              asset: slot.customOverlay || workspaceConfig?.branding?.overlay || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).overlay } catch(e) { return 'overlay.png' } })() || 'overlay.png', 
+              position: slot.overlayPosition || 'bottom-left' 
+            },
+            watermark: { 
+              enabled: Boolean(slot.useWatermark), 
+              asset: slot.customWatermark || workspaceConfig?.branding?.watermark || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).watermark } catch(e) { return 'watermark.png' } })() || 'watermark.png', 
+              position: slot.watermarkPosition || 'top-left' 
+            }
           },
           outputName: slot.outputName,
           thumbnail: slot.manualThumbnail || (slot.sourceType === 'YouTube URL' && slot.videoId ? `https://img.youtube.com/vi/${slot.videoId}/maxresdefault.jpg` : null),

@@ -5425,19 +5425,21 @@
         let isPlaylist = false;
         let fontSize = 40;
         let yPos = 0;
+        let columns = 1;
 
         if (kind === 'playlist') {
           initialName = 'Track List Layout';
           initialText = 'Track List Layout';
           isPlaylist = true;
-          fontSize = 24;
-          yPos = -50;
+          fontSize = 18;
+          yPos = 0;
+          columns = 2;
         } else if (kind === 'title') {
           initialName = 'Current Playing';
           initialText = '{current_track}';
           isBound = true;
-          fontSize = 42;
-          yPos = 180;
+          fontSize = 36;
+          yPos = -140;
         }
 
         const props = {
@@ -5470,7 +5472,7 @@
           tiltY: 0,
           perspective: 60,
           depth: 0,
-          columns: 1
+          columns: columns
         };
 
         const display = new TextClass(props);
@@ -5488,6 +5490,7 @@
         activeSelectedTextIndex = activeTextObjects.length - 1;
         m7RenderTextList();
         m7SyncInspectorToText(newObj);
+        m7IsGizmoSelected = true;
         m7UpdateGizmo();
         m7ScheduleAutosave();
       }
@@ -5516,6 +5519,7 @@
             activeSelectedTextIndex = idx;
             m7RenderTextList();
             m7SyncInspectorToText(item);
+            m7IsGizmoSelected = true;
             m7UpdateGizmo();
             m7ScheduleAutosave();
           };
@@ -5545,6 +5549,7 @@
 
         if (activeTextObjects.length === 0) {
           activeSelectedTextIndex = -1;
+          m7IsGizmoSelected = false;
         } else {
           activeSelectedTextIndex = Math.min(activeSelectedTextIndex, activeTextObjects.length - 1);
           if (activeSelectedTextIndex < 0) activeSelectedTextIndex = 0;
@@ -5789,6 +5794,10 @@
         if ((activeCategory === 'text' || activeCategory === 'lyrics') && activeTextObjects[activeSelectedTextIndex]) {
           const item = activeTextObjects[activeSelectedTextIndex];
           const disp = item.display;
+          const textCanvas = disp.canvas;
+          const textW = (textCanvas && textCanvas.width > 1) ? textCanvas.width : 360;
+          const textH = (textCanvas && textCanvas.height > 1) ? textCanvas.height : 90;
+
           return {
             type: 'text',
             item: item,
@@ -5796,8 +5805,8 @@
             name: item.properties?.name || item.name || 'Text',
             getX: () => (disp.properties ? (disp.properties.x || 0) : 0),
             getY: () => (disp.properties ? (disp.properties.y || 0) : 0),
-            getW: () => (disp.properties ? (disp.properties.fontSize * 8) : 400),
-            getH: () => (disp.properties ? (disp.properties.fontSize * 2.5) : 100),
+            getW: () => textW,
+            getH: () => textH,
             getShadowH: () => 0,
             setPos: (x, y) => {
               disp.update({ x, y });
@@ -5815,7 +5824,9 @@
               if (valY) valY.innerText = Math.round(y);
             },
             setSize: (w, h) => {
-              const newFontSize = Math.max(10, Math.min(200, Math.round(h / 2.5)));
+              const currentFont = disp.properties?.fontSize || 40;
+              const scale = Math.max(0.2, h / textH);
+              const newFontSize = Math.max(10, Math.min(200, Math.round(currentFont * scale)));
               disp.update({ fontSize: newFontSize, size: newFontSize });
               if (item.properties) {
                 item.properties.fontSize = newFontSize;
@@ -6019,13 +6030,119 @@
         stageContainer.addEventListener('mousedown', (e) => {
           const clickedOnSidebar = e.target.closest('#m7-studio-dock') || e.target.closest('#m7-nav-rail') || e.target.closest('.Player__player') || e.target.closest('#m7-add-to-queue-btn');
           const clickedOnGizmo = e.target.closest('#m7-gizmo-box');
-          const clickedOnCanvas = e.target.closest('canvas');
 
           if (clickedOnSidebar || clickedOnGizmo) {
             return;
           }
 
-          if (clickedOnCanvas) {
+          const canvas = document.querySelector('#viewport canvas') || document.querySelector('.Stage__stage canvas');
+          if (!canvas) return;
+          const cRect = canvas.getBoundingClientRect();
+
+          // If clicked outside canvas bounds
+          if (e.clientX < cRect.left || e.clientX > cRect.right || e.clientY < cRect.top || e.clientY > cRect.bottom) {
+            m7IsGizmoSelected = false;
+            m7UpdateGizmo();
+            return;
+          }
+
+          const stage = getAstrofoxStage();
+          const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 854, height: 480 };
+          const stageW = stageSize.width || 854;
+          const stageH = stageSize.height || 480;
+
+          const relX = (e.clientX - cRect.left) / cRect.width;
+          const relY = (e.clientY - cRect.top) / cRect.height;
+          const clickStageX = (relX * stageW) - (stageW / 2);
+          const clickStageY = (stageH / 2) - (relY * stageH);
+
+          // 1. CANVA HIT-TEST: Check Text Objects (Top Layer)
+          let hitTextIndex = -1;
+          for (let i = activeTextObjects.length - 1; i >= 0; i--) {
+            const t = activeTextObjects[i];
+            if (!t || !t.display) continue;
+            const tx = t.properties?.x || 0;
+            const ty = t.properties?.y || 0;
+            const tw = t.display.canvas?.width || 360;
+            const th = t.display.canvas?.height || 90;
+
+            if (clickStageX >= tx - (tw / 2) && clickStageX <= tx + (tw / 2) &&
+                clickStageY >= ty - (th / 2) && clickStageY <= ty + (th / 2)) {
+              hitTextIndex = i;
+              break;
+            }
+          }
+
+          if (hitTextIndex >= 0) {
+            m7SelectCategory('text');
+            activeSelectedTextIndex = hitTextIndex;
+            m7RenderTextList();
+            m7SyncInspectorToText(activeTextObjects[hitTextIndex]);
+            m7IsGizmoSelected = true;
+            m7UpdateGizmo();
+
+            const target = m7GetActiveTarget();
+            if (target) {
+              m7IsDraggingGizmo = true;
+              m7GizmoActionData = {
+                startX: e.clientX,
+                startY: e.clientY,
+                origItemX: target.getX(),
+                origItemY: target.getY(),
+                target
+              };
+            }
+            return;
+          }
+
+          // 2. CANVA HIT-TEST: Check Spectrum Visualizers (Middle Layer)
+          let hitVizIndex = -1;
+          for (let i = activeVisualizers.length - 1; i >= 0; i--) {
+            const v = activeVisualizers[i];
+            if (!v || !v.display) continue;
+            const p = v.display.properties || {};
+            const vx = p.x || 0;
+            const vy = p.y || 0;
+            const vw = p.width || 800;
+            const vh = p.height || 280;
+
+            if (clickStageX >= vx - (vw / 2) && clickStageX <= vx + (vw / 2) &&
+                clickStageY >= vy - (vh / 2) && clickStageY <= vy + (vh / 2)) {
+              hitVizIndex = i;
+              break;
+            }
+          }
+
+          if (hitVizIndex >= 0) {
+            m7SelectCategory('visualizer');
+            activeSelectedVizIndex = hitVizIndex;
+            m7RenderVisualizerList();
+            m7SyncInspectorToDisplay(activeVisualizers[hitVizIndex].display);
+            m7IsGizmoSelected = true;
+            m7UpdateGizmo();
+
+            const target = m7GetActiveTarget();
+            if (target) {
+              m7IsDraggingGizmo = true;
+              m7GizmoActionData = {
+                startX: e.clientX,
+                startY: e.clientY,
+                origItemX: target.getX(),
+                origItemY: target.getY(),
+                target
+              };
+            }
+            return;
+          }
+
+          // 3. CANVA HIT-TEST: Fallback to Background (Bottom Layer)
+          if (activeBackgrounds.length > 0) {
+            m7SelectCategory('background');
+            activeSelectedBgIndex = 0;
+            m7RenderBackgroundList();
+            if (activeBackgrounds[0]) {
+              m7SyncInspectorToDisplay(activeBackgrounds[0].display, activeBackgrounds[0].mediaObj);
+            }
             m7IsGizmoSelected = true;
             m7UpdateGizmo();
           } else {

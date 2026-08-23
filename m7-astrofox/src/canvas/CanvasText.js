@@ -41,6 +41,7 @@ export default class CanvasText extends Entity {
 
     this.canvas = canvas;
     this.context = this.canvas.getContext('2d');
+    this._lastRenderKey = '';
   }
 
   getFont(size, weight, fontName, isItalic) {
@@ -52,24 +53,24 @@ export default class CanvasText extends Entity {
       'Extra-Bold': '800',
       'Black': '900'
     };
-    const mappedWeight = weightMap[weight] || weight || 'bold';
+    const mappedWeight = weightMap[weight] || weight || '800';
     const italicStyle = isItalic ? 'italic' : 'normal';
     const family = fontName || 'Segoe UI';
     return `${italicStyle} ${mappedWeight} ${Math.round(size)}px "${family}", sans-serif`;
   }
 
-  render() {
+  render(force = false) {
     const { canvas, context } = this;
     const p = this.properties;
-    const fontSize = p.fontSize || p.size || 40;
+    const fontSize = Math.max(10, p.fontSize || p.size || 40);
     const fontFamily = p.fontFamily || p.font || 'Segoe UI';
     const fontWeight = p.fontWeight || 'Extra-Bold';
     const align = (p.align || 'Center').toLowerCase();
     const color = p.color || '#ffffff';
-    const strokeEnabled = !!p.strokeEnabled && p.stroke > 0;
+    const strokeEnabled = !!p.strokeEnabled && (p.stroke || 0) > 0;
     const strokeWidth = p.stroke || 0;
     const strokeColor = p.strokeColor || '#000000';
-    const glowEnabled = !!p.glowEnabled && p.glow > 0;
+    const glowEnabled = (p.glowEnabled !== false) && (p.glow || 0) > 0;
     const glowAmount = p.glow || 0;
     const glowColor = p.glowColor || color;
 
@@ -78,14 +79,14 @@ export default class CanvasText extends Entity {
     let sublabel = '';
     let trackListItems = [];
 
-    const isCurrentTrack = p.bindToCurrentTrack || p.textType === 'title' || p.name === '{current_track}';
+    const isCurrentTrack = !!p.bindToCurrentTrack || p.textType === 'title' || p.name === '{current_track}';
     const isPlaylistLayout = p.type === 'playlist' || p.textType === 'playlist';
 
     if (isCurrentTrack) {
       if (typeof window !== 'undefined' && window.__ASTROFOX_AUDIO__ && window.__ASTROFOX_AUDIO__.audioStore) {
         const audioState = window.__ASTROFOX_AUDIO__.audioStore.getState();
         if (audioState && audioState.file) {
-          mainText = audioState.file.replace(/\.[^/.]+$/, ''); // Strip file extension
+          mainText = audioState.file.replace(/\.[^/.]+$/, ''); // Clean song name
         }
       }
       if (p.showLabel !== false) {
@@ -97,29 +98,84 @@ export default class CanvasText extends Entity {
       }
     }
 
-    // 2. Compute required canvas dimensions
-    const padding = Math.max(60, glowAmount * 3, strokeWidth * 2);
-    let totalW = 800;
-    let totalH = 400;
+    // Performance Optimization: Dirty-check key to avoid re-rendering 60fps if nothing changed
+    const renderKey = [
+      mainText,
+      sublabel,
+      fontSize,
+      fontFamily,
+      fontWeight,
+      align,
+      color,
+      strokeEnabled,
+      strokeWidth,
+      strokeColor,
+      glowEnabled,
+      glowAmount,
+      glowColor,
+      p.columns || 1,
+      p.labelSize || 0.4,
+      p.labelColor || '',
+      p.labelBold !== false,
+      p.labelItalic,
+      p.labelAlign || 'Center',
+      trackListItems.length
+    ].join('|');
 
-    context.font = this.getFont(fontSize, fontWeight, fontFamily, p.italic);
+    if (!force && this._lastRenderKey === renderKey && canvas.width > 1) {
+      return; // No changes, keep existing rendered canvas
+    }
+    this._lastRenderKey = renderKey;
+
+    // 2. Compute required canvas dimensions
+    const padding = Math.max(20, glowAmount * 2, strokeWidth * 2);
+    let totalW = 400;
+    let totalH = 100;
+
+    const mainFont = this.getFont(fontSize, fontWeight, fontFamily, p.italic);
+    context.font = mainFont;
 
     if (isPlaylistLayout && trackListItems.length > 0) {
-      const cols = p.columns || 1;
+      const cols = Math.max(1, p.columns || 1);
+      const rows = Math.ceil(trackListItems.length / cols);
       const rowH = fontSize * 1.5;
-      const rowsPerCol = Math.ceil(trackListItems.length / cols);
-      totalH = Math.max(200, rowsPerCol * rowH + padding * 2);
-      totalW = Math.max(600, cols * 400 + padding * 2);
+
+      let maxColTrackW = 260;
+      trackListItems.forEach((track, idx) => {
+        const cleanName = (track.name || 'Track').replace(/\.[^/.]+$/, '');
+        const numStr = String(idx + 1).padStart(2, '0');
+        const m = context.measureText(`${numStr}. ${cleanName}`);
+        if (m.width > maxColTrackW) maxColTrackW = m.width;
+      });
+
+      const colW = maxColTrackW + 30;
+      totalW = Math.ceil(cols * colW + padding * 2);
+      totalH = Math.ceil(rows * rowH + padding * 2);
     } else {
-      const mainMetrics = context.measureText(mainText);
-      const subMetrics = sublabel ? context.measureText(sublabel) : { width: 0 };
-      const maxTextW = Math.max(mainMetrics.width, subMetrics.width * (p.labelSize || 0.4));
-      totalW = Math.ceil(maxTextW + padding * 2 + 100);
-      totalH = Math.ceil(fontSize * (sublabel ? 3.5 : 2.2) + padding * 2);
+      const lines = String(mainText).split('\n');
+      let maxLineWidth = 0;
+      lines.forEach(l => {
+        const m = context.measureText(l);
+        if (m.width > maxLineWidth) maxLineWidth = m.width;
+      });
+
+      let sublabelW = 0;
+      let labelH = 0;
+      if (sublabel) {
+        const labelSizePx = fontSize * (p.labelSize || 0.45);
+        const subFont = this.getFont(labelSizePx, p.labelBold !== false ? 'Bold' : 'Normal', fontFamily, p.labelItalic);
+        context.font = subFont;
+        sublabelW = context.measureText(sublabel).width;
+        labelH = labelSizePx * 1.6;
+      }
+
+      const maxContentW = Math.max(maxLineWidth, sublabelW);
+      totalW = Math.ceil(maxContentW + padding * 2 + 20);
+      totalH = Math.ceil((lines.length * fontSize * 1.25) + labelH + padding * 2);
     }
 
-    totalW = Math.min(3840, Math.max(200, totalW));
-    totalH = Math.min(2160, Math.max(100, totalH));
+    totalW = Math.min(3840, Math.max(120, totalW));
+    totalH = Math.min(2160, Math.max(50, totalH));
 
     resetCanvas(canvas, totalW, totalH);
 
@@ -129,12 +185,12 @@ export default class CanvasText extends Entity {
     const centerX = totalW / 2;
     const centerY = totalH / 2;
 
-    context.textAlign = align === 'left' ? 'left' : (align === 'right' ? 'right' : 'center');
-    context.textBaseline = 'middle';
-
     let drawX = centerX;
     if (align === 'left') drawX = padding;
     if (align === 'right') drawX = totalW - padding;
+
+    context.textAlign = align === 'left' ? 'left' : (align === 'right' ? 'right' : 'center');
+    context.textBaseline = 'middle';
 
     // Helper draw function for a line of text with outline & glow
     const drawStyledLine = (textStr, x, y, fontStr, fillCol) => {
@@ -163,34 +219,40 @@ export default class CanvasText extends Entity {
     };
 
     if (isPlaylistLayout && trackListItems.length > 0) {
-      const cols = p.columns || 1;
+      const cols = Math.max(1, p.columns || 1);
+      const rowsPerCol = Math.ceil(trackListItems.length / cols);
       const colW = (totalW - padding * 2) / cols;
-      const rowH = fontSize * 1.4;
+      const rowH = fontSize * 1.5;
+
+      context.textAlign = 'left';
 
       trackListItems.forEach((track, idx) => {
-        const colIdx = Math.floor(idx / Math.ceil(trackListItems.length / cols));
-        const rowIdx = idx % Math.ceil(trackListItems.length / cols);
-        const itemX = padding + colIdx * colW + (colW / 2);
+        const colIdx = Math.floor(idx / rowsPerCol);
+        const rowIdx = idx % rowsPerCol;
+        const itemX = padding + colIdx * colW + 10;
         const itemY = padding + rowIdx * rowH + (rowH / 2);
 
+        const cleanName = (track.name || 'Track').replace(/\.[^/.]+$/, '');
         const numStr = String(idx + 1).padStart(2, '0');
-        const itemText = `${numStr}. ${track.name || 'Track'}`;
-        const itemFont = this.getFont(fontSize, fontWeight, fontFamily, false);
+        const itemText = `${numStr}. ${cleanName}`;
 
-        drawStyledLine(itemText, itemX, itemY, itemFont, color);
+        drawStyledLine(itemText, itemX, itemY, mainFont, color);
       });
     } else {
-      let mainY = centerY;
+      const lines = String(mainText).split('\n');
+      const labelSizePx = fontSize * (p.labelSize || 0.45);
+      const labelH = sublabel ? (labelSizePx * 1.6) : 0;
+      const textBlockH = (lines.length * fontSize * 1.25);
+      const totalContentH = textBlockH + labelH;
+      const startContentY = centerY - (totalContentH / 2);
 
       // Draw Sub-label if present ("CURRENT PLAYING")
       if (sublabel) {
-        const labelSizePx = fontSize * (p.labelSize || 0.45);
         const labelFont = this.getFont(labelSizePx, p.labelBold !== false ? 'Bold' : 'Normal', fontFamily, p.labelItalic);
-        const labelY = centerY - (fontSize * 0.7);
-        mainY = centerY + (fontSize * 0.4);
+        const labelY = startContentY + (labelSizePx / 2);
 
         context.save();
-        context.globalAlpha = 0.85;
+        context.globalAlpha = 0.9;
         let subX = drawX;
         if (p.labelAlign === 'Left') subX = padding;
         if (p.labelAlign === 'Right') subX = totalW - padding;
@@ -198,14 +260,10 @@ export default class CanvasText extends Entity {
         context.restore();
       }
 
-      // Draw Main Text (supports multi-line if \n exists)
-      const lines = String(mainText).split('\n');
-      const lineHeight = fontSize * 1.25;
-      const startLineY = mainY - ((lines.length - 1) * lineHeight) / 2;
-      const mainFont = this.getFont(fontSize, fontWeight, fontFamily, p.italic);
-
+      // Draw Main Text lines
+      const textStartY = startContentY + labelH + (fontSize * 0.6);
       lines.forEach((line, lineIdx) => {
-        drawStyledLine(line, drawX, startLineY + lineIdx * lineHeight, mainFont, color);
+        drawStyledLine(line, drawX, textStartY + lineIdx * (fontSize * 1.25), mainFont, color);
       });
     }
 
