@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "timestamp": 1787472906743,
-  "activeCategory": "audio",
+  "timestamp": 1787475408587,
+  "activeCategory": "text",
   "currentBgType": "image",
   "activeSelectedBgIndex": 0,
   "activeBackgrounds": [
     {
-      "id": "7b5797f8eb4d455a2588289eb0a30013ca012e54",
+      "id": "e37bc671efeca900b8c95c7f66c7d91ee87073b5",
       "name": "m7_1787471960511_1786495168.png",
       "type": "image",
       "src": "D:\\MediaFactory\\Output\\Temp\\m7_1787471960511_1786495168.png"

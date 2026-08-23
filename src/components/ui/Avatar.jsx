@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../utils/apiUrl';
 
 export default function Avatar({ name, size = 64, src = null, className = "" }) {
     const initial = name ? name.substring(0, 2).toUpperCase() : 'WS';
     const [imgError, setImgError] = useState(false);
-    
-    const hasImage = Boolean(src && !imgError);
 
-    // Format local file path if needed for browser display
+    // Reset error state whenever src prop changes
+    useEffect(() => {
+        setImgError(false);
+    }, [src]);
+
+    // Format display source safely
     let displaySrc = src;
-    if (displaySrc && typeof displaySrc === 'string' && !displaySrc.startsWith('data:') && !displaySrc.startsWith('blob:') && !displaySrc.startsWith('http') && !displaySrc.startsWith('/')) {
-        displaySrc = `/@fs/${displaySrc.replace(/\\/g, '/')}`;
+    if (displaySrc && typeof displaySrc === 'string') {
+        const isDataOrUrl = displaySrc.startsWith('data:') || 
+                            displaySrc.startsWith('blob:') || 
+                            displaySrc.startsWith('http://') || 
+                            displaySrc.startsWith('https://') || 
+                            displaySrc.startsWith('/api/');
+        
+        if (!isDataOrUrl) {
+            // Local file path from Windows or disk (e.g. C:\Users\... or D:/...)
+            displaySrc = getApiUrl(`/api/v1/system/file-view?path=${encodeURIComponent(displaySrc)}`);
+        }
     }
+
+    const hasImage = Boolean(displaySrc && !imgError);
 
     return (
         <div 
@@ -26,7 +41,10 @@ export default function Avatar({ name, size = 64, src = null, className = "" }) 
                 <img 
                     src={displaySrc} 
                     alt={name || 'Avatar'}
-                    onError={() => setImgError(true)}
+                    onError={() => {
+                        console.warn('[Avatar] Failed to load image:', displaySrc);
+                        setImgError(true);
+                    }}
                     className="w-full h-full object-cover relative z-10"
                 />
             ) : (

@@ -92,7 +92,11 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                     return updated;
                 });
 
-                // Auto save avatar
+                window.dispatchEvent(new CustomEvent('workspace_avatar_updated', {
+                    detail: { workspaceName: activeWorkspace, avatar: imgData }
+                }));
+
+                // Auto save avatar to backend
                 try {
                     await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(activeWorkspace)}/settings`), {
                         method: 'PUT',
@@ -104,10 +108,6 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                         })
                     });
                 } catch(err) {}
-
-                window.dispatchEvent(new CustomEvent('workspace_avatar_updated', {
-                    detail: { workspaceName: activeWorkspace, avatar: imgData }
-                }));
             }
         };
         reader.readAsDataURL(file);
@@ -321,7 +321,7 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                         {/* Hidden File Input for Avatar */}
                         <input 
                             type="file" 
-                            accept="image/*" 
+                            accept="image/png, image/jpeg, image/jpg, image/webp, image/svg+xml, image/gif, image/bmp, image/*" 
                             id="workspace-avatar-input"
                             className="hidden" 
                             onChange={handleAvatarUpload}
@@ -431,8 +431,15 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                             {renderPanelHeader('Default Branding Assets')}
                             <div className="mb-6 space-y-2">
                                 {renderInput('Logo / Avatar Path', settings.branding?.logo || '', e => {
-                                    setSettings({...settings, branding: {...settings.branding, logo: e.target.value}});
-                                    setAvatarUrl(e.target.value);
+                                    const val = e.target.value;
+                                    setSettings({...settings, branding: {...settings.branding, logo: val}});
+                                    setAvatarUrl(val);
+                                    if (val) {
+                                        localStorage.setItem(`mf_workspace_avatar_${activeWorkspace}`, val);
+                                        window.dispatchEvent(new CustomEvent('workspace_avatar_updated', {
+                                            detail: { workspaceName: activeWorkspace, avatar: val }
+                                        }));
+                                    }
                                 }, 'PATH\\TO\\LOGO', 'logo', 'file')}
                                 {renderInput('Watermark Path', settings.branding?.watermark || '', e => setSettings({...settings, branding: {...settings.branding, watermark: e.target.value}}), 'PATH\\TO\\WATERMARK', 'watermark', 'file')}
                                 {renderInput('Overlay Path', settings.branding?.overlay || '', e => setSettings({...settings, branding: {...settings.branding, overlay: e.target.value}}), 'PATH\\TO\\OVERLAY', 'overlay', 'file')}

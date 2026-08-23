@@ -8,42 +8,62 @@ const fontOptions = fonts.map(item => ({ label: item, value: item, style: { font
 export default class TextDisplay extends CanvasDisplay {
   static config = {
     name: 'TextDisplay',
-    description: 'Displays text.',
+    description: 'Displays dynamic text, typography, and tracklist.',
     type: 'display',
     label: 'Text',
     defaultProperties: {
-      text: '',
+      text: 'Custom Text',
+      name: 'Custom Text',
+      textType: 'custom',
+      bindToCurrentTrack: false,
+      showLabel: true,
+      labelSize: 0.4,
+      labelAlign: 'Center',
+      labelBold: true,
+      labelItalic: false,
+      labelColor: '#ffffff',
+      font: 'Segoe UI',
+      fontFamily: 'Segoe UI',
+      fontWeight: 'Extra-Bold',
       size: 40,
-      font: 'Roboto',
-      italic: false,
-      bold: false,
+      fontSize: 40,
+      align: 'Center',
       x: 0,
       y: 0,
       color: '#FFFFFF',
       rotation: 0,
       opacity: 1.0,
+      strokeEnabled: false,
+      stroke: 0,
+      strokeColor: '#000000',
+      glowEnabled: true,
+      glow: 15,
+      glowColor: '#f97316',
+      tiltX: 0,
+      tiltY: 0,
+      perspective: 60,
+      depth: 0,
+      columns: 1,
+      dataSource: 'linked',
+      numberFormat: '{number}. {title}'
     },
     controls: {
       text: {
         label: 'Text',
         type: 'text',
       },
-      size: {
-        label: 'Size',
+      fontSize: {
+        label: 'Font Size',
         type: 'number',
       },
-      font: {
+      fontFamily: {
         label: 'Font',
         type: 'select',
         items: fontOptions,
       },
-      italic: {
-        label: 'Italic',
-        type: 'toggle',
-      },
-      bold: {
-        label: 'Bold',
-        type: 'toggle',
+      color: {
+        label: 'Color',
+        type: 'color',
       },
       x: {
         label: 'X',
@@ -59,18 +79,6 @@ export default class TextDisplay extends CanvasDisplay {
         max: stageHeight(),
         withRange: true,
       },
-      color: {
-        label: 'Color',
-        type: 'color',
-      },
-      rotation: {
-        label: 'Rotation',
-        type: 'number',
-        min: 0,
-        max: 360,
-        withRange: true,
-        withReactor: true,
-      },
       opacity: {
         label: 'Opacity',
         type: 'number',
@@ -78,7 +86,6 @@ export default class TextDisplay extends CanvasDisplay {
         max: 1.0,
         step: 0.01,
         withRange: true,
-        withReactor: true,
       },
     },
   };
@@ -93,10 +100,10 @@ export default class TextDisplay extends CanvasDisplay {
   }
 
   update(properties) {
-    if (this.text.update(properties)) {
+    if (this.text) {
+      this.text.update(properties);
       this.text.render();
     }
-
     return super.update(properties);
   }
 }

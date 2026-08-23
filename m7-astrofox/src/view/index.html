@@ -1230,6 +1230,56 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+
+      /* TEXT OBJECTS CARDS (M3 PARITY) */
+      .m7-text-obj-card {
+        background: #141722;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      .m7-text-obj-card:hover {
+        background: #1a1e2c;
+        border-color: #f97316;
+        box-shadow: 0 4px 14px rgba(249, 115, 22, 0.2);
+        transform: translateY(-1.5px);
+      }
+      .m7-text-obj-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        flex-shrink: 0;
+      }
+      .m7-text-obj-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .m7-text-obj-title {
+        font-size: 12px;
+        font-weight: 800;
+        color: #f3f4f6;
+        letter-spacing: 0.2px;
+      }
+      .m7-text-obj-desc {
+        font-size: 9.5px;
+        color: #9ca3af;
+        font-weight: 500;
+      }
     </style>
   </head>
   <body>
@@ -2166,6 +2216,60 @@
 
         </div>
 
+        <!-- 6. TEXT OBJECTS SECTION (M3 PARITY) -->
+        <div id="m7-section-text" style="display:none; flex-direction:column; gap:12px;">
+          <div class="m7-panel-header">
+            <span class="m7-dot-orange"></span>
+            <span>TEXT OBJECTS</span>
+          </div>
+
+          <!-- 3 TEXT ACTION CARDS -->
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <!-- 1. Track List Layout -->
+            <div class="m7-text-obj-card" onclick="m7AddTextObjectDirect('playlist')">
+              <div class="m7-text-obj-icon" style="background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.3); color:#10b981;">📋</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Track List Layout</div>
+                <div class="m7-text-obj-desc">Auto-generated playlist compilation table</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 2. Current Playing -->
+            <div class="m7-text-obj-card" onclick="m7AddTextObjectDirect('title')">
+              <div class="m7-text-obj-icon" style="background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.3); color:#f59e0b;">🎵</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Current Playing</div>
+                <div class="m7-text-obj-desc">Dynamic real-time active song title banner</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 3. Custom Text -->
+            <div class="m7-text-obj-card" onclick="m7AddTextObjectDirect('custom')">
+              <div class="m7-text-obj-icon" style="background:rgba(168,85,247,0.15); border-color:rgba(168,85,247,0.3); color:#a855f7;">✍️</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Custom Text</div>
+                <div class="m7-text-obj-desc">Custom typography, title, artist, or watermark</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+          </div>
+
+          <!-- ACTIVE TEXT LAYERS LIST -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.5px; text-transform:uppercase;">ACTIVE TEXT LAYERS</span>
+              <span style="font-size:9px; background:rgba(249,115,22,0.15); color:#f97316; padding:1px 6px; border-radius:10px; font-weight:bold;" id="m7-text-count">0</span>
+            </div>
+            <div id="m7-text-list" style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto;">
+              <div id="m7-empty-text-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                No text layers added. Choose a text object above to add to screen.
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Right Panel: INSPECTOR -->
@@ -2666,6 +2770,279 @@
 
         </div>
 
+        <!-- 6. INSPECTOR: TEXT SETTINGS (M3 PARITY) -->
+        <div id="m7-inspector-text" style="display:none; flex-direction:column; gap:12px;">
+          
+          <!-- Card 1: DATA BINDING -->
+          <div class="m7-inspector-card">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> DATA BINDING
+            </div>
+            <div class="m7-toggle-row">
+              <span>Bind to Current Track Title</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-text-bind" onchange="m7UpdateTextProp('bindToCurrentTrack', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Card 2: LABEL PROPERTIES (CURRENT PLAYING) -->
+          <div class="m7-inspector-card" id="grp-text-label" style="display:none;">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> LABEL PROPERTIES (CURRENT PLAYING)
+            </div>
+            <div class="m7-toggle-row">
+              <span>Show Label</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-text-showlabel" checked onchange="m7UpdateTextProp('showLabel', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Label Size</span>
+                <span class="m7-control-val" id="val-text-labelsize">0.40</span>
+              </div>
+              <input type="range" class="m7-slider" min="0.1" max="2.0" step="0.05" value="0.4" id="slider-text-labelsize" oninput="m7UpdateTextProp('labelSize', parseFloat(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Label Alignment</span>
+              </div>
+              <select class="m7-select" id="sel-text-labelalign" onchange="m7UpdateTextProp('labelAlign', this.value)">
+                <option value="Left">Left</option>
+                <option value="Center" selected>Center</option>
+                <option value="Right">Right</option>
+              </select>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <div class="m7-toggle-row">
+                <span>Bold</span>
+                <label class="m7-switch">
+                  <input type="checkbox" id="chk-text-labelbold" checked onchange="m7UpdateTextProp('labelBold', this.checked)">
+                  <span class="m7-switch-slider"></span>
+                </label>
+              </div>
+              <div class="m7-toggle-row">
+                <span>Italic</span>
+                <label class="m7-switch">
+                  <input type="checkbox" id="chk-text-labelitalic" onchange="m7UpdateTextProp('labelItalic', this.checked)">
+                  <span class="m7-switch-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Label Color</span>
+              </div>
+              <input type="color" id="col-text-labelcolor" value="#ffffff" onchange="m7UpdateTextProp('labelColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+            </div>
+          </div>
+
+          <!-- Card 3: TRACK LIST PROPERTIES -->
+          <div class="m7-inspector-card" id="grp-text-playlist" style="display:none;">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> TRACK LIST LAYOUT
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Columns</span>
+              </div>
+              <select class="m7-select" id="sel-text-cols" onchange="m7UpdateTextProp('columns', parseInt(this.value))">
+                <option value="1" selected>1 Column</option>
+                <option value="2">2 Columns</option>
+                <option value="3">3 Columns</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Card 4: TEXT CONTENT -->
+          <div class="m7-inspector-card" id="grp-text-content">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> TEXT CONTENT
+            </div>
+            <textarea 
+              id="txt-text-content" 
+              class="m7-select" 
+              style="height:64px; resize:vertical; font-family:monospace; padding:8px;" 
+              placeholder="Enter text here..." 
+              oninput="m7UpdateTextProp('name', this.value); m7UpdateTextProp('text', this.value);"
+            ></textarea>
+          </div>
+
+          <!-- Card 5: TEXT PROPERTIES -->
+          <div class="m7-inspector-card">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> TEXT PROPERTIES
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Font</span>
+              </div>
+              <select class="m7-select" id="sel-text-font" onchange="m7UpdateTextProp('fontFamily', this.value); m7UpdateTextProp('font', this.value);">
+                <option value="Segoe UI" selected>Segoe UI</option>
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Poppins">Poppins</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Rajdhani">Rajdhani</option>
+                <option value="monospace">Monospace</option>
+              </select>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Weight</span>
+              </div>
+              <select class="m7-select" id="sel-text-weight" onchange="m7UpdateTextProp('fontWeight', this.value)">
+                <option value="Light">Light</option>
+                <option value="Normal">Normal</option>
+                <option value="Semi-Bold">Semi-Bold</option>
+                <option value="Bold">Bold</option>
+                <option value="Extra-Bold" selected>Extra-Bold</option>
+                <option value="Black">Black</option>
+              </select>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Font Size</span>
+                <span class="m7-control-val" id="val-text-fontsize">40</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="200" value="40" id="slider-text-fontsize" oninput="m7UpdateTextProp('fontSize', parseInt(this.value)); m7UpdateTextProp('size', parseInt(this.value));">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Alignment</span>
+              </div>
+              <select class="m7-select" id="sel-text-align" onchange="m7UpdateTextProp('align', this.value)">
+                <option value="Left">Left</option>
+                <option value="Center" selected>Center</option>
+                <option value="Right">Right</option>
+              </select>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Horizontal Position X</span>
+                <span class="m7-control-val" id="val-text-posx">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-800" max="800" value="0" id="slider-text-posx" oninput="m7UpdateTextProp('x', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Vertical Position Y</span>
+                <span class="m7-control-val" id="val-text-posy">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-500" max="500" value="0" id="slider-text-posy" oninput="m7UpdateTextProp('y', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Opacity</span>
+                <span class="m7-control-val" id="val-text-opacity">100</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-text-opacity" oninput="m7UpdateTextProp('opacity', parseInt(this.value) / 100)">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Text Color</span>
+              </div>
+              <input type="color" id="col-text-color" value="#ffffff" onchange="m7UpdateTextProp('color', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+            </div>
+
+            <!-- Stroke Outline -->
+            <div class="m7-toggle-row" style="margin-top:4px;">
+              <span>Stroke Outline</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-text-stroke" onchange="m7UpdateTextProp('strokeEnabled', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div id="grp-text-stroke-sub" style="display:none; flex-direction:column; gap:8px; padding-left:8px; border-left:2px solid rgba(255,255,255,0.1);">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Stroke Thickness</span>
+                  <span class="m7-control-val" id="val-text-stroke">2</span>
+                </div>
+                <input type="range" class="m7-slider" min="1" max="20" value="2" id="slider-text-stroke" oninput="m7UpdateTextProp('stroke', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Stroke Color</span>
+                </div>
+                <input type="color" id="col-text-strokecolor" value="#000000" onchange="m7UpdateTextProp('strokeColor', this.value)" style="width:100%; height:30px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+            </div>
+
+            <!-- Outer Glow -->
+            <div class="m7-toggle-row" style="margin-top:4px;">
+              <span>Outer Glow</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-text-glow" checked onchange="m7UpdateTextProp('glowEnabled', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div id="grp-text-glow-sub" style="display:flex; flex-direction:column; gap:8px; padding-left:8px; border-left:2px solid rgba(255,255,255,0.1);">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Glow Amount</span>
+                  <span class="m7-control-val" id="val-text-glow">15</span>
+                </div>
+                <input type="range" class="m7-slider" min="1" max="100" value="15" id="slider-text-glow" oninput="m7UpdateTextProp('glow', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Glow Color</span>
+                </div>
+                <input type="color" id="col-text-glowcolor" value="#f97316" onchange="m7UpdateTextProp('glowColor', this.value)" style="width:100%; height:30px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 6: 3D ROTATION & PERSPECTIVE -->
+          <div class="m7-inspector-card">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 3D ROTATION & PERSPECTIVE
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Tilt X (pitch)</span>
+                <span class="m7-control-val" id="val-text-tiltx">0°</span>
+              </div>
+              <input type="range" class="m7-slider" min="-90" max="90" value="0" id="slider-text-tiltx" oninput="m7UpdateTextProp('tiltX', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Tilt Y (yaw)</span>
+                <span class="m7-control-val" id="val-text-tilty">0°</span>
+              </div>
+              <input type="range" class="m7-slider" min="-90" max="90" value="0" id="slider-text-tilty" oninput="m7UpdateTextProp('tiltY', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Perspective</span>
+                <span class="m7-control-val" id="val-text-perspective">60%</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="60" id="slider-text-perspective" oninput="m7UpdateTextProp('perspective', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Depth (3D body)</span>
+                <span class="m7-control-val" id="val-text-depth">0%</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="0" id="slider-text-depth" oninput="m7UpdateTextProp('depth', parseInt(this.value))">
+            </div>
+            <button class="m7-btn-secondary" style="margin-top:6px; width:100%; justify-content:center;" onclick="m7ResetText3D()">
+              Reset 3D
+            </button>
+          </div>
+
+          <!-- Card 7: DELETE OBJECT -->
+          <button class="m7-layer-remove" style="padding:10px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="m7DeleteActiveText()">
+            🗑️ Delete Text Object
+          </button>
+
+        </div>
+
       </div>
     </div>
 
@@ -2823,17 +3200,19 @@
         const secViz = document.getElementById('m7-section-viz');
         const secParticle = document.getElementById('m7-section-particle');
         const secFx = document.getElementById('m7-section-fx');
+        const secText = document.getElementById('m7-section-text');
 
         const inspBg = document.getElementById('m7-inspector-bg');
         const inspPlaylist = document.getElementById('m7-inspector-playlist');
         const inspViz = document.getElementById('m7-inspector-viz');
         const inspParticle = document.getElementById('m7-inspector-particle');
         const inspFx = document.getElementById('m7-inspector-fx');
+        const inspText = document.getElementById('m7-inspector-text');
         const tag = document.getElementById('m7-inspector-tag');
 
         // Hide all sections first
-        [secBg, secPlaylist, secViz, secParticle, secFx].forEach(s => { if (s) s.style.display = 'none'; });
-        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx].forEach(i => { if (i) i.style.display = 'none'; });
+        [secBg, secPlaylist, secViz, secParticle, secFx, secText].forEach(s => { if (s) s.style.display = 'none'; });
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspText].forEach(i => { if (i) i.style.display = 'none'; });
 
         if (type === 'background') {
           if (secBg) secBg.style.display = 'flex';
@@ -2856,6 +3235,13 @@
           if (inspFx) inspFx.style.display = 'flex';
           if (tag) tag.innerText = 'VISUAL FX';
           m7InitGenrePresetsUI();
+        } else if (type === 'text' || type === 'lyrics') {
+          if (secText) secText.style.display = 'flex';
+          if (inspText) inspText.style.display = 'flex';
+          if (tag) tag.innerText = 'TEXT OBJECTS';
+          if (activeSelectedTextIndex >= 0 && activeTextObjects[activeSelectedTextIndex]) {
+            m7SyncInspectorToText(activeTextObjects[activeSelectedTextIndex]);
+          }
         } else if (type === 'branding') {
           if (window.__ASTROFOX__) window.__ASTROFOX__.send('menu-action', 'edit-canvas');
         }
@@ -3452,9 +3838,21 @@
 
             if (window.__ASTROFOX_AUDIO__ && window.__ASTROFOX_AUDIO__.audioStore) {
               window.__ASTROFOX_AUDIO__.audioStore.setState({
-                file: playlistTracks.length > 1 ? `Playlist: ${playlistTracks.length} Tracks (${m7FormatTime(totalSecs)})` : track.name,
+                file: track.name || (playlistTracks.length > 1 ? `Playlist: ${playlistTracks.length} Tracks (${m7FormatTime(totalSecs)})` : 'Track'),
                 duration: totalSecs || dec.duration,
                 loading: false
+              });
+            }
+
+            window.__M7_PLAYLIST_TRACKS__ = playlistTracks;
+            // Update all dynamic bound text displays (Current Playing title / Tracklist)
+            if (typeof activeTextObjects !== 'undefined' && activeTextObjects.length > 0) {
+              activeTextObjects.forEach(t => {
+                if (t.properties && (t.properties.bindToCurrentTrack || t.properties.textType === 'title' || t.properties.type === 'playlist')) {
+                  if (t.display && t.display.text) {
+                    t.display.text.render();
+                  }
+                }
               });
             }
 
@@ -5008,6 +5406,362 @@
         m7ScheduleAutosave();
       }
 
+      /* === 6. TEXT OBJECTS MODULE (M3 PARITY) === */
+      let activeTextObjects = []; // [{ id, name, text, type, textType, display, properties }]
+      let activeSelectedTextIndex = -1;
+
+      function m7AddTextObjectDirect(kind = 'custom') {
+        const scene = getOrCreateActiveScene();
+        if (!scene) return;
+        const core = window.__ASTROFOX_CORE__;
+        if (!core || !core.library) return;
+
+        const TextClass = core.library.get('displays')?.TextDisplay;
+        if (!TextClass) return;
+
+        let initialName = 'Custom Text';
+        let initialText = 'Custom Text';
+        let isBound = false;
+        let isPlaylist = false;
+        let fontSize = 40;
+        let yPos = 0;
+
+        if (kind === 'playlist') {
+          initialName = 'Track List Layout';
+          initialText = 'Track List Layout';
+          isPlaylist = true;
+          fontSize = 24;
+          yPos = -50;
+        } else if (kind === 'title') {
+          initialName = 'Current Playing';
+          initialText = '{current_track}';
+          isBound = true;
+          fontSize = 42;
+          yPos = 180;
+        }
+
+        const props = {
+          name: initialName,
+          text: initialText,
+          textType: isPlaylist ? 'playlist' : (isBound ? 'title' : 'custom'),
+          type: isPlaylist ? 'playlist' : 'text',
+          bindToCurrentTrack: isBound,
+          showLabel: true,
+          labelSize: 0.4,
+          labelAlign: 'Center',
+          labelBold: true,
+          labelItalic: false,
+          labelColor: '#ffffff',
+          fontFamily: 'Segoe UI',
+          fontWeight: 'Extra-Bold',
+          fontSize: fontSize,
+          align: 'Center',
+          x: 0,
+          y: yPos,
+          color: isPlaylist ? '#10b981' : (isBound ? '#f59e0b' : '#ffffff'),
+          opacity: 1.0,
+          strokeEnabled: false,
+          stroke: 0,
+          strokeColor: '#000000',
+          glowEnabled: true,
+          glow: 15,
+          glowColor: isPlaylist ? '#10b981' : (isBound ? '#f59e0b' : '#f97316'),
+          tiltX: 0,
+          tiltY: 0,
+          perspective: 60,
+          depth: 0,
+          columns: 1
+        };
+
+        const display = new TextClass(props);
+        scene.addElement(display);
+        m7EnforceLayerOrder(scene);
+
+        const newObj = {
+          id: 'text_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          name: initialName,
+          display: display,
+          properties: props
+        };
+
+        activeTextObjects.push(newObj);
+        activeSelectedTextIndex = activeTextObjects.length - 1;
+        m7RenderTextList();
+        m7SyncInspectorToText(newObj);
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7RenderTextList() {
+        const listEl = document.getElementById('m7-text-list');
+        const countEl = document.getElementById('m7-text-count');
+        if (countEl) countEl.innerText = activeTextObjects.length;
+        if (!listEl) return;
+
+        if (activeTextObjects.length === 0) {
+          listEl.innerHTML = `
+            <div id="m7-empty-text-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+              No text layers added. Choose a text object above to add to screen.
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = '';
+        activeTextObjects.forEach((item, idx) => {
+          const isSelected = (idx === activeSelectedTextIndex);
+          const row = document.createElement('div');
+          row.className = `m7-layer-item ${isSelected ? 'active' : ''}`;
+          row.onclick = () => {
+            activeSelectedTextIndex = idx;
+            m7RenderTextList();
+            m7SyncInspectorToText(item);
+            m7UpdateGizmo();
+            m7ScheduleAutosave();
+          };
+
+          const numStr = String(idx + 1).padStart(2, '0');
+          const isPlaylist = item.properties?.type === 'playlist' || item.properties?.textType === 'playlist';
+          const isBound = item.properties?.bindToCurrentTrack || item.properties?.textType === 'title';
+          const icon = isPlaylist ? '📋' : (isBound ? '🎵' : '✍️');
+
+          row.innerHTML = `
+            <span class="m7-layer-remove" title="Remove Text Layer" onclick="event.stopPropagation(); m7RemoveTextObject(${idx})">✕</span>
+            <span style="color:#6b7280; font-family:monospace; font-weight:800;">${numStr}</span>
+            <span>${icon}</span>
+            <span class="m7-layer-name">${item.properties?.name || item.name}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      function m7RemoveTextObject(idx) {
+        if (idx < 0 || idx >= activeTextObjects.length) return;
+        const removed = activeTextObjects.splice(idx, 1)[0];
+        const scene = getOrCreateActiveScene();
+        if (scene && removed && removed.display) {
+          scene.removeElement(removed.display);
+        }
+
+        if (activeTextObjects.length === 0) {
+          activeSelectedTextIndex = -1;
+        } else {
+          activeSelectedTextIndex = Math.min(activeSelectedTextIndex, activeTextObjects.length - 1);
+          if (activeSelectedTextIndex < 0) activeSelectedTextIndex = 0;
+        }
+
+        m7RenderTextList();
+        if (activeSelectedTextIndex >= 0 && activeTextObjects[activeSelectedTextIndex]) {
+          m7SyncInspectorToText(activeTextObjects[activeSelectedTextIndex]);
+        }
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7DeleteActiveText() {
+        if (activeSelectedTextIndex >= 0) {
+          m7RemoveTextObject(activeSelectedTextIndex);
+        }
+      }
+
+      function m7UpdateTextProp(prop, val) {
+        if (activeSelectedTextIndex < 0 || !activeTextObjects[activeSelectedTextIndex]) return;
+        const cur = activeTextObjects[activeSelectedTextIndex];
+        if (!cur.properties) cur.properties = {};
+        cur.properties[prop] = val;
+
+        // UI label updates
+        if (prop === 'fontSize' || prop === 'size') {
+          const valEl = document.getElementById('val-text-fontsize');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'x') {
+          const valEl = document.getElementById('val-text-posx');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'y') {
+          const valEl = document.getElementById('val-text-posy');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'opacity') {
+          const valEl = document.getElementById('val-text-opacity');
+          if (valEl) valEl.innerText = Math.round(val * 100);
+        }
+        if (prop === 'labelSize') {
+          const valEl = document.getElementById('val-text-labelsize');
+          if (valEl) valEl.innerText = parseFloat(val).toFixed(2);
+        }
+        if (prop === 'stroke') {
+          const valEl = document.getElementById('val-text-stroke');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'glow') {
+          const valEl = document.getElementById('val-text-glow');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'tiltX') {
+          const valEl = document.getElementById('val-text-tiltx');
+          if (valEl) valEl.innerText = `${val}°`;
+        }
+        if (prop === 'tiltY') {
+          const valEl = document.getElementById('val-text-tilty');
+          if (valEl) valEl.innerText = `${val}°`;
+        }
+        if (prop === 'perspective') {
+          const valEl = document.getElementById('val-text-perspective');
+          if (valEl) valEl.innerText = `${val}%`;
+        }
+        if (prop === 'depth') {
+          const valEl = document.getElementById('val-text-depth');
+          if (valEl) valEl.innerText = `${val}%`;
+        }
+
+        if (prop === 'strokeEnabled') {
+          const sub = document.getElementById('grp-text-stroke-sub');
+          if (sub) sub.style.display = val ? 'flex' : 'none';
+        }
+        if (prop === 'glowEnabled') {
+          const sub = document.getElementById('grp-text-glow-sub');
+          if (sub) sub.style.display = val ? 'flex' : 'none';
+        }
+
+        if (prop === 'bindToCurrentTrack') {
+          cur.properties.textType = val ? 'title' : 'custom';
+          const grpLabel = document.getElementById('grp-text-label');
+          const grpContent = document.getElementById('grp-text-content');
+          if (grpLabel) grpLabel.style.display = val ? 'flex' : 'none';
+          if (grpContent) grpContent.style.display = val ? 'none' : 'flex';
+          m7RenderTextList();
+        }
+
+        if (cur.display) {
+          cur.display.update(cur.properties);
+        }
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7SyncInspectorToText(textObj) {
+        if (!textObj || !textObj.properties) return;
+        const p = textObj.properties;
+
+        const isBound = !!p.bindToCurrentTrack || p.textType === 'title' || p.name === '{current_track}';
+        const isPlaylist = p.type === 'playlist' || p.textType === 'playlist';
+
+        const chkBind = document.getElementById('chk-text-bind');
+        if (chkBind) chkBind.checked = isBound;
+
+        const grpLabel = document.getElementById('grp-text-label');
+        if (grpLabel) grpLabel.style.display = isBound ? 'flex' : 'none';
+
+        const grpPlaylist = document.getElementById('grp-text-playlist');
+        if (grpPlaylist) grpPlaylist.style.display = isPlaylist ? 'flex' : 'none';
+
+        const grpContent = document.getElementById('grp-text-content');
+        if (grpContent) grpContent.style.display = (!isBound && !isPlaylist) ? 'flex' : 'none';
+
+        const txtContent = document.getElementById('txt-text-content');
+        if (txtContent) txtContent.value = p.text || p.name || '';
+
+        // Label controls
+        const chkShowLabel = document.getElementById('chk-text-showlabel');
+        if (chkShowLabel) chkShowLabel.checked = p.showLabel !== false;
+        const sliderLabelSize = document.getElementById('slider-text-labelsize');
+        const valLabelSize = document.getElementById('val-text-labelsize');
+        if (sliderLabelSize) sliderLabelSize.value = p.labelSize || 0.4;
+        if (valLabelSize) valLabelSize.innerText = parseFloat(p.labelSize || 0.4).toFixed(2);
+        const selLabelAlign = document.getElementById('sel-text-labelalign');
+        if (selLabelAlign) selLabelAlign.value = p.labelAlign || 'Center';
+        const chkLabelBold = document.getElementById('chk-text-labelbold');
+        if (chkLabelBold) chkLabelBold.checked = p.labelBold !== false;
+        const chkLabelItalic = document.getElementById('chk-text-labelitalic');
+        if (chkLabelItalic) chkLabelItalic.checked = !!p.labelItalic;
+        const colLabel = document.getElementById('col-text-labelcolor');
+        if (colLabel) colLabel.value = p.labelColor || p.color || '#ffffff';
+
+        // Text properties
+        const selFont = document.getElementById('sel-text-font');
+        if (selFont) selFont.value = p.fontFamily || p.font || 'Segoe UI';
+        const selWeight = document.getElementById('sel-text-weight');
+        if (selWeight) selWeight.value = p.fontWeight || 'Extra-Bold';
+        const sliderFontSize = document.getElementById('slider-text-fontsize');
+        const valFontSize = document.getElementById('val-text-fontsize');
+        if (sliderFontSize) sliderFontSize.value = p.fontSize || p.size || 40;
+        if (valFontSize) valFontSize.innerText = p.fontSize || p.size || 40;
+        const selAlign = document.getElementById('sel-text-align');
+        if (selAlign) selAlign.value = p.align || 'Center';
+
+        const sliderPosX = document.getElementById('slider-text-posx');
+        const valPosX = document.getElementById('val-text-posx');
+        if (sliderPosX) sliderPosX.value = p.x || 0;
+        if (valPosX) valPosX.innerText = p.x || 0;
+
+        const sliderPosY = document.getElementById('slider-text-posy');
+        const valPosY = document.getElementById('val-text-posy');
+        if (sliderPosY) sliderPosY.value = p.y || 0;
+        if (valPosY) valPosY.innerText = p.y || 0;
+
+        const sliderOpacity = document.getElementById('slider-text-opacity');
+        const valOpacity = document.getElementById('val-text-opacity');
+        const opVal = p.opacity !== undefined ? Math.round(p.opacity * 100) : 100;
+        if (sliderOpacity) sliderOpacity.value = opVal;
+        if (valOpacity) valOpacity.innerText = opVal;
+
+        const colText = document.getElementById('col-text-color');
+        if (colText) colText.value = p.color || '#ffffff';
+
+        // Stroke & Glow
+        const chkStroke = document.getElementById('chk-text-stroke');
+        if (chkStroke) chkStroke.checked = !!p.strokeEnabled;
+        const subStroke = document.getElementById('grp-text-stroke-sub');
+        if (subStroke) subStroke.style.display = p.strokeEnabled ? 'flex' : 'none';
+        const sliderStroke = document.getElementById('slider-text-stroke');
+        const valStroke = document.getElementById('val-text-stroke');
+        if (sliderStroke) sliderStroke.value = p.stroke || 2;
+        if (valStroke) valStroke.innerText = p.stroke || 2;
+        const colStroke = document.getElementById('col-text-strokecolor');
+        if (colStroke) colStroke.value = p.strokeColor || '#000000';
+
+        const chkGlow = document.getElementById('chk-text-glow');
+        if (chkGlow) chkGlow.checked = p.glowEnabled !== false;
+        const subGlow = document.getElementById('grp-text-glow-sub');
+        if (subGlow) subGlow.style.display = (p.glowEnabled !== false) ? 'flex' : 'none';
+        const sliderGlow = document.getElementById('slider-text-glow');
+        const valGlow = document.getElementById('val-text-glow');
+        if (sliderGlow) sliderGlow.value = p.glow !== undefined ? p.glow : 15;
+        if (valGlow) valGlow.innerText = p.glow !== undefined ? p.glow : 15;
+        const colGlow = document.getElementById('col-text-glowcolor');
+        if (colGlow) colGlow.value = p.glowColor || p.color || '#f97316';
+
+        // 3D
+        const sliderTiltX = document.getElementById('slider-text-tiltx');
+        const valTiltX = document.getElementById('val-text-tiltx');
+        if (sliderTiltX) sliderTiltX.value = p.tiltX || 0;
+        if (valTiltX) valTiltX.innerText = `${p.tiltX || 0}°`;
+
+        const sliderTiltY = document.getElementById('slider-text-tilty');
+        const valTiltY = document.getElementById('val-text-tilty');
+        if (sliderTiltY) sliderTiltY.value = p.tiltY || 0;
+        if (valTiltY) valTiltY.innerText = `${p.tiltY || 0}°`;
+
+        const sliderPersp = document.getElementById('slider-text-perspective');
+        const valPersp = document.getElementById('val-text-perspective');
+        if (sliderPersp) sliderPersp.value = p.perspective !== undefined ? p.perspective : 60;
+        if (valPersp) valPersp.innerText = `${p.perspective !== undefined ? p.perspective : 60}%`;
+
+        const sliderDepth = document.getElementById('slider-text-depth');
+        const valDepth = document.getElementById('val-text-depth');
+        if (sliderDepth) sliderDepth.value = p.depth || 0;
+        if (valDepth) valDepth.innerText = `${p.depth || 0}%`;
+      }
+
+      function m7ResetText3D() {
+        m7UpdateTextProp('tiltX', 0);
+        m7UpdateTextProp('tiltY', 0);
+        m7UpdateTextProp('perspective', 60);
+        m7UpdateTextProp('depth', 0);
+      }
+
       /* === 5. CANVA-STYLE ON-CANVAS DIRECT MANIPULATION GIZMO === */
       let m7IsGizmoSelected = false;
       let m7IsDraggingGizmo = false;
@@ -5019,6 +5773,8 @@
           m7RemoveVisualizer(activeSelectedVizIndex);
         } else if (activeCategory === 'background' && activeSelectedBgIndex >= 0 && activeBackgrounds[activeSelectedBgIndex]) {
           m7RemoveBackground(activeSelectedBgIndex);
+        } else if ((activeCategory === 'text' || activeCategory === 'lyrics') && activeSelectedTextIndex >= 0 && activeTextObjects[activeSelectedTextIndex]) {
+          m7RemoveTextObject(activeSelectedTextIndex);
         }
       }
 
@@ -5029,6 +5785,49 @@
         const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 854, height: 480 };
         const stageW = stageSize.width || 854;
         const stageH = stageSize.height || 480;
+
+        if ((activeCategory === 'text' || activeCategory === 'lyrics') && activeTextObjects[activeSelectedTextIndex]) {
+          const item = activeTextObjects[activeSelectedTextIndex];
+          const disp = item.display;
+          return {
+            type: 'text',
+            item: item,
+            display: disp,
+            name: item.properties?.name || item.name || 'Text',
+            getX: () => (disp.properties ? (disp.properties.x || 0) : 0),
+            getY: () => (disp.properties ? (disp.properties.y || 0) : 0),
+            getW: () => (disp.properties ? (disp.properties.fontSize * 8) : 400),
+            getH: () => (disp.properties ? (disp.properties.fontSize * 2.5) : 100),
+            getShadowH: () => 0,
+            setPos: (x, y) => {
+              disp.update({ x, y });
+              if (item.properties) {
+                item.properties.x = Math.round(x);
+                item.properties.y = Math.round(y);
+              }
+              const inX = document.getElementById('slider-text-posx');
+              const inY = document.getElementById('slider-text-posy');
+              const valX = document.getElementById('val-text-posx');
+              const valY = document.getElementById('val-text-posy');
+              if (inX) inX.value = Math.round(x);
+              if (inY) inY.value = Math.round(y);
+              if (valX) valX.innerText = Math.round(x);
+              if (valY) valY.innerText = Math.round(y);
+            },
+            setSize: (w, h) => {
+              const newFontSize = Math.max(10, Math.min(200, Math.round(h / 2.5)));
+              disp.update({ fontSize: newFontSize, size: newFontSize });
+              if (item.properties) {
+                item.properties.fontSize = newFontSize;
+                item.properties.size = newFontSize;
+              }
+              const inS = document.getElementById('slider-text-fontsize');
+              const valS = document.getElementById('val-text-fontsize');
+              if (inS) inS.value = newFontSize;
+              if (valS) valS.innerText = newFontSize;
+            }
+          };
+        }
 
         if (activeCategory === 'visualizer' && activeVisualizers[activeSelectedVizIndex]) {
           const item = activeVisualizers[activeSelectedVizIndex];
@@ -5563,7 +6362,13 @@
               source: eff.source,
               props: { ...(eff.props || {}) }
             })),
-            activeSelectedEffectIndex: activeSelectedEffectIndex
+            activeSelectedEffectIndex: activeSelectedEffectIndex,
+            activeTextObjects: activeTextObjects.map(t => ({
+              id: t.id,
+              name: t.properties?.name || t.name,
+              properties: { ...(t.properties || {}) }
+            })),
+            activeSelectedTextIndex: activeSelectedTextIndex
           };
 
           // 1. Save synchronously to localStorage
@@ -5673,26 +6478,39 @@
           }
 
           if (savedState.playlistTracks && Array.isArray(savedState.playlistTracks) && savedState.playlistTracks.length > 0) {
-            playlistTracks = savedState.playlistTracks.map(t => ({
-              id: t.id || ('track_' + Date.now()),
-              name: t.name,
-              path: t.path,
-              duration: t.duration || 0,
-              durationStr: t.durationStr || m7FormatTime(t.duration || 0),
-              buffer: null
-            }));
-            activeSelectedTrackIndex = (savedState.activeSelectedTrackIndex >= 0 && savedState.activeSelectedTrackIndex < playlistTracks.length) 
-              ? savedState.activeSelectedTrackIndex 
-              : 0;
-
+            playlistTracks = [];
+            for (let i = 0; i < savedState.playlistTracks.length; i++) {
+              const trk = savedState.playlistTracks[i];
+              let trackBuffer = null;
+              if (trk.path) {
+                try {
+                  const sRes = await fetch(`/api/m7/audio-stream?path=${encodeURIComponent(trk.path)}`);
+                  if (sRes.ok) trackBuffer = await sRes.arrayBuffer();
+                } catch(e) {}
+              }
+              if (!trackBuffer) {
+                trackBuffer = await m7GetAudioFromDB(trk.id || trk.name);
+              }
+              playlistTracks.push({
+                id: trk.id || ('trk_' + Date.now() + '_' + i),
+                name: trk.name,
+                path: trk.path || '',
+                duration: trk.duration || 0,
+                durationStr: trk.durationStr || '00:00',
+                buffer: trackBuffer
+              });
+            }
             m7UpdateTotalDuration();
+            activeSelectedTrackIndex = (savedState.activeSelectedTrackIndex >= 0 && savedState.activeSelectedTrackIndex < playlistTracks.length)
+              ? savedState.activeSelectedTrackIndex
+              : 0;
             m7RenderPlaylist();
-
-            // Load the active track into Astrofox player & audioStore without autoplay
-            await m7LoadTrackToPlayer(activeSelectedTrackIndex, false);
+            if (activeSelectedTrackIndex >= 0) {
+              await m7LoadTrackToPlayer(activeSelectedTrackIndex, false);
+            }
           }
 
-          // 4. Restore Visualizer Spectrum State & Layers
+          // 4. Restore Spectrum Visualizers
           if (savedState.vizState) {
             Object.assign(vizState, savedState.vizState);
             ['barWidth', 'barSpacing', 'height', 'posX', 'posY', 'smoothing'].forEach(p => {
@@ -5781,7 +6599,38 @@
             }
           }
 
-          // 7. Restore Navigation Category
+          // 7. Restore Text Objects (M3 Parity)
+          if (savedState.activeTextObjects && Array.isArray(savedState.activeTextObjects) && savedState.activeTextObjects.length > 0) {
+            activeTextObjects = [];
+            const scene = getOrCreateActiveScene();
+            const core = window.__ASTROFOX_CORE__;
+            const TextClass = core?.library?.get('displays')?.TextDisplay;
+
+            if (scene && TextClass) {
+              for (let i = 0; i < savedState.activeTextObjects.length; i++) {
+                const item = savedState.activeTextObjects[i];
+                const p = item.properties || {};
+                const display = new TextClass(p);
+                scene.addElement(display);
+
+                activeTextObjects.push({
+                  id: item.id || ('text_' + Date.now() + '_' + i),
+                  name: p.name || item.name || 'Text',
+                  display: display,
+                  properties: p
+                });
+              }
+              activeSelectedTextIndex = (savedState.activeSelectedTextIndex >= 0 && savedState.activeSelectedTextIndex < activeTextObjects.length)
+                ? savedState.activeSelectedTextIndex
+                : 0;
+              m7RenderTextList();
+              if (activeTextObjects[activeSelectedTextIndex]) {
+                m7SyncInspectorToText(activeTextObjects[activeSelectedTextIndex]);
+              }
+            }
+          }
+
+          // 8. Restore Navigation Category
           if (savedState.activeCategory) {
             m7SelectCategory(savedState.activeCategory);
           }

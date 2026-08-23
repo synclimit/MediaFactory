@@ -362,15 +362,47 @@ class WorkspaceService {
                             }
                         } catch (e) {}
 
-                        // 1. Calculate Real Project Count
+                        // 1. Calculate Real Project Count (Projects folder + output project directories)
                         let totalProjects = 0;
                         const projectsPath = path.join(wsFolder, 'Projects');
                         try {
                             if (fsSync.existsSync(projectsPath)) {
                                 const pEntries = await fs.readdir(projectsPath);
-                                totalProjects = pEntries.filter(f => !f.startsWith('.')).length;
+                                totalProjects += pEntries.filter(f => !f.startsWith('.')).length;
                             }
                         } catch (e) {}
+
+                        // Read config data
+                        let configData = null;
+                        let customOutput = null;
+                        try {
+                            if (fsSync.existsSync(configPath)) {
+                                configData = JSON.parse(await fs.readFile(configPath, 'utf8'));
+                                if (configData?.data?.output?.main && configData.data.output.main !== path.join(wsFolder, 'Output')) {
+                                    customOutput = configData.data.output.main;
+                                }
+                            }
+                        } catch (e) {}
+
+                        // Scan sub-project folders in custom output (M1, M2, M3 Fast/Normal, M4, M5, M7)
+                        if (customOutput && fsSync.existsSync(customOutput)) {
+                            const scanSubdirs = async (dir) => {
+                                try {
+                                    if (!fsSync.existsSync(dir)) return 0;
+                                    const entries = await fs.readdir(dir, { withFileTypes: true });
+                                    return entries.filter(e => e.isDirectory() && !e.name.startsWith('.')).length;
+                                } catch(e) { return 0; }
+                            };
+                            totalProjects += await scanSubdirs(path.join(customOutput, 'M1'));
+                            totalProjects += await scanSubdirs(path.join(customOutput, 'M2'));
+                            totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Fast Render'));
+                            totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Normal Render'));
+                            totalProjects += await scanSubdirs(path.join(customOutput, 'M4'));
+                            totalProjects += await scanSubdirs(path.join(customOutput, 'M5'));
+                            totalProjects += await scanSubdirs(path.join(customOutput, 'M6'));
+                            totalProjects += await scanSubdirs(path.join(customOutput, 'M7'));
+                            totalProjects += await scanSubdirs(path.join(customOutput, 'M7_Astrofox'));
+                        }
 
                         // 2. Calculate Real Render Count from Output / Renders folders
                         let renderCount = 0;
@@ -379,17 +411,9 @@ class WorkspaceService {
                         renderCount += await this._countMediaFiles(defaultOutputDir);
                         renderCount += await this._countMediaFiles(rendersDir);
 
-                        // Check custom output folder if configured
-                        let customOutput = null;
-                        try {
-                            if (fsSync.existsSync(configPath)) {
-                                const confData = JSON.parse(await fs.readFile(configPath, 'utf8'));
-                                if (confData?.data?.output?.main && confData.data.output.main !== defaultOutputDir) {
-                                    customOutput = confData.data.output.main;
-                                    renderCount += await this._countMediaFiles(customOutput);
-                                }
-                            }
-                        } catch (e) {}
+                        if (customOutput && fsSync.existsSync(customOutput)) {
+                            renderCount += await this._countMediaFiles(customOutput);
+                        }
 
                         // 3. Calculate Real Storage Size in Bytes
                         const dirStats = await this._calculateDirStats(wsFolder);
@@ -410,14 +434,16 @@ class WorkspaceService {
                             formattedStorage = '0.00 GB';
                         }
 
-                        // 4. Calculate Real Last Opened Timestamp
+                        // 4. Calculate Real Last Opened Timestamp (Prefer config/settings updatedAt or manifest lastOpened)
                         let lastOpened = null;
-                        if (manifestData?.data?.updatedAt) {
-                            lastOpened = manifestData.data.updatedAt;
-                        } else if (manifestData?.data?.lastOpened) {
+                        if (manifestData?.data?.lastOpened) {
                             lastOpened = manifestData.data.lastOpened;
-                        } else if (manifestData?.data?.createdAt) {
-                            lastOpened = manifestData.data.createdAt;
+                        } else if (configData?.updatedAt) {
+                            lastOpened = configData.updatedAt;
+                        } else if (manifestData?.data?.updatedAt && manifestData.data.updatedAt !== manifestData?.data?.createdAt) {
+                            lastOpened = manifestData.data.updatedAt;
+                        } else if (configData?.createdAt) {
+                            lastOpened = configData.createdAt;
                         } else {
                             try {
                                 const folderStat = await fs.stat(wsFolder);
@@ -433,7 +459,7 @@ class WorkspaceService {
                         workspaces.push({
                             name: displayName,
                             folderName: wsName,
-                            thumbnail: manifestData?.data?.thumbnail || null,
+                            thumbnail: manifestData?.data?.thumbnail || configData?.data?.general?.channelThumbnail || configData?.data?.branding?.logo || null,
                             lastOpened: lastOpened,
                             totalProjects: totalProjects,
                             lastRender: null,

@@ -38,10 +38,10 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
             const data = await res.json();
             const loaded = (data.success && Array.isArray(data.data)) ? data.data : [];
 
-            // Combine backend list with client-side cache
+            // Combine backend list with client-side cache (case-insensitive)
             const combined = [...loaded];
             for (const name of cachedList) {
-                if (!combined.some(w => w.name === name || w.folderName === name)) {
+                if (!combined.some(w => (w.name && w.name.toLowerCase() === name.toLowerCase()) || (w.folderName && w.folderName.toLowerCase() === name.toLowerCase()))) {
                     combined.push({ 
                         name, 
                         folderName: name, 
@@ -182,7 +182,7 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className="text-gray-500 mb-1">STORAGE</span>
-                                        <span className="font-bold text-white text-[13px]">{ws.storageSizeGB || '0.00 GB'}</span>
+                                        <span className="font-bold text-white text-[13px]">{ws.storageSizeGB ? (String(ws.storageSizeGB).includes(' ') ? ws.storageSizeGB : `${ws.storageSizeGB} GB`) : '0.00 GB'}</span>
                                     </div>
                                 </div>
                                 

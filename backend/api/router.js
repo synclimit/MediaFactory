@@ -12,6 +12,22 @@ router.use((req, res, next) => {
 });
 
 // --- System Endpoints ---
+router.get('/api/v1/system/file-view', (req, res) => {
+    try {
+        const filePath = req.query.path;
+        if (!filePath) return res.status(400).send('Path required');
+        const fs = require('fs');
+        const path = require('path');
+        const resolved = path.resolve(filePath);
+        if (!fs.existsSync(resolved)) {
+            return res.status(404).send('File not found');
+        }
+        res.sendFile(resolved);
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
+});
+
 router.get('/api/v1/system/health', (req, res) => res.standardResponse({ status: 'ok' }));
 router.get('/api/v1/system/version', (req, res) => res.standardResponse({ version: '1.0.0' }));
 router.get('/api/v1/system/runtime', (req, res) => res.standardResponse({ uptime: process.uptime() }));
