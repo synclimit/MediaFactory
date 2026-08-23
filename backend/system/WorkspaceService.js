@@ -257,9 +257,14 @@ class WorkspaceService {
 
     async _calculateDirStats(dirPath) {
         const fs = require('fs').promises;
+        const fsSync = require('fs');
         const path = require('path');
         let totalSize = 0;
         let fileCount = 0;
+
+        if (!fsSync.existsSync(dirPath)) {
+            return { totalSize: 0, fileCount: 0 };
+        }
 
         const walk = async (currentPath) => {
             try {
@@ -269,9 +274,11 @@ class WorkspaceService {
                     if (entry.isDirectory()) {
                         await walk(fullPath);
                     } else if (entry.isFile()) {
-                        const stat = await fs.stat(fullPath);
-                        totalSize += stat.size;
-                        fileCount++;
+                        try {
+                            const stat = await fs.stat(fullPath);
+                            totalSize += stat.size;
+                            fileCount++;
+                        } catch(e) {}
                     }
                 }
             } catch (e) {
@@ -282,11 +289,41 @@ class WorkspaceService {
         return { totalSize, fileCount };
     }
 
+    async _countMediaFiles(dirPath) {
+        const fs = require('fs').promises;
+        const fsSync = require('fs');
+        const path = require('path');
+        let count = 0;
+
+        if (!fsSync.existsSync(dirPath)) return 0;
+
+        const mediaExts = new Set(['.mp4', '.mkv', '.mov', '.avi', '.webm', '.flv', '.m4v']);
+
+        const walk = async (currentPath) => {
+            try {
+                const entries = await fs.readdir(currentPath, { withFileTypes: true });
+                for (const entry of entries) {
+                    const fullPath = path.join(currentPath, entry.name);
+                    if (entry.isDirectory()) {
+                        await walk(fullPath);
+                    } else if (entry.isFile()) {
+                        const ext = path.extname(entry.name).toLowerCase();
+                        if (mediaExts.has(ext)) {
+                            count++;
+                        }
+                    }
+                }
+            } catch (e) {}
+        };
+        await walk(dirPath);
+        return count;
+    }
+
     async listWorkspaces() {
-        const config = this._getConfig();
         const fs = require('fs').promises;
         const fsSync = require('fs');
         const os = require('os');
+        const path = require('path');
 
         const candidateBases = [
             this.basePath,
@@ -319,33 +356,91 @@ class WorkspaceService {
                         seenNames.add(wsName);
 
                         let manifestData = null;
-                            try {
-                                if (fsSync.existsSync(manifestPath)) {
-                                    manifestData = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+                        try {
+                            if (fsSync.existsSync(manifestPath)) {
+                                manifestData = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+                            }
+                        } catch (e) {}
+
+                        // 1. Calculate Real Project Count
+                        let totalProjects = 0;
+                        const projectsPath = path.join(wsFolder, 'Projects');
+                        try {
+                            if (fsSync.existsSync(projectsPath)) {
+                                const pEntries = await fs.readdir(projectsPath);
+                                totalProjects = pEntries.filter(f => !f.startsWith('.')).length;
+                            }
+                        } catch (e) {}
+
+                        // 2. Calculate Real Render Count from Output / Renders folders
+                        let renderCount = 0;
+                        const defaultOutputDir = path.join(wsFolder, 'Output');
+                        const rendersDir = path.join(wsFolder, 'Renders');
+                        renderCount += await this._countMediaFiles(defaultOutputDir);
+                        renderCount += await this._countMediaFiles(rendersDir);
+
+                        // Check custom output folder if configured
+                        let customOutput = null;
+                        try {
+                            if (fsSync.existsSync(configPath)) {
+                                const confData = JSON.parse(await fs.readFile(configPath, 'utf8'));
+                                if (confData?.data?.output?.main && confData.data.output.main !== defaultOutputDir) {
+                                    customOutput = confData.data.output.main;
+                                    renderCount += await this._countMediaFiles(customOutput);
                                 }
-                            } catch (e) {}
+                            }
+                        } catch (e) {}
 
-                            let totalProjects = 0;
-                            const projectsPath = path.join(wsFolder, 'Projects');
+                        // 3. Calculate Real Storage Size in Bytes
+                        const dirStats = await this._calculateDirStats(wsFolder);
+                        let totalSizeBytes = dirStats.totalSize;
+                        if (customOutput && fsSync.existsSync(customOutput)) {
+                            const customStats = await this._calculateDirStats(customOutput);
+                            totalSizeBytes += customStats.totalSize;
+                        }
+
+                        let formattedStorage = '0.00 GB';
+                        if (totalSizeBytes >= 1024 * 1024 * 1024) {
+                            formattedStorage = `${(totalSizeBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+                        } else if (totalSizeBytes >= 1024 * 1024) {
+                            formattedStorage = `${(totalSizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+                        } else if (totalSizeBytes > 0) {
+                            formattedStorage = `${(totalSizeBytes / 1024).toFixed(0)} KB`;
+                        } else {
+                            formattedStorage = '0.00 GB';
+                        }
+
+                        // 4. Calculate Real Last Opened Timestamp
+                        let lastOpened = null;
+                        if (manifestData?.data?.updatedAt) {
+                            lastOpened = manifestData.data.updatedAt;
+                        } else if (manifestData?.data?.lastOpened) {
+                            lastOpened = manifestData.data.lastOpened;
+                        } else if (manifestData?.data?.createdAt) {
+                            lastOpened = manifestData.data.createdAt;
+                        } else {
                             try {
-                                if (fsSync.existsSync(projectsPath)) {
-                                    const pEntries = await fs.readdir(projectsPath);
-                                    totalProjects = pEntries.length;
-                                }
-                            } catch (e) {}
+                                const folderStat = await fs.stat(wsFolder);
+                                lastOpened = folderStat.mtimeMs;
+                            } catch(e) {
+                                lastOpened = Date.now();
+                            }
+                        }
 
-                            const displayName = manifestData?.data?.name || manifestData?.name || wsName;
+                        const displayName = manifestData?.data?.name || manifestData?.name || wsName;
+                        const isCurrentActive = Boolean(this.currentWorkspace && (this.currentWorkspace.toLowerCase() === wsName.toLowerCase() || this.currentWorkspace.toLowerCase() === displayName.toLowerCase()));
 
-                            workspaces.push({
-                                name: displayName,
-                                folderName: wsName,
-                                thumbnail: manifestData?.data?.thumbnail || null,
-                                lastOpened: manifestData?.data?.updatedAt || manifestData?.data?.createdAt || Date.now(),
-                                totalProjects: totalProjects,
-                                lastRender: null,
-                                renderCount: 0,
-                                storageSizeGB: '0.10'
-                            });
+                        workspaces.push({
+                            name: displayName,
+                            folderName: wsName,
+                            thumbnail: manifestData?.data?.thumbnail || null,
+                            lastOpened: lastOpened,
+                            totalProjects: totalProjects,
+                            lastRender: null,
+                            renderCount: renderCount,
+                            storageSizeGB: formattedStorage,
+                            isActive: isCurrentActive
+                        });
                     }
                 }
             } catch (e) {

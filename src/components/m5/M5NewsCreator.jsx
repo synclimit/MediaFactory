@@ -346,24 +346,28 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
       <div className="w-[30%] min-w-[300px] flex flex-col gap-3 min-h-0 overflow-y-auto m5-scroll pr-1">
         
         {/* INPUT SOURCE WITH 2 OPTIONS */}
-        <div className="bg-[#111216] border border-[#2a2c33] rounded-xl p-4 flex flex-col gap-3 shadow-lg">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Globe size={14} className="text-orange-500"/> News Source
+        <div className="bg-[#14161f] border border-[#2e3346] hover:border-orange-500/40 rounded-xl p-4 flex flex-col gap-3 shadow-lg relative overflow-hidden transition-colors">
+          {/* Top Orange Hairline Accent */}
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-orange-500/70 to-transparent"></div>
+
+          <div className="flex items-center justify-between border-b border-[#252838] pb-2">
+            <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2 font-['Rajdhani']">
+              <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,1)]"></span>
+              <Globe size={14} className="text-orange-400"/> NEWS SOURCE
             </h3>
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="flex bg-[#1a1c23] p-1 rounded-lg border border-[#333]">
+          <div className="flex bg-[#0f1017] p-1 rounded-lg border border-[#2d3142]">
             <button 
               onClick={() => setSourceMode('LINK')}
-              className={`flex-1 py-1 text-[10px] font-bold rounded transition-all flex items-center justify-center gap-1.5 ${sourceMode === 'LINK' ? 'bg-orange-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 py-1.5 text-[10px] font-bold font-['Rajdhani'] uppercase tracking-wider rounded transition-all flex items-center justify-center gap-1.5 cursor-pointer ${sourceMode === 'LINK' ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.5)] border border-orange-400' : 'text-gray-400 hover:text-white'}`}
             >
               <Globe size={12}/> From Link
             </button>
             <button 
               onClick={() => setSourceMode('SCREENSHOT')}
-              className={`flex-1 py-1 text-[10px] font-bold rounded transition-all flex items-center justify-center gap-1.5 ${sourceMode === 'SCREENSHOT' ? 'bg-orange-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 py-1.5 text-[10px] font-bold font-['Rajdhani'] uppercase tracking-wider rounded transition-all flex items-center justify-center gap-1.5 cursor-pointer ${sourceMode === 'SCREENSHOT' ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.5)] border border-orange-400' : 'text-gray-400 hover:text-white'}`}
             >
               <ImageIcon size={12}/> From Screenshot
             </button>
@@ -371,10 +375,10 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
 
           {sourceMode === 'LINK' ? (
             <>
-              <p className="text-[10px] text-gray-500">Paste URL(s) or import from TXT.</p>
+              <p className="text-[10px] text-gray-400 font-medium">Paste URL(s) or import from TXT.</p>
               
               <textarea 
-                className="w-full h-[90px] bg-[#1a1c23] border border-[#333] rounded-lg p-2 text-[11px] text-gray-300 font-mono resize-none focus:outline-none focus:border-orange-500 transition-colors"
+                className="w-full h-[90px] bg-[#0f1017] border border-[#2d3142] rounded-lg p-2.5 text-[11px] text-gray-200 font-mono resize-none focus:outline-none focus:border-orange-500/70 focus:ring-1 focus:ring-orange-500/30 transition-all shadow-inner"
                 value={links}
                 onChange={(e) => setLinks(e.target.value)}
                 placeholder="https://..."
@@ -382,20 +386,20 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
               
               <div className="flex justify-between items-center mt-1">
                 <div className="flex gap-2">
-                  <button onClick={() => setLinks('')} className="text-[11px] text-red-400 hover:text-red-300 px-2 py-1 rounded transition-all">Clear</button>
+                  <button onClick={() => setLinks('')} className="text-[11px] text-gray-400 hover:text-red-400 px-2 py-1 rounded transition-all cursor-pointer">Clear</button>
                 </div>
-                <button onClick={handleStartPipeline} disabled={isProcessing} className="text-[11px] bg-orange-600 hover:bg-orange-500 text-white font-bold px-3 py-1.5 rounded transition-all disabled:opacity-50">
-                  {isProcessing ? 'Processing...' : 'Add to Queue'}
+                <button onClick={handleStartPipeline} disabled={isProcessing} className="text-[11px] bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold font-['Rajdhani'] uppercase tracking-wider px-4 py-1.5 rounded-lg transition-all disabled:opacity-50 shadow-[0_0_10px_rgba(249,115,22,0.4)] border border-orange-400 cursor-pointer">
+                  {isProcessing ? 'Processing...' : 'Fetch AI Draft'}
                 </button>
               </div>
             </>
           ) : (
             <>
-              <p className="text-[10px] text-gray-500">Upload news screenshot. AI will extract & write fresh news text.</p>
+              <p className="text-[10px] text-gray-400 font-medium">Upload news screenshot. AI will extract & write fresh news text.</p>
 
               {screenshotPath ? (
                 <div className="flex flex-col gap-2">
-                  <div className="relative rounded-lg overflow-hidden border border-[#333] max-h-[120px] bg-black flex items-center justify-center">
+                  <div className="relative rounded-lg overflow-hidden border border-[#2d3142] max-h-[120px] bg-black flex items-center justify-center">
                     <img src={`/@fs/${screenshotPath.replace(/\\/g, '/')}`} className="max-h-[120px] object-contain" />
                     <button 
                       onClick={() => setScreenshotPath('')}
@@ -405,10 +409,10 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                     </button>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <button onClick={handleBrowseScreenshot} className="text-[10px] bg-[#222] hover:bg-[#333] text-gray-300 font-bold px-2 py-1.5 rounded border border-[#333] flex-1">
+                    <button onClick={handleBrowseScreenshot} className="text-[10px] bg-[#1a1c27] hover:bg-[#252838] text-gray-200 font-bold px-2 py-1.5 rounded border border-[#2d3142] flex-1">
                       Change Screenshot
                     </button>
-                    <button onClick={handleAnalyzeScreenshot} disabled={isProcessing} className="text-[10px] bg-orange-600 hover:bg-orange-500 text-white font-bold px-3 py-1.5 rounded flex-1 disabled:opacity-50 shadow">
+                    <button onClick={handleAnalyzeScreenshot} disabled={isProcessing} className="text-[10px] bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold px-3 py-1.5 rounded flex-1 disabled:opacity-50 shadow-[0_0_10px_rgba(249,115,22,0.4)] border border-orange-400">
                       {isProcessing ? 'Reading AI...' : '✨ Analyze with AI'}
                     </button>
                   </div>
@@ -416,7 +420,7 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
               ) : (
                 <div 
                   onClick={handleBrowseScreenshot}
-                  className="p-4 border-2 border-dashed border-[#444] hover:border-orange-500/50 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/20 hover:bg-white/5 transition-all gap-1.5"
+                  className="p-4 border-2 border-dashed border-[#2d3142] hover:border-orange-500/60 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/30 hover:bg-orange-500/5 transition-all gap-1.5"
                 >
                   <ImageIcon size={24} className="text-gray-500" />
                   <span className="text-[11px] text-gray-300 font-medium">Upload News Screenshot</span>
@@ -427,17 +431,24 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
           )}
         </div>
 
-        {/* SETTINGS */}
-        <div className="bg-[#111216] border border-[#2a2c33] rounded-xl p-4 flex flex-col gap-3 shadow-lg flex-1">
-          <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <Settings2 size={14} className="text-orange-500"/> Global Settings
-          </h3>
-          <p className="text-[10px] text-gray-500 mb-1">Set output properties for the batch.</p>
+        {/* GLOBAL SETTINGS */}
+        <div className="bg-[#14161f] border border-[#2e3346] hover:border-orange-500/40 rounded-xl p-4 flex flex-col gap-3 shadow-lg flex-1 relative overflow-hidden transition-colors">
+          {/* Top Orange Hairline Accent */}
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-orange-500/70 to-transparent"></div>
+
+          <div className="flex items-center justify-between border-b border-[#252838] pb-2">
+            <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2 font-['Rajdhani']">
+              <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,1)]"></span>
+              <Settings2 size={14} className="text-orange-400"/> GLOBAL SETTINGS
+            </h3>
+            <span className="text-[9px] text-orange-400 font-mono font-bold">BATCH PRESETS</span>
+          </div>
+          <p className="text-[10px] text-gray-400">Set output properties for the batch render.</p>
           
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold">Duration</label>
-              <select value={globalDuration} onChange={e => setGlobalDuration(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Duration</label>
+              <select value={globalDuration} onChange={e => setGlobalDuration(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
                 <option value="10s">10s</option>
                 <option value="15s">15s</option>
                 <option value="20s">20s</option>
@@ -447,47 +458,47 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
               </select>
             </div>
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold">Language</label>
-              <select value={globalLang} onChange={e => setGlobalLang(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Language</label>
+              <select value={globalLang} onChange={e => setGlobalLang(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
                 <option value="Indonesia">Indonesia</option>
                 <option value="English">English</option>
               </select>
             </div>
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold">Resolution</label>
-              <select value={globalRes} onChange={e => setGlobalRes(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Resolution</label>
+              <select value={globalRes} onChange={e => setGlobalRes(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
                 <option value="1080x1920 (9:16)">1080x1920 (9:16)</option>
               </select>
             </div>
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold">FPS</label>
-              <select value={globalFPS} onChange={e => setGlobalFPS(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">FPS</label>
+              <select value={globalFPS} onChange={e => setGlobalFPS(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
                 <option value="30 FPS">30 FPS</option>
                 <option value="60 FPS">60 FPS</option>
               </select>
             </div>
           </div>
 
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 space-y-2 pt-2 border-t border-[#252838]">
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold flex items-center gap-1"><Video size={10}/> Background Folder (Optional)</label>
-              <div className="flex border border-[#333] rounded overflow-hidden mt-1">
-                <input type="text" readOnly value={bgFolder} placeholder="Random file if empty" className="bg-[#1a1c23] px-2 py-1 text-[10px] w-full border-none outline-none text-gray-400"/>
-                <button onClick={() => handleBrowseFolder(setBgFolder)} className="bg-[#222] hover:bg-[#333] px-3 text-[10px] text-orange-500 font-bold border-l border-[#333]">Browse</button>
+              <label className="text-[9px] text-gray-400 uppercase font-bold flex items-center gap-1"><Video size={10} className="text-orange-400"/> Background Folder (Optional)</label>
+              <div className="flex border border-[#2d3142] rounded-lg overflow-hidden mt-1 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner">
+                <input type="text" readOnly value={bgFolder} placeholder="Random file if empty" className="bg-transparent px-2.5 py-1 text-[10px] w-full border-none outline-none text-gray-300 font-mono"/>
+                <button onClick={() => handleBrowseFolder(setBgFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-3 text-[10px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer">Browse</button>
               </div>
             </div>
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold flex items-center gap-1"><Music size={10}/> Audio Folder (Optional)</label>
-              <div className="flex border border-[#333] rounded overflow-hidden mt-1">
-                <input type="text" readOnly value={audioFolder} placeholder="Random file if empty" className="bg-[#1a1c23] px-2 py-1 text-[10px] w-full border-none outline-none text-gray-400"/>
-                <button onClick={() => handleBrowseFolder(setAudioFolder)} className="bg-[#222] hover:bg-[#333] px-3 text-[10px] text-orange-500 font-bold border-l border-[#333]">Browse</button>
+              <label className="text-[9px] text-gray-400 uppercase font-bold flex items-center gap-1"><Music size={10} className="text-orange-400"/> Audio Folder (Optional)</label>
+              <div className="flex border border-[#2d3142] rounded-lg overflow-hidden mt-1 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner">
+                <input type="text" readOnly value={audioFolder} placeholder="Random file if empty" className="bg-transparent px-2.5 py-1 text-[10px] w-full border-none outline-none text-gray-300 font-mono"/>
+                <button onClick={() => handleBrowseFolder(setAudioFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-3 text-[10px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer">Browse</button>
               </div>
             </div>
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold flex items-center gap-1"><ImageIcon size={10}/> Overlay Folder (Optional)</label>
-              <div className="flex border border-[#333] rounded overflow-hidden mt-1">
-                <input type="text" readOnly value={overlayFolder} placeholder="Random file if empty" className="bg-[#1a1c23] px-2 py-1 text-[10px] w-full border-none outline-none text-gray-400"/>
-                <button onClick={() => handleBrowseFolder(setOverlayFolder)} className="bg-[#222] hover:bg-[#333] px-3 text-[10px] text-orange-500 font-bold border-l border-[#333]">Browse</button>
+              <label className="text-[9px] text-gray-400 uppercase font-bold flex items-center gap-1"><ImageIcon size={10} className="text-orange-400"/> Overlay Folder (Optional)</label>
+              <div className="flex border border-[#2d3142] rounded-lg overflow-hidden mt-1 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner">
+                <input type="text" readOnly value={overlayFolder} placeholder="Random file if empty" className="bg-transparent px-2.5 py-1 text-[10px] w-full border-none outline-none text-gray-300 font-mono"/>
+                <button onClick={() => handleBrowseFolder(setOverlayFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-3 text-[10px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer">Browse</button>
               </div>
             </div>
           </div>
@@ -498,8 +509,8 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
       <div className="flex-1 flex gap-3 min-w-[500px] h-full">
         
         {/* LEFT SIDE: VISUALIZER */}
-        <div className={`flex-1 bg-[#111] border border-[#2a2c33] rounded-xl flex items-center justify-center relative overflow-hidden shadow-inner group/canvas ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-             style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '20px 20px', backgroundPosition: `${pan.x}px ${pan.y}px` }}
+        <div className={`flex-1 bg-[#12131b] border border-[#2e3346] rounded-xl flex items-center justify-center relative overflow-hidden shadow-inner group/canvas ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+             style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(249,115,22,0.06) 1px, transparent 1px)', backgroundSize: '20px 20px', backgroundPosition: `${pan.x}px ${pan.y}px` }}
              onMouseDown={(e) => {
                if (e.target.closest('.card-content') || e.target.closest('button')) return;
                setIsDragging(true);
@@ -526,22 +537,28 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
              onMouseUp={() => { setIsDragging(false); setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsDraggingImage(false); }}
              onMouseLeave={() => { setIsDragging(false); setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsDraggingImage(false); }}>
              
+          {/* Top Laser Hairline */}
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-orange-500/70 to-transparent pointer-events-none z-30"></div>
+
           {/* Zoom Controls Overlay */}
-          <div className="absolute top-3 right-3 z-50 flex items-center gap-2 bg-black/50 backdrop-blur-md rounded-lg px-2 border border-white/5 opacity-0 group-hover/canvas:opacity-100 transition-opacity">
-            <button onClick={() => setZoom(z => Math.max(10, z - 10))} className="p-1.5 text-gray-400 hover:text-white"><ZoomOut size={14}/></button>
-            <span className="text-[11px] font-mono w-[40px] text-center">{zoom}%</span>
-            <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="p-1.5 text-gray-400 hover:text-white"><ZoomIn size={14}/></button>
-            <div className="w-px h-4 bg-white/10 mx-1"></div>
-            <button onClick={() => setZoom(100)} className="p-1.5 text-gray-400 hover:text-white"><Maximize size={14}/></button>
+          <div className="absolute top-3 right-3 z-50 flex items-center gap-2 bg-[#161822]/90 backdrop-blur-md rounded-lg px-2.5 py-1 border border-orange-500/30 opacity-0 group-hover/canvas:opacity-100 transition-opacity shadow-[0_0_12px_rgba(249,115,22,0.2)]">
+            <button onClick={() => setZoom(z => Math.max(10, z - 10))} className="p-1 text-gray-300 hover:text-orange-400 cursor-pointer"><ZoomOut size={14}/></button>
+            <span className="text-[11px] font-mono font-bold text-orange-400 w-[40px] text-center">{zoom}%</span>
+            <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="p-1 text-gray-300 hover:text-orange-400 cursor-pointer"><ZoomIn size={14}/></button>
+            <div className="w-px h-4 bg-orange-500/30 mx-1"></div>
+            <button onClick={() => setZoom(100)} className="p-1 text-gray-300 hover:text-orange-400 cursor-pointer"><Maximize size={14}/></button>
           </div>
           
-          <div className="absolute top-3 left-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">LIVE EDITOR</div>
+          <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-bold font-['Rajdhani'] text-orange-400 uppercase tracking-widest bg-black/60 px-2.5 py-1 rounded border border-orange-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+            LIVE EDITOR 9:16
+          </div>
           
           {/* Transform Container for Zoom/Pan */}
           <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})`, transition: isDragging ? 'none' : 'transform 0.1s ease-out' }}>
             
             {/* THE CARD ITSELF (9:16) */}
-            <div className="w-[405px] h-[720px] relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-white/10 cursor-default group card-content"
+            <div className="w-[405px] h-[720px] relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(249,115,22,0.15)] ring-1 ring-orange-500/30 rounded-lg cursor-default group card-content"
                  style={{ backgroundColor: colorBackground }}>
             
             {/* Background Image Area (Always Full Height) */}
@@ -572,11 +589,14 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                               draggable={false}
                               onLoad={(e) => setImgAspect(e.target.naturalWidth / e.target.naturalHeight)}
                          />
-                         <div className="absolute top-2 left-2 z-20 bg-black/50 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none">Scroll to Zoom, Drag to Move</div>
+                         <div className="absolute top-2 left-2 z-20 bg-black/60 text-orange-300 text-[9px] px-2 py-1 rounded border border-orange-500/40 opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none font-mono">Scroll to Zoom, Drag to Move</div>
                        </div>
                     </>
                  ) : (
-                    <div className="w-full h-full flex items-center justify-center"><ImageIcon size={40} className="text-gray-700"/></div>
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-40">
+                      <ImageIcon size={40} className="text-orange-400"/>
+                      <span className="text-xs font-mono text-gray-400">NO IMAGE LOADED</span>
+                    </div>
                  )}
               </div>
             </div>
@@ -653,52 +673,58 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
         {/* RIGHT SIDE: CONTROLS */}
         <div className="w-[240px] flex flex-col gap-3 h-full">
           {/* TOP TAB CONTROLS */}
-          <div className="bg-[#111216] border border-[#2a2c33] rounded-xl p-2 flex gap-1 justify-center shadow-lg">
-            <button onClick={() => setActiveTab('TEXT')} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all ${activeTab === 'TEXT' ? 'bg-orange-600 text-white' : 'hover:bg-white/5 text-gray-400'}`}>
+          <div className="bg-[#14161f] border border-[#2e3346] rounded-xl p-1.5 flex gap-1 justify-center shadow-lg relative overflow-hidden">
+            {/* Top Orange Accent */}
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-orange-500/60 to-transparent"></div>
+
+            <button onClick={() => setActiveTab('TEXT')} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] font-bold font-['Rajdhani'] uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'TEXT' ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.4)] border border-orange-400' : 'hover:bg-white/5 text-gray-400'}`}>
               <Type size={12}/> Text
             </button>
-            <button onClick={() => setActiveTab('IMAGE')} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all ${activeTab === 'IMAGE' ? 'bg-orange-600 text-white' : 'hover:bg-white/5 text-gray-400'}`}>
+            <button onClick={() => setActiveTab('IMAGE')} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] font-bold font-['Rajdhani'] uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'IMAGE' ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.4)] border border-orange-400' : 'hover:bg-white/5 text-gray-400'}`}>
               <ImageIcon size={12}/> Image
             </button>
-            <button onClick={() => setActiveTab('THEME')} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all ${activeTab === 'THEME' ? 'bg-orange-600 text-white' : 'hover:bg-white/5 text-gray-400'}`}>
+            <button onClick={() => setActiveTab('THEME')} className={`flex-1 flex justify-center items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] font-bold font-['Rajdhani'] uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'THEME' ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.4)] border border-orange-400' : 'hover:bg-white/5 text-gray-400'}`}>
               <Palette size={12}/> Theme
             </button>
           </div>
 
           {/* CONTEXTUAL CONTROLS */}
-          <div className="flex-1 bg-[#111216] border border-[#2a2c33] rounded-xl p-3 overflow-y-auto m5-scroll shadow-lg">
+          <div className="flex-1 bg-[#14161f] border border-[#2e3346] rounded-xl p-3.5 overflow-y-auto m5-scroll shadow-lg relative overflow-hidden">
+            {/* Top Orange Hairline */}
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-orange-500/70 to-transparent"></div>
+
             {activeTab === 'TEXT' && (
               <div className="flex flex-col gap-3">
                  <div className="flex flex-col gap-2">
                    <div>
-                     <label className="text-[9px] text-gray-400 uppercase font-bold">Headline Font</label>
-                     <select value={headlineFont} onChange={e => setHeadlineFont(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+                     <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Headline Font</label>
+                     <select value={headlineFont} onChange={e => setHeadlineFont(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
                        <option>Inter</option><option>Roboto</option><option>Montserrat</option><option>Merriweather</option>
                        <option>Poppins</option><option>Playfair Display</option><option>Oswald</option><option>Lato</option><option>Open Sans</option>
                      </select>
                      
                      <div className="flex gap-1 mt-2">
-                       <button onClick={() => setHeadlineAlign('left')} className={`flex-1 flex justify-center p-1.5 rounded ${headlineAlign === 'left' ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><AlignLeft size={12}/></button>
-                       <button onClick={() => setHeadlineAlign('center')} className={`flex-1 flex justify-center p-1.5 rounded ${headlineAlign === 'center' ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><AlignCenter size={12}/></button>
-                       <button onClick={() => setHeadlineAlign('right')} className={`flex-1 flex justify-center p-1.5 rounded ${headlineAlign === 'right' ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><AlignRight size={12}/></button>
-                       <div className="w-px bg-[#333] mx-1 my-1"></div>
-                       <button onClick={() => setHeadlineWeight(w => w === 'bold' ? 'normal' : 'bold')} className={`flex-1 flex justify-center p-1.5 rounded ${headlineWeight === 'bold' ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><Bold size={12}/></button>
-                       <button onClick={() => setHeadlineItalic(i => !i)} className={`flex-1 flex justify-center p-1.5 rounded ${headlineItalic ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><Italic size={12}/></button>
+                       <button onClick={() => setHeadlineAlign('left')} className={`flex-1 flex justify-center p-1.5 rounded ${headlineAlign === 'left' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><AlignLeft size={12}/></button>
+                       <button onClick={() => setHeadlineAlign('center')} className={`flex-1 flex justify-center p-1.5 rounded ${headlineAlign === 'center' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><AlignCenter size={12}/></button>
+                       <button onClick={() => setHeadlineAlign('right')} className={`flex-1 flex justify-center p-1.5 rounded ${headlineAlign === 'right' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><AlignRight size={12}/></button>
+                       <div className="w-px bg-[#2d3142] mx-1 my-1"></div>
+                       <button onClick={() => setHeadlineWeight(w => w === 'bold' ? 'normal' : 'bold')} className={`flex-1 flex justify-center p-1.5 rounded ${headlineWeight === 'bold' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><Bold size={12}/></button>
+                       <button onClick={() => setHeadlineItalic(i => !i)} className={`flex-1 flex justify-center p-1.5 rounded ${headlineItalic ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><Italic size={12}/></button>
                      </div>
                    </div>
                    <div className="grid grid-cols-2 gap-2">
                      <div>
-                       <label className="text-[9px] text-gray-400 uppercase font-bold">Size</label>
-                       <input type="number" value={headlineSize} onChange={e => setHeadlineSize(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none"/>
+                       <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Size</label>
+                       <input type="number" value={headlineSize} onChange={e => setHeadlineSize(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner"/>
                      </div>
                      <div>
-                       <label className="text-[9px] text-gray-400 uppercase font-bold">Color</label>
-                       <input type="color" value={headlineColor} onChange={e => setHeadlineColor(e.target.value)} className="w-full h-[28px] mt-1 bg-[#1a1c23] border border-[#333] rounded p-0 cursor-pointer"/>
+                       <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Color</label>
+                       <input type="color" value={headlineColor} onChange={e => setHeadlineColor(e.target.value)} className="w-full h-[28px] mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg p-0 cursor-pointer"/>
                      </div>
                    </div>
                    <div>
-                     <label className="text-[9px] text-gray-400 uppercase font-bold">Animation</label>
-                     <select value={headlineAnim} onChange={e => setHeadlineAnim(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+                     <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Animation</label>
+                     <select value={headlineAnim} onChange={e => setHeadlineAnim(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
                        <option value="None">None</option>
                        <option value="Fade In">Fade In</option>
                        <option value="Fade In Up">Fade In Up</option>
@@ -709,36 +735,36 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                    </div>
                  </div>
                  
-                 <div className="flex flex-col gap-2 border-t border-[#333] pt-3">
+                 <div className="flex flex-col gap-2 border-t border-[#252838] pt-3">
                    <div>
-                     <label className="text-[9px] text-gray-400 uppercase font-bold">Summary Font</label>
-                     <select value={summaryFont} onChange={e => setSummaryFont(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+                     <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Summary Font</label>
+                     <select value={summaryFont} onChange={e => setSummaryFont(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
                        <option>Inter</option><option>Roboto</option><option>Montserrat</option><option>Merriweather</option>
                        <option>Poppins</option><option>Playfair Display</option><option>Oswald</option><option>Lato</option><option>Open Sans</option>
                      </select>
                      
                      <div className="flex gap-1 mt-2">
-                       <button onClick={() => setSummaryAlign('left')} className={`flex-1 flex justify-center p-1.5 rounded ${summaryAlign === 'left' ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><AlignLeft size={12}/></button>
-                       <button onClick={() => setSummaryAlign('center')} className={`flex-1 flex justify-center p-1.5 rounded ${summaryAlign === 'center' ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><AlignCenter size={12}/></button>
-                       <button onClick={() => setSummaryAlign('right')} className={`flex-1 flex justify-center p-1.5 rounded ${summaryAlign === 'right' ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><AlignRight size={12}/></button>
-                       <div className="w-px bg-[#333] mx-1 my-1"></div>
-                       <button onClick={() => setSummaryWeight(w => w === 'bold' ? 'normal' : 'bold')} className={`flex-1 flex justify-center p-1.5 rounded ${summaryWeight === 'bold' ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><Bold size={12}/></button>
-                       <button onClick={() => setSummaryItalic(i => !i)} className={`flex-1 flex justify-center p-1.5 rounded ${summaryItalic ? 'bg-white/20' : 'bg-[#1a1c23] hover:bg-[#333]'}`}><Italic size={12}/></button>
+                       <button onClick={() => setSummaryAlign('left')} className={`flex-1 flex justify-center p-1.5 rounded ${summaryAlign === 'left' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><AlignLeft size={12}/></button>
+                       <button onClick={() => setSummaryAlign('center')} className={`flex-1 flex justify-center p-1.5 rounded ${summaryAlign === 'center' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><AlignCenter size={12}/></button>
+                       <button onClick={() => setSummaryAlign('right')} className={`flex-1 flex justify-center p-1.5 rounded ${summaryAlign === 'right' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><AlignRight size={12}/></button>
+                       <div className="w-px bg-[#2d3142] mx-1 my-1"></div>
+                       <button onClick={() => setSummaryWeight(w => w === 'bold' ? 'normal' : 'bold')} className={`flex-1 flex justify-center p-1.5 rounded ${summaryWeight === 'bold' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><Bold size={12}/></button>
+                       <button onClick={() => setSummaryItalic(i => !i)} className={`flex-1 flex justify-center p-1.5 rounded ${summaryItalic ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[#0f1017] hover:bg-[#1a1c27] text-gray-400 border border-[#2d3142]'}`}><Italic size={12}/></button>
                      </div>
                    </div>
                    <div className="grid grid-cols-2 gap-2">
                      <div>
-                       <label className="text-[9px] text-gray-400 uppercase font-bold">Size</label>
-                       <input type="number" value={summarySize} onChange={e => setSummarySize(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none"/>
+                       <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Size</label>
+                       <input type="number" value={summarySize} onChange={e => setSummarySize(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner"/>
                      </div>
                      <div>
-                       <label className="text-[9px] text-gray-400 uppercase font-bold">Color</label>
-                       <input type="color" value={summaryColor} onChange={e => setSummaryColor(e.target.value)} className="w-full h-[28px] mt-1 bg-[#1a1c23] border border-[#333] rounded p-0 cursor-pointer"/>
+                       <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Color</label>
+                       <input type="color" value={summaryColor} onChange={e => setSummaryColor(e.target.value)} className="w-full h-[28px] mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg p-0 cursor-pointer"/>
                      </div>
                    </div>
                    <div>
-                     <label className="text-[9px] text-gray-400 uppercase font-bold">Animation</label>
-                     <select value={summaryAnim} onChange={e => setSummaryAnim(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+                     <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Animation</label>
+                     <select value={summaryAnim} onChange={e => setSummaryAnim(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
                        <option value="None">None</option>
                        <option value="Fade In">Fade In</option>
                        <option value="Fade In Up">Fade In Up</option>
@@ -747,28 +773,28 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                        <option value="Fade In Right">Fade In Right</option>
                      </select>
                    </div>
-                   
-                   <div className="pt-2 border-t border-[#333] mt-1">
-                     <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1"><span>Box Scale</span> <span>{boxScale}%</span></label>
-                     <input type="range" min="30" max="200" value={boxScale} onChange={e=>setBoxScale(e.target.value)} className="w-full accent-orange-500"/>
-                     <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 mt-2"><span>Box Width</span> <span>{boxWidth}%</span></label>
-                     <input type="range" min="30" max="100" value={boxWidth} onChange={e=>setBoxWidth(e.target.value)} className="w-full accent-orange-500"/>
-                     <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 mt-2"><span>Box Height</span> <span>{boxHeight === 0 ? 'Auto' : boxHeight + 'px'}</span></label>
-                     <input type="range" min="0" max="500" value={boxHeight} onChange={e=>setBoxHeight(Number(e.target.value))} className="w-full accent-orange-500"/>
-                   </div>
                  </div>
-              </div>
+                 
+                 <div className="pt-2 border-t border-[#252838] mt-1">
+                   <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 font-['Rajdhani'] tracking-wider"><span>Box Scale</span> <span className="text-orange-400 font-mono">{boxScale}%</span></label>
+                   <input type="range" min="30" max="200" value={boxScale} onChange={e=>setBoxScale(e.target.value)} className="w-full accent-orange-500"/>
+                   <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 mt-2 font-['Rajdhani'] tracking-wider"><span>Box Width</span> <span className="text-orange-400 font-mono">{boxWidth}%</span></label>
+                   <input type="range" min="30" max="100" value={boxWidth} onChange={e=>setBoxWidth(e.target.value)} className="w-full accent-orange-500"/>
+                   <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 mt-2 font-['Rajdhani'] tracking-wider"><span>Box Height</span> <span className="text-orange-400 font-mono">{boxHeight === 0 ? 'Auto' : boxHeight + 'px'}</span></label>
+                   <input type="range" min="0" max="500" value={boxHeight} onChange={e=>setBoxHeight(Number(e.target.value))} className="w-full accent-orange-500"/>
+                 </div>
+               </div>
             )}
 
             {activeTab === 'IMAGE' && (
               <div className="flex flex-col gap-4">
-                 <button onClick={handleReplaceImage} className="w-full py-2 bg-[#1a1c23] border border-[#333] hover:border-orange-500 rounded text-[11px] font-bold text-gray-300 transition-colors">Replace Image</button>
+                 <button onClick={handleReplaceImage} className="w-full py-2 bg-[#1a1c27] border border-[#2d3142] hover:border-orange-500/60 rounded-lg text-[11px] font-bold text-gray-200 transition-colors">Replace Image</button>
                  <div>
-                   <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1"><span>Scale</span> <span>{imageScale}%</span></label>
+                   <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 font-['Rajdhani'] tracking-wider"><span>Scale</span> <span className="text-orange-400 font-mono">{imageScale}%</span></label>
                    <input type="range" min="50" max="300" value={imageScale} onChange={e=>setImageScale(Number(e.target.value))} className="w-full accent-orange-500"/>
-                   <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 mt-2"><span>Pos X</span> <span>{imagePosX}%</span></label>
+                   <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 mt-2 font-['Rajdhani'] tracking-wider"><span>Pos X</span> <span className="text-orange-400 font-mono">{imagePosX}%</span></label>
                    <input type="range" min="0" max="100" value={imagePosX} onChange={e=>setImagePosX(Number(e.target.value))} className="w-full accent-orange-500"/>
-                   <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 mt-2"><span>Pos Y</span> <span>{imagePosY}%</span></label>
+                   <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 mt-2 font-['Rajdhani'] tracking-wider"><span>Pos Y</span> <span className="text-orange-400 font-mono">{imagePosY}%</span></label>
                    <input type="range" min="0" max="100" value={imagePosY} onChange={e=>setImagePosY(Number(e.target.value))} className="w-full accent-orange-500"/>
                  </div>
               </div>
@@ -777,8 +803,8 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
             {activeTab === 'THEME' && (
               <div className="flex flex-col gap-3">
                  <div>
-                   <label className="text-[9px] text-gray-400 uppercase font-bold">Card Theme</label>
-                   <select value={cardTheme} onChange={e => setCardTheme(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] focus:border-orange-500 outline-none">
+                   <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Card Theme</label>
+                   <select value={cardTheme} onChange={e => setCardTheme(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
                      <option value="Solid Box">Solid Box</option>
                      <option value="Glass Box">Glass Box</option>
                      <option value="Accent Left">Accent Left</option>
@@ -791,16 +817,16 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                  </div>
                  <div className="grid grid-cols-2 gap-2">
                    <div>
-                     <label className="text-[9px] text-gray-400 uppercase font-bold">Primary</label>
-                     <input type="color" value={colorPrimary} onChange={e => setColorPrimary(e.target.value)} className="w-full h-[28px] mt-1 bg-[#1a1c23] border border-[#333] rounded p-0 cursor-pointer"/>
+                     <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Primary</label>
+                     <input type="color" value={colorPrimary} onChange={e => setColorPrimary(e.target.value)} className="w-full h-[28px] mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg p-0 cursor-pointer"/>
                    </div>
                    <div>
-                     <label className="text-[9px] text-gray-400 uppercase font-bold">Background</label>
-                     <input type="color" value={colorBackground} onChange={e => setColorBackground(e.target.value)} className="w-full h-[28px] mt-1 bg-[#1a1c23] border border-[#333] rounded p-0 cursor-pointer"/>
+                     <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Background</label>
+                     <input type="color" value={colorBackground} onChange={e => setColorBackground(e.target.value)} className="w-full h-[28px] mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg p-0 cursor-pointer"/>
                    </div>
                  </div>
                  <div>
-                   <label className="text-[9px] text-gray-400 uppercase font-bold">Border Radius ({borderRadius}px)</label>
+                   <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Border Radius ({borderRadius}px)</label>
                    <input type="range" min="0" max="32" value={borderRadius} onChange={e=>setBorderRadius(e.target.value)} className="w-full accent-orange-500 mt-1"/>
                  </div>
               </div>
@@ -811,17 +837,21 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
 
       {/* 25% RIGHT: AI DRAFT & ACTIONS */}
       <div className="w-[25%] min-w-[280px] flex flex-col gap-3">
-        <div className="bg-[#111216] border border-[#2a2c33] rounded-xl p-4 shadow-lg flex-1 flex flex-col min-h-0">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Zap size={14} className="text-orange-500"/> AI Draft
+        <div className="bg-[#14161f] border border-[#2e3346] hover:border-orange-500/40 rounded-xl p-4 shadow-lg flex-1 flex flex-col min-h-0 relative overflow-hidden transition-colors">
+          {/* Top Orange Hairline */}
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-orange-500/70 to-transparent"></div>
+
+          <div className="flex justify-between items-center mb-3 border-b border-[#252838] pb-2">
+            <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2 font-['Rajdhani']">
+              <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,1)]"></span>
+              <Zap size={14} className="text-orange-400"/> AI DRAFT
             </h3>
             {isProcessing ? (
-              <div className="flex items-center gap-1 text-[10px] text-orange-500 font-bold uppercase animate-pulse">
+              <div className="flex items-center gap-1 text-[10px] text-orange-400 font-bold uppercase animate-pulse">
                 <div className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div> {pipelineProgress || 'Processing...'}
               </div>
             ) : pipelineProgress === 'Draft Ready' ? (
-              <div className="flex items-center gap-1 text-[10px] text-green-500 font-bold uppercase">
+              <div className="flex items-center gap-1 text-[10px] text-orange-400 font-bold uppercase bg-orange-950/40 px-2 py-0.5 rounded border border-orange-500/40">
                 <CheckCircle2 size={12}/> Draft Ready
               </div>
             ) : (
@@ -833,25 +863,26 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
           
           <div className="flex-1 overflow-y-auto m5-scroll pr-1 space-y-3">
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold">Headline (Editable)</label>
-              <textarea value={headline} onChange={e => setHeadline(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded p-2 text-[11px] text-gray-300 resize-none h-[60px] focus:border-orange-500 outline-none"/>
+              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Headline (Editable)</label>
+              <textarea value={headline} onChange={e => setHeadline(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] focus:border-orange-500/70 rounded-lg p-2.5 text-[11px] text-gray-200 resize-none h-[65px] outline-none shadow-inner leading-relaxed"/>
             </div>
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold">Summary (Editable)</label>
-              <textarea value={summary} onChange={e => setSummary(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded p-2 text-[11px] text-gray-300 resize-none h-[80px] focus:border-orange-500 outline-none"/>
+              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Summary (Editable)</label>
+              <textarea value={summary} onChange={e => setSummary(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] focus:border-orange-500/70 rounded-lg p-2.5 text-[11px] text-gray-200 resize-none h-[85px] outline-none shadow-inner leading-relaxed"/>
             </div>
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold">Source</label>
-              <input value={source} onChange={e => setSource(e.target.value)} className="w-full mt-1 bg-[#1a1c23] border border-[#333] rounded px-2 py-1.5 text-[11px] text-gray-300 focus:border-orange-500 outline-none"/>
+              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Source</label>
+              <input value={source} onChange={e => setSource(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] focus:border-orange-500/70 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 font-mono outline-none shadow-inner"/>
             </div>
           </div>
         </div>
 
-        <button onClick={handleAddToQueue} className={`bg-orange-600 hover:bg-orange-500 text-white rounded-xl py-4 flex flex-col items-center justify-center transition-all shadow-[0_0_15px_rgba(249,115,22,0.3)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)]`}>
-          <span className="font-black text-[16px] uppercase tracking-widest flex items-center gap-2">
-            <Plus size={18} className="text-white"/> Add to Queue
+        {/* Big Add to Queue Button */}
+        <button onClick={handleAddToQueue} className="bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 hover:from-orange-500 hover:to-orange-400 text-white rounded-xl py-3.5 flex flex-col items-center justify-center transition-all shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:shadow-[0_0_30px_rgba(249,115,22,0.6)] border border-orange-400 cursor-pointer active:scale-[0.98]">
+          <span className="font-black text-[15px] uppercase tracking-[0.2em] font-['Rajdhani'] flex items-center gap-2">
+            <Plus size={18} className="text-white"/> ADD TO QUEUE
           </span>
-          <span className="text-[9px] text-orange-200 mt-1 uppercase tracking-widest">Send to Render Engine</span>
+          <span className="text-[9px] text-orange-100 font-bold uppercase tracking-widest">SEND TO RENDER ENGINE</span>
         </button>
       </div>
 

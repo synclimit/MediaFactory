@@ -93,17 +93,6 @@ export default function M1Parameters({
         Video akan dibagi menjadi <span className="text-orange-500 font-black text-[14px] px-1 drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]">{slotCount}</span> segment
       </p>
 
-      {/* OVERLAY MODULES */}
-      <div className="mt-4 pt-3 border-t border-white/5 flex gap-4">
-        <label className="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" checked={m1Watermark} onChange={(e) => setM1Watermark(e.target.checked)} className="accent-orange-500 w-4 h-4 cursor-pointer" />
-          <span className="text-gray-400 font-medium text-[11px] group-hover:text-gray-200">Watermark Logo</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" checked={m1Subscribe} onChange={(e) => setM1Subscribe(e.target.checked)} className="accent-orange-500 w-4 h-4 cursor-pointer" />
-          <span className="text-gray-400 font-medium text-[11px] group-hover:text-gray-200">Subscribe Overlay</span>
-        </label>
-      </div>
     </div>
   );
 }

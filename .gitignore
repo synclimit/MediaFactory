@@ -13,8 +13,10 @@ node_modules/**
 **/node_modules/**
 astrofox-standalone/
 astrofox-standalone/**
-m7-astrofox/
-m7-astrofox/**
+m7-astrofox/node_modules/
+m7-astrofox/dist/
+m7-astrofox/build/
+m7-astrofox/.webpack/
 
 dist
 dist-ssr

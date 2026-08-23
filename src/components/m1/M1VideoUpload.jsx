@@ -151,41 +151,56 @@ export default function M1VideoUpload({
       </div>
 
       {/* Center Metadata */}
-      <div className="flex-[0.43] min-w-0 flex flex-col justify-center relative px-2 py-1">
-        <span className="text-[12px] font-black tracking-widest text-orange-500 uppercase mb-1 drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]">MASTER VIDEO</span>
-        <h2 className="text-white font-bold text-[26px] mb-3 line-clamp-2 break-all drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] block w-full leading-tight" title={selectedVideo?.metadata?.fileName}>
-          {selectedVideo?.metadata?.fileName}
+      <div className="flex-[0.43] min-w-0 flex flex-col justify-center relative px-3 py-1">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,1)] animate-pulse"></span>
+          <span className="text-[12px] font-['Rajdhani'] font-black tracking-[0.25em] text-orange-400 uppercase drop-shadow-[0_0_6px_rgba(249,115,22,0.6)]">
+            MASTER VIDEO SOURCE
+          </span>
+        </div>
+        
+        <h2 className="text-white font-['Rajdhani'] font-bold text-[28px] mb-4 line-clamp-2 break-all drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] block w-full leading-tight" title={selectedVideo?.metadata?.fileName}>
+          {selectedVideo?.metadata?.fileName || 'No Video Selected'}
         </h2>
         
-        <div className="grid grid-cols-2 gap-y-1 gap-x-6 w-full">
-          {/* Item: Durasi */}
-          <div className="flex items-center text-[15px]">
-            <span className="text-gray-400 font-medium w-24 shrink-0">Durasi</span>
-            <span className="text-white text-[17px] font-semibold tracking-wide">{selectedVideo?.metadata?.durationDisplay || '—'}</span>
+        {/* Crisp Tabular Metadata Grid */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 w-full bg-black/40 border border-[#2e323e] rounded-xl p-3.5 shadow-inner">
+          {/* Row 1: Durasi & Resolusi */}
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-gray-400 font-['Rajdhani'] font-bold text-[14px] uppercase tracking-wider">Durasi:</span>
+            <span className="text-white font-mono font-bold text-[16px] tracking-wide text-right drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]">
+              {selectedVideo?.metadata?.durationDisplay || '—'}
+            </span>
           </div>
           
-          {/* Item: Resolusi */}
-          <div className="flex items-center text-[15px]">
-            <span className="text-gray-400 font-medium w-24 shrink-0">Resolusi</span>
-            <span className="text-white text-[17px] font-semibold tracking-wide">{selectedVideo?.metadata?.resolution || '—'}</span>
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-gray-400 font-['Rajdhani'] font-bold text-[14px] uppercase tracking-wider">Resolusi:</span>
+            <span className="text-white font-mono font-bold text-[16px] tracking-wide text-right drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]">
+              {selectedVideo?.metadata?.resolution || '—'}
+            </span>
           </div>
 
-          {/* Item: FPS */}
-          <div className="flex items-center text-[15px]">
-            <span className="text-gray-400 font-medium w-24 shrink-0">FPS</span>
-            <span className="text-white text-[17px] font-semibold tracking-wide">{selectedVideo?.metadata?.fps != null ? selectedVideo.metadata.fps.toFixed(2) : '—'}</span>
+          {/* Row 2: FPS & Codec */}
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-gray-400 font-['Rajdhani'] font-bold text-[14px] uppercase tracking-wider">FPS:</span>
+            <span className="text-white font-mono font-bold text-[16px] tracking-wide text-right drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]">
+              {selectedVideo?.metadata?.fps != null ? selectedVideo.metadata.fps.toFixed(2) : '—'}
+            </span>
           </div>
 
-          {/* Item: Codec */}
-          <div className="flex items-center text-[15px]">
-            <span className="text-gray-400 font-medium w-24 shrink-0">Codec</span>
-            <span className="text-white text-[17px] font-semibold tracking-wide">{selectedVideo?.metadata?.codec || '—'}</span>
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-gray-400 font-['Rajdhani'] font-bold text-[14px] uppercase tracking-wider">Codec:</span>
+            <span className="text-white font-mono font-bold text-[16px] tracking-wide text-right drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]">
+              {selectedVideo?.metadata?.codec || '—'}
+            </span>
           </div>
 
-          {/* Item: Ukuran */}
-          <div className="flex items-center text-[15px] col-span-2">
-            <span className="text-gray-400 font-medium w-24 shrink-0">Ukuran</span>
-            <span className="text-white text-[17px] font-semibold tracking-wide">{selectedVideo?.metadata?.fileSizeDisplay || '—'}</span>
+          {/* Row 3: Ukuran */}
+          <div className="flex items-center justify-between col-span-2 pt-0.5">
+            <span className="text-gray-400 font-['Rajdhani'] font-bold text-[14px] uppercase tracking-wider">Ukuran File:</span>
+            <span className="text-orange-400 font-mono font-bold text-[16px] tracking-wide text-right drop-shadow-[0_0_6px_rgba(249,115,22,0.5)]">
+              {selectedVideo?.metadata?.fileSizeDisplay || '—'}
+            </span>
           </div>
         </div>
       </div>

@@ -84,6 +84,63 @@
       "visible": true,
       "locked": true,
       "layer": 0
+    },
+    {
+      "id": "visualizer5-1787470385908",
+      "canvasMode": "composer",
+      "visible": true,
+      "locked": false,
+      "layer": 3,
+      "type": "visualizer5",
+      "name": "Visualizer V5 (Circular Pulse)",
+      "mode": "circular-pulse",
+      "renderMode": "normal",
+      "x": 960,
+      "y": 540,
+      "width": 450,
+      "height": 450,
+      "primaryColor": "#00F2FE",
+      "secondaryColor": "#4FACFE",
+      "accentColor": "#AB55F7",
+      "barCount": 64,
+      "thickness": 4,
+      "spacing": 4,
+      "cornerRadius": 4,
+      "opacity": 86,
+      "fakeNeon": false,
+      "fakeNeonEnabled": false,
+      "innerRing": false,
+      "innerRingEnabled": false,
+      "outerGlow": false,
+      "outerEdgeGlowEnabled": false,
+      "transform": {
+        "visible": false
+      }
+    },
+    {
+      "id": "fx_1787472326782_21cfz",
+      "type": "effect",
+      "presetId": "speed-lines",
+      "name": "Garis kecepatan",
+      "category": "effect",
+      "enabled": true,
+      "sensitivityMode": "Normal",
+      "amplitude": 100,
+      "threshold": 35,
+      "attack": 15,
+      "release": 180,
+      "smoothness": 60,
+      "operation": "multiply",
+      "curve": "easeOut",
+      "source": "kick",
+      "props": {
+        "intensity": 50,
+        "source": "kick",
+        "shape": "Radial",
+        "color": "#ffffff",
+        "count": 60,
+        "speed": 1
+      }
     }
   ]
 }

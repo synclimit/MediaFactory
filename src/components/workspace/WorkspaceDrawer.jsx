@@ -1,17 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import Drawer from '../ui/Drawer';
 import Avatar from '../ui/Avatar';
-import Status from '../ui/Status';
-import Button from '../ui/Button';
+import { Edit2, Check, X, Camera, Image as ImageIcon } from 'lucide-react';
 import { getApiUrl } from '../../utils/apiUrl';
 
-export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSwitch }) {
+export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSwitch, onRename }) {
     const [settings, setSettings] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Rename state
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [newName, setNewName] = useState('');
+    const [renameError, setRenameError] = useState('');
+    const [isRenamingLoading, setIsRenamingLoading] = useState(false);
+
+    // Avatar state
+    const [avatarUrl, setAvatarUrl] = useState(() => {
+        return localStorage.getItem(`mf_workspace_avatar_${activeWorkspace}`) || null;
+    });
 
     useEffect(() => {
         if (!isOpen || !activeWorkspace) return;
         
+        setIsRenaming(false);
+        setNewName(activeWorkspace);
+        setRenameError('');
+
+        const cachedAvatar = localStorage.getItem(`mf_workspace_avatar_${activeWorkspace}`) || null;
+        setAvatarUrl(cachedAvatar);
+
         const loadSettings = async () => {
             const cachedOut = localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) || '';
             let cachedBranding = {};
@@ -20,7 +37,7 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
             } catch(e) {}
 
             try {
-                const res = await fetch(getApiUrl(`/api/v1/system/workspace/${activeWorkspace}/settings`));
+                const res = await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(activeWorkspace)}/settings`));
                 const data = await res.json();
                 let loaded = data.success && data.data ? (data.data.data || {}) : {};
                 
@@ -35,6 +52,11 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                 if (!loaded.branding.overlay && cachedBranding.overlay) loaded.branding.overlay = cachedBranding.overlay;
                 if (!loaded.branding.subscribeAnim && cachedBranding.subscribeAnim) loaded.branding.subscribeAnim = cachedBranding.subscribeAnim;
 
+                if (loaded.branding?.logo && !cachedAvatar) {
+                    setAvatarUrl(loaded.branding.logo);
+                    localStorage.setItem(`mf_workspace_avatar_${activeWorkspace}`, loaded.branding.logo);
+                }
+
                 setSettings(loaded);
             } catch (e) {
                 console.error(e);
@@ -48,6 +70,114 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
         loadSettings();
     }, [activeWorkspace, isOpen]);
 
+    // Handle Upload / Change Workspace Avatar
+    const handleAvatarUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const imgData = event.target?.result;
+            if (imgData) {
+                setAvatarUrl(imgData);
+                localStorage.setItem(`mf_workspace_avatar_${activeWorkspace}`, imgData);
+                
+                // Update settings
+                setSettings(prev => {
+                    const updated = {
+                        ...(prev || {}),
+                        general: { ...(prev?.general || {}), channelThumbnail: imgData },
+                        branding: { ...(prev?.branding || {}), logo: imgData }
+                    };
+                    return updated;
+                });
+
+                // Auto save avatar
+                try {
+                    await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(activeWorkspace)}/settings`), {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...(settings || {}),
+                            general: { ...(settings?.general || {}), channelThumbnail: imgData },
+                            branding: { ...(settings?.branding || {}), logo: imgData }
+                        })
+                    });
+                } catch(err) {}
+
+                window.dispatchEvent(new CustomEvent('workspace_avatar_updated', {
+                    detail: { workspaceName: activeWorkspace, avatar: imgData }
+                }));
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Handle Rename Workspace
+    const handleSaveRename = async () => {
+        const trimmed = (newName || '').trim();
+        if (!trimmed) {
+            setRenameError('Nama workspace tidak boleh kosong.');
+            return;
+        }
+        if (trimmed === activeWorkspace) {
+            setIsRenaming(false);
+            return;
+        }
+
+        setIsRenamingLoading(true);
+        setRenameError('');
+
+        try {
+            const res = await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(activeWorkspace)}/rename`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newName: trimmed })
+            });
+            const data = await res.json();
+            if (data.error || (data.success === false)) {
+                throw new Error(data.error || data.message || 'Gagal mengubah nama workspace.');
+            }
+
+            // Migrate local storage keys
+            try {
+                const oldAvatar = localStorage.getItem(`mf_workspace_avatar_${activeWorkspace}`);
+                if (oldAvatar) {
+                    localStorage.setItem(`mf_workspace_avatar_${trimmed}`, oldAvatar);
+                    localStorage.removeItem(`mf_workspace_avatar_${activeWorkspace}`);
+                }
+
+                const oldOut = localStorage.getItem(`mf_workspace_output_${activeWorkspace}`);
+                if (oldOut) {
+                    localStorage.setItem(`mf_workspace_output_${trimmed}`, oldOut);
+                    localStorage.removeItem(`mf_workspace_output_${activeWorkspace}`);
+                }
+
+                const oldBrand = localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`);
+                if (oldBrand) {
+                    localStorage.setItem(`mf_workspace_branding_${trimmed}`, oldBrand);
+                    localStorage.removeItem(`mf_workspace_branding_${activeWorkspace}`);
+                }
+
+                const cachedList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
+                const updatedList = cachedList.map(n => n === activeWorkspace ? trimmed : n);
+                localStorage.setItem('mf_created_workspaces', JSON.stringify(updatedList));
+                localStorage.setItem('mf_active_workspace', trimmed);
+            } catch(e) {}
+
+            window.dispatchEvent(new CustomEvent('workspace_renamed', {
+                detail: { oldName: activeWorkspace, newName: trimmed }
+            }));
+
+            if (onRename) onRename(trimmed);
+            setIsRenaming(false);
+        } catch (err) {
+            setRenameError(err.message || 'Gagal mengubah nama workspace.');
+        } finally {
+            setIsRenamingLoading(false);
+        }
+    };
+
     const handleSave = async () => {
         setIsSaving(true);
         try {
@@ -57,7 +187,10 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
             if (settings?.branding) {
                 localStorage.setItem(`mf_workspace_branding_${activeWorkspace}`, JSON.stringify(settings.branding));
             }
-            await fetch(getApiUrl(`/api/v1/system/workspace/${activeWorkspace}/settings`), {
+            if (avatarUrl) {
+                localStorage.setItem(`mf_workspace_avatar_${activeWorkspace}`, avatarUrl);
+            }
+            await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(activeWorkspace)}/settings`), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
@@ -114,23 +247,22 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
         }
     };
 
-    // Using M1 Header Style
     const renderPanelHeader = (title) => (
-        <div className="mb-4 mt-6 px-1">
-            <h2 className="text-white font-black text-[16px] tracking-widest drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] uppercase">
+        <div className="mb-4 mt-6 px-1 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-sm bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,1)]"></span>
+            <h2 className="text-white font-black text-[15px] tracking-widest uppercase font-['Rajdhani']">
                 {title}
             </h2>
         </div>
     );
 
-    // Using exact M1 input styles - Scaled up for better legibility
     const renderInput = (label, value, onChange, placeholder = "", iconType = null, browseType = null) => (
         <div className="mb-5 px-1">
-            <label className="block text-gray-400 font-bold text-[12px] mb-2 uppercase tracking-widest">{label}</label>
+            <label className="block text-gray-400 font-bold text-[11px] mb-2 uppercase tracking-widest font-['Rajdhani']">{label}</label>
             <div className="flex gap-2 items-center w-full">
-                <div className="flex-1 min-w-0 flex items-center bg-gradient-to-br from-[#1a1c23] to-[#111216] border border-[#333] focus-within:border-orange-500/80 rounded-lg p-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_0_10px_rgba(249,115,22,0.1)] transition-colors h-[42px]">
+                <div className="flex-1 min-w-0 flex items-center bg-[#111218] border border-[#2d3142] focus-within:border-orange-500/80 rounded-lg p-1 shadow-inner transition-colors h-[42px]">
                     {iconType && (
-                        <div className="pl-3 pr-2 shrink-0 flex items-center justify-center opacity-60">
+                        <div className="pl-3 pr-2 shrink-0 flex items-center justify-center opacity-70">
                             {renderIcon(iconType)}
                         </div>
                     )}
@@ -139,13 +271,13 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                         placeholder={placeholder}
                         value={value} 
                         onChange={onChange} 
-                        className="flex-1 w-full bg-transparent text-white font-mono font-bold text-[13px] outline-none px-2 placeholder-[#444]" 
+                        className="flex-1 w-full bg-transparent text-white font-mono font-bold text-[12px] outline-none px-2 placeholder-gray-600" 
                     />
                 </div>
                 
                 {browseType && (
                     <button 
-                        className="px-4 h-[42px] shrink-0 bg-black/60 border border-[#333] hover:border-orange-500/50 hover:text-white text-gray-400 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all duration-200"
+                        className="px-4 h-[42px] shrink-0 bg-[#1c1e29] border border-[#2d3142] hover:border-orange-500/50 hover:bg-orange-600 hover:text-white text-gray-300 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all cursor-pointer"
                         onClick={() => handleFileBrowse(browseType === 'folder', (path) => {
                             onChange({ target: { value: path } });
                         })}
@@ -169,29 +301,101 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                 
                 {/* Diagonal striped pattern */}
                 <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, #fff 2px, #fff 4px)'}}></div>
-                
-                {/* Decorative Tech Lines */}
-                <div className="absolute left-4 top-1/4 w-[1px] h-16 bg-white/10"></div>
-                <div className="absolute left-4 bottom-1/4 w-[1px] h-16 bg-white/10"></div>
             </div>
 
-            {/* Content Wrap - Maximize width with px-4 */}
+            {/* Content Wrap */}
             <div className="relative z-10 flex flex-col h-full px-4 py-8">
-                {/* Header section */}
+                
+                {/* Header section with UPLOADABLE AVATAR & RENAME FEATURE */}
                 <div className="flex items-center gap-4 mb-4 px-1">
-                    <div className="relative shrink-0 w-[60px] h-[60px] rounded-[14px] flex items-center justify-center border-2 bg-gradient-to-br from-orange-600 to-orange-500 border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.6),inset_0_2px_4px_rgba(255,255,255,0.4)]">
-                        <span className="font-black text-white text-[22px] tracking-tighter drop-shadow-md">
-                            {activeWorkspace ? activeWorkspace.substring(0, 2).toUpperCase() : 'MF'}
-                        </span>
+                    
+                    {/* AVATAR WITH UPLOAD OVERLAY */}
+                    <div className="relative group shrink-0">
+                        <Avatar 
+                            name={activeWorkspace} 
+                            src={avatarUrl}
+                            size={64}
+                            className="border-2 border-orange-500/80 shadow-[0_0_20px_rgba(249,115,22,0.5)] cursor-pointer"
+                        />
+
+                        {/* Hidden File Input for Avatar */}
+                        <input 
+                            type="file" 
+                            accept="image/*" 
+                            id="workspace-avatar-input"
+                            className="hidden" 
+                            onChange={handleAvatarUpload}
+                        />
+
+                        {/* Hover Change Badge */}
+                        <label 
+                            htmlFor="workspace-avatar-input"
+                            className="absolute inset-0 rounded-[14px] bg-black/80 hover:bg-orange-600/90 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-[9px] font-bold uppercase tracking-wider z-20"
+                            title="Ganti Foto Profil / Logo Channel"
+                        >
+                            <Camera size={18} className="mb-0.5" />
+                            <span>GANTI</span>
+                        </label>
                     </div>
+
+                    {/* TITLE / RENAME CONTROL */}
                     <div className="min-w-0 flex-1 z-10">
-                        <h2 className="text-[28px] leading-tight font-black text-white tracking-[0.02em] mb-0 break-words uppercase drop-shadow-[0_0_12px_rgba(255,255,255,0.5)]">
-                            {activeWorkspace || 'No Workspace'}
-                        </h2>
-                        <div className="flex items-center gap-2 mt-1">
-                            <div className="w-[8px] h-[8px] rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,1)]"></div>
-                            <p className="text-[11px] text-emerald-400 font-bold tracking-[0.2em] uppercase">System Ready</p>
-                        </div>
+                        {isRenaming ? (
+                            <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2">
+                                    <input 
+                                        type="text"
+                                        value={newName}
+                                        onChange={(e) => setNewName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleSaveRename();
+                                            if (e.key === 'Escape') setIsRenaming(false);
+                                        }}
+                                        autoFocus
+                                        placeholder="Nama Workspace..."
+                                        className="w-full bg-[#0d0e14] border border-orange-500 rounded-lg px-3 py-1.5 text-white font-black text-lg tracking-wider outline-none shadow-inner uppercase"
+                                    />
+                                    <button 
+                                        onClick={handleSaveRename}
+                                        disabled={isRenamingLoading}
+                                        className="p-2 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white rounded-lg transition-all shadow-[0_0_8px_rgba(249,115,22,0.6)] cursor-pointer shrink-0"
+                                        title="Simpan Nama"
+                                    >
+                                        <Check size={16} />
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsRenaming(false)}
+                                        className="p-2 bg-[#1c1e29] hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors cursor-pointer shrink-0 border border-[#2d3142]"
+                                        title="Batal"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                                {renameError && <span className="text-red-400 text-[10px] font-bold">{renameError}</span>}
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="flex items-center gap-2.5">
+                                    <h2 className="text-[26px] leading-tight font-black text-white tracking-[0.02em] mb-0 break-words uppercase drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] truncate">
+                                        {activeWorkspace || 'No Workspace'}
+                                    </h2>
+                                    <button 
+                                        onClick={() => {
+                                            setNewName(activeWorkspace);
+                                            setIsRenaming(true);
+                                        }}
+                                        className="p-1.5 bg-[#1a1c27] hover:bg-orange-500 hover:text-white text-gray-400 rounded-lg transition-all border border-[#2d3142] hover:border-orange-400 cursor-pointer shrink-0"
+                                        title="Rename Workspace"
+                                    >
+                                        <Edit2 size={13} />
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className="w-[8px] h-[8px] rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,1)] animate-pulse"></div>
+                                    <p className="text-[11px] text-emerald-400 font-bold tracking-[0.2em] uppercase font-['Rajdhani']">System Ready</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -199,12 +403,12 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                 <div className="px-1 mb-6">
                     <button 
                         onClick={onSwitch}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-br from-[#1b1d22] to-[#111216] border border-[#2a2c33] hover:border-orange-500/50 hover:bg-[#1a1c23] rounded-lg text-gray-300 hover:text-white font-bold text-[11px] tracking-widest uppercase transition-all shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] group"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-br from-[#1b1d22] to-[#111216] border border-[#2a2c33] hover:border-orange-500/50 hover:bg-[#1a1c23] rounded-lg text-gray-300 hover:text-white font-bold text-[11px] tracking-widest uppercase transition-all shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] group cursor-pointer"
                     >
                         <svg className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                         </svg>
-                        Switch Account
+                        Switch Account / Workspace
                     </button>
                 </div>
 
@@ -220,13 +424,16 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                             {/* GENERAL SECTION */}
                             {renderPanelHeader('General Setting')}
                             <div className="mb-6">
-                                {renderInput('Channel Alias', settings.general?.channelName || '', e => setSettings({...settings, general: {...settings.general, channelName: e.target.value}}), 'Channel alias', 'channel')}
+                                {renderInput('Channel Alias / Name', settings.general?.channelName || '', e => setSettings({...settings, general: {...settings.general, channelName: e.target.value}}), 'Channel alias', 'channel')}
                             </div>
 
                             {/* BRANDING SECTION */}
-                            {renderPanelHeader('Default Assets')}
+                            {renderPanelHeader('Default Branding Assets')}
                             <div className="mb-6 space-y-2">
-                                {renderInput('Logo Path', settings.branding?.logo || '', e => setSettings({...settings, branding: {...settings.branding, logo: e.target.value}}), 'PATH\\TO\\LOGO', 'logo', 'file')}
+                                {renderInput('Logo / Avatar Path', settings.branding?.logo || '', e => {
+                                    setSettings({...settings, branding: {...settings.branding, logo: e.target.value}});
+                                    setAvatarUrl(e.target.value);
+                                }, 'PATH\\TO\\LOGO', 'logo', 'file')}
                                 {renderInput('Watermark Path', settings.branding?.watermark || '', e => setSettings({...settings, branding: {...settings.branding, watermark: e.target.value}}), 'PATH\\TO\\WATERMARK', 'watermark', 'file')}
                                 {renderInput('Overlay Path', settings.branding?.overlay || '', e => setSettings({...settings, branding: {...settings.branding, overlay: e.target.value}}), 'PATH\\TO\\OVERLAY', 'overlay', 'file')}
                                 {renderInput('Subscribe Anim Path', settings.branding?.subscribeAnim || '', e => setSettings({...settings, branding: {...settings.branding, subscribeAnim: e.target.value}}), 'PATH\\TO\\SUBSCRIBEANIM', 'anim', 'file')}
@@ -244,19 +451,20 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                 {/* Footer Controls */}
                 <div className="mt-4 pt-5 flex gap-3 shrink-0 z-10 bg-transparent border-t border-white/5 relative px-1">
                     <button 
-                        className="px-6 justify-center bg-black/60 hover:bg-[#1a1311] border border-[#333] hover:border-orange-500/50 text-gray-400 hover:text-white font-black uppercase tracking-widest text-[11px] py-4 rounded-xl transition-all duration-200"
+                        className="px-6 justify-center bg-black/60 hover:bg-[#1a1311] border border-[#333] hover:border-orange-500/50 text-gray-400 hover:text-white font-black uppercase tracking-widest text-[11px] py-4 rounded-xl transition-all duration-200 cursor-pointer"
                         onClick={onClose}
                     >
                         Cancel
                     </button>
                     <button 
-                        className="flex-1 justify-center bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 border border-orange-400 text-white font-black uppercase tracking-widest text-[12px] py-4 rounded-xl transition-all shadow-[0_0_15px_rgba(249,115,22,0.5),inset_0_1px_2px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={handleSave} 
-                        disabled={isSaving || !settings}
+                        className="flex-1 bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 border border-orange-400 text-white font-black uppercase tracking-widest text-[12px] py-4 rounded-xl transition-all duration-200 shadow-[0_0_20px_rgba(249,115,22,0.4)] disabled:opacity-50 cursor-pointer"
+                        disabled={isSaving}
+                        onClick={handleSave}
                     >
-                        {isSaving ? 'Deploying...' : 'Save Config'}
+                        {isSaving ? 'Saving...' : 'Save Settings'}
                     </button>
                 </div>
+
             </div>
         </Drawer>
     );

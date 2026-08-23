@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import M1SlotItem from './M1SlotItem.jsx';
 import M1ConfigureAssetModal from './M1ConfigureAssetModal.jsx';
+import M1BatchWorkstationModal from './M1BatchWorkstationModal.jsx';
 
 const calculateGridLayout = (count) => {
   if (count === 1) return 'grid-cols-1';
@@ -13,6 +14,7 @@ const calculateGridLayout = (count) => {
 
 export default function M1SlotManager({ m1Slots, updateM1Slot, isDuplicateOutput, isDuplicateSource, isQueuedOutput, isQueuedSource, m1Watermark, setM1Watermark, m1Subscribe, setM1Subscribe, setActiveMode, handleAddToQueue }) {
   const [configureModalIdx, setConfigureModalIdx] = useState(null);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
 
   return (
     <>
@@ -40,15 +42,26 @@ export default function M1SlotManager({ m1Slots, updateM1Slot, isDuplicateOutput
             <span className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,1)] animate-pulse border-2 border-[#111] z-30 relative"></span>
             <h2 className="text-[13px] font-black uppercase tracking-[0.4em] text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] relative z-30">AUDIO ALLOCATION RENDER MODULES</h2>
             
-            <div className="ml-auto flex items-center gap-4">
+            <div className="ml-auto flex items-center gap-3">
               <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-orange-400 bg-black/50 px-3 py-1.5 rounded-lg border border-orange-500/30 shadow-[inset_0_0_10px_rgba(249,115,22,0.2)]">
                 <span className="text-orange-500 text-[12px]">{m1Slots.length}</span> MODULES ALLOCATED
               </div>
 
+              {/* Batch Workstation Modal Button */}
+              <button 
+                type="button"
+                onClick={() => setIsBatchModalOpen(true)}
+                className="bg-gradient-to-r from-[#20232c] to-[#12141a] hover:from-orange-600/30 hover:to-orange-500/20 text-orange-400 hover:text-white font-black text-[10px] uppercase tracking-[0.2em] px-3.5 py-2 rounded-lg shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_10px_rgba(0,0,0,0.5)] border border-orange-500/40 hover:border-orange-400 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                title="Buka Batch Workstation untuk fetch/config banyak video sekaligus"
+              >
+                <svg className="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>BATCH WORKSTATION</span>
+              </button>
+
               {/* Add To Queue Button */}
               <button 
                 onClick={() => handleAddToQueue && handleAddToQueue()}
-                className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-black text-[10px] uppercase tracking-[0.2em] px-4 py-2 rounded-lg shadow-[0_0_15px_rgba(249,115,22,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-orange-400 transition-all flex items-center gap-2"
+                className="bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-black text-[10px] uppercase tracking-[0.2em] px-4 py-2 rounded-lg shadow-[0_0_15px_rgba(249,115,22,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-orange-400 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
                 ADD TO QUEUE
@@ -78,6 +91,7 @@ export default function M1SlotManager({ m1Slots, updateM1Slot, isDuplicateOutput
         </div>
       </div>
 
+      {/* INDIVIDUAL CONFIG MODAL */}
       {configureModalIdx !== null && (
         <M1ConfigureAssetModal
           slot={m1Slots[configureModalIdx] || { 
@@ -91,6 +105,15 @@ export default function M1SlotManager({ m1Slots, updateM1Slot, isDuplicateOutput
           idx={configureModalIdx}
           updateM1Slot={updateM1Slot}
           closeModal={() => setConfigureModalIdx(null)}
+        />
+      )}
+
+      {/* BATCH WORKSTATION MODAL */}
+      {isBatchModalOpen && (
+        <M1BatchWorkstationModal
+          m1Slots={m1Slots}
+          updateM1Slot={updateM1Slot}
+          closeModal={() => setIsBatchModalOpen(false)}
         />
       )}
     </>

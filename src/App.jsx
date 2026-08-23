@@ -45,6 +45,7 @@ import WorkspacePicker from './components/startup/WorkspacePicker.jsx';
 import WorkspaceWizard from './components/startup/WorkspaceWizard.jsx';
 import WorkspaceDrawer from './components/workspace/WorkspaceDrawer.jsx';
 import WorkspaceSettingsModal from './components/workspace/WorkspaceSettingsModal.jsx';
+import Avatar from './components/ui/Avatar.jsx';
 import Surface from './components/ui/Surface.jsx';
 import { BackgroundVariants } from './components/ui/BackgroundVariants.js';
 import DiagnosticsPage from './pages/Diagnostics.jsx';
@@ -104,8 +105,42 @@ export default function App() {
 
   const [appState, setAppState] = useState('SPLASH'); // 'SPLASH' | 'PICKER' | 'WIZARD' | 'EDITOR'
   const [activeWorkspace, setActiveWorkspace] = useState(() => localStorage.getItem('mf_active_workspace') || 'Test 1');
+  const [activeWorkspaceAvatar, setActiveWorkspaceAvatar] = useState(() => {
+    const cur = localStorage.getItem('mf_active_workspace') || 'Test 1';
+    return localStorage.getItem(`mf_workspace_avatar_${cur}`) || null;
+  });
   const [hardwareStats, setHardwareStats] = useState({ cpu: 12, gpu: 18, ram: 32 });
   const [fps, setFps] = useState(60);
+
+  useEffect(() => {
+    if (activeWorkspace) {
+      const av = localStorage.getItem(`mf_workspace_avatar_${activeWorkspace}`);
+      setActiveWorkspaceAvatar(av || null);
+    }
+  }, [activeWorkspace]);
+
+  useEffect(() => {
+    const handleAvatarUpdate = (e) => {
+      if (e.detail?.avatar) {
+        if (!e.detail?.workspaceName || e.detail?.workspaceName === activeWorkspace) {
+          setActiveWorkspaceAvatar(e.detail.avatar);
+        }
+      }
+    };
+    const handleRenamed = (e) => {
+      if (e.detail?.oldName === activeWorkspace && e.detail?.newName) {
+        setActiveWorkspace(e.detail.newName);
+        const av = localStorage.getItem(`mf_workspace_avatar_${e.detail.newName}`);
+        setActiveWorkspaceAvatar(av || null);
+      }
+    };
+    window.addEventListener('workspace_avatar_updated', handleAvatarUpdate);
+    window.addEventListener('workspace_renamed', handleRenamed);
+    return () => {
+      window.removeEventListener('workspace_avatar_updated', handleAvatarUpdate);
+      window.removeEventListener('workspace_renamed', handleRenamed);
+    };
+  }, [activeWorkspace]);
 
   useEffect(() => {
     let frameCount = 0;
@@ -2059,6 +2094,69 @@ export default function App() {
     }
   };
 
+  const handleGenerateM7Configuration = async (jobPayload = {}) => {
+    try {
+      const outFileName = jobPayload.outputFilename || `m7_astrofox_${Date.now()}.mp4`;
+      const customOutputDir = workspaceConfig?.output?.main || (activeWorkspace ? localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) : '') || 'Output';
+      const cleanDir = (customOutputDir || 'Output').replace(/[/\\]+$/, '');
+      const outFolder = `${cleanDir}/M7_Astrofox/`;
+
+      const newJob = {
+        id: 'm7_q_' + Date.now(),
+        mode: 'Mode 7',
+        profileName: 'Astrofox Motion Graphics Engine',
+        status: 'Waiting',
+        scheduleMode: 'Manual',
+        scheduledAt: null,
+        isPaused: false,
+        inputVideo: jobPayload.backgroundName || 'Astrofox Canvas',
+        tracks: (jobPayload.tracks && jobPayload.tracks.length > 0) ? jobPayload.tracks : [jobPayload.audioFile || 'Audio Track'],
+        outputFiles: [outFileName],
+        outputFolder: outFolder,
+        totalDurationSec: jobPayload.duration || 10,
+        progress: 0,
+        renderMode: 'ASTROFOX_NATIVE',
+        m7Payload: jobPayload
+      };
+
+      setQueue(prev => [...prev.filter(j => j.status !== 'Failed'), newJob]);
+      setPipelineDrawerCollapsed(false);
+      addLog(`[M7] Astrofox Render Job created and queued for ${outFileName}`);
+      addNotification("⚡ Berhasil ditambahkan ke Queue Manager.", "Status: Waiting");
+    } catch (err) {
+      console.error('[M7 Queue Error]', err);
+      if (addNotification) {
+        addNotification(`⚠️ Queue Error: ${err.message}`, "Validation Error");
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleM7Message = (e) => {
+      if (e.data && e.data.type === 'M7_RENDER_PROGRESS') {
+        const { progress, status, currentFrame, totalFrames, stageText } = e.data.payload || {};
+        setQueue(prev => prev.map(job => {
+          if (job.mode === 'Mode 7' && (job.status === 'Rendering' || job.status === 'RENDERING')) {
+            const isCompleted = status === 'Completed' || progress >= 100;
+            const isFailed = status === 'Failed';
+            if (isCompleted) {
+              addLog(`[M7 SUCCESS] Render complete: ${job.outputFiles[0]}`);
+            }
+            return {
+              ...job,
+              progress: isCompleted ? 100 : Math.max(1, progress || 0),
+              status: isCompleted ? 'Completed' : (isFailed ? 'Failed' : 'Rendering'),
+              stage: stageText || (totalFrames ? `Frame ${currentFrame || 0} / ${totalFrames}` : 'Rendering...')
+            };
+          }
+          return job;
+        }));
+      }
+    };
+    window.addEventListener('message', handleM7Message);
+    return () => window.removeEventListener('message', handleM7Message);
+  }, []);
+
   const fetchVideoMetadataWithFallback = async (filePath, file = null) => {
     const endpoints = [
       getApiUrl('/api/m1/video-metadata')
@@ -2200,19 +2298,11 @@ export default function App() {
       
       const rawW = probeData.rawWidth || (probeData.resolution ? parseInt(probeData.resolution.split(/[x×]/)[0]) : 1920);
       const rawH = probeData.rawHeight || (probeData.resolution ? parseInt(probeData.resolution.split(/[x×]/)[1]) : 1080);
-      const srcRatio = rawW / rawH;
-      const targetRatio = 16 / 9;
-      let autoScale = 100;
-      if (srcRatio < targetRatio) {
-        autoScale = Math.max(100, Math.round((targetRatio / srcRatio) * 100));
-      } else if (srcRatio > targetRatio) {
-        autoScale = Math.max(100, Math.round((srcRatio / targetRatio) * 100));
-      }
 
       setM1VideoTransform({
         x: 0,
         y: 0,
-        scale: autoScale,
+        scale: 100,
         rotation: 0,
         flipH: false,
         flipV: false,
@@ -2278,7 +2368,7 @@ export default function App() {
       setM1VideoTransform({
         x: 0,
         y: 0,
-        scale: autoScale,
+        scale: 100,
         rotation: 0,
         flipH: false,
         flipV: false,
@@ -2569,25 +2659,32 @@ export default function App() {
                 setQueue(q => q.map(x => x.id === job.id ? { ...x, status: 'Failed', failureReason: err.message } : x));
               });
             } else if (job.mode === 'Mode 4') {
-             addLog(`[M4] STARTING ${job.outputFiles[0]}`);
-             fetch(getApiUrl('/api/m4/render'), {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify(job)
-             })
-             .then(async (res) => {
-               if (!res.ok) throw new Error(`HTTP ${res.status}`);
-               const data = await res.json();
-               addLog(`[M4] RENDER ACCEPTED`);
-               setQueue(q => q.map(x => x.id === job.id ? { ...x, backendJobId: data.jobId || data.id || job.id } : x));
-             })
-             .catch((err) => {
-               console.error(err);
-               addLog(`[M4] FAILED TO START: ${err.message}`);
-               setQueue(q => q.map(x => x.id === job.id ? { ...x, status: 'Failed', failureReason: err.message } : x));
-             });
-           }
-           return nextQueue;
+              addLog(`[M4] STARTING ${job.outputFiles[0]}`);
+              fetch(getApiUrl('/api/m4/render'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(job)
+              })
+              .then(async (res) => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                addLog(`[M4] RENDER ACCEPTED`);
+                setQueue(q => q.map(x => x.id === job.id ? { ...x, backendJobId: data.jobId || data.id || job.id } : x));
+              })
+              .catch((err) => {
+                console.error(err);
+                addLog(`[M4] FAILED TO START: ${err.message}`);
+                setQueue(q => q.map(x => x.id === job.id ? { ...x, status: 'Failed', failureReason: err.message } : x));
+              });
+            } else if (job.mode === 'Mode 7') {
+              addLog(`[M7] STARTING ASTROFOX ENGINE RENDER: ${job.outputFiles[0]}`);
+              const iframe = document.querySelector('iframe[title="Astrofox M7 Runtime"]');
+              if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: 'M7_START_NATIVE_RENDER', job }, '*');
+              }
+              setQueue(q => q.map(x => x.id === job.id ? { ...x, backendJobId: job.id, progress: 1 } : x));
+            }
+            return nextQueue;
         }
 
         if (job.mode === 'Mode 1' || job.mode === 'Mode 2' || job.mode === 'Mode 3' || job.mode === 'Mode 3 V2' || job.mode === 'Mode 4') {
@@ -2697,7 +2794,7 @@ export default function App() {
   }, [isScheduleEnabled, scheduleHour, scheduleMinute, isRendering]);
 
   if (appState === 'SPLASH') return <Splash onComplete={checkWorkspaces} />;
-  if (appState === 'PICKER') return <WorkspacePicker onWorkspaceSelected={handleWorkspaceSelected} onNewWorkspace={() => setAppState('WIZARD')} />;
+  if (appState === 'PICKER') return <WorkspacePicker activeWorkspace={activeWorkspace} onWorkspaceSelected={handleWorkspaceSelected} onNewWorkspace={() => setAppState('WIZARD')} />;
   if (appState === 'WIZARD') return <WorkspaceWizard onWorkspaceCreated={handleWorkspaceSelected} onClose={() => setAppState('PICKER')} />;
   
   if (appState === 'WORKSPACE_LOADING') {
@@ -2912,18 +3009,22 @@ export default function App() {
 
             <button 
               onClick={() => setIsWorkspaceDrawerOpen(true)}
-              className="flex items-center gap-2 hover:bg-white/5 p-1 rounded-lg transition-colors cursor-pointer"
+              className="flex items-center gap-2.5 hover:bg-white/5 p-1 rounded-lg transition-colors cursor-pointer group"
+              title="Open Workspace Settings"
             >
               <div className="hidden lg:flex flex-col text-right">
-                 <span className="text-[10px] font-bold text-white leading-tight">{activeWorkspace || 'No Workspace'}</span>
+                 <span className="text-[11px] font-black text-white leading-tight font-['Rajdhani'] uppercase tracking-wider group-hover:text-orange-400 transition-colors">{activeWorkspace || 'No Workspace'}</span>
                  <div className="flex items-center justify-end gap-1">
-                    <span className="text-[8px] text-[#738091]">Current</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_5px_rgba(16,185,129,0.8)]"></div>
+                    <span className="text-[8px] text-[#738091] font-mono">Current</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse"></div>
                  </div>
               </div>
-              <div className="w-7 h-7 rounded-full bg-[#32D8FF]/20 border border-[#32D8FF]/50 text-[#32D8FF] flex items-center justify-center font-bold text-[10px] uppercase shadow-[0_0_12px_rgba(50,216,255,0.2)]">
-                {activeWorkspace ? activeWorkspace.substring(0, 2) : 'MF'}
-              </div>
+              <Avatar 
+                name={activeWorkspace} 
+                src={activeWorkspaceAvatar} 
+                size={30} 
+                className="!rounded-lg border border-orange-500/60 shadow-[0_0_10px_rgba(249,115,22,0.3)]"
+              />
             </button>
           </div>
         </div>
@@ -3042,7 +3143,7 @@ export default function App() {
           )}
 
           {activeMode === 'Mode 7' && (
-            <M7StudioPanel addNotification={addNotification} />
+            <M7StudioPanel addNotification={addNotification} onAddToQueue={handleGenerateM7Configuration} />
           )}
 
           {/* END MODES CONTENT */}
@@ -3479,49 +3580,73 @@ export default function App() {
             onClose={() => setIsWorkspaceDrawerOpen(false)}
             onSwitch={() => { setIsWorkspaceDrawerOpen(false); setAppState('PICKER'); }}
             onSettings={() => { setIsWorkspaceDrawerOpen(false); setIsWorkspaceSettingsOpen(true); }}
+            onRename={(newName) => setActiveWorkspace(newName)}
         />
       </div>
-      {/* QUEUE REVIEW CONFIRMATION DIALOG MODAL */}
+      {/* QUEUE REVIEW CONFIRMATION DIALOG MODAL (M1 RADIANT ORANGE CYBERPUNK THEME) */}
       {reviewDialog.isOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <Surface variant={BackgroundVariants.Modal} className="border border-[#2d313d] rounded-lg max-w-sm w-full p-4 space-y-3 text-xs shadow-2xl">
-            <div className="font-bold text-gray-200 border-b border-[#2d313d] pb-1 text-sm flex justify-between items-center">
-              <span>Review Queue Parameters</span>
-              <span className="text-[10px] text-gray-500 font-normal">MediaFactory Validation</span>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="relative bg-gradient-to-b from-[#1c140e] via-[#120d09] to-[#0a0705] border-2 border-orange-500/80 rounded-2xl max-w-lg w-full p-6 shadow-[0_0_50px_rgba(249,115,22,0.4),0_0_100px_rgba(0,0,0,0.95)] animate-scale-up overflow-hidden flex flex-col items-center">
+            
+            {/* Top Radiant Orange Crest Light (Like Gambar 3) */}
+            <div className="w-24 h-1 bg-orange-500 rounded-full shadow-[0_0_20px_rgba(249,115,22,1)] mb-3"></div>
+
+            {/* Glowing Icon Emblem (Like Gambar 3) */}
+            <div className="w-14 h-14 rounded-full border-2 border-orange-500 bg-orange-500/10 shadow-[0_0_25px_rgba(249,115,22,0.6)] flex items-center justify-center mb-3">
+              <svg className="w-7 h-7 text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
             </div>
 
-            <div className="space-y-1.5 py-1 text-[11px] text-[#d1d5db]">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Project Name:</span>
-                <span className="font-bold text-blue-400">{reviewDialog.data.projectName}</span>
+            {/* Header Titles */}
+            <h3 className="font-['Rajdhani'] font-black text-xl uppercase tracking-[0.2em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] text-center mb-0.5">
+              REVIEW QUEUE PARAMETERS
+            </h3>
+            <span className="text-[10px] text-orange-400 font-mono font-bold uppercase tracking-[0.25em] mb-4">
+              PIPELINE VALIDATION READY
+            </span>
+
+            {/* Parameter Content Table (All Details Restored) */}
+            <div className="w-full bg-[#0d0906] border border-orange-500/30 rounded-xl p-4 space-y-2 font-mono text-[11px] shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] mb-5">
+              <div className="flex justify-between items-center border-b border-orange-500/15 pb-2">
+                <span className="text-gray-400 font-bold uppercase text-[10px]">Project Name:</span>
+                <span className="font-bold text-orange-400 truncate max-w-[260px] drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]">
+                  {reviewDialog.data?.projectName}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Active Profile:</span>
-                <span className="font-semibold text-gray-200">{reviewDialog.data.profile}</span>
+              <div className="flex justify-between items-center border-b border-orange-500/15 pb-2">
+                <span className="text-gray-400 font-bold uppercase text-[10px]">Active Profile:</span>
+                <span className="font-bold text-white">
+                  {reviewDialog.data?.profile || reviewDialog.data?.profileName || 'Standard Profile'}
+                </span>
               </div>
-              {reviewDialog.data.details.map((detail, idx) => (
-                <div key={idx} className="flex justify-between">
-                  <span className="text-gray-500">{detail.label}:</span>
-                  <span className="font-semibold text-gray-200 truncate max-w-[180px]">{detail.value}</span>
+              {reviewDialog.data?.details?.map((detail, idx) => (
+                <div key={idx} className="flex justify-between items-center border-b border-orange-500/10 pb-1.5 last:border-b-0 last:pb-0">
+                  <span className="text-gray-400 text-[10px] uppercase">{detail.label}:</span>
+                  <span className="font-bold text-gray-200 truncate max-w-[260px]">{detail.value}</span>
                 </div>
               ))}
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-[#2d313d]">
+            {/* Action Buttons */}
+            <div className="w-full flex gap-3">
               <button
-                onClick={handleConfirmQueue}
-                className="flex-1 py-1.5 bg-[#2563eb] hover:bg-[#3b82f6] text-white rounded font-bold"
+                type="button"
+                onClick={() => setReviewDialog({ isOpen: false, data: null })}
+                className="flex-1 py-3 bg-[#18110c] hover:bg-[#251912] text-gray-300 hover:text-white font-['Rajdhani'] font-bold text-xs uppercase tracking-[0.2em] rounded-xl border border-[#3b271b] hover:border-orange-500/50 transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
-                Confirm Configuration
+                BACK TO EDIT
               </button>
               <button
-                onClick={() => setReviewDialog({ isOpen: false, data: null })}
-                className="flex-1 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded font-bold"
+                type="button"
+                onClick={handleConfirmQueue}
+                className="flex-1 py-3 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-['Rajdhani'] font-black text-xs uppercase tracking-[0.2em] rounded-xl border border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.6)] transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
               >
-                Back To Edit
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/></svg>
+                CONFIRM & QUEUE
               </button>
             </div>
-          </Surface>
+          </div>
         </div>
       )}
 

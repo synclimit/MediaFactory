@@ -1,0 +1,607 @@
+/**
+ * M7 Particle Engine Core
+ * Full parity with MediaFactory M3 particle system:
+ * - 18 Shapes
+ * - 16 Flows
+ * - 10 Trails
+ * - Full Appearance & Blend Modes
+ * - Transform, Count, Scale, Speed, Rotation
+ * - Beat Reactivity
+ */
+
+export class ParticleEngine {
+  constructor() {
+    this.particles = [];
+    this.pathCache = new Map();
+    this.idCounter = 1;
+    this.lastTime = Date.now();
+  }
+
+  getShapePath(shape, size) {
+    if (shape === 'shape_snowflake') return null;
+    const key = shape + '_' + size;
+    let p = this.pathCache.get(key);
+    if (p) return p;
+
+    p = new Path2D();
+    switch (shape) {
+      case 'shape_circle':
+        p.arc(0, 0, size, 0, Math.PI * 2);
+        break;
+      case 'shape_square':
+      case 'shape_pixel':
+        p.rect(-size / 2, -size / 2, size, size);
+        break;
+      case 'shape_triangle':
+        p.moveTo(0, -size);
+        p.lineTo(size * 0.866, size * 0.5);
+        p.lineTo(-size * 0.866, size * 0.5);
+        p.closePath();
+        break;
+      case 'shape_star': {
+        const spikes = 5;
+        const outer = size;
+        const inner = size / 2;
+        let rot = (Math.PI / 2) * 3;
+        const step = Math.PI / spikes;
+        p.moveTo(0, -outer);
+        for (let i = 0; i < spikes; i++) {
+          let x = Math.cos(rot) * outer;
+          let y = Math.sin(rot) * outer;
+          p.lineTo(x, y);
+          rot += step;
+          x = Math.cos(rot) * inner;
+          y = Math.sin(rot) * inner;
+          p.lineTo(x, y);
+          rot += step;
+        }
+        p.lineTo(0, -outer);
+        p.closePath();
+        break;
+      }
+      case 'shape_diamond':
+      case 'shape_crystal':
+        p.moveTo(0, -size);
+        p.lineTo(size, 0);
+        p.lineTo(0, size);
+        p.lineTo(-size, 0);
+        p.closePath();
+        break;
+      case 'shape_hexagon':
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i;
+          if (i === 0) p.moveTo(size * Math.cos(angle), size * Math.sin(angle));
+          else p.lineTo(size * Math.cos(angle), size * Math.sin(angle));
+        }
+        p.closePath();
+        break;
+      case 'shape_heart': {
+        const topCurveHeight = size * 0.3;
+        p.moveTo(0, topCurveHeight);
+        p.bezierCurveTo(0, topCurveHeight - 3, -size / 2, -size / 2, -size / 2, 0);
+        p.bezierCurveTo(-size / 2, size / 2, 0, size / 2, 0, size);
+        p.bezierCurveTo(0, size / 2, size / 2, size / 2, size / 2, 0);
+        p.bezierCurveTo(size / 2, -size / 2, 0, topCurveHeight - 3, 0, topCurveHeight);
+        p.closePath();
+        break;
+      }
+      case 'shape_music_note':
+        p.arc(-size * 0.3, size * 0.5, size * 0.3, 0, Math.PI * 2);
+        p.moveTo(-size * 0.1, size * 0.5);
+        p.lineTo(-size * 0.1, -size * 0.5);
+        p.lineTo(size * 0.4, -size * 0.2);
+        p.lineTo(size * 0.4, size * 0.2);
+        p.lineTo(-size * 0.1, -size * 0.1);
+        break;
+      case 'shape_lightning':
+        p.moveTo(0, -size);
+        p.lineTo(-size * 0.5, size * 0.2);
+        p.lineTo(0, size * 0.2);
+        p.lineTo(-size * 0.2, size);
+        p.lineTo(size * 0.5, -size * 0.1);
+        p.lineTo(0, -size * 0.1);
+        p.closePath();
+        break;
+      case 'shape_flame':
+        p.moveTo(0, size);
+        p.bezierCurveTo(size, size, size, 0, 0, -size);
+        p.bezierCurveTo(-size, 0, -size, size, 0, size);
+        p.closePath();
+        break;
+      case 'shape_leaf':
+        p.moveTo(0, size);
+        p.quadraticCurveTo(size, 0, 0, -size);
+        p.quadraticCurveTo(-size, 0, 0, size);
+        break;
+      case 'shape_feather':
+        p.moveTo(0, size);
+        p.quadraticCurveTo(size * 0.5, 0, 0, -size);
+        p.quadraticCurveTo(-size * 0.2, 0, 0, size);
+        break;
+      case 'shape_bubble':
+        p.arc(0, 0, size, 0, Math.PI * 2);
+        p.moveTo(size * 0.4, -size * 0.4);
+        p.arc(size * 0.4, -size * 0.4, size * 0.2, 0, Math.PI * 2);
+        break;
+      case 'shape_droplet':
+        p.moveTo(0, -size);
+        p.bezierCurveTo(size / 1.5, -size / 2, size, size / 3, 0, size);
+        p.bezierCurveTo(-size, size / 3, -size / 1.5, -size / 2, 0, -size);
+        break;
+      case 'shape_ring':
+        p.arc(0, 0, size, 0, Math.PI * 2);
+        p.moveTo(0, 0);
+        break;
+      default:
+        p.arc(0, 0, size, 0, Math.PI * 2);
+    }
+    this.pathCache.set(key, p);
+    return p;
+  }
+
+  drawShape(ctx, p, config) {
+    const size = p.size || 10;
+    const effectiveScale = (p.scale || 1.0) * (p.currentBeatScale || 1.0);
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate((p.rotation * Math.PI) / 180);
+    ctx.scale(effectiveScale, effectiveScale);
+
+    const cachedPath = this.getShapePath(config.shape || 'shape_circle', size);
+
+    const rawOpacity = config.opacity !== undefined ? Number(config.opacity) : 100;
+    ctx.globalAlpha = Math.min(Math.max(rawOpacity / 100, 0), 1);
+
+    if (cachedPath) {
+      ctx.fillStyle = config.fillColor || '#ffffff';
+      ctx.fill(cachedPath);
+
+      if (config.strokeWidth > 0) {
+        ctx.strokeStyle = config.strokeColor || '#000000';
+        ctx.lineWidth = config.strokeWidth;
+        ctx.stroke(cachedPath);
+      }
+    } else {
+      // Snowflake or fallback
+      ctx.strokeStyle = config.fillColor || '#ffffff';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 6; i++) {
+        ctx.save();
+        ctx.rotate((i * Math.PI) / 3);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, size);
+        ctx.moveTo(0, size * 0.5);
+        ctx.lineTo(size * 0.3, size * 0.7);
+        ctx.moveTo(0, size * 0.5);
+        ctx.lineTo(-size * 0.3, size * 0.7);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  spawnParticle(config, width, height, initialSpawn = false, poolObj = null) {
+    const flow = config.flow || 'flow_float';
+    const baseScale = config.scale || 1.0;
+    const scaleMult = config.randomScale ? 0.5 + Math.random() : 1.0;
+
+    let p = poolObj;
+    if (!p) {
+      p = {
+        id: this.idCounter++,
+        historyX: new Float32Array(10),
+        historyY: new Float32Array(10),
+      };
+    }
+
+    p.x = 0;
+    p.y = 0;
+    p.size = (config.size || 8);
+    p.scale = baseScale * scaleMult;
+    p.rotation = config.randomRotation ? Math.random() * 360 : (config.rotation || 0);
+    p.rotSpeed = config.randomRotation ? (Math.random() - 0.5) * 2 : 0;
+    p.life = 1.0;
+    p.decay = Math.random() * 0.01 + 0.005;
+    p.vx = 0;
+    p.vy = 0;
+    p.flow = flow;
+    p.historyHead = 0;
+    p.historyCount = 0;
+
+    p.angle = 0;
+    p.radius = 0;
+    p.angularVelocity = 0;
+    p.radialVelocity = 0;
+    p.pulsePhase = 0;
+    p.wavePhase = 0;
+    p.waveSpeed = 0;
+    p.waveAmp = 0;
+    p.startY = 0;
+    p.gravity = 0;
+
+    switch (flow) {
+      case 'flow_float':
+        p.x = Math.random() * width;
+        p.y = initialSpawn ? Math.random() * height : height + p.size;
+        p.vy = -(Math.random() * 2 + 1);
+        p.vx = (Math.random() - 0.5) * 1;
+        break;
+      case 'flow_rain':
+        p.x = Math.random() * width;
+        p.y = initialSpawn ? Math.random() * height : -p.size;
+        p.vy = Math.random() * 5 + 5;
+        p.vx = 0;
+        break;
+      case 'flow_swirl': {
+        const radius = (Math.random() * Math.min(width, height)) / 2;
+        const angle = Math.random() * Math.PI * 2;
+        p.x = width / 2 + Math.cos(angle) * radius;
+        p.y = height / 2 + Math.sin(angle) * radius;
+        p.angle = angle;
+        p.radius = radius;
+        p.angularVelocity = (Math.random() * 0.02 + 0.01) * (Math.random() > 0.5 ? 1 : -1);
+        break;
+      }
+      case 'flow_explosion': {
+        p.x = width / 2;
+        p.y = height / 2;
+        const burstAngle = Math.random() * Math.PI * 2;
+        const burstForce = Math.random() * 5 + 2;
+        p.vx = Math.cos(burstAngle) * burstForce;
+        p.vy = Math.sin(burstAngle) * burstForce;
+        break;
+      }
+      case 'flow_static':
+        p.x = Math.random() * width;
+        p.y = Math.random() * height;
+        p.vx = 0;
+        p.vy = 0;
+        break;
+      case 'flow_drift':
+        p.x = Math.random() * width;
+        p.y = Math.random() * height;
+        p.vx = (Math.random() - 0.5) * 0.5;
+        p.vy = (Math.random() - 0.5) * 0.5;
+        break;
+      case 'flow_snow':
+        p.x = Math.random() * width;
+        p.y = initialSpawn ? Math.random() * height : -p.size;
+        p.vy = Math.random() * 1.5 + 0.5;
+        p.vx = Math.sin(Math.random() * Math.PI * 2) * 1.5;
+        p.angle = Math.random() * Math.PI * 2;
+        break;
+      case 'flow_wind_left':
+        p.x = initialSpawn ? Math.random() * width : width + p.size;
+        p.y = Math.random() * height;
+        p.vx = -(Math.random() * 4 + 2);
+        p.vy = (Math.random() - 0.5) * 1;
+        break;
+      case 'flow_wind_right':
+        p.x = initialSpawn ? Math.random() * width : -p.size;
+        p.y = Math.random() * height;
+        p.vx = Math.random() * 4 + 2;
+        p.vy = (Math.random() - 0.5) * 1;
+        break;
+      case 'flow_spiral': {
+        const spRadius = (Math.random() * Math.min(width, height)) / 2;
+        const spAngle = Math.random() * Math.PI * 2;
+        p.x = width / 2 + Math.cos(spAngle) * spRadius;
+        p.y = height / 2 + Math.sin(spAngle) * spRadius;
+        p.angle = spAngle;
+        p.radius = spRadius;
+        p.angularVelocity = Math.random() * 0.05 + 0.02;
+        p.radialVelocity = Math.random() * 1 + 0.5;
+        break;
+      }
+      case 'flow_orbit':
+        p.angle = Math.random() * Math.PI * 2;
+        p.radius = (Math.random() * Math.min(width, height)) / 2 + 50;
+        p.angularVelocity = (Math.random() * 0.02 + 0.01) * (Math.random() > 0.5 ? 1 : -1);
+        p.x = width / 2 + Math.cos(p.angle) * p.radius;
+        p.y = height / 2 + Math.sin(p.angle) * p.radius;
+        break;
+      case 'flow_implosion':
+        p.angle = Math.random() * Math.PI * 2;
+        p.radius = Math.min(width, height);
+        p.radialVelocity = -(Math.random() * 5 + 2);
+        p.x = width / 2 + Math.cos(p.angle) * p.radius;
+        p.y = height / 2 + Math.sin(p.angle) * p.radius;
+        break;
+      case 'flow_starfield':
+        p.starAngle = Math.random() * Math.PI * 2;
+        p.starSpread = Math.random() * 0.8 + 0.2;
+        p.speed = Math.random() * 0.4 + 0.3;
+        p.progress = initialSpawn ? Math.random() : 0;
+        p.x = width / 2;
+        p.y = height / 2;
+        break;
+      case 'flow_pulse': {
+        p.x = width / 2;
+        p.y = height / 2;
+        const puAngle = Math.random() * Math.PI * 2;
+        const puForce = Math.random() * 3 + 1;
+        p.vx = Math.cos(puAngle) * puForce;
+        p.vy = Math.sin(puAngle) * puForce;
+        p.pulsePhase = Math.random() * Math.PI * 2;
+        break;
+      }
+      case 'flow_wave':
+        p.x = initialSpawn ? Math.random() * width : -p.size;
+        p.y = Math.random() * height;
+        p.vx = Math.random() * 2 + 1;
+        p.vy = 0;
+        p.wavePhase = Math.random() * Math.PI * 2;
+        p.waveSpeed = Math.random() * 0.1 + 0.05;
+        p.waveAmp = Math.random() * 50 + 20;
+        p.startY = p.y;
+        break;
+      case 'flow_fountain':
+        p.x = width / 2 + (Math.random() - 0.5) * (initialSpawn ? width * 0.5 : 50);
+        p.y = initialSpawn ? Math.random() * height : height;
+        p.vx = (Math.random() - 0.5) * 3;
+        p.vy = -(Math.random() * 6 + 6);
+        p.gravity = Math.random() * 0.1 + 0.1;
+        break;
+      default:
+        p.x = Math.random() * width;
+        p.y = Math.random() * height;
+        p.vx = (Math.random() - 0.5) * 2;
+        p.vy = (Math.random() - 0.5) * 2;
+    }
+
+    return p;
+  }
+
+  updateParticle(p, config, width, height, reactiveValue, dt) {
+    const flow = config.flow || 'flow_float';
+
+    if (p.flow !== flow) {
+      p.life = 0;
+      p.flow = flow;
+      return;
+    }
+
+    const baseSpeed = config.speed !== undefined ? Number(config.speed) : 1.0;
+    let speedMult = baseSpeed;
+    if (config.beatReactive) {
+      const targetMult = baseSpeed * (0.25 + Math.pow(reactiveValue, 1.2) * 6.8);
+      const targetBeatScale = 1.0 + Math.pow(reactiveValue, 1.2) * 0.45;
+      if (p.currentSpeedMult === undefined) p.currentSpeedMult = baseSpeed * 0.25;
+      if (p.currentBeatScale === undefined) p.currentBeatScale = 1.0;
+
+      if (targetMult > p.currentSpeedMult) {
+        p.currentSpeedMult += (targetMult - p.currentSpeedMult) * 0.45;
+        p.currentBeatScale += (targetBeatScale - p.currentBeatScale) * 0.45;
+      } else {
+        p.currentSpeedMult += (targetMult - p.currentSpeedMult) * 0.1;
+        p.currentBeatScale += (targetBeatScale - p.currentBeatScale) * 0.1;
+      }
+      speedMult = p.currentSpeedMult;
+    } else {
+      p.currentSpeedMult = baseSpeed;
+      p.currentBeatScale = 1.0;
+    }
+
+    // Record history for trails
+    if (config.trail && config.trail !== 'trail_none') {
+      p.historyX[p.historyHead] = p.x;
+      p.historyY[p.historyHead] = p.y;
+      p.historyHead = (p.historyHead + 1) % 10;
+      if (p.historyCount < 10) p.historyCount++;
+    }
+
+    p.rotation += p.rotSpeed * speedMult;
+
+    switch (flow) {
+      case 'flow_swirl':
+        p.angle += p.angularVelocity * speedMult;
+        p.x = width / 2 + Math.cos(p.angle) * p.radius;
+        p.y = height / 2 + Math.sin(p.angle) * p.radius;
+        break;
+      case 'flow_snow':
+        p.angle += 0.05 * speedMult;
+        p.x += (p.vx + Math.cos(p.angle)) * speedMult;
+        p.y += p.vy * speedMult;
+        break;
+      case 'flow_spiral':
+        p.angle += p.angularVelocity * speedMult;
+        p.radius += p.radialVelocity * speedMult;
+        p.x = width / 2 + Math.cos(p.angle) * p.radius;
+        p.y = height / 2 + Math.sin(p.angle) * p.radius;
+        break;
+      case 'flow_orbit':
+        p.angle += p.angularVelocity * speedMult;
+        p.x = width / 2 + Math.cos(p.angle) * p.radius;
+        p.y = height / 2 + Math.sin(p.angle) * p.radius;
+        break;
+      case 'flow_implosion':
+        p.radius += p.radialVelocity * speedMult;
+        if (p.radius < 5) p.life = 0;
+        p.x = width / 2 + Math.cos(p.angle) * p.radius;
+        p.y = height / 2 + Math.sin(p.angle) * p.radius;
+        break;
+      case 'flow_starfield': {
+        p.progress = (p.progress || 0) + (p.speed || 0.4) * dt * speedMult;
+        if (p.progress >= 1.0) {
+          p.progress = 0;
+          p.starAngle = Math.random() * Math.PI * 2;
+          p.starSpread = Math.random() * 0.8 + 0.2;
+        }
+        const maxR = Math.sqrt(width * width + height * height) / 2;
+        const r = p.progress * maxR * (p.starSpread || 0.5);
+        p.x = width / 2 + Math.cos(p.starAngle || 0) * r;
+        p.y = height / 2 + Math.sin(p.starAngle || 0) * r;
+        p.scale = 0.4 + p.progress * 2.2;
+        break;
+      }
+      case 'flow_pulse':
+        p.pulsePhase += 0.1 * speedMult;
+        const puScale = 1 + Math.sin(p.pulsePhase) * 0.5;
+        p.x += p.vx * speedMult * puScale;
+        p.y += p.vy * speedMult * puScale;
+        break;
+      case 'flow_wave':
+        p.wavePhase += p.waveSpeed * speedMult;
+        p.x += p.vx * speedMult;
+        p.y = p.startY + Math.sin(p.wavePhase) * p.waveAmp;
+        break;
+      case 'flow_fountain':
+        p.vy += p.gravity * speedMult;
+        p.x += p.vx * speedMult;
+        p.y += p.vy * speedMult;
+        break;
+      default:
+        p.x += p.vx * speedMult;
+        p.y += p.vy * speedMult;
+    }
+
+    if (
+      flow !== 'flow_starfield' &&
+      (p.x < -100 || p.x > width + 100 || p.y < -100 || p.y > height + 100)
+    ) {
+      p.life = 0;
+    }
+
+    if (flow === 'flow_explosion' || flow === 'flow_pulse') {
+      p.life -= p.decay;
+    }
+  }
+
+  drawTrail(ctx, p, config) {
+    if (!config.trail || config.trail === 'trail_none' || p.historyCount < 2) return;
+
+    ctx.save();
+    const rawOpacity = config.opacity !== undefined ? Number(config.opacity) : 100;
+    const alpha = Math.min(Math.max(rawOpacity / 100, 0), 1);
+    ctx.globalAlpha = alpha;
+
+    ctx.beginPath();
+    let oldestIdx = (p.historyHead - p.historyCount + 10) % 10;
+    let hx = p.historyX[oldestIdx];
+    let hy = p.historyY[oldestIdx];
+    ctx.moveTo(hx, hy);
+
+    let currIdx = oldestIdx;
+    for (let i = 1; i < p.historyCount; i++) {
+      currIdx = (currIdx + 1) % 10;
+      ctx.lineTo(p.historyX[currIdx], p.historyY[currIdx]);
+    }
+
+    const stroke = config.fillColor || '#ffffff';
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = p.size * (p.scale || 1) * 0.5;
+
+    if (config.trail === 'trail_fade') {
+      if (p.historyCount > 0 && Number.isFinite(hx) && Number.isFinite(hy) && Number.isFinite(p.x) && Number.isFinite(p.y)) {
+        if (Math.abs(hx - p.x) < 0.01 && Math.abs(hy - p.y) < 0.01) hx += 0.01;
+        const grad = ctx.createLinearGradient(hx, hy, p.x, p.y);
+        grad.addColorStop(0, 'rgba(255,255,255,0)');
+        grad.addColorStop(1, stroke);
+        ctx.strokeStyle = grad;
+      }
+    } else if (config.trail === 'trail_glow') {
+      ctx.shadowBlur = p.size;
+      ctx.shadowColor = stroke;
+    } else if (config.trail === 'trail_light') {
+      ctx.globalCompositeOperation = 'screen';
+      ctx.lineWidth = p.size * (p.scale || 1);
+    } else if (config.trail === 'trail_rainbow') {
+      const hue = (p.id * 10 + Date.now() * 0.1) % 360;
+      ctx.strokeStyle = `hsla(${hue}, 100%, 60%, ${alpha})`;
+    } else if (config.trail === 'trail_smoke') {
+      ctx.lineWidth = p.size * (p.scale || 1) * 1.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    } else if (config.trail === 'trail_fire') {
+      ctx.strokeStyle = `rgba(255, ${Math.floor(Math.random() * 150 + 50)}, 0, ${alpha})`;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = 'red';
+      ctx.globalCompositeOperation = 'screen';
+    } else if (config.trail === 'trail_energy') {
+      ctx.setLineDash([5, 15]);
+      ctx.shadowBlur = 5;
+      ctx.shadowColor = stroke;
+    } else if (config.trail === 'trail_dotted') {
+      ctx.setLineDash([p.size * 0.5, p.size * 1.5]);
+    } else if (config.trail === 'trail_pixel') {
+      ctx.setLineDash([p.size, p.size * 2]);
+      ctx.lineCap = 'square';
+    }
+
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  draw(ctx, width, height, config, audioData = {}) {
+    if (!ctx || !config) return;
+
+    const now = Date.now();
+    const dt = Math.min(0.05, (now - this.lastTime) / 1000 || 0.016);
+    this.lastTime = now;
+
+    // Audio reactivity from bass
+    let reactiveValue = 0;
+    const fft = audioData.fft;
+    if (fft && fft.length > 0) {
+      const bEnd = Math.floor(fft.length * 0.1);
+      let bSum = 0;
+      for (let i = 0; i < bEnd; i++) bSum += fft[i];
+      reactiveValue = (bSum / (bEnd || 1)) / 255;
+    }
+
+    const targetCount = config.count || 50;
+
+    // Allocate / pool particles
+    if (this.particles.length === 0) {
+      const poolLimit = Math.max(targetCount, 500);
+      while (this.particles.length < poolLimit) {
+        let p = this.spawnParticle(config, width, height, true);
+        p.life = 0;
+        p.isDummy = true;
+        this.particles.push(p);
+      }
+    }
+
+    while (this.particles.length < targetCount) {
+      let p = this.spawnParticle(config, width, height, false);
+      p.life = 0;
+      p.isDummy = true;
+      this.particles.push(p);
+    }
+
+    ctx.save();
+
+    // Blend mode
+    let globalComp = 'source-over';
+    if (config.blendMode === 'Screen') globalComp = 'screen';
+    else if (config.blendMode === 'Multiply') globalComp = 'multiply';
+    else if (config.blendMode === 'Add' || config.blendMode === 'Additive') globalComp = 'lighter';
+    else if (config.blendMode === 'Overlay') globalComp = 'overlay';
+    ctx.globalCompositeOperation = globalComp;
+
+    for (let i = targetCount - 1; i >= 0; i--) {
+      let p = this.particles[i];
+      if (!p) continue;
+
+      if (p.life <= 0) {
+        this.spawnParticle(config, width, height, p.isDummy, p);
+        p.isDummy = false;
+      }
+
+      this.updateParticle(p, config, width, height, reactiveValue, dt);
+
+      if (p.life <= 0) {
+        this.spawnParticle(config, width, height, false, p);
+      }
+
+      this.drawTrail(ctx, p, config);
+      this.drawShape(ctx, p, config);
+    }
+
+    ctx.restore();
+  }
+}

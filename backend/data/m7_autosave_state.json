@@ -1,0 +1,127 @@
+{
+  "version": 2,
+  "timestamp": 1787472906743,
+  "activeCategory": "audio",
+  "currentBgType": "image",
+  "activeSelectedBgIndex": 0,
+  "activeBackgrounds": [
+    {
+      "id": "7b5797f8eb4d455a2588289eb0a30013ca012e54",
+      "name": "m7_1787471960511_1786495168.png",
+      "type": "image",
+      "src": "D:\\MediaFactory\\Output\\Temp\\m7_1787471960511_1786495168.png"
+    }
+  ],
+  "bgState": {
+    "darkness": "21",
+    "blur": "0",
+    "scaleMode": "cover",
+    "zoom": "0",
+    "posX": "2",
+    "posY": "-1",
+    "audioMotion": true
+  },
+  "currentPlaylistSource": "file",
+  "activeSelectedTrackIndex": 4,
+  "playlistTracks": [
+    {
+      "id": "track_1787471629161_403pb",
+      "name": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
+      "path": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
+      "duration": 748.2321315192744,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787471629165_kb877",
+      "name": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
+      "path": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
+      "duration": 748.2433106575963,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787471629113_1u3v5",
+      "name": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
+      "path": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
+      "duration": 748.2387301587302,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787471629164_r5a1c",
+      "name": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
+      "path": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
+      "duration": 748.2321315192744,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787471627690_6q9nr",
+      "name": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
+      "path": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
+      "duration": 748.2387301587302,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787471629112_boh0q",
+      "name": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
+      "path": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
+      "duration": 748.2321315192744,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787471629164_hh7nw",
+      "name": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
+      "path": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
+      "duration": 748.2321315192744,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787471629163_on3k7",
+      "name": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
+      "path": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
+      "duration": 748.2433106575963,
+      "durationStr": "12:28"
+    }
+  ],
+  "audioSettings": {
+    "masterVolume": "70",
+    "fadeIn": "2.1",
+    "fadeOut": "3.6",
+    "normalization": true,
+    "removeSilence": true,
+    "pitch": "0"
+  },
+  "currentVizType": "HarmonicsSpectrumDisplay",
+  "activeSelectedVizIndex": 0,
+  "activeVisualizers": [],
+  "vizState": {
+    "preset": "horizontal lumi bars",
+    "gradient": "rainbow",
+    "bands": 40,
+    "glow": 1,
+    "reflexRatio": 0.35,
+    "radial": false,
+    "ledBars": false,
+    "stereo": true,
+    "barWidth": 8,
+    "barSpacing": 4,
+    "height": 98,
+    "posX": 6,
+    "posY": 79,
+    "smoothing": 0.65,
+    "color1": "#f97316",
+    "color2": "#fbbf24",
+    "shadowColor1": "#431407",
+    "shadowColor2": "#000000"
+  },
+  "particleState": {
+    "shape": "Icosahedron",
+    "material": "Points",
+    "color": "#f97316",
+    "cameraZoom": 220,
+    "lightIntensity": 1.5,
+    "beatPulsing": true
+  },
+  "activeParticles": [],
+  "activeSelectedParticleIndex": 0,
+  "activeEffects": [],
+  "activeSelectedEffectIndex": -1
+}
