@@ -2918,17 +2918,46 @@
         <!-- 6. INSPECTOR: TEXT SETTINGS (M3 PARITY) -->
         <div id="m7-inspector-text" style="display:none; flex-direction:column; gap:12px;">
           
-          <!-- Card 1: DATA BINDING -->
-          <div class="m7-inspector-card">
+          <!-- Card 1: DATA BINDING (CURRENT TRACK OR PLAYLIST ACTIVE HIGHLIGHT) -->
+          <div class="m7-inspector-card" id="grp-text-binding">
             <div class="m7-card-title">
               <span class="m7-dot-orange"></span> DATA BINDING
             </div>
-            <div class="m7-toggle-row">
+            <!-- Title binding toggle (for Custom Text & Current Playing) -->
+            <div class="m7-toggle-row" id="row-text-bind-title">
               <span>Bind to Current Track Title</span>
               <label class="m7-switch">
                 <input type="checkbox" id="chk-text-bind" onchange="m7UpdateTextProp('bindToCurrentTrack', this.checked)">
                 <span class="m7-switch-slider"></span>
               </label>
+            </div>
+            <!-- Playlist Active Track Highlight controls (for Track List Layout) -->
+            <div id="row-text-bind-playlist" style="display:none; flex-direction:column; gap:10px;">
+              <div class="m7-toggle-row">
+                <span>Highlight Active Playing Track</span>
+                <label class="m7-switch">
+                  <input type="checkbox" id="chk-text-highlight-active" checked onchange="m7UpdateTextProp('highlightActiveTrack', this.checked)">
+                  <span class="m7-switch-slider"></span>
+                </label>
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Active Track Marker</span>
+                </div>
+                <select class="m7-select" id="sel-text-activemarker" onchange="m7UpdateTextProp('activeMarker', this.value)">
+                  <option value="▶" selected>▶ Arrow (Play)</option>
+                  <option value="●">● Dot</option>
+                  <option value="★">★ Star</option>
+                  <option value="🎵">🎵 Music Note</option>
+                  <option value="">None (Color Only)</option>
+                </select>
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Active Track Highlight Color</span>
+                </div>
+                <input type="color" id="col-text-activecolor" value="#f97316" onchange="m7UpdateTextProp('activeColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
             </div>
           </div>
 
@@ -3997,12 +4026,15 @@
             }
 
             window.__M7_PLAYLIST_TRACKS__ = playlistTracks;
+            window.__M7_ACTIVE_TRACK_INDEX__ = idx;
+            window.activeSelectedTrackIndex = idx;
+
             // Update all dynamic bound text displays (Current Playing title / Tracklist)
             if (typeof activeTextObjects !== 'undefined' && activeTextObjects.length > 0) {
               activeTextObjects.forEach(t => {
-                if (t.properties && (t.properties.bindToCurrentTrack || t.properties.textType === 'title' || t.properties.type === 'playlist')) {
+                if (t.properties && (t.properties.bindToCurrentTrack || t.properties.textType === 'title' || t.properties.type === 'playlist' || t.properties.textType === 'playlist')) {
                   if (t.display && t.display.text) {
-                    t.display.text.render();
+                    t.display.text.render(true);
                   }
                 }
               });
@@ -6006,11 +6038,20 @@
         }
 
         if (prop === 'bindToCurrentTrack') {
-          cur.properties.textType = val ? 'title' : 'custom';
+          if (cur.properties.type === 'playlist' || cur.properties.textType === 'playlist') {
+            cur.properties.highlightActiveTrack = val;
+          } else {
+            cur.properties.textType = val ? 'title' : 'custom';
+            cur.properties.bindToCurrentTrack = val;
+          }
+          const isPlaylist = cur.properties.type === 'playlist' || cur.properties.textType === 'playlist';
+          const isTitle = !isPlaylist && (cur.properties.textType === 'title' || !!cur.properties.bindToCurrentTrack);
           const grpLabel = document.getElementById('grp-text-label');
+          const grpPlaylist = document.getElementById('grp-text-playlist');
           const grpContent = document.getElementById('grp-text-content');
-          if (grpLabel) grpLabel.style.display = val ? 'flex' : 'none';
-          if (grpContent) grpContent.style.display = val ? 'none' : 'flex';
+          if (grpLabel) grpLabel.style.display = isTitle ? 'flex' : 'none';
+          if (grpPlaylist) grpPlaylist.style.display = isPlaylist ? 'flex' : 'none';
+          if (grpContent) grpContent.style.display = (!isTitle && !isPlaylist) ? 'flex' : 'none';
           m7RenderTextList();
         }
 
@@ -6025,17 +6066,34 @@
         if (!textObj || !textObj.properties) return;
         const p = textObj.properties;
 
-        const isBound = !!p.bindToCurrentTrack || p.textType === 'title' || p.name === '{current_track}';
         const isPlaylist = p.type === 'playlist' || p.textType === 'playlist';
+        const isBound = !isPlaylist && (!!p.bindToCurrentTrack || p.textType === 'title' || p.name === '{current_track}');
+
+        const rowBindTitle = document.getElementById('row-text-bind-title');
+        const rowBindPlaylist = document.getElementById('row-text-bind-playlist');
+        if (rowBindTitle) rowBindTitle.style.display = isPlaylist ? 'none' : 'flex';
+        if (rowBindPlaylist) rowBindPlaylist.style.display = isPlaylist ? 'flex' : 'none';
 
         const chkBind = document.getElementById('chk-text-bind');
         if (chkBind) chkBind.checked = isBound;
+
+        const chkHighlight = document.getElementById('chk-text-highlight-active');
+        if (chkHighlight) chkHighlight.checked = p.highlightActiveTrack !== false;
+
+        const selMarker = document.getElementById('sel-text-activemarker');
+        if (selMarker) selMarker.value = p.activeMarker || '▶';
+
+        const colActive = document.getElementById('col-text-activecolor');
+        if (colActive) colActive.value = p.activeColor || '#f97316';
 
         const grpLabel = document.getElementById('grp-text-label');
         if (grpLabel) grpLabel.style.display = isBound ? 'flex' : 'none';
 
         const grpPlaylist = document.getElementById('grp-text-playlist');
         if (grpPlaylist) grpPlaylist.style.display = isPlaylist ? 'flex' : 'none';
+
+        const selCols = document.getElementById('sel-text-cols');
+        if (selCols) selCols.value = p.columns || 1;
 
         const grpContent = document.getElementById('grp-text-content');
         if (grpContent) grpContent.style.display = (!isBound && !isPlaylist) ? 'flex' : 'none';

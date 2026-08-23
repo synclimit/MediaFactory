@@ -82,6 +82,12 @@ export default class CanvasText extends Entity {
     const isCurrentTrack = !!p.bindToCurrentTrack || p.textType === 'title' || p.name === '{current_track}';
     const isPlaylistLayout = p.type === 'playlist' || p.textType === 'playlist';
 
+    // Active track index resolution
+    const activeTrackIdx = (typeof window !== 'undefined' && (window.__M7_ACTIVE_TRACK_INDEX__ !== undefined ? window.__M7_ACTIVE_TRACK_INDEX__ : window.activeSelectedTrackIndex)) ?? 0;
+    const highlightActive = p.highlightActiveTrack !== false;
+    const activeColor = p.activeColor || '#f97316';
+    const activeMarker = p.activeMarker || '▶';
+
     if (isCurrentTrack) {
       if (typeof window !== 'undefined' && window.__ASTROFOX_AUDIO__ && window.__ASTROFOX_AUDIO__.audioStore) {
         const audioState = window.__ASTROFOX_AUDIO__.audioStore.getState();
@@ -119,7 +125,10 @@ export default class CanvasText extends Entity {
       p.labelBold !== false,
       p.labelItalic,
       p.labelAlign || 'Center',
-      trackListItems.length
+      trackListItems.length,
+      highlightActive ? activeTrackIdx : -1,
+      activeColor,
+      activeMarker
     ].join('|');
 
     if (!force && this._lastRenderKey === renderKey && canvas.width > 1) {
@@ -144,7 +153,7 @@ export default class CanvasText extends Entity {
       trackListItems.forEach((track, idx) => {
         const cleanName = (track.name || 'Track').replace(/\.[^/.]+$/, '');
         const numStr = String(idx + 1).padStart(2, '0');
-        const m = context.measureText(`${numStr}. ${cleanName}`);
+        const m = context.measureText(`▶ ${numStr}. ${cleanName}`);
         if (m.width > maxColTrackW) maxColTrackW = m.width;
       });
 
@@ -234,9 +243,12 @@ export default class CanvasText extends Entity {
 
         const cleanName = (track.name || 'Track').replace(/\.[^/.]+$/, '');
         const numStr = String(idx + 1).padStart(2, '0');
-        const itemText = `${numStr}. ${cleanName}`;
+        const isCurrent = highlightActive && (idx === activeTrackIdx);
+        const prefix = isCurrent ? `${activeMarker} ` : '   ';
+        const itemText = `${prefix}${numStr}. ${cleanName}`;
+        const itemCol = isCurrent ? activeColor : color;
 
-        drawStyledLine(itemText, itemX, itemY, mainFont, color);
+        drawStyledLine(itemText, itemX, itemY, mainFont, itemCol);
       });
     } else {
       const lines = String(mainText).split('\n');
