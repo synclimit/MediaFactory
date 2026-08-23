@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "timestamp": 1787475642152,
-  "activeCategory": "text",
+  "timestamp": 1787476065851,
+  "activeCategory": "background",
   "currentBgType": "image",
   "activeSelectedBgIndex": 0,
   "activeBackgrounds": [
     {
-      "id": "0f6c2c8bbdc2c9cd579d93c1dd0584cee00bbdc3",
+      "id": "5779da22425cd7f5528e44436b023b488c944a4f",
       "name": "m7_1787471960511_1786495168.png",
       "type": "image",
       "src": "D:\\MediaFactory\\Output\\Temp\\m7_1787471960511_1786495168.png"
@@ -17,70 +17,13 @@
     "blur": "0",
     "scaleMode": "cover",
     "zoom": "0",
-    "posX": "2",
-    "posY": "-1",
+    "posX": -1,
+    "posY": 4,
     "audioMotion": true
   },
   "currentPlaylistSource": "folder",
-  "activeSelectedTrackIndex": 0,
-  "playlistTracks": [
-    {
-      "id": "track_1787475537181_w8txs",
-      "name": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
-      "path": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
-      "duration": 748.2321315192744,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787475537122_yqo1r",
-      "name": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
-      "path": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787475537186_lifbg",
-      "name": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
-      "path": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787475537222_tmr4o",
-      "name": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
-      "path": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
-      "duration": 748.243313,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787475537184_llmu0",
-      "name": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
-      "path": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787475537223_wo4ys",
-      "name": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
-      "path": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
-      "duration": 748.23875,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787475537206_ioiiu",
-      "name": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
-      "path": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
-      "duration": 748.243313,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787475537215_piepf",
-      "name": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
-      "path": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
-      "duration": 748.23875,
-      "durationStr": "12:28"
-    }
-  ],
+  "activeSelectedTrackIndex": -1,
+  "playlistTracks": [],
   "audioSettings": {
     "masterVolume": "70",
     "fadeIn": "2.1",
@@ -120,81 +63,6 @@
   "activeSelectedParticleIndex": 0,
   "activeEffects": [],
   "activeSelectedEffectIndex": -1,
-  "activeTextObjects": [
-    {
-      "id": "text_1787475512407_7rgd3",
-      "name": "Track List Layout",
-      "properties": {
-        "name": "Track List Layout",
-        "text": "Track List Layout",
-        "textType": "playlist",
-        "type": "playlist",
-        "bindToCurrentTrack": false,
-        "showLabel": true,
-        "labelSize": 0.4,
-        "labelAlign": "Center",
-        "labelBold": true,
-        "labelItalic": false,
-        "labelColor": "#ffffff",
-        "fontFamily": "Segoe UI",
-        "fontWeight": "Extra-Bold",
-        "fontSize": 33,
-        "align": "Center",
-        "x": -62,
-        "y": 36,
-        "color": "#10b981",
-        "opacity": 1,
-        "strokeEnabled": false,
-        "stroke": 0,
-        "strokeColor": "#000000",
-        "glowEnabled": true,
-        "glow": 15,
-        "glowColor": "#10b981",
-        "tiltX": 0,
-        "tiltY": 0,
-        "perspective": 60,
-        "depth": 0,
-        "columns": 1,
-        "size": 33
-      }
-    },
-    {
-      "id": "text_1787475575314_fwk0j",
-      "name": "Current Playing",
-      "properties": {
-        "name": "Current Playing",
-        "text": "{current_track}",
-        "textType": "title",
-        "type": "text",
-        "bindToCurrentTrack": true,
-        "showLabel": true,
-        "labelSize": 0.4,
-        "labelAlign": "Center",
-        "labelBold": true,
-        "labelItalic": false,
-        "labelColor": "#ffffff",
-        "fontFamily": "Segoe UI",
-        "fontWeight": "Extra-Bold",
-        "fontSize": 29,
-        "align": "Center",
-        "x": -5,
-        "y": -169,
-        "color": "#f59e0b",
-        "opacity": 1,
-        "strokeEnabled": false,
-        "stroke": 0,
-        "strokeColor": "#000000",
-        "glowEnabled": true,
-        "glow": 15,
-        "glowColor": "#f59e0b",
-        "tiltX": 0,
-        "tiltY": 0,
-        "perspective": 60,
-        "depth": 0,
-        "columns": 1,
-        "size": 29
-      }
-    }
-  ],
-  "activeSelectedTextIndex": 0
+  "activeTextObjects": [],
+  "activeSelectedTextIndex": -1
 }

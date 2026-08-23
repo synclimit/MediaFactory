@@ -5776,8 +5776,6 @@
       function m7DeleteActiveGizmoLayer() {
         if (activeCategory === 'visualizer' && activeSelectedVizIndex >= 0 && activeVisualizers[activeSelectedVizIndex]) {
           m7RemoveVisualizer(activeSelectedVizIndex);
-        } else if (activeCategory === 'background' && activeSelectedBgIndex >= 0 && activeBackgrounds[activeSelectedBgIndex]) {
-          m7RemoveBackground(activeSelectedBgIndex);
         } else if ((activeCategory === 'text' || activeCategory === 'lyrics') && activeSelectedTextIndex >= 0 && activeTextObjects[activeSelectedTextIndex]) {
           m7RemoveTextObject(activeSelectedTextIndex);
         }
@@ -5878,37 +5876,7 @@
             }
           };
         }
-        if (activeCategory === 'background' && activeBackgrounds[activeSelectedBgIndex]) {
-          const item = activeBackgrounds[activeSelectedBgIndex];
-          const disp = item.display;
-          return {
-            type: 'background',
-            item: item,
-            display: disp,
-            name: item.name || 'Background',
-            getX: () => (disp.properties ? (disp.properties.x || 0) : 0),
-            getY: () => (disp.properties ? (disp.properties.y || 0) : 0),
-            getW: () => stageW * ((disp.properties ? (disp.properties.zoom || 1) : 1) || 1),
-            getH: () => stageH * ((disp.properties ? (disp.properties.zoom || 1) : 1) || 1),
-            getShadowH: () => 0,
-            setPos: (x, y) => {
-              disp.update({ x, y });
-              bgState.posX = Math.round((x / (stageW / 2)) * 100);
-              bgState.posY = Math.round((-y / (stageH / 2)) * 100);
-              const slX = document.getElementById('val-posX');
-              const slY = document.getElementById('val-posY');
-              if (slX) slX.innerText = bgState.posX;
-              if (slY) slY.innerText = bgState.posY;
-            },
-            setSize: (w, h) => {
-              const zoom = Math.max(0.2, Math.min(5.0, w / stageW));
-              disp.update({ zoom });
-              bgState.zoom = Math.round((zoom - 1.0) * 50);
-              const slZ = document.getElementById('val-zoom');
-              if (slZ) slZ.innerText = bgState.zoom;
-            }
-          };
-        }
+
         return null;
       }
 
@@ -6135,20 +6103,10 @@
             return;
           }
 
-          // 3. CANVA HIT-TEST: Fallback to Background (Bottom Layer)
-          if (activeBackgrounds.length > 0) {
-            m7SelectCategory('background');
-            activeSelectedBgIndex = 0;
-            m7RenderBackgroundList();
-            if (activeBackgrounds[0]) {
-              m7SyncInspectorToDisplay(activeBackgrounds[0].display, activeBackgrounds[0].mediaObj);
-            }
-            m7IsGizmoSelected = true;
-            m7UpdateGizmo();
-          } else {
-            m7IsGizmoSelected = false;
-            m7UpdateGizmo();
-          }
+          // 3. If clicked anywhere else (e.g. background or empty space): Deselect Gizmo
+          m7IsGizmoSelected = false;
+          m7UpdateGizmo();
+        });
         });
 
         window.addEventListener('keydown', (e) => {
