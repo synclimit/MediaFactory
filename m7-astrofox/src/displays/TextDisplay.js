@@ -45,7 +45,10 @@ export default class TextDisplay extends CanvasDisplay {
       depth: 0,
       columns: 1,
       dataSource: 'linked',
-      numberFormat: '{number}. {title}'
+      numberFormat: '{number}. {title}',
+      highlightActiveTrack: true,
+      activeMarker: '▶',
+      activeColor: '#f97316'
     },
     controls: {
       text: {
@@ -96,13 +99,13 @@ export default class TextDisplay extends CanvasDisplay {
 
   addToScene() {
     this.text = new CanvasText(this.properties, this.canvas);
-    this.text.render();
+    this.text.render(true);
   }
 
   update(properties) {
     if (this.text) {
       this.text.update(properties);
-      this.text.render();
+      this.text.render(true);
     }
     return super.update(properties);
   }

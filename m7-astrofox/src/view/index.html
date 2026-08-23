@@ -3981,8 +3981,13 @@
             } catch(e) {}
           }
 
-          if (arrayBuf) {
-            const dec = await core.audioContext.decodeAudioData(arrayBuf.slice(0));
+          let dec = track.decodedBuffer;
+          if (!dec && arrayBuf) {
+            dec = await core.audioContext.decodeAudioData(arrayBuf.slice(0));
+            track.decodedBuffer = dec;
+          }
+
+          if (dec) {
             track.duration = dec.duration;
             track.durationStr = m7FormatTime(dec.duration);
 
@@ -6057,6 +6062,9 @@
 
         if (cur.display) {
           cur.display.update(cur.properties);
+          if (cur.display.text) {
+            cur.display.text.render(true);
+          }
         }
         m7UpdateGizmo();
         m7ScheduleAutosave();
@@ -7264,7 +7272,17 @@
                   if (curTime >= t.startTime && curTime < t.endTime) {
                     if (activeSelectedTrackIndex !== i) {
                       activeSelectedTrackIndex = i;
+                      window.__M7_ACTIVE_TRACK_INDEX__ = i;
                       m7RenderPlaylist();
+                      if (typeof activeTextObjects !== 'undefined' && activeTextObjects.length > 0) {
+                        activeTextObjects.forEach(txt => {
+                          if (txt.properties && (txt.properties.type === 'playlist' || txt.properties.textType === 'playlist' || txt.properties.bindToCurrentTrack || txt.properties.textType === 'title')) {
+                            if (txt.display && txt.display.text) {
+                              txt.display.text.render(true);
+                            }
+                          }
+                        });
+                      }
                     }
                     break;
                   }

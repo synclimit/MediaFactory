@@ -151,12 +151,20 @@ export default function ProgressControl() {
     if (disabled) return;
     isDraggingRef.current = true;
     const pos = getPosFromEvent(e);
-    setState({ seekPosition: pos, buffering: true });
+    setState({ seekPosition: pos, progressPosition: pos, buffering: false });
+    player.seek(pos);
 
+    let lastSeekTime = 0;
     const handleMouseMove = (moveEvent) => {
       if (!isDraggingRef.current) return;
       const movePos = getPosFromEvent(moveEvent);
-      setState({ seekPosition: movePos, buffering: true });
+      setState({ seekPosition: movePos, progressPosition: movePos, buffering: false });
+
+      const now = performance.now();
+      if (now - lastSeekTime > 30) {
+        lastSeekTime = now;
+        player.seek(movePos);
+      }
     };
 
     const handleMouseUp = (upEvent) => {

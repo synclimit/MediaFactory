@@ -33,7 +33,10 @@ export default class CanvasText extends Entity {
     depth: 0,
     columns: 1,
     dataSource: 'linked',
-    numberFormat: '{number}. {title}'
+    numberFormat: '{number}. {title}',
+    highlightActiveTrack: true,
+    activeMarker: '▶',
+    activeColor: '#f97316'
   };
 
   constructor(properties, canvas) {
