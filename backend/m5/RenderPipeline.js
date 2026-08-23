@@ -316,9 +316,15 @@ class RenderPipeline {
                 const probeOut = execSync(`"${ffprobeBin}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioInputPath}"`, { encoding: 'utf8' });
                 const parsedAudDur = parseFloat(probeOut.trim());
                 if (!isNaN(parsedAudDur) && parsedAudDur > 0) {
-                    // durSec = Math.ceil(parsedAudDur); // Disabled per user request so it follows UI setting
+                    const isAuto = !durStr || durStr.toLowerCase().includes('auto') || durStr.toLowerCase().includes('full');
+                    if (isAuto || parsedAudDur > durSec) {
+                        durSec = Math.ceil(parsedAudDur + 0.5); // Add 0.5s padding so end of speech is never clipped
+                        Logger.info('RenderPipeline', `Adjusted render duration to full audio length: ${durSec}s (audio is ${parsedAudDur.toFixed(2)}s)`);
+                    }
                 }
-            } catch(e) {}
+            } catch(e) {
+                Logger.warn('RenderPipeline', `ffprobe audio duration failed: ${e.message}`);
+            }
         }
         if (!durSec || durSec < 5) durSec = 15;
 

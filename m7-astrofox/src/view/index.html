@@ -676,6 +676,10 @@
         flex-direction: column;
         gap: 8px;
         box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
       }
       .m7-folder-btn {
         width: 100%;
@@ -703,27 +707,31 @@
       .m7-folder-controls-row {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
       }
       .m7-limit-group {
-        flex: 1;
+        flex: 0 0 78px;
+        width: 78px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         background: #0c0e14;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 6px;
-        padding: 6px 10px;
+        padding: 6px 8px;
         box-sizing: border-box;
       }
       .m7-limit-label {
-        font-size: 9.5px;
+        font-size: 9px;
         color: #9ca3af;
         font-weight: 800;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
       }
       .m7-limit-input {
-        width: 40px;
+        width: 28px;
         background: transparent;
         border: none;
         color: #f97316;
@@ -732,30 +740,46 @@
         font-family: monospace;
         outline: none;
         font-weight: 900;
+        padding: 0;
       }
       .m7-gen-btn {
-        flex: 1.2;
+        flex: 1;
+        min-width: 0;
         background: #1e2230;
         color: #f97316;
         border: 1px solid rgba(249, 115, 22, 0.4);
         border-radius: 6px;
-        padding: 7px 12px;
-        font-size: 10.5px;
+        padding: 6px 8px;
+        font-size: 10px;
         font-weight: 800;
-        letter-spacing: 0.4px;
+        letter-spacing: 0.3px;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        gap: 5px;
         cursor: pointer;
         transition: all 0.2s ease;
         box-sizing: border-box;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
-      .m7-gen-btn:hover {
+      .m7-gen-btn:hover:not(:disabled) {
         background: rgba(249, 115, 22, 0.15);
         border-color: #f97316;
         color: #ffffff;
         transform: translateY(-1px);
+      }
+      .m7-gen-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+      @keyframes m7Spin {
+        100% { transform: rotate(360deg); }
+      }
+      .m7-spin-icon {
+        animation: m7Spin 0.8s linear infinite;
+        flex-shrink: 0;
       }
       .m7-status-box {
         font-size: 10px;
@@ -3884,7 +3908,13 @@
         const genBtn = document.getElementById('m7-folder-gen-btn');
         if (genBtn) {
           genBtn.disabled = true;
-          genBtn.innerText = 'GENERATING...';
+          genBtn.innerHTML = `
+            <svg class="m7-spin-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+              <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+            </svg>
+            <span>Generating...</span>
+          `;
         }
 
         try {
@@ -3932,7 +3962,12 @@
         } finally {
           if (genBtn) {
             genBtn.disabled = false;
-            genBtn.innerText = 'GENERATE';
+            genBtn.innerHTML = `
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              <span>Generate</span>
+            `;
           }
           m7RenderPlaylist();
           m7UpdateTotalDuration();

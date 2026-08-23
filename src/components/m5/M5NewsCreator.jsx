@@ -448,13 +448,16 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Duration</label>
-              <select value={globalDuration} onChange={e => setGlobalDuration(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
+              <select value={globalDuration} onChange={e => setGlobalDuration(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner cursor-pointer">
+                <option value="Auto">Auto (Ikuti Panjang Audio)</option>
                 <option value="10s">10s</option>
                 <option value="15s">15s</option>
                 <option value="20s">20s</option>
                 <option value="25s">25s</option>
                 <option value="30s">30s</option>
+                <option value="45s">45s</option>
                 <option value="60s">60s</option>
+                <option value="90s">90s</option>
               </select>
             </div>
             <div>
