@@ -343,76 +343,70 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
       `}</style>
       
       {/* 40% LEFT: INPUT & SETTINGS */}
-      <div className="w-[30%] min-w-[300px] flex flex-col gap-3 min-h-0 overflow-y-auto m5-scroll pr-1">
+      <div className="w-[30%] min-w-[290px] flex flex-col gap-2.5 min-h-0 h-full">
         
         {/* INPUT SOURCE WITH 2 OPTIONS */}
-        <div className="bg-[#14161f] border border-[#2e3346] hover:border-orange-500/40 rounded-xl p-4 flex flex-col gap-3 shadow-lg relative overflow-hidden transition-colors">
+        <div className="bg-[#14161f] border border-[#2e3346] hover:border-orange-500/40 rounded-xl p-3 flex flex-col gap-2 shadow-lg relative overflow-hidden transition-colors shrink-0">
           {/* Top Orange Hairline Accent */}
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-orange-500/70 to-transparent"></div>
 
-          <div className="flex items-center justify-between border-b border-[#252838] pb-2">
-            <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2 font-['Rajdhani']">
-              <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,1)]"></span>
-              <Globe size={14} className="text-orange-400"/> NEWS SOURCE
+          <div className="flex items-center justify-between border-b border-[#252838] pb-1.5">
+            <h3 className="text-[11.5px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 font-['Rajdhani']">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,1)]"></span>
+              <Globe size={13} className="text-orange-400"/> NEWS SOURCE
             </h3>
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="flex bg-[#0f1017] p-1 rounded-lg border border-[#2d3142]">
+          <div className="flex bg-[#0f1017] p-0.5 rounded-lg border border-[#2d3142]">
             <button 
               onClick={() => setSourceMode('LINK')}
-              className={`flex-1 py-1.5 text-[10px] font-bold font-['Rajdhani'] uppercase tracking-wider rounded transition-all flex items-center justify-center gap-1.5 cursor-pointer ${sourceMode === 'LINK' ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.5)] border border-orange-400' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 py-1 text-[9.5px] font-bold font-['Rajdhani'] uppercase tracking-wider rounded transition-all flex items-center justify-center gap-1 cursor-pointer ${sourceMode === 'LINK' ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.5)] border border-orange-400' : 'text-gray-400 hover:text-white'}`}
             >
-              <Globe size={12}/> From Link
+              <Globe size={11}/> From Link
             </button>
             <button 
               onClick={() => setSourceMode('SCREENSHOT')}
-              className={`flex-1 py-1.5 text-[10px] font-bold font-['Rajdhani'] uppercase tracking-wider rounded transition-all flex items-center justify-center gap-1.5 cursor-pointer ${sourceMode === 'SCREENSHOT' ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.5)] border border-orange-400' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 py-1 text-[9.5px] font-bold font-['Rajdhani'] uppercase tracking-wider rounded transition-all flex items-center justify-center gap-1 cursor-pointer ${sourceMode === 'SCREENSHOT' ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-[0_0_8px_rgba(249,115,22,0.5)] border border-orange-400' : 'text-gray-400 hover:text-white'}`}
             >
-              <ImageIcon size={12}/> From Screenshot
+              <ImageIcon size={11}/> From Screenshot
             </button>
           </div>
 
           {sourceMode === 'LINK' ? (
             <>
-              <p className="text-[10px] text-gray-400 font-medium">Paste URL(s) or import from TXT.</p>
-              
               <textarea 
-                className="w-full h-[90px] bg-[#0f1017] border border-[#2d3142] rounded-lg p-2.5 text-[11px] text-gray-200 font-mono resize-none focus:outline-none focus:border-orange-500/70 focus:ring-1 focus:ring-orange-500/30 transition-all shadow-inner"
+                className="w-full h-[68px] bg-[#0f1017] border border-[#2d3142] rounded-lg p-2 text-[10.5px] text-gray-200 font-mono resize-none focus:outline-none focus:border-orange-500/70 focus:ring-1 focus:ring-orange-500/30 transition-all shadow-inner"
                 value={links}
                 onChange={(e) => setLinks(e.target.value)}
-                placeholder="https://..."
+                placeholder="Paste URL(s) or import from TXT..."
               />
               
-              <div className="flex justify-between items-center mt-1">
-                <div className="flex gap-2">
-                  <button onClick={() => setLinks('')} className="text-[11px] text-gray-400 hover:text-red-400 px-2 py-1 rounded transition-all cursor-pointer">Clear</button>
-                </div>
-                <button onClick={handleStartPipeline} disabled={isProcessing} className="text-[11px] bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold font-['Rajdhani'] uppercase tracking-wider px-4 py-1.5 rounded-lg transition-all disabled:opacity-50 shadow-[0_0_10px_rgba(249,115,22,0.4)] border border-orange-400 cursor-pointer">
+              <div className="flex justify-between items-center">
+                <button onClick={() => setLinks('')} className="text-[10px] text-gray-400 hover:text-red-400 px-1.5 py-0.5 rounded transition-all cursor-pointer">Clear</button>
+                <button onClick={handleStartPipeline} disabled={isProcessing} className="text-[10.5px] bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold font-['Rajdhani'] uppercase tracking-wider px-3.5 py-1 rounded-lg transition-all disabled:opacity-50 shadow-[0_0_10px_rgba(249,115,22,0.4)] border border-orange-400 cursor-pointer">
                   {isProcessing ? 'Processing...' : 'Fetch AI Draft'}
                 </button>
               </div>
             </>
           ) : (
             <>
-              <p className="text-[10px] text-gray-400 font-medium">Upload news screenshot. AI will extract & write fresh news text.</p>
-
               {screenshotPath ? (
-                <div className="flex flex-col gap-2">
-                  <div className="relative rounded-lg overflow-hidden border border-[#2d3142] max-h-[120px] bg-black flex items-center justify-center">
-                    <img src={`/@fs/${screenshotPath.replace(/\\/g, '/')}`} className="max-h-[120px] object-contain" />
+                <div className="flex flex-col gap-1.5">
+                  <div className="relative rounded-lg overflow-hidden border border-[#2d3142] max-h-[90px] bg-black flex items-center justify-center">
+                    <img src={`/@fs/${screenshotPath.replace(/\\/g, '/')}`} className="max-h-[90px] object-contain" />
                     <button 
                       onClick={() => setScreenshotPath('')}
-                      className="absolute top-2 right-2 bg-black/70 hover:bg-red-600 text-white p-1 rounded-full text-[10px] transition-colors"
+                      className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white p-0.5 rounded-full text-[9px] transition-colors"
                     >
-                      <Trash2 size={12}/>
+                      <Trash2 size={11}/>
                     </button>
                   </div>
-                  <div className="flex justify-between gap-2">
-                    <button onClick={handleBrowseScreenshot} className="text-[10px] bg-[#1a1c27] hover:bg-[#252838] text-gray-200 font-bold px-2 py-1.5 rounded border border-[#2d3142] flex-1">
+                  <div className="flex justify-between gap-1.5">
+                    <button onClick={handleBrowseScreenshot} className="text-[9.5px] bg-[#1a1c27] hover:bg-[#252838] text-gray-200 font-bold px-2 py-1 rounded border border-[#2d3142] flex-1">
                       Change Screenshot
                     </button>
-                    <button onClick={handleAnalyzeScreenshot} disabled={isProcessing} className="text-[10px] bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold px-3 py-1.5 rounded flex-1 disabled:opacity-50 shadow-[0_0_10px_rgba(249,115,22,0.4)] border border-orange-400">
+                    <button onClick={handleAnalyzeScreenshot} disabled={isProcessing} className="text-[9.5px] bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold px-2 py-1 rounded flex-1 disabled:opacity-50 shadow-[0_0_10px_rgba(249,115,22,0.4)] border border-orange-400">
                       {isProcessing ? 'Reading AI...' : '✨ Analyze with AI'}
                     </button>
                   </div>
@@ -420,88 +414,89 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
               ) : (
                 <div 
                   onClick={handleBrowseScreenshot}
-                  className="p-4 border-2 border-dashed border-[#2d3142] hover:border-orange-500/60 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/30 hover:bg-orange-500/5 transition-all gap-1.5"
+                  className="p-2.5 border-2 border-dashed border-[#2d3142] hover:border-orange-500/60 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-black/30 hover:bg-orange-500/5 transition-all gap-1"
                 >
-                  <ImageIcon size={24} className="text-gray-500" />
-                  <span className="text-[11px] text-gray-300 font-medium">Upload News Screenshot</span>
-                  <span className="text-[9px] text-gray-500">PNG, JPG, WEBP format</span>
+                  <ImageIcon size={18} className="text-gray-500" />
+                  <span className="text-[10px] text-gray-300 font-medium">Upload News Screenshot</span>
+                  <span className="text-[8.5px] text-gray-500">PNG, JPG, WEBP format</span>
                 </div>
               )}
             </>
           )}
         </div>
 
-        {/* GLOBAL SETTINGS */}
-        <div className="bg-[#14161f] border border-[#2e3346] hover:border-orange-500/40 rounded-xl p-4 flex flex-col gap-3 shadow-lg flex-1 relative overflow-hidden transition-colors">
+        {/* GLOBAL SETTINGS - Fills remaining height cleanly */}
+        <div className="bg-[#14161f] border border-[#2e3346] hover:border-orange-500/40 rounded-xl p-3 flex-1 flex flex-col justify-between shadow-lg relative overflow-hidden transition-colors min-h-0">
           {/* Top Orange Hairline Accent */}
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-orange-500/70 to-transparent"></div>
 
-          <div className="flex items-center justify-between border-b border-[#252838] pb-2">
-            <h3 className="text-[12px] font-bold text-white uppercase tracking-wider flex items-center gap-2 font-['Rajdhani']">
-              <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,1)]"></span>
-              <Settings2 size={14} className="text-orange-400"/> GLOBAL SETTINGS
-            </h3>
-            <span className="text-[9px] text-orange-400 font-mono font-bold">BATCH PRESETS</span>
-          </div>
-          <p className="text-[10px] text-gray-400">Set output properties for the batch render.</p>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Duration</label>
-              <select value={globalDuration} onChange={e => setGlobalDuration(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner cursor-pointer">
-                <option value="Auto">Auto (Ikuti Panjang Audio)</option>
-                <option value="10s">10s</option>
-                <option value="15s">15s</option>
-                <option value="20s">20s</option>
-                <option value="25s">25s</option>
-                <option value="30s">30s</option>
-                <option value="45s">45s</option>
-                <option value="60s">60s</option>
-                <option value="90s">90s</option>
-              </select>
+          <div>
+            <div className="flex items-center justify-between border-b border-[#252838] pb-1.5 mb-2">
+              <h3 className="text-[11.5px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 font-['Rajdhani']">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,1)]"></span>
+                <Settings2 size={13} className="text-orange-400"/> GLOBAL SETTINGS
+              </h3>
+              <span className="text-[8.5px] text-orange-400 font-mono font-bold">BATCH PRESETS</span>
             </div>
-            <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Language</label>
-              <select value={globalLang} onChange={e => setGlobalLang(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
-                <option value="Indonesia">Indonesia</option>
-                <option value="English">English</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Resolution</label>
-              <select value={globalRes} onChange={e => setGlobalRes(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
-                <option value="1080x1920 (9:16)">1080x1920 (9:16)</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">FPS</label>
-              <select value={globalFPS} onChange={e => setGlobalFPS(e.target.value)} className="w-full mt-1 bg-[#0f1017] border border-[#2d3142] rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner">
-                <option value="30 FPS">30 FPS</option>
-                <option value="60 FPS">60 FPS</option>
-              </select>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[8.5px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Duration</label>
+                <select value={globalDuration} onChange={e => setGlobalDuration(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded-md px-2 py-1 text-[10px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner cursor-pointer h-[28px]">
+                  <option value="Auto">Auto (Ikuti Panjang Audio)</option>
+                  <option value="10s">10s</option>
+                  <option value="15s">15s</option>
+                  <option value="20s">20s</option>
+                  <option value="25s">25s</option>
+                  <option value="30s">30s</option>
+                  <option value="45s">45s</option>
+                  <option value="60s">60s</option>
+                  <option value="90s">90s</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[8.5px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Language</label>
+                <select value={globalLang} onChange={e => setGlobalLang(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded-md px-2 py-1 text-[10px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner cursor-pointer h-[28px]">
+                  <option value="Indonesia">Indonesia</option>
+                  <option value="English">English</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[8.5px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Resolution</label>
+                <select value={globalRes} onChange={e => setGlobalRes(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded-md px-2 py-1 text-[10px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner cursor-pointer h-[28px]">
+                  <option value="1080x1920 (9:16)">1080x1920 (9:16)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[8.5px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">FPS</label>
+                <select value={globalFPS} onChange={e => setGlobalFPS(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded-md px-2 py-1 text-[10px] text-gray-200 focus:border-orange-500/70 outline-none shadow-inner cursor-pointer h-[28px]">
+                  <option value="30 FPS">30 FPS</option>
+                  <option value="60 FPS">60 FPS</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="mt-2 space-y-2 pt-2 border-t border-[#252838]">
+          <div className="space-y-1.5 pt-2 border-t border-[#252838]">
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold flex items-center gap-1"><Video size={10} className="text-orange-400"/> Background Folder (Optional)</label>
-              <div className="flex border border-[#2d3142] rounded-lg overflow-hidden mt-1 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner">
-                <input type="text" readOnly value={bgFolder} placeholder="Random file if empty" className="bg-transparent px-2.5 py-1 text-[10px] w-full border-none outline-none text-gray-300 font-mono"/>
-                <button onClick={() => handleBrowseFolder(setBgFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-3 text-[10px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer">Browse</button>
+              <label className="text-[8.5px] text-gray-400 uppercase font-bold flex items-center gap-1"><Video size={9.5} className="text-orange-400"/> Background Folder (Optional)</label>
+              <div className="flex border border-[#2d3142] rounded-md overflow-hidden mt-0.5 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner h-[26px]">
+                <input type="text" readOnly value={bgFolder} placeholder="Random file if empty" className="bg-transparent px-2 text-[9.5px] w-full border-none outline-none text-gray-300 font-mono"/>
+                <button onClick={() => handleBrowseFolder(setBgFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-2.5 text-[9.5px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer flex items-center">Browse</button>
               </div>
             </div>
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold flex items-center gap-1"><Music size={10} className="text-orange-400"/> Audio Folder (Optional)</label>
-              <div className="flex border border-[#2d3142] rounded-lg overflow-hidden mt-1 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner">
-                <input type="text" readOnly value={audioFolder} placeholder="Random file if empty" className="bg-transparent px-2.5 py-1 text-[10px] w-full border-none outline-none text-gray-300 font-mono"/>
-                <button onClick={() => handleBrowseFolder(setAudioFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-3 text-[10px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer">Browse</button>
+              <label className="text-[8.5px] text-gray-400 uppercase font-bold flex items-center gap-1"><Music size={9.5} className="text-orange-400"/> Audio Folder (Optional)</label>
+              <div className="flex border border-[#2d3142] rounded-md overflow-hidden mt-0.5 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner h-[26px]">
+                <input type="text" readOnly value={audioFolder} placeholder="Random file if empty" className="bg-transparent px-2 text-[9.5px] w-full border-none outline-none text-gray-300 font-mono"/>
+                <button onClick={() => handleBrowseFolder(setAudioFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-2.5 text-[9.5px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer flex items-center">Browse</button>
               </div>
             </div>
             <div>
-              <label className="text-[9px] text-gray-400 uppercase font-bold flex items-center gap-1"><ImageIcon size={10} className="text-orange-400"/> Overlay Folder (Optional)</label>
-              <div className="flex border border-[#2d3142] rounded-lg overflow-hidden mt-1 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner">
-                <input type="text" readOnly value={overlayFolder} placeholder="Random file if empty" className="bg-transparent px-2.5 py-1 text-[10px] w-full border-none outline-none text-gray-300 font-mono"/>
-                <button onClick={() => handleBrowseFolder(setOverlayFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-3 text-[10px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer">Browse</button>
+              <label className="text-[8.5px] text-gray-400 uppercase font-bold flex items-center gap-1"><ImageIcon size={9.5} className="text-orange-400"/> Overlay Folder (Optional)</label>
+              <div className="flex border border-[#2d3142] rounded-md overflow-hidden mt-0.5 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner h-[26px]">
+                <input type="text" readOnly value={overlayFolder} placeholder="Random file if empty" className="bg-transparent px-2 text-[9.5px] w-full border-none outline-none text-gray-300 font-mono"/>
+                <button onClick={() => handleBrowseFolder(setOverlayFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-2.5 text-[9.5px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer flex items-center">Browse</button>
               </div>
             </div>
           </div>
@@ -511,7 +506,6 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
       {/* 40% CENTER: CARD EDITOR (Row Layout) */}
       <div className="flex-1 flex gap-3 min-w-[500px] h-full">
         
-        {/* LEFT SIDE: VISUALIZER */}
         <div className={`flex-1 bg-[#12131b] border border-[#2e3346] rounded-xl flex items-center justify-center relative overflow-hidden shadow-inner group/canvas ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
              style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(249,115,22,0.06) 1px, transparent 1px)', backgroundSize: '20px 20px', backgroundPosition: `${pan.x}px ${pan.y}px` }}
              onMouseDown={(e) => {

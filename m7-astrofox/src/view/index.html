@@ -1304,6 +1304,54 @@
         color: #9ca3af;
         font-weight: 500;
       }
+      .m7-color-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px 0;
+      }
+      .m7-color-row span {
+        font-size: 10.5px;
+        color: #d1d5db;
+        font-weight: 700;
+      }
+      .m7-color-picker-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .m7-color-dot {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.25);
+        cursor: pointer;
+        padding: 0;
+        background: transparent;
+        outline: none;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      }
+      .m7-color-dot::-webkit-color-swatch-wrapper {
+        padding: 0;
+      }
+      .m7-color-dot::-webkit-color-swatch {
+        border: none;
+        border-radius: 50%;
+      }
+      .m7-hex-input {
+        width: 68px;
+        background: #0c0e14;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        padding: 4px 6px;
+        font-size: 10px;
+        font-family: monospace;
+        color: #f97316;
+        font-weight: 800;
+        text-transform: uppercase;
+        outline: none;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
@@ -2445,22 +2493,88 @@
             <div class="m7-card-title">
               <span class="m7-dot-orange"></span> 🎨 GENERAL PROPERTIES
             </div>
+
+            <!-- Color Mode Selection (Theme / Solid / Dynamic / 2 Grad / 3 Grad / Rainbow / Neon) -->
             <div class="m7-control-group">
               <div class="m7-control-label-row">
-                <span>Color Theme / Gradient</span>
+                <span>Color Mode</span>
               </div>
-              <select class="m7-select" id="sel-viz-gradient" onchange="m7UpdateVizProperty('gradient', this.value)">
-                <option value="rainbow">Rainbow (12-Color Prism)</option>
-                <option value="classic">Classic (Red → Orange → Yellow)</option>
-                <option value="blue">Electric Blue (Deep Blue → Cyan → White)</option>
-                <option value="prism">Prism (Vivid Spectrum)</option>
-                <option value="orangered">Orange Red (Deep Red → Gold)</option>
-                <option value="steelblue">Steel Blue (Dark Navy → Light Steel)</option>
-                <option value="sunset">Sunset (Indigo → Magenta → Yellow)</option>
-                <option value="aurora">Aurora (Teal → Mint → Violet)</option>
-                <option value="dusk">Dusk (Violet → Purple → Pink)</option>
-                <option value="mono">Monochrome (Silver → White)</option>
+              <select class="m7-select" id="sel-viz-colormode" onchange="m7UpdateVizColorMode(this.value)">
+                <option value="Theme">Theme (Presets)</option>
+                <option value="Solid">Solid</option>
+                <option value="Dynamic Color">Dynamic Color</option>
+                <option value="2 Gradient">2 Gradient</option>
+                <option value="3 Gradient">3 Gradient</option>
+                <option value="Rainbow">Rainbow</option>
+                <option value="Neon">Neon</option>
               </select>
+            </div>
+
+            <!-- Conditional Color Controls Container -->
+            <div style="display:flex; flex-direction:column; gap:4px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:6px;">
+              <!-- 1. Theme Presets Dropdown -->
+              <div class="m7-control-group" id="grp-viz-color-theme" style="margin-bottom:0;">
+                <div class="m7-control-label-row">
+                  <span>Color Theme</span>
+                </div>
+                <select class="m7-select" id="sel-viz-gradient" onchange="m7UpdateVizTheme(this.value)">
+                  <option value="classic">Classic (Red → Orange → Yellow)</option>
+                  <option value="rainbow">Rainbow (12-Color Prism)</option>
+                  <option value="blue">Electric Blue (Deep Blue → Cyan → White)</option>
+                  <option value="prism">Prism (Vivid Spectrum)</option>
+                  <option value="orangered">Orange Red (Deep Red → Gold)</option>
+                  <option value="steelblue">Steel Blue (Dark Navy → Light Steel)</option>
+                  <option value="sunset">Sunset (Indigo → Magenta → Yellow)</option>
+                  <option value="aurora">Aurora (Teal → Mint → Violet)</option>
+                  <option value="dusk">Dusk (Violet → Purple → Pink)</option>
+                  <option value="mono">Monochrome (Silver → White)</option>
+                </select>
+              </div>
+
+              <!-- 2. Solid Color -->
+              <div class="m7-color-row" id="grp-viz-color-solid" style="display:none;">
+                <span>Solid Color</span>
+                <div class="m7-color-picker-wrap">
+                  <input type="color" id="col-viz-solid" value="#ab55f7" oninput="m7UpdateVizColor('solid', this.value)" class="m7-color-dot">
+                  <input type="text" id="hex-viz-solid" value="#AB55F7" onchange="m7UpdateVizColor('solid', this.value)" class="m7-hex-input">
+                </div>
+              </div>
+
+              <!-- 3. Left / Color 1 -->
+              <div class="m7-color-row" id="row-viz-color-left" style="display:none;">
+                <span>Color 1 (Left)</span>
+                <div class="m7-color-picker-wrap">
+                  <input type="color" id="col-viz-left" value="#ab55f7" oninput="m7UpdateVizColor('left', this.value)" class="m7-color-dot">
+                  <input type="text" id="hex-viz-left" value="#AB55F7" onchange="m7UpdateVizColor('left', this.value)" class="m7-hex-input">
+                </div>
+              </div>
+
+              <!-- 4. Middle / Color 2 (for 3 Gradient) -->
+              <div class="m7-color-row" id="row-viz-color-mid" style="display:none;">
+                <span>Color 2 (Middle)</span>
+                <div class="m7-color-picker-wrap">
+                  <input type="color" id="col-viz-mid" value="#06b6d4" oninput="m7UpdateVizColor('mid', this.value)" class="m7-color-dot">
+                  <input type="text" id="hex-viz-mid" value="#06B6D4" onchange="m7UpdateVizColor('mid', this.value)" class="m7-hex-input">
+                </div>
+              </div>
+
+              <!-- 5. Right / Color 2 (or Color 3 for 3 Gradient) -->
+              <div class="m7-color-row" id="row-viz-color-right" style="display:none;">
+                <span id="label-viz-color-right">Color 2 (Right)</span>
+                <div class="m7-color-picker-wrap">
+                  <input type="color" id="col-viz-right" value="#f59e0b" oninput="m7UpdateVizColor('right', this.value)" class="m7-color-dot">
+                  <input type="text" id="hex-viz-right" value="#F59E0B" onchange="m7UpdateVizColor('right', this.value)" class="m7-hex-input">
+                </div>
+              </div>
+
+              <!-- 6. Neon Glow Color -->
+              <div class="m7-color-row" id="row-viz-color-neon" style="display:none;">
+                <span>Neon Glow Color</span>
+                <div class="m7-color-picker-wrap">
+                  <input type="color" id="col-viz-neon" value="#00f3ff" oninput="m7UpdateVizColor('neon', this.value)" class="m7-color-dot">
+                  <input type="text" id="hex-viz-neon" value="#00F3FF" onchange="m7UpdateVizColor('neon', this.value)" class="m7-hex-input">
+                </div>
+              </div>
             </div>
             <div class="m7-control-group">
               <div class="m7-control-label-row">
@@ -4735,6 +4849,157 @@
         m7ScheduleAutosave();
       }
 
+      /* === VISUALIZER COLOR MODES & MULTI-GRADIENT PALETTE ENGINE === */
+      let vizColorState = {
+        mode: 'Theme', // 'Theme' | 'Solid' | 'Dynamic Color' | '2 Gradient' | '3 Gradient' | 'Rainbow' | 'Neon'
+        solid: '#ab55f7',
+        left: '#ab55f7',
+        mid: '#06b6d4',
+        right: '#f59e0b',
+        neon: '#00f3ff',
+        theme: 'classic'
+      };
+
+      function m7UpdateVizColorMode(mode) {
+        vizColorState.mode = mode;
+        vizState.colorMode = mode;
+        m7SyncVizColorUI();
+        m7ApplyVizColors();
+      }
+
+      function m7UpdateVizColor(type, hexVal) {
+        if (!hexVal.startsWith('#')) hexVal = '#' + hexVal;
+        vizColorState[type] = hexVal;
+
+        const colEl = document.getElementById(`col-viz-${type}`);
+        const hexEl = document.getElementById(`hex-viz-${type}`);
+        if (colEl) colEl.value = hexVal;
+        if (hexEl) hexEl.value = hexVal.toUpperCase();
+
+        m7ApplyVizColors();
+      }
+
+      function m7UpdateVizTheme(themeName) {
+        vizColorState.theme = themeName;
+        vizState.gradient = themeName;
+        m7ApplyVizColors();
+      }
+
+      function m7SyncVizColorUI() {
+        const mode = vizColorState.mode || 'Theme';
+        const selMode = document.getElementById('sel-viz-colormode');
+        if (selMode) selMode.value = mode;
+
+        const grpTheme = document.getElementById('grp-viz-color-theme');
+        const grpSolid = document.getElementById('grp-viz-color-solid');
+        const rowLeft = document.getElementById('row-viz-color-left');
+        const rowMid = document.getElementById('row-viz-color-mid');
+        const rowRight = document.getElementById('row-viz-color-right');
+        const rowNeon = document.getElementById('row-viz-color-neon');
+        const labelRight = document.getElementById('label-viz-color-right');
+
+        if (grpTheme) grpTheme.style.display = (mode === 'Theme') ? 'block' : 'none';
+        if (grpSolid) grpSolid.style.display = (mode === 'Solid') ? 'flex' : 'none';
+        
+        const is2Grad = (mode === 'Dynamic Color' || mode === '2 Gradient');
+        const is3Grad = (mode === '3 Gradient');
+        if (rowLeft) rowLeft.style.display = (is2Grad || is3Grad) ? 'flex' : 'none';
+        if (rowMid) rowMid.style.display = is3Grad ? 'flex' : 'none';
+        if (rowRight) rowRight.style.display = (is2Grad || is3Grad) ? 'flex' : 'none';
+        if (labelRight) labelRight.innerText = is3Grad ? 'Color 3 (Right)' : 'Color 2 (Right)';
+
+        if (rowNeon) rowNeon.style.display = (mode === 'Neon') ? 'flex' : 'none';
+
+        // Sync values to inputs
+        ['solid', 'left', 'mid', 'right', 'neon'].forEach(t => {
+          const colEl = document.getElementById(`col-viz-${t}`);
+          const hexEl = document.getElementById(`hex-viz-${t}`);
+          if (colEl) colEl.value = vizColorState[t] || '#ab55f7';
+          if (hexEl) hexEl.value = (vizColorState[t] || '#ab55f7').toUpperCase();
+        });
+
+        const selTheme = document.getElementById('sel-viz-gradient');
+        if (selTheme && vizColorState.theme) selTheme.value = vizColorState.theme;
+      }
+
+      function m7ApplyVizColors() {
+        if (activeSelectedVizIndex < 0 || !activeVisualizers[activeSelectedVizIndex]) return;
+        const currentViz = activeVisualizers[activeSelectedVizIndex];
+        if (!currentViz || !currentViz.display) return;
+
+        const mode = vizColorState.mode || 'Theme';
+        const updates = { colorMode: mode };
+
+        const gradientMap = {
+          rainbow: ['#00e5ff', '#a855f7'],
+          classic: ['#ef4444', '#f59e0b'],
+          blue: ['#0284c7', '#00e5ff'],
+          prism: ['#ec4899', '#38bdf8'],
+          orangered: ['#dc2626', '#f97316'],
+          steelblue: ['#1e3a8a', '#93c5fd'],
+          sunset: ['#4f46e5', '#f43f5e'],
+          aurora: ['#059669', '#06b6d4'],
+          dusk: ['#6d28d9', '#ec4899'],
+          mono: ['#64748b', '#ffffff']
+        };
+
+        if (mode === 'Theme') {
+          const themeName = vizColorState.theme || vizState.gradient || 'classic';
+          updates.gradient = themeName;
+          const colors = gradientMap[themeName] || ['#f97316', '#fb923c'];
+
+          if (currentViz.type === 'BarSpectrumDisplay') {
+            updates.color = colors;
+            updates.shadowColor = [colors[1], '#000000'];
+          } else if (currentViz.type === 'WaveSpectrumDisplay') {
+            updates.fillColor = colors;
+            updates.strokeColor = colors[1];
+          } else if (currentViz.type === 'SoundWaveDisplay') {
+            updates.strokeColor = colors[1] || colors[0];
+          }
+        } else if (mode === 'Solid') {
+          const col = vizColorState.solid || '#ab55f7';
+          updates.gradient = [{ stop: 0, color: col }, { stop: 1, color: col }];
+          updates.color = [col, col];
+          updates.shadowColor = [col, '#000000'];
+          updates.fillColor = [col, col];
+          updates.strokeColor = col;
+        } else if (mode === 'Dynamic Color' || mode === '2 Gradient') {
+          const colL = vizColorState.left || '#ab55f7';
+          const colR = vizColorState.right || '#f59e0b';
+          updates.gradient = [{ stop: 0, color: colL }, { stop: 1, color: colR }];
+          updates.color = [colL, colR];
+          updates.shadowColor = [colR, '#000000'];
+          updates.fillColor = [colL, colR];
+          updates.strokeColor = colR;
+        } else if (mode === '3 Gradient') {
+          const colL = vizColorState.left || '#ab55f7';
+          const colM = vizColorState.mid || '#06b6d4';
+          const colR = vizColorState.right || '#f59e0b';
+          updates.gradient = [{ stop: 0, color: colL }, { stop: 0.5, color: colM }, { stop: 1, color: colR }];
+          updates.color = [colL, colM, colR];
+          updates.shadowColor = [colR, '#000000'];
+          updates.fillColor = [colL, colM, colR];
+          updates.strokeColor = colR;
+        } else if (mode === 'Rainbow') {
+          updates.gradient = 'rainbow';
+          updates.color = ['#00e5ff', '#a855f7'];
+          updates.fillColor = ['#00e5ff', '#a855f7'];
+          updates.strokeColor = '#a855f7';
+        } else if (mode === 'Neon') {
+          const neonCol = vizColorState.neon || '#00f3ff';
+          updates.gradient = [{ stop: 0, color: neonCol }, { stop: 0.8, color: neonCol }, { stop: 1, color: '#ffffff' }];
+          updates.color = [neonCol, '#ffffff'];
+          updates.shadowColor = [neonCol, '#000000'];
+          updates.fillColor = [neonCol, '#ffffff'];
+          updates.strokeColor = neonCol;
+          updates.glow = 1.0;
+        }
+
+        currentViz.display.update(updates);
+        m7ScheduleAutosave();
+      }
+
       function m7ApplyHarmonicsPreset(presetName) {
         m7SelectVizModel(presetName, true);
       }
@@ -4756,11 +5021,17 @@
           if (activeCard) activeCard.classList.add('active');
         }
 
-        if (props.gradient) {
-          vizState.gradient = props.gradient;
-          const sel = document.getElementById('sel-viz-gradient');
-          if (sel) sel.value = props.gradient;
+        // Color Mode & Palette Sync
+        if (props.colorMode) {
+          vizColorState.mode = props.colorMode;
+          vizState.colorMode = props.colorMode;
         }
+        if (typeof props.gradient === 'string') {
+          vizColorState.theme = props.gradient;
+          vizState.gradient = props.gradient;
+        }
+        m7SyncVizColorUI();
+
         if (props.bands) {
           vizState.bands = props.bands;
           const sel = document.getElementById('sel-viz-bands');
@@ -4865,32 +5136,6 @@
           } else if (prop === 'smoothing') {
             updates.smoothing = parseFloat(val);
             updates.smoothingTimeConstant = parseFloat(val);
-          } else if (prop === 'gradient') {
-            const gradientMap = {
-              rainbow: ['#00e5ff', '#a855f7'],
-              classic: ['#ef4444', '#f59e0b'],
-              blue: ['#0284c7', '#00e5ff'],
-              prism: ['#ec4899', '#38bdf8'],
-              orangered: ['#dc2626', '#f97316'],
-              steelblue: ['#1e3a8a', '#93c5fd'],
-              sunset: ['#4f46e5', '#f43f5e'],
-              aurora: ['#059669', '#06b6d4'],
-              dusk: ['#6d28d9', '#ec4899'],
-              mono: ['#64748b', '#ffffff']
-            };
-            const colors = gradientMap[val] || ['#f97316', '#fb923c'];
-
-            if (currentViz.type === 'HarmonicsSpectrumDisplay' || currentViz.type === 'CaYaturVisualizerDisplay') {
-              updates.gradient = val;
-            } else if (currentViz.type === 'BarSpectrumDisplay') {
-              updates.color = colors;
-              updates.shadowColor = [colors[1], '#000000'];
-            } else if (currentViz.type === 'WaveSpectrumDisplay') {
-              updates.fillColor = colors;
-              updates.strokeColor = colors[1];
-            } else if (currentViz.type === 'SoundWaveDisplay') {
-              updates.strokeColor = colors[1] || colors[0];
-            }
           } else {
             updates[prop] = val;
           }
@@ -6516,6 +6761,7 @@
               };
             }),
             vizState: { ...vizState },
+            vizColorState: { ...vizColorState },
             particleState: { ...particleState },
             activeParticles: activeParticles.map(pt => ({
               id: pt.id,
@@ -6682,6 +6928,11 @@
           }
 
           // 4. Restore Spectrum Visualizers
+          if (savedState.vizColorState) {
+            Object.assign(vizColorState, savedState.vizColorState);
+            m7SyncVizColorUI();
+          }
+
           if (savedState.vizState) {
             Object.assign(vizState, savedState.vizState);
             ['barWidth', 'barSpacing', 'height', 'posX', 'posY', 'smoothing'].forEach(p => {

@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "timestamp": 1787476322532,
+  "timestamp": 1787476928716,
   "activeCategory": "visualizer",
   "currentBgType": "image",
   "activeSelectedBgIndex": 0,
   "activeBackgrounds": [
     {
-      "id": "ca5dbd1e3c4f468ada5dffc5b4bd67ce7af45a16",
+      "id": "2d254f700a0f601759a4bbf33dd4932af08149bf",
       "name": "m7_1787471960511_1786495168.png",
       "type": "image",
       "src": "D:\\MediaFactory\\Output\\Temp\\m7_1787471960511_1786495168.png"
@@ -22,65 +22,8 @@
     "audioMotion": true
   },
   "currentPlaylistSource": "folder",
-  "activeSelectedTrackIndex": 0,
-  "playlistTracks": [
-    {
-      "id": "track_1787476211877_94wh2",
-      "name": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
-      "path": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
-      "duration": 748.2433106575963,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787476211840_q1thc",
-      "name": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
-      "path": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
-      "duration": 748.23875,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787476211831_y33im",
-      "name": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
-      "path": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787476212029_cypl4",
-      "name": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
-      "path": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
-      "duration": 748.243313,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787476211869_quzzn",
-      "name": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
-      "path": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787476211847_1uq8j",
-      "name": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
-      "path": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787476211875_6c3rv",
-      "name": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
-      "path": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787476212031_lhmnu",
-      "name": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
-      "path": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
-      "duration": 748.23875,
-      "durationStr": "12:28"
-    }
-  ],
+  "activeSelectedTrackIndex": -1,
+  "playlistTracks": [],
   "audioSettings": {
     "masterVolume": "70",
     "fadeIn": "2.1",
@@ -89,31 +32,12 @@
     "removeSilence": true,
     "pitch": "0"
   },
-  "currentVizType": "SoundWaveDisplay",
+  "currentVizType": "HarmonicsSpectrumDisplay",
   "activeSelectedVizIndex": 0,
-  "activeVisualizers": [
-    {
-      "id": "5d97217839df7cd2df93eaa98617447d7e920222",
-      "name": "Astrofox Sound Wave",
-      "type": "SoundWaveDisplay",
-      "preset": "stereo glow",
-      "gradient": "classic",
-      "bands": 80,
-      "glow": 1,
-      "reflexRatio": 0.35,
-      "radial": false,
-      "ledBars": false,
-      "stereo": true,
-      "width": 769,
-      "height": 175,
-      "x": 0,
-      "y": -127.2,
-      "smoothing": 0.65
-    }
-  ],
+  "activeVisualizers": [],
   "vizState": {
     "preset": "stereo glow",
-    "gradient": "classic",
+    "gradient": "rainbow",
     "bands": 80,
     "glow": 1,
     "reflexRatio": 0.35,
@@ -122,9 +46,9 @@
     "stereo": true,
     "barWidth": 8,
     "barSpacing": 4,
-    "height": 175,
-    "posX": -54,
-    "posY": 53,
+    "height": 280,
+    "posX": 0,
+    "posY": 0,
     "smoothing": 0.65
   },
   "particleState": {
