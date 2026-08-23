@@ -108,11 +108,14 @@ export default class CanvasText extends Entity {
     }
 
     // Performance Optimization: Dirty-check key to avoid re-rendering 60fps if nothing changed
+    const labelFontFamily = p.labelFont || p.labelFontFamily || fontFamily;
+
     const renderKey = [
       mainText,
       sublabel,
       fontSize,
       fontFamily,
+      labelFontFamily,
       fontWeight,
       align,
       color,
@@ -140,7 +143,7 @@ export default class CanvasText extends Entity {
     this._lastRenderKey = renderKey;
 
     // 2. Compute required canvas dimensions
-    const padding = Math.max(20, glowAmount * 2, strokeWidth * 2);
+    const padding = Math.max(24, (glowEnabled ? glowAmount * 2 : 0) + 12, (strokeEnabled ? strokeWidth * 2 : 0) + 12);
     let totalW = 400;
     let totalH = 100;
 
@@ -166,6 +169,7 @@ export default class CanvasText extends Entity {
     } else {
       const lines = String(mainText).split('\n');
       let maxLineWidth = 0;
+      context.font = mainFont;
       lines.forEach(l => {
         const m = context.measureText(l);
         if (m.width > maxLineWidth) maxLineWidth = m.width;
@@ -175,14 +179,14 @@ export default class CanvasText extends Entity {
       let labelH = 0;
       if (sublabel) {
         const labelSizePx = fontSize * (p.labelSize || 0.45);
-        const subFont = this.getFont(labelSizePx, p.labelBold !== false ? 'Bold' : 'Normal', fontFamily, p.labelItalic);
+        const subFont = this.getFont(labelSizePx, p.labelBold !== false ? 'Bold' : 'Normal', labelFontFamily, p.labelItalic);
         context.font = subFont;
         sublabelW = context.measureText(sublabel).width;
         labelH = labelSizePx * 1.6;
       }
 
       const maxContentW = Math.max(maxLineWidth, sublabelW);
-      totalW = Math.ceil(maxContentW + padding * 2 + 20);
+      totalW = Math.ceil(maxContentW + padding * 2 + 30);
       totalH = Math.ceil((lines.length * fontSize * 1.25) + labelH + padding * 2);
     }
 
@@ -263,19 +267,29 @@ export default class CanvasText extends Entity {
 
       // Draw Sub-label if present ("CURRENT PLAYING")
       if (sublabel) {
-        const labelFont = this.getFont(labelSizePx, p.labelBold !== false ? 'Bold' : 'Normal', fontFamily, p.labelItalic);
+        const labelFont = this.getFont(labelSizePx, p.labelBold !== false ? 'Bold' : 'Normal', labelFontFamily, p.labelItalic);
         const labelY = startContentY + (labelSizePx / 2);
 
         context.save();
         context.globalAlpha = 0.9;
-        let subX = drawX;
-        if (p.labelAlign === 'Left') subX = padding;
-        if (p.labelAlign === 'Right') subX = totalW - padding;
+        const subAlign = String(p.labelAlign || 'Center').toLowerCase();
+        let subX = centerX;
+        if (subAlign === 'left') {
+          subX = padding;
+          context.textAlign = 'left';
+        } else if (subAlign === 'right') {
+          subX = totalW - padding;
+          context.textAlign = 'right';
+        } else {
+          subX = centerX;
+          context.textAlign = 'center';
+        }
         drawStyledLine(sublabel, subX, labelY, labelFont, p.labelColor || color);
         context.restore();
       }
 
       // Draw Main Text lines
+      context.textAlign = align === 'left' ? 'left' : (align === 'right' ? 'right' : 'center');
       const textStartY = startContentY + labelH + (fontSize * 0.6);
       lines.forEach((line, lineIdx) => {
         drawStyledLine(line, drawX, textStartY + lineIdx * (fontSize * 1.25), mainFont, color);

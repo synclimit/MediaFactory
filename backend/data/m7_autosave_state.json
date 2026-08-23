@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "timestamp": 1787478990763,
+  "timestamp": 1787479621297,
   "activeCategory": "text",
   "currentBgType": "image",
   "activeSelectedBgIndex": 0,
   "activeBackgrounds": [
     {
-      "id": "0dcf4f3d7f9bf1ea9c58e149912d9e816943a1e9",
+      "id": "09320f58da81e773ba1d05b358be032af5201691",
       "name": "m7_1787471960511_1786495168.png",
       "type": "image",
       "src": "D:\\MediaFactory\\Output\\Temp\\m7_1787471960511_1786495168.png"
@@ -22,62 +22,62 @@
     "audioMotion": true
   },
   "currentPlaylistSource": "folder",
-  "activeSelectedTrackIndex": 1,
+  "activeSelectedTrackIndex": 0,
   "playlistTracks": [
     {
-      "id": "track_1787478876028_6hz4q",
-      "name": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
-      "path": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
-      "duration": 748.2321315192744,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787478876035_l1pnf",
-      "name": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
-      "path": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
-      "duration": 748.2321315192744,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787478876037_sptbp",
-      "name": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
-      "path": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
-      "duration": 748.2387301587302,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787478876022_2jo8c",
-      "name": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
-      "path": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
+      "id": "track_1787479339160_sha6e",
+      "name": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
+      "path": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
       "duration": 748.2433106575963,
       "durationStr": "12:28"
     },
     {
-      "id": "track_1787478876047_y9ot1",
+      "id": "track_1787479339163_t4uqo",
       "name": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
       "path": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
       "duration": 748.2321315192744,
       "durationStr": "12:28"
     },
     {
-      "id": "track_1787478876048_xwlu1",
+      "id": "track_1787479339165_e423z",
+      "name": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
+      "path": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
+      "duration": 748.2321315192744,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787479339166_svulf",
       "name": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
       "path": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
       "duration": 748.2387301587302,
       "durationStr": "12:28"
     },
     {
-      "id": "track_1787478876038_iap8c",
-      "name": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
-      "path": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
-      "duration": 748.243313,
+      "id": "track_1787479339168_m2bu1",
+      "name": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
+      "path": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
+      "duration": 748.2433106575963,
       "durationStr": "12:28"
     },
     {
-      "id": "track_1787478876026_x7k7f",
+      "id": "track_1787479339201_v68oo",
+      "name": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
+      "path": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
+      "duration": 748.2321315192744,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787479339204_6p721",
+      "name": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
+      "path": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
+      "duration": 748.2387301587302,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787479339201_efkyp",
       "name": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
       "path": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
-      "duration": 748.232146,
+      "duration": 748.2321315192744,
       "durationStr": "12:28"
     }
   ],
@@ -131,7 +131,7 @@
   "activeSelectedEffectIndex": -1,
   "activeTextObjects": [
     {
-      "id": "text_1787478883781_7zl87",
+      "id": "text_1787479400462_kmtrw",
       "name": "Track List Layout",
       "properties": {
         "name": "Track List Layout",
@@ -149,8 +149,8 @@
         "fontWeight": "Extra-Bold",
         "fontSize": 18,
         "align": "Center",
-        "x": -115,
-        "y": 31,
+        "x": -101,
+        "y": 97,
         "color": "#10b981",
         "opacity": 1,
         "strokeEnabled": false,
@@ -164,10 +164,48 @@
         "perspective": 60,
         "depth": 0,
         "columns": 1,
-        "highlightActiveTrack": false,
+        "highlightActiveTrack": true,
         "activeMarker": "🎵"
+      }
+    },
+    {
+      "id": "text_1787479426499_srsjt",
+      "name": "Current Playing",
+      "properties": {
+        "name": "Current Playing",
+        "text": "{current_track}",
+        "textType": "title",
+        "type": "text",
+        "bindToCurrentTrack": true,
+        "showLabel": true,
+        "labelSize": 0.7,
+        "labelAlign": "Left",
+        "labelBold": false,
+        "labelItalic": false,
+        "labelColor": "#ffffff",
+        "fontFamily": "Segoe UI",
+        "fontWeight": "Extra-Bold",
+        "fontSize": 19,
+        "align": "Left",
+        "x": -159,
+        "y": -164,
+        "color": "#f59e0b",
+        "opacity": 1,
+        "strokeEnabled": false,
+        "stroke": 0,
+        "strokeColor": "#000000",
+        "glowEnabled": true,
+        "glow": 15,
+        "glowColor": "#f59e0b",
+        "tiltX": 0,
+        "tiltY": 0,
+        "perspective": 60,
+        "depth": 0,
+        "columns": 1,
+        "size": 19,
+        "font": "Segoe UI"
       }
     }
   ],
-  "activeSelectedTextIndex": 0
+  "activeSelectedTextIndex": 1
 }

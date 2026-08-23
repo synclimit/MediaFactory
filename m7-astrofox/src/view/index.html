@@ -2972,6 +2972,21 @@
                 <input type="checkbox" id="chk-text-showlabel" checked onchange="m7UpdateTextProp('showLabel', this.checked)">
                 <span class="m7-switch-slider"></span>
               </label>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Label Font</span>
+              </div>
+              <select class="m7-select" id="sel-text-labelfont" onchange="m7UpdateTextProp('labelFont', this.value)">
+                <option value="Segoe UI" selected>Segoe UI</option>
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Poppins">Poppins</option>
+                <option value="Arial">Arial</option>
+                <option value="Impact">Impact</option>
+                <option value="monospace">Monospace</option>
+              </select>
             </div>
             <div class="m7-control-group">
               <div class="m7-control-label-row">
@@ -6112,6 +6127,8 @@
         // Label controls
         const chkShowLabel = document.getElementById('chk-text-showlabel');
         if (chkShowLabel) chkShowLabel.checked = p.showLabel !== false;
+        const selLabelFont = document.getElementById('sel-text-labelfont');
+        if (selLabelFont) selLabelFont.value = p.labelFont || p.labelFontFamily || 'Segoe UI';
         const sliderLabelSize = document.getElementById('slider-text-labelsize');
         const valLabelSize = document.getElementById('val-text-labelsize');
         if (sliderLabelSize) sliderLabelSize.value = p.labelSize || 0.4;
