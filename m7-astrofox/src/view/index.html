@@ -4749,7 +4749,13 @@
           const safeId = `viz-card-${props.preset.replace(/\s+/g, '-')}`;
           const activeCard = document.getElementById(safeId);
           if (activeCard) activeCard.classList.add('active');
+        } else if (display.name) {
+          document.querySelectorAll('.m7-viz-model-card').forEach(c => c.classList.remove('active'));
+          const safeId = `viz-card-${display.name.replace(/\s+/g, '-')}`;
+          const activeCard = document.getElementById(safeId);
+          if (activeCard) activeCard.classList.add('active');
         }
+
         if (props.gradient) {
           vizState.gradient = props.gradient;
           const sel = document.getElementById('sel-viz-gradient');
@@ -4804,6 +4810,27 @@
           if (sl) sl.value = sm;
           if (val) val.innerText = sm;
         }
+
+        const stage = getAstrofoxStage();
+        const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 854, height: 480 };
+        const stageW = stageSize.width || 854;
+        const stageH = stageSize.height || 480;
+
+        if (props.x !== undefined) {
+          vizState.posX = Math.round((props.x / (stageW / 2)) * 100);
+          const slX = document.getElementById('m7-slider-viz-posX');
+          const valX = document.getElementById('val-viz-posX');
+          if (slX) slX.value = vizState.posX;
+          if (valX) valX.innerText = vizState.posX;
+        }
+        if (props.y !== undefined) {
+          vizState.posY = Math.round((-props.y / (stageH / 2)) * 100);
+          const slY = document.getElementById('m7-slider-viz-posY');
+          const valY = document.getElementById('val-viz-posY');
+          if (slY) slY.value = vizState.posY;
+          if (valY) valY.innerText = vizState.posY;
+        }
+
         m7EnforceLayerOrder();
       }
 
@@ -4821,18 +4848,53 @@
         const stageH = stageSize.height || 480;
 
         if (activeVisualizers.length > 0 && activeSelectedVizIndex >= 0 && activeVisualizers[activeSelectedVizIndex]) {
-          m7EnsureHarmonicsDisplay(activeSelectedVizIndex);
           const currentViz = activeVisualizers[activeSelectedVizIndex];
-          const updates = { x: (parseFloat(vizState.posX || 0) / 100) * (stageW / 2), y: -(parseFloat(vizState.posY || 0) / 100) * (stageH / 2) };
+          if (!currentViz || !currentViz.display) return;
+
+          const updates = {};
+          
           if (prop === 'height') {
             updates.height = parseFloat(val);
+            if (currentViz.type === 'WaveSpectrumDisplay' || currentViz.type === 'SoundWaveDisplay') {
+              updates.midpoint = parseFloat(val) / 2;
+            }
           } else if (prop === 'posX') {
             updates.x = (parseFloat(val) / 100) * (stageW / 2);
           } else if (prop === 'posY') {
             updates.y = -(parseFloat(val) / 100) * (stageH / 2);
+          } else if (prop === 'smoothing') {
+            updates.smoothing = parseFloat(val);
+            updates.smoothingTimeConstant = parseFloat(val);
+          } else if (prop === 'gradient') {
+            const gradientMap = {
+              rainbow: ['#00e5ff', '#a855f7'],
+              classic: ['#ef4444', '#f59e0b'],
+              blue: ['#0284c7', '#00e5ff'],
+              prism: ['#ec4899', '#38bdf8'],
+              orangered: ['#dc2626', '#f97316'],
+              steelblue: ['#1e3a8a', '#93c5fd'],
+              sunset: ['#4f46e5', '#f43f5e'],
+              aurora: ['#059669', '#06b6d4'],
+              dusk: ['#6d28d9', '#ec4899'],
+              mono: ['#64748b', '#ffffff']
+            };
+            const colors = gradientMap[val] || ['#f97316', '#fb923c'];
+
+            if (currentViz.type === 'HarmonicsSpectrumDisplay' || currentViz.type === 'CaYaturVisualizerDisplay') {
+              updates.gradient = val;
+            } else if (currentViz.type === 'BarSpectrumDisplay') {
+              updates.color = colors;
+              updates.shadowColor = [colors[1], '#000000'];
+            } else if (currentViz.type === 'WaveSpectrumDisplay') {
+              updates.fillColor = colors;
+              updates.strokeColor = colors[1];
+            } else if (currentViz.type === 'SoundWaveDisplay') {
+              updates.strokeColor = colors[1] || colors[0];
+            }
           } else {
             updates[prop] = val;
           }
+
           currentViz.display.update(updates);
         }
         m7EnforceLayerOrder(scene);
