@@ -268,7 +268,7 @@ export class FFTVisualizer {
     if (patch.background !== undefined && patch.background !== prev.background) {
       this.applyBackground(this.options.background);
     }
-    if (patch.gradient !== undefined && patch.gradient !== prev.gradient) {
+    if (patch.gradient !== undefined) {
       this.uploadGradientTexture();
     }
     if (patch.bands !== undefined && patch.bands !== prev.bands) {

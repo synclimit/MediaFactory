@@ -1,6 +1,6 @@
 import Entity from 'core/Entity';
 import { drawPath } from 'drawing/bezierSpline';
-import { resetCanvas, setColor } from 'utils/canvas';
+import { resetCanvas, setColor, setStrokeColor } from 'utils/canvas';
 
 export default class CanvasWave extends Entity {
   static defaultProperties = {
@@ -39,10 +39,10 @@ export default class CanvasWave extends Entity {
     // Reset canvas
     resetCanvas(canvas, width, height);
 
-    // Canvas setup
+    // Canvas setup: horizontal gradient from 0 to width
     context.lineWidth = lineWidth;
-    context.strokeStyle = strokeColor;
-    setColor(context, fillColor, 0, 0, 0, height);
+    setStrokeColor(context, strokeColor, 0, 0, width, 0);
+    setColor(context, fillColor, 0, 0, width, 0);
 
     // Normalize points
     for (let i = 0; i < points.length; i += 2) {

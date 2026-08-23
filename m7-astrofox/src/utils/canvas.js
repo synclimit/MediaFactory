@@ -36,6 +36,20 @@ export function setColor(context, color, x1, y1, x2, y2) {
   }
 }
 
+export function setStrokeColor(context, color, x1, y1, x2, y2) {
+  if (color instanceof Array) {
+    const gradient = context.createLinearGradient(x1, y1, x2, y2);
+
+    for (let i = 0; i < color.length; i++) {
+      gradient.addColorStop(i / (color.length - 1), color[i]);
+    }
+
+    context.strokeStyle = gradient;
+  } else {
+    context.strokeStyle = color;
+  }
+}
+
 export function resetCanvas(canvas, width = 1, height = 1) {
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;

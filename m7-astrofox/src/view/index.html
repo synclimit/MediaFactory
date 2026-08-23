@@ -2638,10 +2638,17 @@
             </div>
             <div class="m7-control-group">
               <div class="m7-control-label-row">
-                <span>Height</span>
-                <span class="m7-control-val" id="val-viz-height">280</span>
+                <span>Width</span>
+                <span class="m7-control-val" id="val-viz-width">480</span>
               </div>
-              <input type="range" class="m7-slider" min="50" max="600" value="280" id="m7-slider-viz-height" oninput="m7UpdateVizProperty('height', parseFloat(this.value))">
+              <input type="range" class="m7-slider" min="100" max="854" value="480" id="m7-slider-viz-width" oninput="m7UpdateVizProperty('width', parseFloat(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Height</span>
+                <span class="m7-control-val" id="val-viz-height">160</span>
+              </div>
+              <input type="range" class="m7-slider" min="30" max="600" value="160" id="m7-slider-viz-height" oninput="m7UpdateVizProperty('height', parseFloat(this.value))">
             </div>
             <div class="m7-control-group">
               <div class="m7-control-label-row">
@@ -4597,7 +4604,8 @@
         const stageW = stageSize.width || 854;
         const stageH = stageSize.height || 480;
 
-        const targetW = Math.round(stageW * 0.9);
+        const targetW = parseFloat(vizState.width || 480) || 480;
+        const targetH = parseFloat(vizState.height || 160) || 160;
         const targetX = 0;
         const targetY = -(parseFloat(vizState.posY || 0) / 100) * (stageH / 2);
 
@@ -5082,6 +5090,13 @@
           const chk = document.getElementById('chk-viz-stereo');
           if (chk) chk.checked = !!props.stereo;
         }
+        if (props.width) {
+          vizState.width = props.width;
+          const slW = document.getElementById('m7-slider-viz-width');
+          const valW = document.getElementById('val-viz-width');
+          if (slW) slW.value = props.width;
+          if (valW) valW.innerText = props.width;
+        }
         if (props.height) {
           vizState.height = props.height;
           const slH = document.getElementById('m7-slider-viz-height');
@@ -5140,7 +5155,9 @@
 
           const updates = {};
           
-          if (prop === 'height') {
+          if (prop === 'width') {
+            updates.width = parseFloat(val);
+          } else if (prop === 'height') {
             updates.height = parseFloat(val);
             if (currentViz.type === 'WaveSpectrumDisplay' || currentViz.type === 'SoundWaveDisplay') {
               updates.midpoint = parseFloat(val) / 2;
@@ -6206,8 +6223,8 @@
             name: item.name || 'Spectrum',
             getX: () => (disp.properties ? (disp.properties.x || 0) : 0),
             getY: () => (disp.properties ? (disp.properties.y || 0) : 0),
-            getW: () => (disp.properties ? (disp.properties.width || Math.round(stageW * 0.9)) : Math.round(stageW * 0.9)),
-            getH: () => (disp.properties ? (disp.properties.height || 280) : 280),
+            getW: () => (disp.properties && disp.properties.width !== undefined ? disp.properties.width : 480),
+            getH: () => (disp.properties && disp.properties.height !== undefined ? disp.properties.height : 160),
             getShadowH: () => (disp.properties ? (disp.properties.shadowHeight || 0) : 0),
             setPos: (x, y) => {
               disp.update({ x, y });
@@ -6223,10 +6240,15 @@
               if (inY) inY.value = vizState.posY;
             },
             setSize: (w, h) => {
-              const clampedW = Math.max(100, Math.min(stageW * 1.5, Math.round(w)));
+              const clampedW = Math.max(80, Math.min(stageW, Math.round(w)));
               const clampedH = Math.max(20, Math.min(stageH, Math.round(h)));
               disp.update({ width: clampedW, height: clampedH });
+              vizState.width = clampedW;
               vizState.height = clampedH;
+              const slW = document.getElementById('val-viz-width');
+              const inW = document.getElementById('m7-slider-viz-width');
+              if (slW) slW.innerText = clampedW;
+              if (inW) inW.value = clampedW;
               const slH = document.getElementById('val-viz-height');
               const inH = document.getElementById('m7-slider-viz-height');
               if (slH) slH.innerText = clampedH;
@@ -6280,8 +6302,6 @@
         const itemY = target.getY();
         const itemW = target.getW();
         const itemH = target.getH();
-        const shadowH = target.getShadowH ? target.getShadowH() : 0;
-        const totalH = itemH + shadowH;
 
         const canvasLeft = (stageW / 2) + itemX - (itemW / 2);
         let canvasTop;
@@ -6294,7 +6314,7 @@
         const left = (cRect.left - oRect.left) + (canvasLeft * scaleX);
         const top = (cRect.top - oRect.top) + (canvasTop * scaleY);
         const screenW = itemW * scaleX;
-        const screenH = totalH * scaleY;
+        const screenH = itemH * scaleY;
 
         gizmo.style.display = 'block';
         gizmo.style.left = `${Math.round(left)}px`;

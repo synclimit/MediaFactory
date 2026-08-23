@@ -49,8 +49,8 @@ export default class CanvasBars extends Entity {
     // Stepping
     const step = fullWidth > width ? fullWidth / width : 1;
 
-    // Canvas setup
-    setColor(context, color, 0, 0, 0, height);
+    // Canvas setup: horizontal gradient from 0 to width across all bars (Bass to Treble)
+    setColor(context, color, 0, 0, width, 0);
 
     // Draw bars
     for (let i = 0, x = 0, last = null; i < bars && x < fullWidth; i += step, x += barSize) {
@@ -66,7 +66,7 @@ export default class CanvasBars extends Entity {
 
     // Draw shadow bars
     if (shadowHeight > 0) {
-      setColor(context, shadowColor, 0, height, 0, height + shadowHeight);
+      setColor(context, shadowColor, 0, 0, width, 0);
 
       for (let i = 0, x = 0, last = null; i < bars && x < fullWidth; i += step, x += barSize) {
         const index = ~~i;

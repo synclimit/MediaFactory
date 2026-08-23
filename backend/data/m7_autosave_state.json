@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "timestamp": 1787477355852,
-  "activeCategory": "visualizer",
+  "timestamp": 1787477677746,
+  "activeCategory": "text",
   "currentBgType": "image",
   "activeSelectedBgIndex": 0,
   "activeBackgrounds": [
     {
-      "id": "c0577884a30405524416ae4f3c943c38eee165d9",
+      "id": "7e02d161be7e11a7cbcc8136a15050f76f1c166a",
       "name": "m7_1787471960511_1786495168.png",
       "type": "image",
       "src": "D:\\MediaFactory\\Output\\Temp\\m7_1787471960511_1786495168.png"
@@ -25,59 +25,59 @@
   "activeSelectedTrackIndex": 0,
   "playlistTracks": [
     {
-      "id": "track_1787477214076_ikcu0",
-      "name": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
-      "path": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
-      "duration": 748.2433106575963,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787477214080_bbic9",
-      "name": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
-      "path": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787477214094_s4ctt",
+      "id": "track_1787477572117_q157r",
       "name": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
       "path": "DJ DORA DORA X TOR MONITOR KETUA .mp3",
-      "duration": 748.23875,
+      "duration": 748.2387301587302,
       "durationStr": "12:28"
     },
     {
-      "id": "track_1787477214119_6n7fg",
-      "name": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
-      "path": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787477214079_5cux9",
-      "name": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
-      "path": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
-      "duration": 748.243313,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787477214134_q88qy",
-      "name": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
-      "path": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
-      "duration": 748.232146,
-      "durationStr": "12:28"
-    },
-    {
-      "id": "track_1787477214081_zcef5",
+      "id": "track_1787477572121_iam8d",
       "name": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
       "path": "DJ DORA DORA X DJ SAK MASAK NASI.mp3",
       "duration": 748.232146,
       "durationStr": "12:28"
     },
     {
-      "id": "track_1787477214123_060bu",
+      "id": "track_1787477572046_ehwua",
+      "name": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
+      "path": "DJ SO ASU NAYKILLA x DJ BINTANG 5 TENXI.mp3",
+      "duration": 748.243313,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477572116_6yojm",
+      "name": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
+      "path": "AKU BUKAN POLISI x DJ SO ASU NAYKILLA.mp3",
+      "duration": 748.243313,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477572122_05gmc",
+      "name": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
+      "path": "TOR MONITOR KETUA  x DJ BINTANG 5 TENXI.mp3",
+      "duration": 748.232146,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477572121_7462o",
       "name": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
       "path": "DJ SO ASU NAYKILLA x DJ DORA DORA.mp3",
       "duration": 748.23875,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477572132_pnm5j",
+      "name": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
+      "path": "DJ DORA DORA X TOR MONITOR KETUA.mp3",
+      "duration": 748.232146,
+      "durationStr": "12:28"
+    },
+    {
+      "id": "track_1787477572134_iisvy",
+      "name": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
+      "path": "DJ DORA DORA X BUATMU ANGKAT TANGAN.mp3",
+      "duration": 748.232146,
       "durationStr": "12:28"
     }
   ],
@@ -89,45 +89,24 @@
     "removeSilence": true,
     "pitch": "0"
   },
-  "currentVizType": "BarSpectrumDisplay",
+  "currentVizType": "HarmonicsSpectrumDisplay",
   "activeSelectedVizIndex": 0,
-  "activeVisualizers": [
-    {
-      "id": "dade2084202215e011f185c5aad6fb7bab927973",
-      "name": "Astrofox Bar EQ",
-      "type": "BarSpectrumDisplay",
-      "preset": "stereo glow",
-      "gradient": "rainbow",
-      "bands": 80,
-      "glow": 0.35,
-      "reflexRatio": 0.15,
-      "radial": false,
-      "ledBars": false,
-      "stereo": true,
-      "width": 459,
-      "height": 255,
-      "x": -163,
-      "y": -129,
-      "smoothing": 0.4,
-      "barWidth": -1,
-      "barSpacing": -1
-    }
-  ],
+  "activeVisualizers": [],
   "vizState": {
     "preset": "stereo glow",
     "gradient": "rainbow",
     "bands": 80,
-    "glow": 0.35,
-    "reflexRatio": 0.15,
+    "glow": 1,
+    "reflexRatio": 0.35,
     "radial": false,
     "ledBars": false,
     "stereo": true,
     "barWidth": 8,
     "barSpacing": 4,
-    "height": 255,
-    "posX": -38,
-    "posY": 54,
-    "smoothing": 0.4
+    "height": 280,
+    "posX": 0,
+    "posY": 0,
+    "smoothing": 0.65
   },
   "vizColorState": {
     "mode": "Theme",
@@ -150,6 +129,44 @@
   "activeSelectedParticleIndex": 0,
   "activeEffects": [],
   "activeSelectedEffectIndex": -1,
-  "activeTextObjects": [],
-  "activeSelectedTextIndex": -1
+  "activeTextObjects": [
+    {
+      "id": "text_1787477582634_hor56",
+      "name": "Track List Layout",
+      "properties": {
+        "name": "Track List Layout",
+        "text": "Track List Layout",
+        "textType": "playlist",
+        "type": "playlist",
+        "bindToCurrentTrack": false,
+        "showLabel": true,
+        "labelSize": 0.4,
+        "labelAlign": "Center",
+        "labelBold": true,
+        "labelItalic": false,
+        "labelColor": "#ffffff",
+        "fontFamily": "Segoe UI",
+        "fontWeight": "Extra-Bold",
+        "fontSize": 10,
+        "align": "Center",
+        "x": -131,
+        "y": -20,
+        "color": "#10b981",
+        "opacity": 1,
+        "strokeEnabled": false,
+        "stroke": 0,
+        "strokeColor": "#000000",
+        "glowEnabled": true,
+        "glow": 15,
+        "glowColor": "#10b981",
+        "tiltX": 0,
+        "tiltY": 0,
+        "perspective": 60,
+        "depth": 0,
+        "columns": 1,
+        "size": 10
+      }
+    }
+  ],
+  "activeSelectedTextIndex": 0
 }
