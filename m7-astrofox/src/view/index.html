@@ -6167,9 +6167,6 @@
         if ((activeCategory === 'text' || activeCategory === 'lyrics') && activeTextObjects[activeSelectedTextIndex]) {
           const item = activeTextObjects[activeSelectedTextIndex];
           const disp = item.display;
-          const textCanvas = disp.canvas;
-          const textW = (textCanvas && textCanvas.width > 1) ? textCanvas.width : 360;
-          const textH = (textCanvas && textCanvas.height > 1) ? textCanvas.height : 90;
 
           return {
             type: 'text',
@@ -6178,9 +6175,10 @@
             name: item.properties?.name || item.name || 'Text',
             getX: () => (disp.properties ? (disp.properties.x || 0) : 0),
             getY: () => (disp.properties ? (disp.properties.y || 0) : 0),
-            getW: () => textW,
-            getH: () => textH,
+            getW: () => ((disp.canvas && disp.canvas.width > 1) ? disp.canvas.width : (disp.properties?.width || 360)),
+            getH: () => ((disp.canvas && disp.canvas.height > 1) ? disp.canvas.height : (disp.properties?.height || 90)),
             getShadowH: () => 0,
+            getFontSize: () => (disp.properties?.fontSize || disp.properties?.size || item.properties?.fontSize || item.properties?.size || 40),
             setPos: (x, y) => {
               disp.update({ x, y });
               if (item.properties) {
@@ -6196,19 +6194,20 @@
               if (valX) valX.innerText = Math.round(x);
               if (valY) valY.innerText = Math.round(y);
             },
-            setSize: (w, h) => {
-              const currentFont = disp.properties?.fontSize || 40;
-              const scale = Math.max(0.2, h / textH);
-              const newFontSize = Math.max(10, Math.min(200, Math.round(currentFont * scale)));
-              disp.update({ fontSize: newFontSize, size: newFontSize });
+            setFontSize: (newFontSize) => {
+              const clamped = Math.max(8, Math.min(200, Math.round(newFontSize)));
+              disp.update({ fontSize: clamped, size: clamped });
               if (item.properties) {
-                item.properties.fontSize = newFontSize;
-                item.properties.size = newFontSize;
+                item.properties.fontSize = clamped;
+                item.properties.size = clamped;
               }
               const inS = document.getElementById('slider-text-fontsize');
               const valS = document.getElementById('val-text-fontsize');
-              if (inS) inS.value = newFontSize;
-              if (valS) valS.innerText = newFontSize;
+              if (inS) inS.value = clamped;
+              if (valS) valS.innerText = clamped;
+            },
+            setSize: (w, h) => {
+              // Handled through linear setFontSize
             }
           };
         }
@@ -6367,6 +6366,7 @@
               origItemH: target.getH(),
               origItemX: target.getX(),
               origItemY: target.getY(),
+              origFontSize: (target.getFontSize ? target.getFontSize() : (target.item?.properties?.fontSize || 40)),
               target
             };
           });
@@ -6542,7 +6542,29 @@
               newH = m7GizmoActionData.origItemH - (dy * 2);
             }
 
-            target.setSize(Math.max(50, newW), Math.max(20, newH));
+            if (target.type === 'text') {
+              const origW = Math.max(20, m7GizmoActionData.origItemW || 100);
+              const origH = Math.max(15, m7GizmoActionData.origItemH || 40);
+              const ratioW = newW / origW;
+              const ratioH = newH / origH;
+              let scaleRatio = 1.0;
+
+              if (hType === 'ml' || hType === 'mr') {
+                scaleRatio = ratioW;
+              } else if (hType === 'tm' || hType === 'bm') {
+                scaleRatio = ratioH;
+              } else {
+                scaleRatio = (ratioW + ratioH) / 2;
+              }
+
+              scaleRatio = Math.max(0.1, Math.min(5.0, scaleRatio));
+              const newFontSize = Math.round(m7GizmoActionData.origFontSize * scaleRatio);
+              if (target.setFontSize) {
+                target.setFontSize(newFontSize);
+              }
+            } else {
+              target.setSize(Math.max(50, newW), Math.max(20, newH));
+            }
             m7UpdateGizmo();
           }
         });
