@@ -6803,7 +6803,7 @@
               quality: 'High',
               codec: 'x264',
               timeStart: 0,
-              timeEnd: duration
+              timeEnd: totalDuration
             });
           }
         }
@@ -7252,9 +7252,16 @@
               isTrackPlaying = window.__ASTROFOX_CORE__.player.isPlaying();
               m7RenderPlaylist();
             });
-            window.__ASTROFOX_CORE__.player.on('ended', () => {
-              isTrackPlaying = false;
-              m7RenderPlaylist();
+            window.__ASTROFOX_CORE__.player.on('ended', async () => {
+              if (activeSelectedTrackIndex < playlistTracks.length - 1) {
+                // Auto-advance seamlessly to the next song in the playlist
+                const nextIdx = activeSelectedTrackIndex + 1;
+                await m7LoadTrackToPlayer(nextIdx, true);
+              } else {
+                // Entire playlist has finished
+                isTrackPlaying = false;
+                m7RenderPlaylist();
+              }
             });
             window.__ASTROFOX_CORE__.player.on('playlist-seek', async (data) => {
               const globalTime = data.globalTime;

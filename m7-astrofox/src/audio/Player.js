@@ -37,6 +37,9 @@ export default class Player extends EventEmitter {
         this.audio.setPitch(this.pitch);
       }
       this.audio.addNode(this.normalization ? this.compressor : this.volume);
+      this.audio.on('ended', () => {
+        this.emit('ended');
+      });
     }
 
     this.emit('audio-load');
@@ -68,6 +71,7 @@ export default class Player extends EventEmitter {
               this.seek(0);
             } else {
               this.stop();
+              this.emit('ended');
             }
           }
 

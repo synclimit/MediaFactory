@@ -77,6 +77,12 @@ export default class Audio {
   initBuffer() {
     this.source = this.audioContext.createBufferSource();
     this.source.buffer = this.buffer;
+    this.source.onended = () => {
+      if (this.playing) {
+        this.stop();
+        this.emit('ended');
+      }
+    };
     if (this.pitch !== undefined && this.pitch !== 0) {
       if (this.source.detune) {
         this.source.detune.value = this.pitch * 100;
