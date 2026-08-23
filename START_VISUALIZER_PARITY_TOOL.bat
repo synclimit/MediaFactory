@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title MediaFactory Visualizer Parity & Root Cause Diagnostic Workbench
 echo ======================================================================
 echo  MediaFactory Visualizer Parity & Root Cause Diagnostic Workbench
@@ -7,6 +8,9 @@ echo.
 echo Starting MediaFactory in Dev Mode with Visualizer Parity Tool...
 echo.
 
-cd /d "D:\MediaFactory"
-call npx kill-port 5173 5174 18888 >nul 2>&1
-call npx concurrently "npx vite" "npx wait-on http://localhost:5173 && npx electron ."
+taskkill /f /im electron.exe >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr /r ":5173\> :5174\> :18888\>"') do (
+    taskkill /f /pid %%a >nul 2>&1
+)
+
+call npm run electron:serve

@@ -53,8 +53,17 @@ export class FilterGraphBuilder {
       if (node.inputs) {
         for (const inputObj of node.inputs) {
           allInputs.push(inputObj);
-          overlayPads += `[${inputCount}:v]`;
+          const rawPad = `${inputCount}:v`;
           inputCount++;
+          
+          if (node.preFilter) {
+            const prePad = `ov_prep_${filterCount++}`;
+            if (filterComplex !== '') filterComplex += ';';
+            filterComplex += `[${rawPad}]${node.preFilter}[${prePad}]`;
+            overlayPads += `[${prePad}]`;
+          } else {
+            overlayPads += `[${rawPad}]`;
+          }
         }
       }
       

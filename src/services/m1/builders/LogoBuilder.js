@@ -15,16 +15,18 @@ export class LogoBuilder {
     
     // Default position: Bottom Right
     const position = logoEffect.position || 'bottom-right';
-    let xStr = 'W-w-50';
-    let yStr = 'H-h-50';
+    let xStr = 'W-w-30';
+    let yStr = 'H-h-30';
     
-    if (position === 'top-left') { xStr = '50'; yStr = '50'; }
-    if (position === 'top-right') { xStr = 'W-w-50'; yStr = '50'; }
-    if (position === 'bottom-left') { xStr = '50'; yStr = 'H-h-50'; }
-    if (position === 'bottom-center') { xStr = '(W-w)/2'; yStr = 'H-h-50'; }
+    if (position === 'top-left') { xStr = '30'; yStr = '30'; }
+    if (position === 'top-right') { xStr = 'W-w-30'; yStr = '30'; }
+    if (position === 'bottom-left') { xStr = '30'; yStr = 'H-h-30'; }
+    if (position === 'bottom-center') { xStr = '(W-w)/2'; yStr = 'H-h-30'; }
     
     return { 
       inputs: [{ path: assetPath, args: [['-loop', '1']] }],
+      // Pre-filter: Scale down large logos to clean corner badge (~130px max)
+      preFilter: 'scale=130:-1,format=yuva420p',
       filter: `overlay=x=${xStr}:y=${yStr}:shortest=0` 
     };
   }
