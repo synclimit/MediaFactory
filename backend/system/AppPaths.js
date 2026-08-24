@@ -25,16 +25,23 @@ class AppPaths {
             userDataPath = path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData');
         }
 
-        this.workspaceDir = path.join(userDataPath, 'Workspaces');
-        this.diagnosticsDir = path.join(userDataPath, 'Diagnostics');
-        this.cacheDir = path.join(userDataPath, 'Cache');
-        this.cacheCleanupMode = 'never'; // Default
-        this.outputDir = documentsPath;
+        const installDir = this.getAppInstallDir();
+        const installWorkspaces = path.join(installDir, 'Workspaces');
+        if (fs.existsSync(installWorkspaces)) {
+            this.workspaceDir = installWorkspaces;
+        }
+
         this.settingsFile = path.join(userDataPath, 'system_settings.json');
 
         if (fs.existsSync(this.settingsFile)) {
             try {
                 const settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8'));
+                if (settings.workspaceDir) {
+                    this.workspaceDir = settings.workspaceDir;
+                }
+                if (settings.outputDir) {
+                    this.outputDir = settings.outputDir;
+                }
                 if (settings.cacheDir) {
                     this.cacheDir = settings.cacheDir;
                 }
@@ -50,9 +57,16 @@ class AppPaths {
     _ensureDirs() {
         [this.workspaceDir, this.diagnosticsDir, this.cacheDir, this.outputDir].forEach(dir => {
             if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
+                try { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}
             }
         });
+    }
+
+    getAppInstallDir() {
+        if (process.resourcesPath) {
+            return path.resolve(process.resourcesPath, '..');
+        }
+        return process.cwd();
     }
 
     getWorkspaceBase() { return this.workspaceDir; }
@@ -61,6 +75,26 @@ class AppPaths {
     getCacheCleanupMode() { return this.cacheCleanupMode; }
     getOutputBase() { return this.outputDir; }
     getMediaFactoryDataDir() { return path.dirname(this.cacheDir); }
+
+    setWorkspaceBase(newPath) {
+        if (!newPath) return false;
+        this.workspaceDir = newPath;
+        if (!fs.existsSync(this.workspaceDir)) {
+            try { fs.mkdirSync(this.workspaceDir, { recursive: true }); } catch (e) {}
+        }
+        try {
+            let settings = {};
+            if (fs.existsSync(this.settingsFile)) {
+                settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8'));
+            }
+            settings.workspaceDir = newPath;
+            fs.writeFileSync(this.settingsFile, JSON.stringify(settings, null, 2));
+            return true;
+        } catch (e) {
+            console.error('Failed to save system settings:', e);
+            return false;
+        }
+    }
 
     setCacheBase(newPath, cleanupMode = 'never') {
         if (!newPath) return false;

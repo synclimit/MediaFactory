@@ -63,6 +63,25 @@ router.get('/api/v1/system/telemetry', (req, res) => {
     }
 });
 
+router.get('/api/v1/system/workspace-base', (req, res) => {
+    res.standardResponse({
+        workspaceBase: AppPaths.getWorkspaceBase(),
+        installDir: AppPaths.getAppInstallDir(),
+        outputBase: AppPaths.getOutputBase()
+    });
+});
+
+router.post('/api/v1/system/workspace-base', (req, res) => {
+    const { workspaceBase } = req.body;
+    if (!workspaceBase) {
+        return res.standardResponse(null, { status: "error", message: "workspaceBase is required" }, false);
+    }
+    const success = AppPaths.setWorkspaceBase(workspaceBase);
+    const wsService = ServiceRegistry.resolve('WorkspaceService');
+    if (wsService) wsService.basePath = workspaceBase;
+    res.standardResponse({ success, workspaceBase: AppPaths.getWorkspaceBase() });
+});
+
 router.get('/api/v1/system/cache-path', (req, res) => {
     res.standardResponse({ 
         cacheDir: AppPaths.getCacheBase(),

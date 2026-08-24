@@ -10,6 +10,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
     
     // Step 1 Data
     const [name, setName] = useState('');
+    const [workspaceRoot, setWorkspaceRoot] = useState('');
     
     // Step 2 Data
     const [logoPath, setLogoPath] = useState('');
@@ -21,6 +22,41 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
     const [isCreating, setIsCreating] = useState(false);
     const [loadingMsg, setLoadingMsg] = useState('Creating Workspace...');
     const [errorMsg, setErrorMsg] = useState('');
+
+    useEffect(() => {
+        fetch(getApiUrl('/api/v1/system/workspace-base'))
+            .then(r => r.json())
+            .then(d => {
+                if (d.data?.workspaceBase) {
+                    setWorkspaceRoot(d.data.workspaceBase);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
+    const handleChangeWorkspaceLocation = async () => {
+        let selectedFolder = null;
+        if (window.require) {
+            try {
+                const { ipcRenderer } = window.require('electron');
+                const paths = await ipcRenderer.invoke('show-open-dialog', {
+                    properties: ['openDirectory', 'createDirectory'],
+                    title: 'Select Root Workspace Directory'
+                });
+                if (paths && paths.length > 0) selectedFolder = paths[0];
+            } catch (e) {}
+        }
+        if (selectedFolder) {
+            setWorkspaceRoot(selectedFolder);
+            try {
+                await fetch(getApiUrl('/api/v1/system/workspace-base'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workspaceBase: selectedFolder })
+                });
+            } catch(e) {}
+        }
+    };
 
     const handleNext = () => {
         if (name.trim()) {
@@ -131,7 +167,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                                 </div>
                             )}
 
-                            <div className="mb-8">
+                            <div className="mb-5">
                                 <label className="block text-[11px] font-semibold text-[#738091] uppercase tracking-wider mb-2">Channel Name</label>
                                 <input 
                                     type="text" 
@@ -144,6 +180,23 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                                     }}
                                     className="w-full bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)] rounded-[8px] p-3 text-white outline-none focus:border-[#32D8FF] transition-colors disabled:opacity-50"
                                 />
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-[11px] font-semibold text-[#738091] uppercase tracking-wider">Workspace Location</label>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleChangeWorkspaceLocation} 
+                                        className="text-[11px] text-[#32D8FF] hover:underline cursor-pointer flex items-center gap-1 font-mono"
+                                    >
+                                        Change Folder 📁
+                                    </button>
+                                </div>
+                                <div className="w-full bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 text-[12px] text-gray-300 font-mono truncate" title={workspaceRoot}>
+                                    {workspaceRoot || 'Loading...'}
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1">Database and assets will be stored inside this directory.</p>
                             </div>
 
                             <div className="flex justify-between items-center mt-4">
