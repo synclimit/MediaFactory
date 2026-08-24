@@ -1,30 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import React, { useEffect, useRef } from 'react';
 import { getApiUrl } from '../../utils/apiUrl';
 
-export default function M7StudioPanel({ addNotification = () => {}, onAddToQueue = () => {} }) {
-  const [runtimeStatus, setRuntimeStatus] = useState(null);
-  const [activeTab, setActiveTab] = useState('studio');
-  const [isLaunchingM7, setIsLaunchingM7] = useState(false);
-  const [isLaunchingStandalone, setIsLaunchingStandalone] = useState(false);
+const M7StudioPanel = React.memo(function M7StudioPanel({ addNotification = () => {}, onAddToQueue = () => {} }) {
   const iframeRef = useRef(null);
-
-  const fetchStatus = async () => {
-    try {
-      const res = await axios.get(getApiUrl('/api/m7/status'));
-      if (res.data && res.data.success) {
-        setRuntimeStatus(res.data);
-      }
-    } catch (e) {
-      console.warn('[M7StudioPanel] Failed to fetch M7 status:', e.message);
-    }
-  };
-
-  useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  // Compute iframe URL ONCE on component mount to prevent iframe reload/flicker on every React render
+  const iframeSrc = useRef(getApiUrl(`/m7-app/index.html?v=${Date.now()}`)).current;
 
   // Listen for M7 Queue Add Event from within the iframe
   useEffect(() => {
@@ -39,41 +19,11 @@ export default function M7StudioPanel({ addNotification = () => {}, onAddToQueue
     return () => window.removeEventListener('message', handleMessage);
   }, [onAddToQueue]);
 
-  const handleLaunchM7 = async () => {
-    setIsLaunchingM7(true);
-    try {
-      const res = await axios.post(getApiUrl('/api/m7/launch-m7'));
-      if (res.data?.success) {
-        addNotification?.('M7 Astrofox Desktop Engine launched.', 'success');
-      }
-    } catch (err) {
-      addNotification?.(`Launch failed: ${err.message}`, 'error');
-    } finally {
-      setIsLaunchingM7(false);
-      fetchStatus();
-    }
-  };
-
-  const handleLaunchStandalone = async () => {
-    setIsLaunchingStandalone(true);
-    try {
-      const res = await axios.post(getApiUrl('/api/m7/launch-standalone'));
-      if (res.data?.success) {
-        addNotification?.('Astrofox Standalone launched.', 'success');
-      }
-    } catch (err) {
-      addNotification?.(`Launch failed: ${err.message}`, 'error');
-    } finally {
-      setIsLaunchingStandalone(false);
-      fetchStatus();
-    }
-  };
-
   return (
     <div className="w-full h-full flex flex-col bg-[#090b10] text-gray-200 overflow-hidden font-sans select-none">
       <iframe
         ref={iframeRef}
-        src={getApiUrl('/m7-app/index.html')}
+        src={iframeSrc}
         title="Astrofox M7 Runtime"
         className="w-full h-full border-0"
         onLoad={(e) => {
@@ -87,4 +37,6 @@ export default function M7StudioPanel({ addNotification = () => {}, onAddToQueue
       />
     </div>
   );
-}
+});
+
+export default M7StudioPanel;

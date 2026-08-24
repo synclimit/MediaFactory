@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function AssetJobItem({ job }) {
+export default function AssetJobItem({ job, onRemove }) {
     const isCompleted = job.status === 'Completed';
     const isSkipped = job.status === 'Skipped';
     const isFailed = job.status === 'Failed';
@@ -31,13 +31,32 @@ export default function AssetJobItem({ job }) {
     if (isActive) statusColor = 'text-orange-500 animate-pulse';
 
     return (
-        <div className="bg-[#1a1d27] border border-[#2d3247] p-3 rounded-lg flex flex-col gap-2">
-            <div className="flex justify-between items-center">
-                <div className="text-[12px] text-gray-200 font-medium truncate" title={job.filePath}>
+        <div className="bg-[#1a1d27] border border-[#2d3247] hover:border-[#3e445f] p-3 rounded-lg flex flex-col gap-2 transition-all group/item">
+            <div className="flex justify-between items-center gap-3">
+                <div className="text-[12px] text-gray-200 font-medium truncate flex-1" title={job.filePath}>
                     {job.fileName}
                 </div>
-                <div className={`text-[10px] font-bold uppercase ${statusColor}`}>
-                    {job.status}
+                
+                <div className="flex items-center gap-2 shrink-0">
+                    <div className={`text-[10px] font-bold uppercase ${statusColor}`}>
+                        {job.status}
+                    </div>
+
+                    {onRemove && !isActive && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onRemove(job.id);
+                            }}
+                            className="p-1 rounded bg-black/40 hover:bg-red-500/20 text-gray-500 hover:text-red-400 border border-transparent hover:border-red-500/30 transition-all cursor-pointer"
+                            title="Hapus file ini dari pipeline"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    )}
                 </div>
             </div>
 

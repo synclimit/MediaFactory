@@ -13,7 +13,7 @@ export default function M1MechanicalPanel({ children, className = '' }) {
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/[0.02] pointer-events-none"></div>
 
       {/* Content Area */}
-      <div className="relative z-10 w-full h-full">
+      <div className="relative z-10 w-full h-full flex flex-col min-h-0">
         {children}
       </div>
     </div>

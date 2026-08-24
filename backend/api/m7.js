@@ -65,6 +65,36 @@ router.post('/api/m7/save-temp-file', (req, res) => {
   }
 });
 
+// Save Output File (e.g., thumbnail.jpg, metadata.json, render.json) into Render Output Directory
+router.post('/api/m7/save-output-file', (req, res) => {
+  try {
+    const { outputFolder, filename, base64Data, textContent } = req.body;
+    if (!outputFolder || !filename) {
+      return res.status(400).json({ success: false, error: 'Missing outputFolder or filename' });
+    }
+
+    if (!fs.existsSync(outputFolder)) {
+      fs.mkdirSync(outputFolder, { recursive: true });
+    }
+
+    const destPath = path.join(outputFolder, filename);
+
+    if (base64Data) {
+      const buf = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(destPath, buf);
+      console.log('[M7 API] Saved output media file:', destPath, `(${buf.length} bytes)`);
+    } else if (textContent !== undefined) {
+      fs.writeFileSync(destPath, textContent, 'utf8');
+      console.log('[M7 API] Saved output text file:', destPath);
+    }
+
+    res.json({ success: true, filePath: destPath });
+  } catch (err) {
+    console.error('[M7 API] Save output file error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Compile & Concatenate All Playlist Audio Tracks for Video Export
 router.post('/api/m7/compile-playlist', async (req, res) => {
   try {

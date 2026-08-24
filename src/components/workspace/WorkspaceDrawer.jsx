@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Drawer from '../ui/Drawer';
 import Avatar from '../ui/Avatar';
-import { Edit2, Check, X, Camera, Image as ImageIcon } from 'lucide-react';
+import { Edit2, Check, X, Camera, Image as ImageIcon, Wand2 } from 'lucide-react';
 import { getApiUrl } from '../../utils/apiUrl';
+import ImageProcessorModal from './ImageProcessorModal';
 
 export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSwitch, onRename }) {
     const [settings, setSettings] = useState(null);
@@ -13,6 +14,14 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
     const [newName, setNewName] = useState('');
     const [renameError, setRenameError] = useState('');
     const [isRenamingLoading, setIsRenamingLoading] = useState(false);
+
+    // Image Processor Modal State
+    const [editorModal, setEditorModal] = useState({
+        isOpen: false,
+        imageSrc: null,
+        assetType: 'logo',
+        fileName: 'asset.png'
+    });
 
     // Avatar state
     const [avatarUrl, setAvatarUrl] = useState(() => {
@@ -70,30 +79,57 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
         loadSettings();
     }, [activeWorkspace, isOpen]);
 
+    // Convert any image file to clean PNG DataURL
+    const convertFileToPngDataUrl = (file) => {
+        return new Promise((resolve) => {
+            const isVid = file.type?.startsWith('video/') || file.name?.match(/\.(mp4|webm|mov|mkv)$/i);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const rawDataUrl = e.target?.result;
+                if (isVid || !rawDataUrl) {
+                    return resolve({ dataUrl: rawDataUrl, fileName: file.name });
+                }
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth || img.width;
+                    canvas.height = img.naturalHeight || img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const pngDataUrl = canvas.toDataURL('image/png');
+                    const baseName = file.name.replace(/\.[^/.]+$/, "");
+                    resolve({ dataUrl: pngDataUrl, fileName: `${baseName}.png` });
+                };
+                img.onerror = () => resolve({ dataUrl: rawDataUrl, fileName: file.name });
+                img.src = rawDataUrl;
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
     // Handle Upload / Change Workspace Avatar
-    const handleAvatarUpload = (e) => {
+    const handleAvatarUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const imgData = event.target?.result;
-            if (imgData) {
-                setAvatarUrl(imgData);
-                localStorage.setItem(`mf_workspace_avatar_${activeWorkspace}`, imgData);
+        try {
+            const { dataUrl } = await convertFileToPngDataUrl(file);
+            if (dataUrl) {
+                setAvatarUrl(dataUrl);
+                localStorage.setItem(`mf_workspace_avatar_${activeWorkspace}`, dataUrl);
                 
                 // Update settings
                 setSettings(prev => {
                     const updated = {
                         ...(prev || {}),
-                        general: { ...(prev?.general || {}), channelThumbnail: imgData },
-                        branding: { ...(prev?.branding || {}), logo: imgData }
+                        general: { ...(prev?.general || {}), channelThumbnail: dataUrl },
+                        branding: { ...(prev?.branding || {}), logo: dataUrl }
                     };
                     return updated;
                 });
 
                 window.dispatchEvent(new CustomEvent('workspace_avatar_updated', {
-                    detail: { workspaceName: activeWorkspace, avatar: imgData }
+                    detail: { workspaceName: activeWorkspace, avatar: dataUrl }
                 }));
 
                 // Auto save avatar to backend
@@ -103,14 +139,15 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             ...(settings || {}),
-                            general: { ...(settings?.general || {}), channelThumbnail: imgData },
-                            branding: { ...(settings?.branding || {}), logo: imgData }
+                            general: { ...(settings?.general || {}), channelThumbnail: dataUrl },
+                            branding: { ...(settings?.branding || {}), logo: dataUrl }
                         })
                     });
                 } catch(err) {}
             }
-        };
-        reader.readAsDataURL(file);
+        } catch(err) {
+            console.error('Avatar conversion failed:', err);
+        }
     };
 
     // Handle Rename Workspace
@@ -245,6 +282,363 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
             case 'folder': return <svg className={svgProps} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>;
             default: return null;
         }
+    };
+
+    const [uploadingType, setUploadingType] = useState(null);
+
+    const saveBrandingAssetData = async (type, base64Data, filename) => {
+        if (!base64Data || !activeWorkspace) return;
+        setUploadingType(type);
+
+        try {
+            const res = await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(activeWorkspace)}/upload-branding`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type,
+                    filename: filename || `${type}.png`,
+                    base64Data
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.filePath) {
+                const savedPath = data.filePath;
+                setSettings(prev => ({
+                    ...(prev || {}),
+                    branding: { ...(prev?.branding || {}), [type]: savedPath }
+                }));
+
+                if (type === 'logo') {
+                    setAvatarUrl(savedPath);
+                    localStorage.setItem(`mf_workspace_avatar_${activeWorkspace}`, savedPath);
+                    window.dispatchEvent(new CustomEvent('workspace_avatar_updated', {
+                        detail: { workspaceName: activeWorkspace, avatar: savedPath }
+                    }));
+                }
+            } else {
+                setSettings(prev => ({
+                    ...(prev || {}),
+                    branding: { ...(prev?.branding || {}), [type]: base64Data }
+                }));
+            }
+        } catch (err) {
+            console.warn('[WorkspaceDrawer] Upload fallback:', err);
+            setSettings(prev => ({
+                ...(prev || {}),
+                branding: { ...(prev?.branding || {}), [type]: base64Data }
+            }));
+        } finally {
+            setUploadingType(null);
+        }
+    };
+
+    const handleAssetFileUpload = async (type, file) => {
+        if (!file || !activeWorkspace) return;
+        setUploadingType(type);
+
+        try {
+            const { dataUrl, fileName } = await convertFileToPngDataUrl(file);
+            if (dataUrl) {
+                await saveBrandingAssetData(type, dataUrl, fileName);
+            }
+        } catch (err) {
+            console.error('[WorkspaceDrawer] Asset upload conversion error:', err);
+        } finally {
+            setUploadingType(null);
+        }
+    };
+
+    const getCleanFileName = (val, defaultName) => {
+        if (!val) return '';
+        if (typeof val === 'string' && val.startsWith('data:')) {
+            return `${defaultName} (Uploaded File)`;
+        }
+        const parts = val.replace(/\\/g, '/').split('/');
+        return parts[parts.length - 1] || defaultName;
+    };
+
+    const getPreviewUrl = (val) => {
+        if (!val) return null;
+        if (val.startsWith('data:') || val.startsWith('blob:') || val.startsWith('http')) return val;
+        return getApiUrl(`/api/v1/system/file-view?path=${encodeURIComponent(val)}`);
+    };
+
+    const defaultPositions = {
+        logo: 'bottom-right',
+        watermark: 'top-left',
+        overlay: 'bottom-left',
+        subscribeAnim: 'bottom-center'
+    };
+
+    const objectMeta = {
+        logo: { name: 'Logo / Avatar', short: 'LOGO', icon: '🏷️', posKey: 'logoPosition', color: 'from-amber-500 via-orange-500 to-orange-600', border: 'border-orange-300' },
+        watermark: { name: 'Watermark', short: 'WM', icon: '💧', posKey: 'watermarkPosition', color: 'from-cyan-500 via-sky-500 to-blue-600', border: 'border-cyan-300' },
+        overlay: { name: 'Overlay Frame', short: 'OVERLAY', icon: '🖼️', posKey: 'overlayPosition', color: 'from-purple-500 via-fuchsia-500 to-indigo-600', border: 'border-purple-300' },
+        subscribeAnim: { name: 'Subscribe Anim', short: 'SUBSCRIBE', icon: '🔔', posKey: 'subscribeAnimPosition', color: 'from-rose-500 via-red-500 to-pink-600', border: 'border-rose-300' }
+    };
+
+    const gridPositions = [
+        { id: 'top-left', label: 'Kiri Atas' },
+        { id: 'top-center', label: 'Tengah Atas' },
+        { id: 'top-right', label: 'Kanan Atas' },
+        { id: 'middle-left', label: 'Tengah Kiri' },
+        { id: 'center', label: 'Tengah Layar' },
+        { id: 'middle-right', label: 'Tengah Kanan' },
+        { id: 'bottom-left', label: 'Kiri Bawah' },
+        { id: 'bottom-center', label: 'Tengah Bawah' },
+        { id: 'bottom-right', label: 'Kanan Bawah' },
+    ];
+
+    const getPositionLabel = (posId) => {
+        const found = gridPositions.find(p => p.id === posId);
+        return found ? found.label : 'Kanan Bawah';
+    };
+
+    const renderAssetUploadCard = (label, type, accept, value, formats = "PNG, JPG, WEBP") => {
+        const hasValue = Boolean(value);
+        const isVideo = type === 'subscribeAnim' || (value && (value.includes('.mp4') || value.includes('.webm') || value.includes('.mov')));
+        const previewUrl = getPreviewUrl(value);
+        const fileName = getCleanFileName(value, label);
+        const isCurrentUploading = uploadingType === type;
+        const fileInputId = `asset-upload-input-${type}`;
+        const currentPosition = settings.branding?.[`${type}Position`] || defaultPositions[type] || 'bottom-right';
+
+        return (
+            <div className="mb-3.5 p-3.5 rounded-xl bg-[#111218] border border-[#2d3142] hover:border-orange-500/40 transition-all">
+                <input 
+                    type="file" 
+                    id={fileInputId} 
+                    accept={accept} 
+                    className="hidden" 
+                    onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleAssetFileUpload(type, file);
+                        e.target.value = '';
+                    }} 
+                />
+
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                        <span className="text-gray-300 font-black text-[12px] uppercase tracking-wider font-['Rajdhani']">{label}</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{formats}</span>
+                </div>
+
+                {hasValue ? (
+                    <div className="flex items-center gap-3 bg-[#181a24] border border-white/5 rounded-lg p-2.5">
+                        {/* Thumbnail / Video badge */}
+                        <div className="w-12 h-12 rounded-lg bg-black/50 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 relative">
+                            {isVideo ? (
+                                <div className="flex flex-col items-center justify-center text-orange-500">
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    </svg>
+                                </div>
+                            ) : (
+                                <img 
+                                    src={previewUrl} 
+                                    alt={label} 
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                        e.target.style.display = 'none';
+                                    }}
+                                />
+                            )}
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-white text-[12px] font-bold truncate font-mono" title={fileName}>
+                                {fileName}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.8)]"></span>
+                                <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-wider">Asset Saved in App</span>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {!isVideo && (
+                                <button 
+                                    type="button"
+                                    onClick={() => {
+                                        setEditorModal({
+                                            isOpen: true,
+                                            imageSrc: previewUrl,
+                                            assetType: type,
+                                            fileName: fileName || `${type}.png`
+                                        });
+                                    }}
+                                    className="px-2.5 py-1.5 rounded-md bg-orange-500/15 hover:bg-orange-500 text-orange-400 hover:text-white text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-orange-500/30 flex items-center gap-1 shadow-[0_0_8px_rgba(249,115,22,0.2)]"
+                                    title="Hapus Background / Edit PNG"
+                                >
+                                    <Wand2 className="w-3.5 h-3.5" />
+                                    <span>Edit BG</span>
+                                </button>
+                            )}
+                            <button 
+                                type="button"
+                                onClick={() => document.getElementById(fileInputId)?.click()}
+                                disabled={isCurrentUploading}
+                                className="px-3 py-1.5 rounded-md bg-[#252836] hover:bg-orange-600 hover:text-white text-gray-300 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-white/10"
+                            >
+                                {isCurrentUploading ? 'Uploading...' : 'Ganti'}
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    setSettings(prev => ({
+                                        ...(prev || {}),
+                                        branding: { ...(prev?.branding || {}), [type]: '' }
+                                    }));
+                                    if (type === 'logo') {
+                                        setAvatarUrl('');
+                                        localStorage.removeItem(`mf_workspace_avatar_${activeWorkspace}`);
+                                        window.dispatchEvent(new CustomEvent('workspace_avatar_updated', {
+                                            detail: { workspaceName: activeWorkspace, avatar: '' }
+                                        }));
+                                    }
+                                }}
+                                className="p-1.5 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all cursor-pointer border border-red-500/20"
+                                title="Hapus Asset"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div 
+                        onClick={() => document.getElementById(fileInputId)?.click()}
+                        className="group flex flex-col items-center justify-center p-4 border border-dashed border-gray-700 hover:border-orange-500/70 bg-[#161822]/60 hover:bg-orange-500/5 rounded-lg transition-all cursor-pointer"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-orange-500/10 group-hover:bg-orange-500/20 flex items-center justify-center text-orange-500 mb-1.5 transition-colors">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                        </div>
+                        <span className="text-gray-300 group-hover:text-orange-400 font-bold text-[11px] uppercase tracking-wider transition-colors">
+                            {isCurrentUploading ? 'Mengunggah file...' : `+ Upload ${label}`}
+                        </span>
+                        <span className="text-gray-500 text-[10px] mt-0.5">Klik untuk memilih file dari komputer</span>
+                    </div>
+                )}
+
+                {/* Luxury Cyber Viewport 16:9 Object Stage */}
+                <div className="mt-3.5 pt-3 border-t border-white/5">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,0.9)] animate-pulse"></span>
+                            <span className="text-[11px] font-black text-gray-300 font-['Rajdhani'] uppercase tracking-widest">
+                                Layar 16:9 • Penempatan Objek
+                            </span>
+                        </div>
+                        <div className="px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 font-mono font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-[0_0_8px_rgba(249,115,22,0.2)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-ping" />
+                            <span>{getPositionLabel(currentPosition)}</span>
+                        </div>
+                    </div>
+
+                    {/* 16:9 Simulated Studio Viewport Display */}
+                    <div className="relative w-full aspect-[16/6.8] bg-gradient-to-b from-[#0d0f16] via-[#08090d] to-[#040508] border border-[#2b3044] rounded-xl p-2 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9),0_2px_12px_rgba(0,0,0,0.5)] overflow-hidden">
+                        
+                        {/* Viewport Crosshair & Grid Lines */}
+                        <div className="absolute inset-0 pointer-events-none opacity-20">
+                            <div className="w-full h-full border border-dashed border-white/30 m-auto"></div>
+                            <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+                            <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-gradient-to-b from-transparent via-white/30 to-transparent"></div>
+                        </div>
+
+                        {/* Corner HUD Ticks */}
+                        <span className="absolute top-1 left-2 text-[8px] font-mono text-gray-600 select-none">⌜ 16:9 LIVE</span>
+                        <span className="absolute top-1 right-2 text-[8px] font-mono text-gray-600 select-none">⌝</span>
+                        <span className="absolute bottom-1 left-2 text-[8px] font-mono text-gray-600 select-none">⌞</span>
+                        <span className="absolute bottom-1 right-2 text-[8px] font-mono text-gray-600 select-none">⌟</span>
+
+                        {/* 3x3 Stage Matrix */}
+                        <div className="relative z-10 w-full h-full grid grid-cols-3 grid-rows-3 gap-1.5">
+                            {gridPositions.map(pos => {
+                                const isCurrent = currentPosition === pos.id;
+                                
+                                // Check if another object is occupying this slot
+                                const occupiedObj = Object.entries(objectMeta).find(
+                                    ([t, info]) => t !== type && (settings.branding?.[info.posKey] || defaultPositions[t]) === pos.id
+                                );
+
+                                if (isCurrent) {
+                                    // Active Object Glowing Pill
+                                    const meta = objectMeta[type];
+                                    return (
+                                        <div
+                                            key={pos.id}
+                                            className={`relative rounded-lg bg-gradient-to-br ${meta.color} border ${meta.border} text-white shadow-[0_0_15px_rgba(249,115,22,0.9),inset_0_1px_2px_rgba(255,255,255,0.7)] flex items-center justify-center gap-1 px-1 font-mono font-black text-[9px] uppercase tracking-wider scale-105 z-20`}
+                                        >
+                                            <span className="text-[10px]">{meta.icon}</span>
+                                            <span className="truncate">{meta.short}</span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_#fff]" />
+                                        </div>
+                                    );
+                                }
+
+                                if (occupiedObj) {
+                                    // Occupied by another branding asset -> Show that asset badge with swap interaction
+                                    const [occType, occMeta] = occupiedObj;
+                                    return (
+                                        <button
+                                            key={pos.id}
+                                            type="button"
+                                            onClick={() => {
+                                                // Swap positions seamlessly
+                                                setSettings(prev => ({
+                                                    ...(prev || {}),
+                                                    branding: {
+                                                        ...(prev?.branding || {}),
+                                                        [occMeta.posKey]: currentPosition,
+                                                        [`${type}Position`]: pos.id
+                                                    }
+                                                }));
+                                            }}
+                                            title={`Posisi ditempati oleh ${occMeta.name}. Klik untuk menukar posisi!`}
+                                            className="group/occ relative rounded-lg bg-[#141622]/85 hover:bg-[#212538] border border-white/10 hover:border-orange-500/40 flex items-center justify-center gap-1 px-1 transition-all cursor-pointer"
+                                        >
+                                            <span className="text-[9px] opacity-70 group-hover/occ:opacity-100">{occMeta.icon}</span>
+                                            <span className="text-gray-400 group-hover/occ:text-gray-200 font-mono text-[8px] font-bold truncate">
+                                                {occMeta.short}
+                                            </span>
+                                            <span className="text-[7px] text-gray-500 group-hover/occ:text-orange-400 font-mono">⇄</span>
+                                        </button>
+                                    );
+                                }
+
+                                // Empty Slot -> Minimalist Target Dot (No Numbers!)
+                                return (
+                                    <button
+                                        key={pos.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setSettings(prev => ({
+                                                ...(prev || {}),
+                                                branding: {
+                                                    ...(prev?.branding || {}),
+                                                    [`${type}Position`]: pos.id
+                                                }
+                                            }));
+                                        }}
+                                        title={`Tempatkan ${objectMeta[type].name} di sini`}
+                                        className="group/slot relative rounded-lg bg-[#12141c]/50 hover:bg-orange-500/15 border border-dashed border-white/5 hover:border-orange-500/60 flex items-center justify-center transition-all cursor-pointer"
+                                    >
+                                        <div className="w-1.5 h-1.5 rounded-full bg-gray-700 group-hover/slot:bg-orange-400 transition-colors shadow-sm" />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     const renderPanelHeader = (title) => (
@@ -430,20 +824,10 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                             {/* BRANDING SECTION */}
                             {renderPanelHeader('Default Branding Assets')}
                             <div className="mb-6 space-y-2">
-                                {renderInput('Logo / Avatar Path', settings.branding?.logo || '', e => {
-                                    const val = e.target.value;
-                                    setSettings({...settings, branding: {...settings.branding, logo: val}});
-                                    setAvatarUrl(val);
-                                    if (val) {
-                                        localStorage.setItem(`mf_workspace_avatar_${activeWorkspace}`, val);
-                                        window.dispatchEvent(new CustomEvent('workspace_avatar_updated', {
-                                            detail: { workspaceName: activeWorkspace, avatar: val }
-                                        }));
-                                    }
-                                }, 'PATH\\TO\\LOGO', 'logo', 'file')}
-                                {renderInput('Watermark Path', settings.branding?.watermark || '', e => setSettings({...settings, branding: {...settings.branding, watermark: e.target.value}}), 'PATH\\TO\\WATERMARK', 'watermark', 'file')}
-                                {renderInput('Overlay Path', settings.branding?.overlay || '', e => setSettings({...settings, branding: {...settings.branding, overlay: e.target.value}}), 'PATH\\TO\\OVERLAY', 'overlay', 'file')}
-                                {renderInput('Subscribe Anim Path', settings.branding?.subscribeAnim || '', e => setSettings({...settings, branding: {...settings.branding, subscribeAnim: e.target.value}}), 'PATH\\TO\\SUBSCRIBEANIM', 'anim', 'file')}
+                                {renderAssetUploadCard('Logo / Avatar', 'logo', 'image/*', settings.branding?.logo, 'PNG, JPG, WEBP')}
+                                {renderAssetUploadCard('Watermark', 'watermark', 'image/*', settings.branding?.watermark, 'PNG, JPG, WEBP')}
+                                {renderAssetUploadCard('Overlay Frame', 'overlay', 'image/*', settings.branding?.overlay, 'PNG, JPG, WEBP')}
+                                {renderAssetUploadCard('Subscribe Animation', 'subscribeAnim', 'video/*,image/*', settings.branding?.subscribeAnim, 'MP4, WEBM, MOV')}
                             </div>
 
                             {/* OUTPUTS SECTION */}
@@ -473,6 +857,18 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                 </div>
 
             </div>
+
+            {/* Background Remover & PNG Converter Modal */}
+            <ImageProcessorModal 
+                isOpen={editorModal.isOpen}
+                onClose={() => setEditorModal(prev => ({ ...prev, isOpen: false }))}
+                imageSrc={editorModal.imageSrc}
+                assetType={editorModal.assetType}
+                onSave={(processedPngDataUrl) => {
+                    const cleanName = editorModal.fileName?.replace(/\.[^/.]+$/, "") || editorModal.assetType;
+                    saveBrandingAssetData(editorModal.assetType, processedPngDataUrl, `${cleanName}_nobg.png`);
+                }}
+            />
         </Drawer>
     );
 }

@@ -64,6 +64,89 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
     return str.replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, ' ').trim();
   };
 
+  const [isRephrasing, setIsRephrasing] = React.useState(false);
+  const [rephraseStyle, setRephraseStyle] = React.useState('clean_rephrase');
+  const [originalDescBackup, setOriginalDescBackup] = React.useState(null);
+  const [aiNotice, setAiNotice] = React.useState('');
+
+  const handleAiRephrase = async () => {
+    const currentText = slot?.originalDesc || slot?.cleanedDesc || '';
+    if (!currentText.trim()) {
+      alert('Deskripsi masih kosong. Silakan fetch video atau ketik deskripsi terlebih dahulu.');
+      return;
+    }
+
+    setIsRephrasing(true);
+    setAiNotice('AI sedang memproses deskripsi...');
+    
+    if (!originalDescBackup) {
+      setOriginalDescBackup(currentText);
+    }
+
+    // Retrieve active API keys
+    let geminiKey = localStorage.getItem('mf_gemini_api_key') || '';
+    let groqKey = localStorage.getItem('mf_groq_api_key') || '';
+    let openaiKey = '';
+    
+    try {
+      const keysRaw = localStorage.getItem('mf_api_keys');
+      if (keysRaw) {
+        const parsed = JSON.parse(keysRaw);
+        if (Array.isArray(parsed)) {
+          const gObj = parsed.find(k => (k.platform === 'google' || k.platform === 'gemini') && k.key);
+          if (gObj && !geminiKey) geminiKey = gObj.key;
+          const grObj = parsed.find(k => k.platform === 'groq' && k.key);
+          if (grObj && !groqKey) groqKey = grObj.key;
+          const oObj = parsed.find(k => k.platform === 'openai' && k.key);
+          if (oObj) openaiKey = oObj.key;
+        }
+      }
+    } catch (e) {}
+
+    const provider = geminiKey ? 'gemini' : (groqKey ? 'groq' : (openaiKey ? 'openai' : 'gemini'));
+    const apiKey = geminiKey || groqKey || openaiKey || '';
+
+    try {
+      const res = await fetch(getApiUrl('/api/v1/ai/rephrase'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: currentText,
+          title: slot?.videoTitle || slot?.outputName || '',
+          style: rephraseStyle,
+          apiKey,
+          provider
+        })
+      });
+
+      const data = await res.json();
+      if (data && data.success && data.rephrased) {
+        updateM1Slot(idx, 'originalDesc', data.rephrased);
+        updateM1Slot(idx, 'cleanedDesc', data.rephrased);
+        setAiNotice(`✨ Selesai via ${data.provider || 'AI'}`);
+        setTimeout(() => setAiNotice(''), 4000);
+      } else {
+        throw new Error(data.error || 'Gagal merephrase deskripsi.');
+      }
+    } catch (err) {
+      console.error(err);
+      setAiNotice(`❌ ${err.message}`);
+      setTimeout(() => setAiNotice(''), 4000);
+    } finally {
+      setIsRephrasing(false);
+    }
+  };
+
+  const handleRevertDesc = () => {
+    if (originalDescBackup) {
+      updateM1Slot(idx, 'originalDesc', originalDescBackup);
+      updateM1Slot(idx, 'cleanedDesc', originalDescBackup);
+      setOriginalDescBackup(null);
+      setAiNotice('↩ Teks asli dipulihkan');
+      setTimeout(() => setAiNotice(''), 3000);
+    }
+  };
+
   const handleFetchYoutube = async () => {
     if (!slot?.youtubeUrl) {
       alert('Silakan masukkan link YouTube terlebih dahulu.');
@@ -324,25 +407,78 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
               </div>
 
               {/* DIRECT EMBEDDED DESCRIPTION TERMINAL */}
-              <div className="flex-1 flex flex-col min-h-0 bg-[#0f1017] border border-[#2d3142] hover:border-orange-500/30 rounded-lg p-3.5 shadow-inner relative overflow-hidden transition-colors">
-                <div className="flex items-center justify-between border-b border-[#252838] pb-2 mb-2 shrink-0">
-                  <span className="font-['Rajdhani'] font-bold text-[11px] uppercase tracking-widest text-orange-400 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_6px_rgba(249,115,22,1)]"></span>
-                    METADATA DESCRIPTION
-                  </span>
-                  <span className="font-['Roboto_Mono'] text-[9px] text-gray-500 uppercase tracking-widest">
-                    DIRECT SYNC
-                  </span>
+              <div className="flex-1 flex flex-col min-h-[220px] bg-[#0f1017] border border-[#2d3142] hover:border-orange-500/30 rounded-lg p-3.5 shadow-inner relative overflow-hidden transition-colors">
+                <div className="flex items-center justify-between border-b border-[#252838] pb-2 mb-2 shrink-0 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-['Rajdhani'] font-bold text-[11px] uppercase tracking-widest text-orange-400 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_6px_rgba(249,115,22,1)]"></span>
+                      METADATA DESCRIPTION
+                    </span>
+                    {aiNotice && (
+                      <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded shadow-sm animate-pulse">
+                        {aiNotice}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* AI REPHRASE CONTROLS */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <select
+                      value={rephraseStyle}
+                      onChange={(e) => setRephraseStyle(e.target.value)}
+                      disabled={isRephrasing}
+                      className="bg-[#181a24] border border-[#33384c] text-gray-300 hover:text-white text-[10px] font-bold rounded px-2 py-1 outline-none cursor-pointer focus:border-orange-500/50"
+                      title="Gaya Rephrase AI"
+                    >
+                      <option value="clean_rephrase">✨ Clean & Polish (Smart)</option>
+                      <option value="seo_rich">🚀 SEO & Hashtag Boost</option>
+                      <option value="short_catchy">⚡ Ringkas & Catchy</option>
+                      <option value="translate_id">🇮🇩 Terjemah Bahasa Indo</option>
+                      <option value="translate_en">🇬🇧 Translate to English</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      disabled={isRephrasing || !(slot?.originalDesc || slot?.cleanedDesc)}
+                      onClick={handleAiRephrase}
+                      className="bg-gradient-to-r from-purple-600 via-orange-500 to-amber-500 hover:from-purple-500 hover:to-amber-400 text-white font-black text-[10px] tracking-wider uppercase px-3 py-1 rounded shadow-[0_0_12px_rgba(249,115,22,0.4)] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border border-white/20"
+                      title="Rephrase deskripsi menggunakan AI cerdas"
+                    >
+                      {isRephrasing ? (
+                        <>
+                          <div className="w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>REPHRASING...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>✨</span>
+                          <span>AI REPHRASE</span>
+                        </>
+                      )}
+                    </button>
+
+                    {originalDescBackup && (
+                      <button
+                        type="button"
+                        onClick={handleRevertDesc}
+                        className="bg-[#1f2230] hover:bg-[#2a2e40] text-gray-300 hover:text-white text-[10px] font-bold px-2 py-1 rounded border border-[#33384c] transition-colors cursor-pointer"
+                        title="Kembalikan ke deskripsi sebelum di-rephrase"
+                      >
+                        ↩ Original
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <textarea
+                  rows={10}
                   value={slot?.originalDesc || slot?.cleanedDesc || ''}
                   onChange={(e) => {
                     updateM1Slot(idx, 'originalDesc', e.target.value);
                     updateM1Slot(idx, 'cleanedDesc', e.target.value);
                   }}
                   placeholder="Deskripsi metadata video akan otomatis muncul di sini setelah fetch, atau ketik langsung di sini..."
-                  className="flex-1 w-full bg-transparent text-gray-200 font-['Inter'] text-xs p-1 outline-none resize-none leading-relaxed custom-scroll placeholder-gray-600 selection:bg-orange-500/30"
+                  className="flex-1 w-full min-h-[160px] bg-transparent text-gray-200 font-['Inter'] text-xs p-1 outline-none resize-none leading-relaxed custom-scroll placeholder-gray-600 selection:bg-orange-500/30"
                 />
               </div>
 

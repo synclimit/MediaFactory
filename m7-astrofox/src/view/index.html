@@ -19,21 +19,29 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
       #app {
-        position: absolute;
-        top: 0;
-        left: 590px;
-        right: 0;
-        bottom: 0;
-        width: calc(100vw - 590px) !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 50% !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 50% !important;
         height: 100vh !important;
-        overflow: hidden;
-        z-index: 10;
-        display: flex;
-        flex-direction: column;
+        overflow: hidden !important;
+        z-index: 10 !important;
+        display: flex !important;
+        flex-direction: column !important;
         background: #07090e !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-sizing: border-box !important;
+        transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      /* Viewport Column Holding Stage & Player */
+      #app.dock-collapsed {
+        left: 56px !important;
+        width: calc(100% - 56px) !important;
+      }
+
+      /* Viewport Column Holding Stage & Player - ON THE RIGHT 50% */
       #viewport {
         display: flex !important;
         flex-direction: column !important;
@@ -44,6 +52,8 @@
         background: #07090e !important;
         position: relative !important;
         overflow-y: auto !important;
+        box-sizing: border-box !important;
+        padding-left: 0 !important;
       }
 
       /* Hide Default Menus, React Control Dock & Reactor panel */
@@ -60,17 +70,18 @@
         display: none !important;
       }
 
-      /* Stage Area (Canvas Viewport) - COMPACT FIT DIRECTLY ABOVE PLAYER */
+      /* Stage Area (Canvas Viewport) - STRETCH 100% OF RIGHT 50% */
       #viewport > div:first-child,
       [class*="Stage__stage"],
       .Stage__stage {
         flex: 0 0 auto !important;
         width: 100% !important;
+        max-width: 100% !important;
         height: auto !important;
         background: #07090e !important;
         display: flex !important;
         flex-direction: column !important;
-        align-items: center !important;
+        align-items: stretch !important;
         justify-content: flex-start !important;
         position: relative !important;
         overflow: hidden !important;
@@ -84,6 +95,7 @@
       [class*="Stage__scroll"],
       [class*="Stage__canvas"] {
         width: 100% !important;
+        max-width: 100% !important;
         height: auto !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -91,12 +103,12 @@
         border-radius: 0 !important;
         display: flex !important;
         flex-direction: column !important;
-        align-items: center !important;
+        align-items: stretch !important;
         justify-content: flex-start !important;
         position: relative !important;
       }
 
-      /* WebGL Canvas 16:9 responsive fit - FLUSH TO TOP */
+      /* WebGL Canvas 16:9 responsive fit on right side */
       #viewport > div:first-child canvas,
       [class*="Stage__stage"] canvas,
       [class*="Stage__canvas"] canvas,
@@ -104,10 +116,10 @@
         width: 100% !important;
         max-width: 100% !important;
         height: auto !important;
-        max-height: calc(100vh - 130px) !important;
+        max-height: calc(100vh - 120px) !important;
         aspect-ratio: 16 / 9 !important;
         object-fit: contain !important;
-        box-shadow: none !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
         border-radius: 0 !important;
         display: block !important;
         margin: 0 !important;
@@ -127,6 +139,93 @@
         z-index: 50 !important;
         position: relative !important;
         margin: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      /* DEDICATED STATIC THUMBNAIL STUDIO VIEWPORT (100% JPG 2D CANVAS) */
+      #m7-thumbnail-viewport {
+        position: fixed !important;
+        top: 0 !important;
+        left: 50% !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 50% !important;
+        height: 100vh !important;
+        background: #07090e !important;
+        z-index: 25 !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-sizing: border-box !important;
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        overflow-y: auto;
+        transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      #m7-thumbnail-viewport.dock-collapsed {
+        left: 56px !important;
+        width: calc(100% - 56px) !important;
+      }
+      #m7-thumbnail-canvas-container {
+        position: relative;
+        flex: 0 0 auto;
+        width: 100%;
+        height: auto;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+        overflow: hidden;
+      }
+      #m7-thumbnail-canvas {
+        width: auto !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: calc(100vh - 120px) !important;
+        aspect-ratio: 16 / 9 !important;
+        object-fit: contain !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7) !important;
+        display: block !important;
+        margin: 0 !important;
+        background: #090b10;
+      }
+      #m7-thumbnail-bar {
+        flex: 0 0 auto;
+        width: 100%;
+        background: #0c0f16;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 50;
+        box-sizing: border-box;
+      }
+      #m7-thumb-gizmo-box {
+        position: absolute;
+        border: 2px solid #38bdf8;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.5), inset 0 0 8px rgba(56, 189, 248, 0.1);
+        pointer-events: auto;
+        cursor: grab;
+        box-sizing: border-box;
+        display: none;
+        z-index: 46;
+      }
+      #m7-thumb-gizmo-badge {
+        position: absolute;
+        top: -24px;
+        left: -2px;
+        background: linear-gradient(135deg, #0284c7, #0369a1);
+        color: #ffffff;
+        font-size: 9px;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+        pointer-events: none;
       }
 
       /* Canva-Style Interactive Transform Gizmo Overlay */
@@ -218,26 +317,26 @@
         left: 0;
         top: 0;
         bottom: 0;
-        width: 64px;
+        width: 56px;
         background: #0b0e14;
         border-right: 1px solid rgba(255, 255, 255, 0.08);
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 10px 0;
-        gap: 6px;
+        padding: 8px 0;
+        gap: 4px;
         z-index: 9999;
         user-select: none;
         overflow-y: auto;
       }
       .m7-rail-item {
-        width: 54px;
-        height: 52px;
+        width: 48px;
+        height: 48px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 4px;
+        gap: 3px;
         color: #8b949e;
         border-radius: 8px;
         cursor: pointer;
@@ -256,13 +355,13 @@
         box-shadow: 0 0 12px rgba(249, 115, 22, 0.25);
       }
       .m7-rail-item svg {
-        width: 18px;
-        height: 18px;
+        width: 17px;
+        height: 17px;
         stroke-width: 1.8;
       }
       .m7-rail-label {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 8.5px;
+        font-size: 8px;
         font-weight: 600;
         letter-spacing: 0.2px;
         text-transform: capitalize;
@@ -270,31 +369,41 @@
         line-height: 1;
       }
 
-      /* M3 STUDIO SIDEBAR DOCK (Category Panel + Inspector Panel) */
+      /* M3 STUDIO SIDEBAR DOCK (Category Panel + Inspector Panel) - 50% SPLIT */
       #m7-studio-dock {
         position: fixed;
-        left: 64px;
+        left: 56px;
         top: 0;
         bottom: 0;
-        width: 526px;
+        width: calc(50% - 56px);
         display: flex;
         background: #0f131a;
         border-right: 1px solid rgba(255, 255, 255, 0.08);
         z-index: 9998;
         user-select: none;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      /* Middle Category Panel */
+      #m7-studio-dock.collapsed {
+        transform: translateX(-100%);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Middle Category Panel (Takes 50% of the dock) */
       #m7-category-panel {
-        width: 250px;
+        flex: 1;
+        min-width: 0;
+        width: 50%;
         background: #11151f;
         border-right: 1px solid rgba(255, 255, 255, 0.06);
-        padding: 16px 14px;
+        padding: 14px 12px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
         overflow-y: auto;
+        box-sizing: border-box;
       }
       .m7-panel-header {
         display: flex;
@@ -467,15 +576,20 @@
         font-weight: 500;
       }
 
-      /* Right Inspector Panel */
+      /* Right Inspector Panel (Takes 50% of the dock) */
       #m7-inspector-panel {
-        width: 276px;
-        background: #0f131c;
-        padding: 16px 14px;
+        flex: 1;
+        min-width: 0;
+        width: 50%;
+        background: #10141e;
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 14px 12px;
         display: flex;
         flex-direction: column;
         gap: 12px;
         overflow-y: auto;
+        box-sizing: border-box;
       }
       .m7-inspector-card {
         background: rgba(255, 255, 255, 0.02);
@@ -510,7 +624,14 @@
       .m7-control-val {
         font-family: monospace;
         color: #f97316;
-        font-weight: bold;
+        font-weight: 700;
+        font-size: 10px;
+        background: #141722;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 1px 8px;
+        min-width: 28px;
+        text-align: center;
       }
       .m7-slider {
         -webkit-appearance: none;
@@ -1405,6 +1526,16 @@
       <button class="m7-rail-item" id="rail-btn-branding" title="Canvas Resolution & Settings" onclick="m7SelectCategory('branding')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span class="m7-rail-label">Branding</span>
+      </button>
+      <button class="m7-rail-item" id="rail-btn-thumbnail" title="Static Thumbnail Studio (JPG)" onclick="m7SelectCategory('thumbnail')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span class="m7-rail-label">Thumbnail</span>
+      </button>
+
+      <!-- Toggle / Collapse Sidebar Button to Shift Editor Fully Left -->
+      <button class="m7-rail-item" id="rail-btn-collapse" title="Collapse / Expand Sidebar (Shift Editor Left)" onclick="m7ToggleSidebar()" style="margin-top:auto; border-top:1px solid rgba(255,255,255,0.08); padding-top:4px;">
+        <svg id="rail-collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
+        <span class="m7-rail-label" id="rail-collapse-label">Hide</span>
       </button>
     </nav>
 
@@ -2342,6 +2473,227 @@
           </div>
         </div>
 
+        <!-- 8. BRANDING SECTION (FULL PARITY WITH M3 SYSTEM) -->
+        <div id="m7-section-branding" style="display:none; flex-direction:column; gap:12px;">
+          <div class="m7-panel-header">
+            <span class="m7-dot-orange"></span>
+            <span>BRANDING</span>
+          </div>
+
+          <!-- 5 Branding Preset Cards (Matching M3 System) -->
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <!-- 1. Logo -->
+            <div class="m7-text-obj-card" id="card-branding-logo" onclick="m7SelectOrAddBrandingPreset('Logo')">
+              <div class="m7-text-obj-icon" style="background:rgba(236,72,153,0.15); border-color:rgba(236,72,153,0.3); color:#ec4899;">🛡️</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Logo</div>
+                <div class="m7-text-obj-desc">Brand logo image overlay (Corner/Center)</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 2. Watermark -->
+            <div class="m7-text-obj-card" id="card-branding-watermark" onclick="m7SelectOrAddBrandingPreset('Watermark')">
+              <div class="m7-text-obj-icon" style="background:rgba(14,165,233,0.15); border-color:rgba(14,165,233,0.3); color:#0ea5e9;">💧</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Watermark</div>
+                <div class="m7-text-obj-desc">Semi-transparent channel protection mark</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 3. Intro Sequence -->
+            <div class="m7-text-obj-card" id="card-branding-intro" onclick="m7SelectOrAddBrandingPreset('Intro')">
+              <div class="m7-text-obj-icon" style="background:rgba(249,115,22,0.15); border-color:rgba(249,115,22,0.3); color:#f97316;">🎬</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Intro Sequence</div>
+                <div class="m7-text-obj-desc">Cinematic video opening & story paragraphs</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 4. Outro Sequence -->
+            <div class="m7-text-obj-card" id="card-branding-outro" onclick="m7SelectOrAddBrandingPreset('Outro')">
+              <div class="m7-text-obj-icon" style="background:rgba(59,130,246,0.15); border-color:rgba(59,130,246,0.3); color:#3b82f6;">🔚</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Outro Sequence</div>
+                <div class="m7-text-obj-desc">Closing sequence & end screen cards</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 5. Subscribe Animation -->
+            <div class="m7-text-obj-card" id="card-branding-subscribe" onclick="m7SelectOrAddBrandingPreset('Subscribe Animation')">
+              <div class="m7-text-obj-icon" style="background:rgba(234,179,8,0.15); border-color:rgba(234,179,8,0.3); color:#eab308;">🔔</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Subscribe Animation</div>
+                <div class="m7-text-obj-desc">Animated social subscribe & bell widget</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+          </div>
+
+          <!-- ACTIVE BRANDING LAYERS LIST -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.5px; text-transform:uppercase;">ACTIVE BRANDING LAYERS</span>
+              <span style="font-size:9px; background:rgba(249,115,22,0.15); color:#f97316; padding:1px 6px; border-radius:10px; font-weight:bold;" id="m7-branding-count">0</span>
+            </div>
+            <div id="m7-branding-list" style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto;">
+              <div id="m7-empty-branding-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                No branding layers active. Choose an item above to add to screen.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. THUMBNAIL SECTION (STATIC 2D JPG STUDIO) -->
+        <div id="m7-section-thumbnail" style="display:none; flex-direction:column; gap:14px;">
+          <div class="m7-panel-header">
+            <span class="m7-dot-orange"></span>
+            <span>THUMBNAIL STUDIO (JPG)</span>
+          </div>
+
+          <!-- Background Settings Card -->
+          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; font-weight:800; color:#e5e7eb; text-transform:uppercase;">COVER BACKGROUND</span>
+              <span style="font-size:9px; color:#38bdf8; font-weight:bold;" id="badge-thumb-bg-type">IMAGE</span>
+            </div>
+
+            <div class="m7-type-tabs" style="grid-template-columns: 1fr 1fr 1fr;">
+              <button class="m7-type-tab active" id="tab-thumb-bg-img" onclick="m7SetThumbBgType('image')">🖼️ IMG</button>
+              <button class="m7-type-tab" id="tab-thumb-bg-color" onclick="m7SetThumbBgType('color')">🎨 COLOR</button>
+              <button class="m7-type-tab" id="tab-thumb-bg-grad" onclick="m7SetThumbBgType('gradient')">🌈 GRAD</button>
+            </div>
+
+            <!-- Image upload -->
+            <div id="sec-thumb-bg-image-controls" style="display:flex; flex-direction:column; gap:6px;">
+              <input type="file" id="file-thumb-bg" accept="image/*" style="display:none;" onchange="m7HandleThumbBgUpload(this)">
+              <button class="m7-btn-secondary" style="width:100%; justify-content:center; font-size:10px;" onclick="document.getElementById('file-thumb-bg').click()">
+                📁 Upload Background Image
+              </button>
+              <button class="m7-btn-secondary" style="width:100%; justify-content:center; font-size:9px; color:#9ca3af;" onclick="m7CopyVideoBgToThumbnail()">
+                🔄 Use Current Video Background
+              </button>
+            </div>
+
+            <!-- Color controls -->
+            <div id="sec-thumb-bg-color-controls" style="display:none; flex-direction:column; gap:6px;">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Background Color</span>
+                </div>
+                <input type="color" id="col-thumb-bg-color" value="#090b10" onchange="m7UpdateThumbBgProp('color', this.value)" style="width:100%; height:30px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+            </div>
+
+            <!-- Gradient controls -->
+            <div id="sec-thumb-bg-grad-controls" style="display:none; flex-direction:column; gap:6px;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <div>
+                  <span style="font-size:9px; color:#9ca3af;">Color 1</span>
+                  <input type="color" id="col-thumb-grad-1" value="#0f172a" onchange="m7UpdateThumbBgProp('gradColor1', this.value)" style="width:100%; height:28px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+                </div>
+                <div>
+                  <span style="font-size:9px; color:#9ca3af;">Color 2</span>
+                  <input type="color" id="col-thumb-grad-2" value="#1e1b4b" onchange="m7UpdateThumbBgProp('gradColor2', this.value)" style="width:100%; height:28px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Darkness & Blur -->
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Overlay Darkness</span>
+                <span class="m7-control-val" id="val-thumb-bg-darkness">20%</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="20" id="slider-thumb-bg-darkness" oninput="m7UpdateThumbBgProp('darkness', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Background Blur</span>
+                <span class="m7-control-val" id="val-thumb-bg-blur">0px</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="40" value="0" id="slider-thumb-bg-blur" oninput="m7UpdateThumbBgProp('blur', parseInt(this.value))">
+            </div>
+          </div>
+
+          <!-- Add Text Presets -->
+          <div style="font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.5px; text-transform:uppercase;">
+            ADD THUMBNAIL TEXT
+          </div>
+          <div class="m7-text-obj-list" style="max-height:220px; overflow-y:auto;">
+            <!-- 1. Headline -->
+            <div class="m7-text-obj-card" onclick="m7AddThumbTextDirect('Headline')">
+              <div class="m7-text-obj-icon" style="background:rgba(249,115,22,0.15); border-color:rgba(249,115,22,0.3); color:#f97316;">🌟</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Headline Judul Utama</div>
+                <div class="m7-text-obj-desc">Teks besar tebal & mencolok untuk cover</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 2. Subtitle / Artist -->
+            <div class="m7-text-obj-card" onclick="m7AddThumbTextDirect('Subtitle')">
+              <div class="m7-text-obj-icon" style="background:rgba(56,189,248,0.15); border-color:rgba(56,189,248,0.3); color:#38bdf8;">🎤</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Sub-Judul / Artis</div>
+                <div class="m7-text-obj-desc">Nama penyanyi / genre / keterangan</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 3. Badge / Label -->
+            <div class="m7-text-obj-card" onclick="m7AddThumbTextDirect('Badge')">
+              <div class="m7-text-obj-icon" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.3); color:#ef4444;">🏷️</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Badge / Label Album</div>
+                <div class="m7-text-obj-desc">"FULL ALBUM", "VIRAL TIKTOK", dll.</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 4. Tracklist Box -->
+            <div class="m7-text-obj-card" onclick="m7AddThumbTextDirect('Tracklist')">
+              <div class="m7-text-obj-icon" style="background:rgba(168,85,247,0.15); border-color:rgba(168,85,247,0.3); color:#a855f7;">📋</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Tracklist Box</div>
+                <div class="m7-text-obj-desc">Daftar baris lagu di thumbnail</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 5. Custom Text -->
+            <div class="m7-text-obj-card" onclick="m7AddThumbTextDirect('Custom')">
+              <div class="m7-text-obj-icon" style="background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.15); color:#ffffff;">✍️</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Custom Text</div>
+                <div class="m7-text-obj-desc">Teks kustom bebas</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+          </div>
+
+          <!-- Active Thumbnail Layers List -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.5px; text-transform:uppercase;">ACTIVE THUMBNAIL LAYERS</span>
+              <span style="font-size:9px; background:rgba(56,189,248,0.15); color:#38bdf8; padding:1px 6px; border-radius:10px; font-weight:bold;" id="m7-thumb-count">0</span>
+            </div>
+            <div id="m7-thumb-layers-list" style="display:flex; flex-direction:column; gap:4px; max-height:180px; overflow-y:auto;">
+              <div id="m7-empty-thumb-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                No thumbnail text layers. Choose a preset above to add.
+              </div>
+            </div>
+          </div>
+
+          <!-- Direct Download Button -->
+          <button class="m7-btn-primary" style="margin-top:6px; width:100%; justify-content:center; background:linear-gradient(135deg, #0284c7, #0369a1); border:none; padding:10px; font-weight:bold; font-size:12px;" onclick="m7DownloadThumbnailJPG()">
+            📸 Download Thumbnail (JPG)
+          </button>
+        </div>
+
       </div>
 
       <!-- Right Panel: INSPECTOR -->
@@ -3232,6 +3584,629 @@
 
         </div>
 
+        <!-- 7. INSPECTOR: BRANDING SETTINGS (MATCHING USER SCREENSHOTS) -->
+        <div id="m7-inspector-branding" style="display:none; flex-direction:column; gap:12px;">
+
+          <!-- Empty state when no branding layer is selected -->
+          <div id="box-branding-no-selection" style="font-size:11px; color:#6b7280; text-align:center; padding:28px 12px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:10px; line-height:1.6; display:none; flex-direction:column; align-items:center; justify-content:center; gap:6px;">
+            <span style="font-size:24px;">🛡️</span>
+            <b style="color:#e5e7eb; font-size:12px;">No Branding Layer Selected</b>
+            <span style="color:#9ca3af; font-size:10px;">Choose a branding preset on the left (<b>Logo, Watermark, Intro, Outro, Subscribe</b>) to add and configure.</span>
+          </div>
+
+          <!-- GAMBAR 3: SUBSCRIBE SETTINGS (FOR SUBSCRIBE ANIMATION) -->
+          <div class="m7-inspector-card" id="grp-branding-subscribe" style="display:none;">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 🔔 SUBSCRIBE SETTINGS
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Appearance Interval</span>
+              </div>
+              <select class="m7-select" id="sel-branding-interval" onchange="m7UpdateBrandingProp('intervalMinutes', parseInt(this.value))">
+                <option value="0">No Interval (Loop)</option>
+                <option value="5" selected>Every 5 Minutes</option>
+                <option value="10">Every 10 Minutes</option>
+                <option value="15">Every 15 Minutes</option>
+                <option value="20">Every 20 Minutes</option>
+                <option value="25">Every 25 Minutes</option>
+                <option value="30">Every 30 Minutes</option>
+              </select>
+              <span style="font-size:9px; color:#6b7280; line-height:1.3; margin-top:2px;">Animasi subscribe akan muncul berulang sesuai interval waktu ini.</span>
+            </div>
+          </div>
+
+          <!-- GAMBAR 1 & 3: 📐 TRANSFORM & SHAPE (FOR LOGO, WATERMARK, SUBSCRIBE) -->
+          <div class="m7-inspector-card" id="grp-branding-transform">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 📐 TRANSFORM & SHAPE
+            </div>
+            
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Shape Mode</span>
+              </div>
+              <select class="m7-select" id="sel-branding-shapemode" onchange="m7UpdateBrandingProp('shapeMode', this.value)">
+                <option value="Original" selected>Original</option>
+                <option value="Circle">Circle</option>
+                <option value="Rounded Rect">Rounded Rect</option>
+              </select>
+            </div>
+
+            <div class="m7-toggle-row">
+              <span>Uniform Scale</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-branding-uniformscale" onchange="m7UpdateBrandingProp('uniformScale', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Width</span>
+                <span class="m7-control-val" id="val-branding-width">360</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="1920" value="360" id="slider-branding-width" oninput="m7UpdateBrandingProp('width', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Height</span>
+                <span class="m7-control-val" id="val-branding-height">180</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="1080" value="180" id="slider-branding-height" oninput="m7UpdateBrandingProp('height', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Manual Rotation</span>
+                <span class="m7-control-val" id="val-branding-rotation">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-180" max="180" value="0" id="slider-branding-rotation" oninput="m7UpdateBrandingProp('rotation', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Opacity</span>
+                <span class="m7-control-val" id="val-branding-opacity">100</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding-opacity" oninput="m7UpdateBrandingProp('opacity', parseInt(this.value))">
+            </div>
+          </div>
+
+          <!-- MEDIA & IMAGE SOURCE (FOR LOGO, WATERMARK, SUBSCRIBE) -->
+          <div class="m7-inspector-card" id="grp-branding-source">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 🖼️ MEDIA & IMAGE SOURCE
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <input type="file" id="file-branding-source" accept="image/*" style="display:none;" onchange="m7HandleBrandingFileUpload(this)">
+              <button class="m7-btn-secondary" style="width:100%; justify-content:center;" onclick="document.getElementById('file-branding-source').click()">
+                📁 Replace Media / Upload File
+              </button>
+              <div id="box-branding-preview" style="width:100%; height:60px; background:#0e1117; border:1px solid rgba(255,255,255,0.08); border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <img id="img-branding-preview" src="" style="max-height:100%; max-width:100%; object-fit:contain; display:none;">
+                <span id="txt-branding-preview-empty" style="font-size:10px; color:#6b7280;">No image loaded</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAMBAR 2: INTRO / OUTRO SEQUENCE SETTINGS (FOR INTRO & OUTRO) -->
+          <div class="m7-inspector-card" id="grp-branding-sequence" style="display:none;">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> <span id="lbl-branding-seq-title">INTRO SEQUENCE SETTINGS</span>
+            </div>
+            <div class="m7-toggle-row">
+              <span id="lbl-branding-seq-enable">Enable Intro</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-branding-seq-enable" checked onchange="m7UpdateBrandingProp('visible', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span id="lbl-branding-seq-style">Intro Style</span>
+              </div>
+              <select class="m7-select" id="sel-branding-introstyle" onchange="m7UpdateBrandingIntroStyle(this.value)">
+                <option value="Focus Pull (Blur)" selected>Focus Pull (Blur)</option>
+                <option value="Fade from Black">Fade from Black</option>
+                <option value="Fade from White">Fade from White</option>
+                <option value="Cinematic Vignette">Cinematic Vignette</option>
+                <option value="Effect Blur">Effect Blur</option>
+                <option value="Paragraph (Text)">Paragraph (Text)</option>
+              </select>
+            </div>
+
+            <!-- Non-paragraph duration -->
+            <div class="m7-control-group" id="grp-branding-nonpara-dur">
+              <div class="m7-control-label-row">
+                <span id="lbl-branding-seq-dur-label">Intro Duration</span>
+              </div>
+              <select class="m7-select" id="sel-branding-seq-dur" onchange="m7UpdateBrandingProp('introDuration', this.value)">
+                <option value="2s">2s</option>
+                <option value="3s" selected>3s</option>
+                <option value="4s">4s</option>
+                <option value="5s">5s</option>
+                <option value="6s">6s</option>
+                <option value="8s">8s</option>
+                <option value="10s">10s</option>
+              </select>
+            </div>
+
+            <!-- Single Effect Intensity Slider (For Focus Pull, Vignette, Fade) -->
+            <div class="m7-control-group" id="grp-branding-effect-intensity-control" style="display:none;">
+              <div class="m7-control-label-row">
+                <span>Effect Intensity</span>
+                <span class="m7-control-val" id="val-branding-single-intensity">40</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-branding-single-intensity" oninput="m7UpdateBrandingProp('intensity', parseInt(this.value))">
+            </div>
+
+            <!-- Effect blur controls -->
+            <div id="grp-branding-blur-controls" style="display:none; flex-direction:column; gap:8px;">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Blur Intensity</span>
+                  <span class="m7-control-val" id="val-branding-blur">40</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-branding-blur" oninput="m7UpdateBrandingProp('intensity', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Dark Intensity</span>
+                  <span class="m7-control-val" id="val-branding-dark">100</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding-dark" oninput="m7UpdateBrandingProp('darkIntensity', parseInt(this.value))">
+              </div>
+            </div>
+
+            <!-- Paragraph (Text) Storytelling Controls -->
+            <div id="grp-branding-paragraph-controls" style="display:none; flex-direction:column; gap:10px;">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Bg Dark Intensity</span>
+                  <span class="m7-control-val" id="val-branding-bgdark">100</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding-bgdark" oninput="m7UpdateBrandingProp('darkIntensity', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Bg Blur Intensity</span>
+                  <span class="m7-control-val" id="val-branding-bgblur">40</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-branding-bgblur" oninput="m7UpdateBrandingProp('blurIntensity', parseInt(this.value))">
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Text Transition</span>
+                </div>
+                <select class="m7-select" id="sel-branding-texttrans" onchange="m7UpdateBrandingProp('textTransition', this.value)">
+                  <option value="Handwriting (Sweep)">Handwriting (Sweep)</option>
+                  <option value="Focus Pull (Text)">Focus Pull (Text)</option>
+                  <option value="Cinematic Tracking">Cinematic Tracking</option>
+                  <option value="Fade In/Out" selected>Fade In/Out</option>
+                  <option value="Typewriter">Typewriter</option>
+                  <option value="Slide Up">Slide Up</option>
+                  <option value="Zoom In">Zoom In</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Main Video Transition</span>
+                </div>
+                <select class="m7-select" id="sel-branding-maintrans" onchange="m7UpdateBrandingProp('mainTransition', this.value)">
+                  <option value="Fade to Video" selected>Fade to Video</option>
+                  <option value="Flash White">Flash White</option>
+                  <option value="Blur Reveal">Blur Reveal</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Total Paragraphs</span>
+                </div>
+                <select class="m7-select" id="sel-branding-paracount" onchange="m7UpdateBrandingParaCount(parseInt(this.value))">
+                  <option value="1" selected>1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Duration per Paragraph</span>
+                </div>
+                <select class="m7-select" id="sel-branding-paradur" onchange="m7UpdateBrandingProp('paragraphDuration', this.value)">
+                  <option value="3s">3s</option>
+                  <option value="4s">4s</option>
+                  <option value="5s" selected>5s</option>
+                  <option value="6s">6s</option>
+                  <option value="8s">8s</option>
+                  <option value="10s">10s</option>
+                </select>
+              </div>
+
+              <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
+                <span style="font-size:10px; font-weight:800; color:#f97316; letter-spacing:0.5px; text-transform:uppercase; display:block; margin-bottom:6px;">TEXT CONTENT</span>
+                <div id="container-branding-textareas" style="display:flex; flex-direction:column; gap:6px;">
+                  <textarea id="txt-branding-p1" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 1..." oninput="m7UpdateBrandingProp('introText1', this.value)"></textarea>
+                  <textarea id="txt-branding-p2" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 2..." oninput="m7UpdateBrandingProp('introText2', this.value)"></textarea>
+                  <textarea id="txt-branding-p3" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 3..." oninput="m7UpdateBrandingProp('introText3', this.value)"></textarea>
+                </div>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Font Family</span>
+                </div>
+                <select class="m7-select" id="sel-branding-font" onchange="m7UpdateBrandingProp('introFontFamily', this.value)">
+                  <option value="Great Vibes">Great Vibes</option>
+                  <option value="Dancing Script">Dancing Script</option>
+                  <option value="Pacifico">Pacifico</option>
+                  <option value="Playball">Playball</option>
+                  <option value="Inter" selected>Inter</option>
+                  <option value="Oswald">Oswald</option>
+                  <option value="Bebas Neue">Bebas Neue</option>
+                  <option value="Segoe UI">Segoe UI</option>
+                  <option value="Roboto">Roboto</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Font Size</span>
+                  <span class="m7-control-val" id="val-branding-fontsize">32</span>
+                </div>
+                <input type="range" class="m7-slider" min="10" max="100" value="32" id="slider-branding-fontsize" oninput="m7UpdateBrandingProp('introFontSize', parseInt(this.value))">
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Text Color</span>
+                </div>
+                <input type="color" id="col-branding-textcolor" value="#ffffff" onchange="m7UpdateBrandingProp('introTextColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Text Align</span>
+                </div>
+                <select class="m7-select" id="sel-branding-align" onchange="m7UpdateBrandingProp('introTextAlign', this.value)">
+                  <option value="left">Left</option>
+                  <option value="center" selected>Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- DELETE OBJECT BUTTON -->
+          <button class="m7-layer-remove" style="padding:10px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="m7DeleteActiveBranding()">
+            🗑️ Delete Branding Object
+          </button>
+
+        </div>
+
+        <!-- 9. INSPECTOR: THUMBNAIL TEXT SETTINGS -->
+        <div id="m7-inspector-thumbnail" style="display:none; flex-direction:column; gap:12px;">
+          <!-- Empty State -->
+          <div id="box-thumb-no-selection" style="font-size:11px; color:#6b7280; text-align:center; padding:28px 12px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:10px; line-height:1.6; display:none; flex-direction:column; align-items:center; justify-content:center; gap:6px;">
+            <span style="font-size:24px;">🖼️</span>
+            <b style="color:#e5e7eb; font-size:12px;">No Thumbnail Layer Selected</b>
+            <span style="color:#9ca3af; font-size:10px;">Select or add a text layer on the left to edit its typography, colors, and 3D depth.</span>
+          </div>
+
+          <!-- Card 1: TEXT CONTENT -->
+          <div class="m7-inspector-card" id="grp-thumb-content">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 📝 TEXT CONTENT
+            </div>
+            <textarea 
+              id="txt-thumb-content" 
+              class="m7-select" 
+              style="height:64px; resize:vertical; font-family:sans-serif; padding:8px;" 
+              placeholder="Enter thumbnail text here..." 
+              oninput="m7UpdateThumbTextProp('text', this.value)"
+            ></textarea>
+          </div>
+
+          <!-- Card 2: TYPOGRAPHY -->
+          <div class="m7-inspector-card" id="grp-thumb-typography">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 🔤 TYPOGRAPHY
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Font Family</span>
+              </div>
+              <select class="m7-select" id="sel-thumb-font" onchange="m7UpdateThumbTextProp('fontFamily', this.value)">
+                <option value="Outfit" selected>Outfit</option>
+                <option value="Inter">Inter</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Bebas Neue">Bebas Neue</option>
+                <option value="Great Vibes">Great Vibes</option>
+                <option value="Dancing Script">Dancing Script</option>
+                <option value="Pacifico">Pacifico</option>
+                <option value="Playball">Playball</option>
+                <option value="Oswald">Oswald</option>
+                <option value="Poppins">Poppins</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Segoe UI">Segoe UI</option>
+                <option value="Impact">Impact</option>
+              </select>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Font Weight</span>
+              </div>
+              <select class="m7-select" id="sel-thumb-weight" onchange="m7UpdateThumbTextProp('fontWeight', this.value)">
+                <option value="Normal">Normal</option>
+                <option value="Bold">Bold</option>
+                <option value="Extra-Bold" selected>Extra-Bold</option>
+                <option value="Black">Black (900)</option>
+              </select>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Font Size</span>
+                <span class="m7-control-val" id="val-thumb-fontsize">90</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="300" value="90" id="slider-thumb-fontsize" oninput="m7UpdateThumbTextProp('fontSize', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Alignment</span>
+              </div>
+              <select class="m7-select" id="sel-thumb-align" onchange="m7UpdateThumbTextProp('textAlign', this.value)">
+                <option value="left">Left</option>
+                <option value="center" selected>Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Card 3: FILL & COLOR / GRADIENT -->
+          <div class="m7-inspector-card" id="grp-thumb-fill">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 🎨 COLOR & GRADIENT
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Fill Type</span>
+              </div>
+              <select class="m7-select" id="sel-thumb-filltype" onchange="m7UpdateThumbTextProp('fillType', this.value)">
+                <option value="solid">Solid Color</option>
+                <option value="gradient" selected>Linear Gradient</option>
+              </select>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span id="lbl-thumb-color1">Primary Color</span>
+              </div>
+              <input type="color" id="col-thumb-color1" value="#ffffff" onchange="m7UpdateThumbTextProp('color', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+            </div>
+            <div class="m7-control-group" id="grp-thumb-color2-wrap">
+              <div class="m7-control-label-row">
+                <span>Secondary Color (Gradient End)</span>
+              </div>
+              <input type="color" id="col-thumb-color2" value="#f59e0b" onchange="m7UpdateThumbTextProp('color2', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+            </div>
+            <div class="m7-control-group" id="grp-thumb-gradangle-wrap">
+              <div class="m7-control-label-row">
+                <span>Gradient Angle</span>
+                <span class="m7-control-val" id="val-thumb-gradangle">90°</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="360" value="90" id="slider-thumb-gradangle" oninput="m7UpdateThumbTextProp('gradAngle', parseInt(this.value))">
+            </div>
+          </div>
+
+          <!-- Card 4: OUTLINE / STROKE & GLOW -->
+          <div class="m7-inspector-card" id="grp-thumb-stroke">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> ✏️ STROKE & GLOW
+            </div>
+            <div class="m7-toggle-row">
+              <span>Enable Stroke Outline</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-thumb-stroke" checked onchange="m7UpdateThumbTextProp('hasStroke', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div id="grp-thumb-stroke-sub" style="display:flex; flex-direction:column; gap:8px; padding-left:8px; border-left:2px solid rgba(255,255,255,0.1);">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Stroke Thickness</span>
+                  <span class="m7-control-val" id="val-thumb-strokewidth">8px</span>
+                </div>
+                <input type="range" class="m7-slider" min="1" max="30" value="8" id="slider-thumb-strokewidth" oninput="m7UpdateThumbTextProp('strokeWidth', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Stroke Color</span>
+                </div>
+                <input type="color" id="col-thumb-strokecolor" value="#000000" onchange="m7UpdateThumbTextProp('strokeColor', this.value)" style="width:100%; height:30px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+            </div>
+
+            <!-- Glow -->
+            <div class="m7-toggle-row" style="margin-top:4px;">
+              <span>Enable Outer Glow</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-thumb-glow" onchange="m7UpdateThumbTextProp('hasGlow', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div id="grp-thumb-glow-sub" style="display:none; flex-direction:column; gap:8px; padding-left:8px; border-left:2px solid rgba(255,255,255,0.1);">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Glow Amount</span>
+                  <span class="m7-control-val" id="val-thumb-glow">15</span>
+                </div>
+                <input type="range" class="m7-slider" min="1" max="80" value="15" id="slider-thumb-glow" oninput="m7UpdateThumbTextProp('glowAmount', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Glow Color</span>
+                </div>
+                <input type="color" id="col-thumb-glowcolor" value="#f97316" onchange="m7UpdateThumbTextProp('glowColor', this.value)" style="width:100%; height:30px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5: DROP SHADOW & 3D ROTATION -->
+          <div class="m7-inspector-card" id="grp-thumb-shadow">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 👥 DROP SHADOW & 3D
+            </div>
+            <div class="m7-toggle-row">
+              <span>Enable Shadow</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-thumb-shadow" checked onchange="m7UpdateThumbTextProp('hasShadow', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div id="grp-thumb-shadow-sub" style="display:flex; flex-direction:column; gap:8px; padding-left:8px; border-left:2px solid rgba(255,255,255,0.1);">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Shadow Blur</span>
+                  <span class="m7-control-val" id="val-thumb-shadowblur">20</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="60" value="20" id="slider-thumb-shadowblur" oninput="m7UpdateThumbTextProp('shadowBlur', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Shadow Offset Y</span>
+                  <span class="m7-control-val" id="val-thumb-shadowy">6</span>
+                </div>
+                <input type="range" class="m7-slider" min="-30" max="30" value="6" id="slider-thumb-shadowy" oninput="m7UpdateThumbTextProp('shadowOffsetY', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Shadow Color</span>
+                </div>
+                <input type="color" id="col-thumb-shadowcolor" value="#000000" onchange="m7UpdateThumbTextProp('shadowColor', this.value)" style="width:100%; height:30px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+            </div>
+
+            <!-- 3D Rotation -->
+            <div class="m7-control-group" style="margin-top:6px;">
+              <div class="m7-control-label-row">
+                <span>Tilt X (Pitch)</span>
+                <span class="m7-control-val" id="val-thumb-tiltx">0°</span>
+              </div>
+              <input type="range" class="m7-slider" min="-90" max="90" value="0" id="slider-thumb-tiltx" oninput="m7UpdateThumbTextProp('tiltX', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Tilt Y (Yaw)</span>
+                <span class="m7-control-val" id="val-thumb-tilty">0°</span>
+              </div>
+              <input type="range" class="m7-slider" min="-90" max="90" value="0" id="slider-thumb-tilty" oninput="m7UpdateThumbTextProp('tiltY', parseInt(this.value))">
+            </div>
+            <button class="m7-btn-secondary" style="font-size:10px; padding:4px 8px; max-width:max-content; margin-top:2px;" onclick="m7ResetThumb3D()">
+              Reset 3D
+            </button>
+          </div>
+
+          <!-- Card 6: POSITION & SCALE -->
+          <div class="m7-inspector-card" id="grp-thumb-transform">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 📐 POSITION & SCALE
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Position Preset</span>
+              </div>
+              <select class="m7-select" id="sel-thumb-pospreset" onchange="m7UpdateThumbTextPosPreset(this.value)">
+                <option value="Center">Center</option>
+                <option value="Top Center">Top Center</option>
+                <option value="Bottom Center">Bottom Center</option>
+                <option value="Top Left">Top Left</option>
+                <option value="Bottom Left">Bottom Left</option>
+              </select>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Position X</span>
+                <span class="m7-control-val" id="val-thumb-posx">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-900" max="900" value="0" id="slider-thumb-posx" oninput="m7UpdateThumbTextProp('x', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Position Y</span>
+                <span class="m7-control-val" id="val-thumb-posy">-60</span>
+              </div>
+              <input type="range" class="m7-slider" min="-500" max="500" value="-60" id="slider-thumb-posy" oninput="m7UpdateThumbTextProp('y', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Rotation</span>
+                <span class="m7-control-val" id="val-thumb-rotation">0°</span>
+              </div>
+              <input type="range" class="m7-slider" min="-180" max="180" value="0" id="slider-thumb-rotation" oninput="m7UpdateThumbTextProp('rotation', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Scale (%)</span>
+                <span class="m7-control-val" id="val-thumb-scale">100%</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="250" value="100" id="slider-thumb-scale" oninput="m7UpdateThumbTextProp('scale', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Opacity (%)</span>
+                <span class="m7-control-val" id="val-thumb-opacity">100%</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-thumb-opacity" oninput="m7UpdateThumbTextProp('opacity', parseInt(this.value))">
+            </div>
+          </div>
+
+          <!-- Card 7: DELETE LAYER -->
+          <button class="m7-layer-remove" style="padding:10px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="m7DeleteActiveThumbText()">
+            🗑️ Delete Thumbnail Layer
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- DEDICATED STATIC THUMBNAIL STUDIO VIEWPORT (100% JPG 2D CANVAS) -->
+    <div id="m7-thumbnail-viewport">
+      <div id="m7-thumbnail-canvas-container">
+        <canvas id="m7-thumbnail-canvas" width="1920" height="1080"></canvas>
+
+        <!-- Dedicated Thumbnail Transform Gizmo -->
+        <div id="m7-thumb-gizmo-box">
+          <div id="m7-thumb-gizmo-badge">THUMBNAIL TEXT</div>
+          <button id="m7-thumb-gizmo-del-btn" class="m7-gizmo-del-btn" title="Delete Layer (Del)" onclick="event.stopPropagation(); m7DeleteActiveThumbText()">✕</button>
+          <div class="m7-handle m7-handle-tl" data-thumb-handle="tl"></div>
+          <div class="m7-handle m7-handle-tr" data-thumb-handle="tr"></div>
+          <div class="m7-handle m7-handle-bl" data-thumb-handle="bl"></div>
+          <div class="m7-handle m7-handle-br" data-thumb-handle="br"></div>
+          <div class="m7-handle m7-handle-t" data-thumb-handle="t"></div>
+          <div class="m7-handle m7-handle-b" data-thumb-handle="b"></div>
+          <div class="m7-handle m7-handle-l" data-thumb-handle="l"></div>
+          <div class="m7-handle m7-handle-r" data-thumb-handle="r"></div>
+        </div>
+      </div>
+
+      <!-- Thumbnail Control Bar -->
+      <div id="m7-thumbnail-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:11px; font-weight:800; color:#38bdf8; letter-spacing:0.5px; text-transform:uppercase;">🖼️ 1920 x 1080 (16:9 Full HD JPG)</span>
+          <span style="font-size:10px; color:#6b7280;">• Static Graphic Cover Mode</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="m7-btn-secondary" style="padding:6px 12px; font-size:11px;" onclick="m7CopyVideoBgToThumbnail()">
+            🔄 Sync BG from Video
+          </button>
+          <button class="m7-btn-primary" style="background:linear-gradient(135deg, #0284c7, #0369a1); border:none; padding:6px 16px; font-size:11px; font-weight:bold;" onclick="m7DownloadThumbnailJPG()">
+            📸 Download JPG
+          </button>
+        </div>
       </div>
     </div>
 
@@ -3320,6 +4295,10 @@
         beatPulsing: true
       };
 
+      // Branding State (Full M3 Parity)
+      let activeBrandingObjects = []; // [{ id, name, type, source, imageElement, x, y, position, scale, opacity, shadow, brandColor, animationType, animationIntensity, visible, introStyle, introDuration, intensity, darkIntensity, blurIntensity, textTransition, mainTransition, paragraphCount, paragraphDuration, introText1, introText2, introText3, introFontFamily, introFontSize, introTextColor, introTextAlign, canvas, ctx, display }]
+      let activeSelectedBrandingIndex = -1;
+
       let bgState = {
         darkness: 30,
         blur: 0,
@@ -3347,7 +4326,7 @@
       }
 
       // AUTO-LAYER ORDERING: Ensures Background is ALWAYS at index 0 (Bottom/Back),
-      // Particles at index 1, Spectrum Visualizers at index 2, and Text/Lyrics on top (index 3).
+      // Particles at index 1, Spectrum Visualizers at index 2, Text/Lyrics and Branding on top (index 3).
       function m7EnforceLayerOrder(scene) {
         if (!scene) scene = getOrCreateActiveScene();
         if (!scene || !scene.displays || scene.displays.length <= 1) return;
@@ -3358,7 +4337,7 @@
           if (name === 'ImageDisplay' || name === 'Image' || name === 'ShaderBackgroundDisplay' || name === 'CaYaturBackgroundDisplay') return 0; // Layer 1 (Background)
           if (name === 'GeometryDisplay' || name === 'Geometry' || name === 'ParticleDisplay' || name === 'Particle') return 1; // Layer 2 (Particles)
           if (name.includes('Spectrum') || name.includes('SoundWave') || name.includes('Wave') || name.includes('Visualizer') || name.includes('Harmonics')) return 2; // Layer 3 (Spectrum Visualizer)
-          if (name.includes('Text') || name.includes('Lyrics')) return 3; // Layer 4 (Text & Lyrics)
+          if (name.includes('Text') || name.includes('Lyrics') || name.includes('Brand') || name.includes('Logo') || name.includes('Watermark') || name.includes('Subscribe')) return 3; // Layer 4 (Text, Lyrics, Branding)
           if (name === 'VisualFXDisplay' || name === 'VisualFX') return 4; // Layer 5 (Master Visual FX Overlay)
           return 2;
         };
@@ -3378,9 +4357,42 @@
         return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
       }
 
+      let m7SidebarCollapsed = false;
+      function m7ToggleSidebar() {
+        m7SidebarCollapsed = !m7SidebarCollapsed;
+        const dock = document.getElementById('m7-studio-dock');
+        const app = document.getElementById('app');
+        const thumbViewport = document.getElementById('m7-thumbnail-viewport');
+        const collapseIcon = document.getElementById('rail-collapse-icon');
+        const collapseLabel = document.getElementById('rail-collapse-label');
+
+        if (m7SidebarCollapsed) {
+          if (dock) dock.classList.add('collapsed');
+          if (app) app.classList.add('dock-collapsed');
+          if (thumbViewport) thumbViewport.classList.add('dock-collapsed');
+          if (collapseIcon) collapseIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
+          if (collapseLabel) collapseLabel.textContent = 'Show';
+        } else {
+          if (dock) dock.classList.remove('collapsed');
+          if (app) app.classList.remove('dock-collapsed');
+          if (thumbViewport) thumbViewport.classList.remove('dock-collapsed');
+          if (collapseIcon) collapseIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
+          if (collapseLabel) collapseLabel.textContent = 'Hide';
+        }
+
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+          if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
+          if (typeof m7UpdateThumbnailGizmo === 'function') m7UpdateThumbnailGizmo();
+        }, 300);
+      }
+
       function m7SelectCategory(type) {
+        if (m7SidebarCollapsed) {
+          m7ToggleSidebar();
+        }
         activeCategory = type;
-        document.querySelectorAll('.m7-rail-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.m7-rail-item:not(#rail-btn-collapse)').forEach(el => el.classList.remove('active'));
         const activeBtn = document.getElementById('rail-btn-' + (type === 'visualizer' ? 'viz' : (type === 'background' ? 'bg' : type)));
         if (activeBtn) activeBtn.classList.add('active');
 
@@ -3390,6 +4402,8 @@
         const secParticle = document.getElementById('m7-section-particle');
         const secFx = document.getElementById('m7-section-fx');
         const secText = document.getElementById('m7-section-text');
+        const secBranding = document.getElementById('m7-section-branding');
+        const secThumbnail = document.getElementById('m7-section-thumbnail');
 
         const inspBg = document.getElementById('m7-inspector-bg');
         const inspPlaylist = document.getElementById('m7-inspector-playlist');
@@ -3397,45 +4411,92 @@
         const inspParticle = document.getElementById('m7-inspector-particle');
         const inspFx = document.getElementById('m7-inspector-fx');
         const inspText = document.getElementById('m7-inspector-text');
+        const inspBranding = document.getElementById('m7-inspector-branding');
+        const inspThumbnail = document.getElementById('m7-inspector-thumbnail');
         const tag = document.getElementById('m7-inspector-tag');
 
-        // Hide all sections first
-        [secBg, secPlaylist, secViz, secParticle, secFx, secText].forEach(s => { if (s) s.style.display = 'none'; });
-        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspText].forEach(i => { if (i) i.style.display = 'none'; });
+        const appViewport = document.getElementById('app');
+        const transformOverlay = document.getElementById('m7-transform-overlay');
+        const thumbViewport = document.getElementById('m7-thumbnail-viewport');
 
-        if (type === 'background') {
-          if (secBg) secBg.style.display = 'flex';
-          if (inspBg) inspBg.style.display = 'flex';
-          if (tag) tag.innerText = 'BACKGROUND';
-        } else if (type === 'audio' || type === 'playlist') {
-          if (secPlaylist) secPlaylist.style.display = 'flex';
-          if (inspPlaylist) inspPlaylist.style.display = 'flex';
-          if (tag) tag.innerText = 'PLAYLIST AUDIO';
-        } else if (type === 'visualizer') {
-          if (secViz) secViz.style.display = 'flex';
-          if (inspViz) inspViz.style.display = 'flex';
-          if (tag) tag.innerText = 'SPECTRUM';
-        } else if (type === 'particle') {
-          if (secParticle) secParticle.style.display = 'flex';
-          if (inspParticle) inspParticle.style.display = 'flex';
-          if (tag) tag.innerText = 'PARTICLE';
-        } else if (type === 'fx' || type === 'visualfx') {
-          if (secFx) secFx.style.display = 'flex';
-          if (inspFx) inspFx.style.display = 'flex';
-          if (tag) tag.innerText = 'VISUAL FX';
-          m7InitGenrePresetsUI();
-        } else if (type === 'text' || type === 'lyrics') {
-          if (secText) secText.style.display = 'flex';
-          if (inspText) inspText.style.display = 'flex';
-          if (tag) tag.innerText = 'TEXT OBJECTS';
-          if (activeSelectedTextIndex >= 0 && activeTextObjects[activeSelectedTextIndex]) {
-            m7SyncInspectorToText(activeTextObjects[activeSelectedTextIndex]);
+        // Hide all sections first
+        [secBg, secPlaylist, secViz, secParticle, secFx, secText, secBranding, secThumbnail].forEach(s => { if (s) s.style.display = 'none'; });
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspText, inspBranding, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+
+        if (type === 'thumbnail') {
+          // Switch to dedicated Static JPG Thumbnail Canvas
+          if (appViewport) appViewport.style.display = 'none';
+          if (transformOverlay) transformOverlay.style.display = 'none';
+          if (thumbViewport) thumbViewport.style.display = 'flex';
+
+          // Pause audio playback when entering thumbnail studio
+          if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.player && window.__ASTROFOX_CORE__.player.pause) {
+            window.__ASTROFOX_CORE__.player.pause();
           }
-        } else if (type === 'branding') {
-          if (window.__ASTROFOX__) window.__ASTROFOX__.send('menu-action', 'edit-canvas');
+
+          if (secThumbnail) secThumbnail.style.display = 'flex';
+          if (inspThumbnail) inspThumbnail.style.display = 'flex';
+          if (tag) tag.innerText = 'THUMBNAIL STUDIO';
+
+          m7RenderThumbnailList();
+          m7DrawThumbnailCanvas();
+          if (activeSelectedThumbnailIndex >= 0 && activeThumbnailObjects[activeSelectedThumbnailIndex]) {
+            m7SyncInspectorToThumbnail(activeThumbnailObjects[activeSelectedThumbnailIndex]);
+          }
+          m7UpdateThumbnailGizmo();
+        } else {
+          // Switch to standard 3D WebGL / Video Viewport
+          if (thumbViewport) thumbViewport.style.display = 'none';
+          if (appViewport) appViewport.style.display = 'flex';
+          if (transformOverlay) transformOverlay.style.display = 'block';
+
+          if (type === 'background') {
+            if (secBg) secBg.style.display = 'flex';
+            if (inspBg) inspBg.style.display = 'flex';
+            if (tag) tag.innerText = 'BACKGROUND';
+          } else if (type === 'audio' || type === 'playlist') {
+            if (secPlaylist) secPlaylist.style.display = 'flex';
+            if (inspPlaylist) inspPlaylist.style.display = 'flex';
+            if (tag) tag.innerText = 'PLAYLIST AUDIO';
+          } else if (type === 'visualizer') {
+            if (secViz) secViz.style.display = 'flex';
+            if (inspViz) inspViz.style.display = 'flex';
+            if (tag) tag.innerText = 'SPECTRUM';
+          } else if (type === 'particle') {
+            if (secParticle) secParticle.style.display = 'flex';
+            if (inspParticle) inspParticle.style.display = 'flex';
+            if (tag) tag.innerText = 'PARTICLE';
+          } else if (type === 'fx' || type === 'visualfx') {
+            if (secFx) secFx.style.display = 'flex';
+            if (inspFx) inspFx.style.display = 'flex';
+            if (tag) tag.innerText = 'VISUAL FX';
+            m7InitGenrePresetsUI();
+          } else if (type === 'text' || type === 'lyrics') {
+            if (secText) secText.style.display = 'flex';
+            if (inspText) inspText.style.display = 'flex';
+            if (tag) tag.innerText = 'TEXT OBJECTS';
+            if (activeSelectedTextIndex >= 0 && activeTextObjects[activeSelectedTextIndex]) {
+              m7SyncInspectorToText(activeTextObjects[activeSelectedTextIndex]);
+            }
+          } else if (type === 'branding') {
+            if (secBranding) secBranding.style.display = 'flex';
+            if (inspBranding) {
+              inspBranding.style.display = 'flex';
+              inspBranding.style.setProperty('display', 'flex', 'important');
+            }
+            if (tag) tag.innerText = 'BRANDING';
+            if (activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex]) {
+              m7SelectBrandingObject(activeSelectedBrandingIndex);
+            } else if (activeBrandingObjects.length > 0) {
+              m7SelectBrandingObject(0);
+            } else {
+              m7SelectOrAddBrandingPreset('Logo');
+            }
+          }
+
+          m7UpdateGizmo();
         }
 
-        m7UpdateGizmo();
         m7ScheduleAutosave();
       }
 
@@ -6225,6 +7286,1579 @@
         m7UpdateTextProp('depth', 0);
       }
 
+      /* === 7. BRANDING MODULE FUNCTIONS (FULL M3 PARITY) === */
+      function m7SelectOrAddBrandingPreset(type) {
+        const presetKey = type === 'Subscribe Animation' ? 'subscribe' : type.toLowerCase();
+        document.querySelectorAll('#m7-section-branding .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-branding-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        // Look for existing object of this type in activeBrandingObjects
+        const existingIdx = activeBrandingObjects.findIndex(o => o.type === type);
+        if (existingIdx >= 0) {
+          m7SelectBrandingObject(existingIdx);
+        } else {
+          m7AddBrandingDirect(type);
+        }
+      }
+
+      function m7AddBrandingDirect(type) {
+        let name = type;
+        if (type === 'Logo') name = 'Brand Logo';
+        else if (type === 'Watermark') name = 'Watermark';
+        else if (type === 'Intro') name = 'Intro Sequence';
+        else if (type === 'Outro') name = 'Outro Sequence';
+        else if (type === 'Subscribe Animation') name = 'Subscribe Animation';
+
+        const isIntroOrOutro = (type === 'Intro' || type === 'Outro');
+
+        // Create default branding object
+        const newObj = {
+          id: 'branding_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          name: name,
+          type: type,
+          isBranding: true,
+          // Transform & Appearance
+          shapeMode: 'Original',
+          uniformScale: false,
+          width: 360,
+          height: 180,
+          rotation: 0,
+          x: type === 'Watermark' ? 320 : (type === 'Logo' ? 300 : 0),
+          y: type === 'Watermark' ? 180 : (type === 'Logo' ? 160 : (type === 'Subscribe Animation' ? 150 : 0)),
+          position: (type === 'Watermark' || type === 'Logo') ? 'Bottom Right' : (type === 'Subscribe Animation' ? 'Bottom Center' : 'Center'),
+          scale: type === 'Watermark' ? 80 : 100,
+          opacity: type === 'Watermark' ? 0.5 : 1.0,
+          shadow: type === 'Watermark' ? 30 : 50,
+          tiltX: 0,
+          tiltY: 0,
+          perspective: 60,
+          depth: 0,
+          insertDepth: false,
+          bgTransparent: true,
+          bgColor: '#000000',
+          hasBorder: false,
+          brandColor: type === 'Subscribe Animation' ? '#ef4444' : '#3b82f6',
+          beatZoom: false,
+          beatPump: false,
+          animationType: type === 'Subscribe Animation' ? 'Zoom Pulse' : 'None',
+          animationIntensity: 100,
+          source: '',
+          imageElement: null,
+          blend: 'Normal',
+          intervalMinutes: 5,
+          // Sequence settings
+          visible: true,
+          introStyle: type === 'Outro' ? 'Fade from Black' : 'Focus Pull (Blur)',
+          introDuration: '3s',
+          intensity: 40,
+          darkIntensity: 100,
+          blurIntensity: 40,
+          textTransition: 'Fade In/Out',
+          mainTransition: 'Fade to Video',
+          paragraphCount: 1,
+          paragraphDuration: '5s',
+          introText1: '',
+          introText2: '',
+          introText3: '',
+          introFontFamily: 'Inter',
+          introFontSize: 32,
+          introTextColor: '#ffffff',
+          introTextAlign: 'center'
+        };
+
+        // Try to fetch workspace assets for default branding
+        try {
+          fetch('/api/v1/system/workspace/default/settings')
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.success && data.data && data.data.data && data.data.data.branding) {
+                const b = data.data.data.branding;
+                if (type === 'Logo' && b.logo) m7SetBrandingImageSource(newObj, b.logo);
+                else if (type === 'Watermark' && b.watermark) m7SetBrandingImageSource(newObj, b.watermark);
+                else if (type === 'Subscribe Animation' && b.subscribeAnim) m7SetBrandingImageSource(newObj, b.subscribeAnim);
+              }
+            }).catch(() => {});
+        } catch(e) {}
+
+        // Add visual display to Astrofox scene if visual element
+        if (!isIntroOrOutro) {
+          m7CreateBrandingDisplay(newObj);
+        }
+
+        activeBrandingObjects.push(newObj);
+        activeSelectedBrandingIndex = activeBrandingObjects.length - 1;
+
+        m7RenderBrandingList();
+        m7SyncInspectorToBranding(newObj);
+        m7IsGizmoSelected = !isIntroOrOutro;
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7CreateBrandingDisplay(obj) {
+        if (obj.type === 'Intro' || obj.type === 'Outro') return;
+        const scene = getOrCreateActiveScene();
+        if (!scene) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 360;
+        canvas.height = 180;
+        const ctx = canvas.getContext('2d');
+
+        obj.canvas = canvas;
+        obj.ctx = ctx;
+
+        m7DrawBrandingCanvas(obj);
+
+        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
+          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
+          if (DisplayClass) {
+            try {
+              const display = new DisplayClass({
+                name: obj.name,
+                x: obj.x,
+                y: obj.y,
+                opacity: obj.opacity
+              });
+              display.canvas = canvas;
+              obj.display = display;
+              scene.addElement(display);
+              m7EnforceLayerOrder(scene);
+            } catch(e) {}
+          }
+        }
+      }
+
+      function m7SetBrandingImageSource(obj, src) {
+        if (!obj) return;
+        obj.source = src;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          obj.imageElement = img;
+          m7DrawBrandingCanvas(obj);
+          if (activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex] === obj) {
+            const imgPrev = document.getElementById('img-branding-preview');
+            const txtPrevEmpty = document.getElementById('txt-branding-preview-empty');
+            if (imgPrev) { imgPrev.src = src; imgPrev.style.display = 'block'; }
+            if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+          }
+          if (obj.display && obj.display.update) {
+            obj.display.update({ x: obj.x, y: obj.y });
+          }
+          m7UpdateGizmo();
+          m7ScheduleAutosave();
+        };
+        img.src = src;
+      }
+
+      function m7HandleBrandingFileUpload(input) {
+        if (!input.files || input.files.length === 0) return;
+        if (activeSelectedBrandingIndex < 0 || !activeBrandingObjects[activeSelectedBrandingIndex]) return;
+        const obj = activeBrandingObjects[activeSelectedBrandingIndex];
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          m7SetBrandingImageSource(obj, e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function m7SafeRoundRect(ctx, x, y, width, height, radius) {
+        if (ctx.roundRect) {
+          ctx.roundRect(x, y, width, height, radius);
+        } else {
+          const r = typeof radius === 'number' ? radius : (Array.isArray(radius) ? radius[0] : 10);
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + width - r, y);
+          ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+          ctx.lineTo(x + width, y + height - r);
+          ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+          ctx.lineTo(x + r, y + height);
+          ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+          ctx.lineTo(x, y + r);
+          ctx.quadraticCurveTo(x, y, x + r, y);
+          ctx.closePath();
+        }
+      }
+
+
+
+      function m7DrawBrandingCanvas(obj) {
+        if (!obj || !obj.canvas) return;
+        const canvas = obj.canvas;
+        const w = obj.width !== undefined && !isNaN(obj.width) ? obj.width : 360;
+        const h = obj.height !== undefined && !isNaN(obj.height) ? obj.height : 180;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        const ctx = obj.ctx || canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.globalAlpha = obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0;
+
+        // Rotation & Center
+        ctx.translate(w / 2, h / 2);
+        if (obj.rotation) {
+          ctx.rotate((obj.rotation * Math.PI) / 180);
+        }
+        ctx.translate(-w / 2, -h / 2);
+
+        // Shape Mode clipping
+        const shapeMode = obj.shapeMode || 'Original';
+        if (shapeMode === 'Circle') {
+          ctx.beginPath();
+          const r = Math.min(w, h) / 2 - 4;
+          ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+          ctx.clip();
+        } else if (shapeMode === 'Rounded Rect') {
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, 20);
+          ctx.clip();
+        }
+
+        if (obj.source && obj.imageElement && obj.imageElement.complete) {
+          const img = obj.imageElement;
+          const ratio = Math.min(w / img.width, h / img.height);
+          const drawW = img.width * ratio;
+          const drawH = img.height * ratio;
+          const drawX = (w - drawW) / 2;
+          const drawY = (h - drawH) / 2;
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        } else {
+          if (obj.type === 'Logo') {
+            const col = '#ec4899';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = col;
+            ctx.fillText('🛡️', w * 0.28, h / 2);
+
+            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('BRAND LOGO', w * 0.62, h / 2);
+          } else if (obj.type === 'Watermark') {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 10);
+            ctx.fill();
+
+            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.2)))}px "Segoe UI", Inter, monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillText('💧 © MEDIAFACTORY', w / 2, h / 2);
+          } else if (obj.type === 'Subscribe Animation') {
+            const pillW = w - 20;
+            const pillH = h - 20;
+            const pillX = 10;
+            const pillY = 10;
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+            ctx.fill();
+
+            ctx.font = `bold ${Math.max(14, Math.min(26, Math.floor(pillH * 0.45)))}px sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('🔔', pillX + pillW * 0.1, pillY + pillH / 2);
+
+            ctx.font = `900 ${Math.max(12, Math.min(22, Math.floor(pillH * 0.38)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillText('SUBSCRIBE', pillX + pillW * 0.32, pillY + pillH / 2);
+          }
+        }
+
+        ctx.restore();
+
+        if (obj.display && obj.display.pass && obj.display.pass.texture) {
+          obj.display.pass.texture.needsUpdate = true;
+        }
+      }
+
+      function m7RenderBrandingList() {
+        const listEl = document.getElementById('m7-branding-list');
+        const countEl = document.getElementById('m7-branding-count');
+        if (countEl) countEl.innerText = activeBrandingObjects.length;
+        if (!listEl) return;
+
+        if (activeBrandingObjects.length === 0) {
+          listEl.innerHTML = `
+            <div id="m7-empty-branding-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+              No branding layers active. Choose an item above to add to screen.
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = '';
+        activeBrandingObjects.forEach((item, idx) => {
+          const isSelected = (idx === activeSelectedBrandingIndex);
+          const row = document.createElement('div');
+          row.className = `m7-layer-item ${isSelected ? 'active' : ''}`;
+          row.onclick = () => {
+            m7SelectBrandingObject(idx);
+          };
+
+          const numStr = String(idx + 1).padStart(2, '0');
+          let icon = '🛡️';
+          if (item.type === 'Watermark') icon = '💧';
+          else if (item.type === 'Intro') icon = '🎬';
+          else if (item.type === 'Outro') icon = '🔚';
+          else if (item.type === 'Subscribe Animation') icon = '🔔';
+
+          row.innerHTML = `
+            <span class="m7-layer-remove" title="Remove Branding Layer" onclick="event.stopPropagation(); m7RemoveBrandingObject(${idx})">✕</span>
+            <span style="color:#6b7280; font-family:monospace; font-weight:800;">${numStr}</span>
+            <span>${icon}</span>
+            <span class="m7-layer-name">${item.name}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      function m7SelectBrandingObject(idx) {
+        if (idx < 0 || idx >= activeBrandingObjects.length) return;
+        activeSelectedBrandingIndex = idx;
+        const item = activeBrandingObjects[idx];
+
+        // Highlight preset card in left Category panel
+        const presetKey = item.type === 'Subscribe Animation' ? 'subscribe' : (item.type || 'logo').toLowerCase();
+        document.querySelectorAll('#m7-section-branding .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-branding-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        const inspBranding = document.getElementById('m7-inspector-branding');
+        if (inspBranding) {
+          inspBranding.style.display = 'flex';
+          inspBranding.style.setProperty('display', 'flex', 'important');
+        }
+        m7RenderBrandingList();
+        m7SyncInspectorToBranding(item);
+        m7IsGizmoSelected = (item.type !== 'Intro' && item.type !== 'Outro');
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7RemoveBrandingObject(idx) {
+        if (idx < 0 || idx >= activeBrandingObjects.length) return;
+        const removed = activeBrandingObjects.splice(idx, 1)[0];
+        const scene = getOrCreateActiveScene();
+        if (scene && removed && removed.display) {
+          scene.removeElement(removed.display);
+        }
+
+        if (activeBrandingObjects.length === 0) {
+          activeSelectedBrandingIndex = -1;
+          m7IsGizmoSelected = false;
+        } else {
+          activeSelectedBrandingIndex = Math.min(activeSelectedBrandingIndex, activeBrandingObjects.length - 1);
+          if (activeSelectedBrandingIndex < 0) activeSelectedBrandingIndex = 0;
+        }
+
+        m7RenderBrandingList();
+        if (activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex]) {
+          m7SyncInspectorToBranding(activeBrandingObjects[activeSelectedBrandingIndex]);
+        } else {
+          m7SyncInspectorToBranding(null);
+        }
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7DeleteActiveBranding() {
+        if (activeSelectedBrandingIndex >= 0) {
+          m7RemoveBrandingObject(activeSelectedBrandingIndex);
+        }
+      }
+
+      function m7UpdateBrandingProp(prop, val) {
+        if (activeSelectedBrandingIndex < 0 || !activeBrandingObjects[activeSelectedBrandingIndex]) return;
+        const obj = activeBrandingObjects[activeSelectedBrandingIndex];
+        obj[prop] = val;
+
+        if (prop === 'uniformScale') {
+          obj.uniformScale = !!val;
+        }
+        if (prop === 'width') {
+          const valEl = document.getElementById('val-branding-width');
+          if (valEl) valEl.innerText = val;
+          if (obj.uniformScale) {
+            const aspect = (obj.height && obj.width) ? (obj.height / val) : 0.5;
+            obj.height = Math.max(10, Math.round(val * aspect));
+            const sliderH = document.getElementById('slider-branding-height');
+            const valH = document.getElementById('val-branding-height');
+            if (sliderH) sliderH.value = obj.height;
+            if (valH) valH.innerText = obj.height;
+          }
+        }
+        if (prop === 'height') {
+          const valEl = document.getElementById('val-branding-height');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'rotation') {
+          const valEl = document.getElementById('val-branding-rotation');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'opacity') {
+          const valEl = document.getElementById('val-branding-opacity');
+          if (valEl) valEl.innerText = val;
+          obj.opacity = val / 100;
+        }
+        if (prop === 'intensity') {
+          const valEl = document.getElementById('val-branding-blur');
+          const valSingle = document.getElementById('val-branding-single-intensity');
+          if (valEl) valEl.innerText = val;
+          if (valSingle) valSingle.innerText = val;
+        }
+        if (prop === 'darkIntensity') {
+          const valEl = document.getElementById('val-branding-dark');
+          const valBgDark = document.getElementById('val-branding-bgdark');
+          if (valEl) valEl.innerText = val;
+          if (valBgDark) valBgDark.innerText = val;
+        }
+        if (prop === 'blurIntensity') {
+          const valEl = document.getElementById('val-branding-bgblur');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'introFontSize') {
+          const valEl = document.getElementById('val-branding-fontsize');
+          if (valEl) valEl.innerText = val;
+        }
+
+        if (obj.display) {
+          obj.display.update({ x: obj.x, y: obj.y, opacity: obj.opacity });
+        }
+        m7DrawBrandingCanvas(obj);
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7UpdateBrandingIntroStyle(style, updateObj = true) {
+        if (updateObj && activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex]) {
+          activeBrandingObjects[activeSelectedBrandingIndex].introStyle = style;
+        }
+
+        const grpNonParaDur = document.getElementById('grp-branding-nonpara-dur');
+        const grpBlurControls = document.getElementById('grp-branding-blur-controls');
+        const grpSingleEffectControl = document.getElementById('grp-branding-effect-intensity-control');
+        const grpParaControls = document.getElementById('grp-branding-paragraph-controls');
+
+        if (style === 'Paragraph (Text)') {
+          if (grpNonParaDur) grpNonParaDur.style.display = 'none';
+          if (grpBlurControls) grpBlurControls.style.display = 'none';
+          if (grpSingleEffectControl) grpSingleEffectControl.style.display = 'none';
+          if (grpParaControls) grpParaControls.style.display = 'flex';
+        } else if (style === 'Effect Blur') {
+          if (grpNonParaDur) grpNonParaDur.style.display = 'flex';
+          if (grpBlurControls) grpBlurControls.style.display = 'flex';
+          if (grpSingleEffectControl) grpSingleEffectControl.style.display = 'none';
+          if (grpParaControls) grpParaControls.style.display = 'none';
+        } else {
+          if (grpNonParaDur) grpNonParaDur.style.display = 'flex';
+          if (grpBlurControls) grpBlurControls.style.display = 'none';
+          if (grpSingleEffectControl) grpSingleEffectControl.style.display = 'flex';
+          if (grpParaControls) grpParaControls.style.display = 'none';
+        }
+
+        if (updateObj) m7ScheduleAutosave();
+      }
+
+      function m7UpdateBrandingParaCount(count, updateObj = true) {
+        if (updateObj && activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex]) {
+          activeBrandingObjects[activeSelectedBrandingIndex].paragraphCount = count;
+        }
+
+        const txtP1 = document.getElementById('txt-branding-p1');
+        const txtP2 = document.getElementById('txt-branding-p2');
+        const txtP3 = document.getElementById('txt-branding-p3');
+
+        if (txtP1) txtP1.style.display = count >= 1 ? 'block' : 'none';
+        if (txtP2) txtP2.style.display = count >= 2 ? 'block' : 'none';
+        if (txtP3) txtP3.style.display = count >= 3 ? 'block' : 'none';
+
+        if (updateObj) m7ScheduleAutosave();
+      }
+
+      function m7SyncInspectorToBranding(obj) {
+        const inspBg = document.getElementById('m7-inspector-bg');
+        const inspPlaylist = document.getElementById('m7-inspector-playlist');
+        const inspViz = document.getElementById('m7-inspector-viz');
+        const inspParticle = document.getElementById('m7-inspector-particle');
+        const inspFx = document.getElementById('m7-inspector-fx');
+        const inspText = document.getElementById('m7-inspector-text');
+        const inspBranding = document.getElementById('m7-inspector-branding');
+        const inspThumbnail = document.getElementById('m7-inspector-thumbnail');
+        const tag = document.getElementById('m7-inspector-tag');
+
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspText, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+        if (inspBranding) {
+          inspBranding.style.display = 'flex';
+          inspBranding.style.setProperty('display', 'flex', 'important');
+        }
+
+        const boxNoSel = document.getElementById('box-branding-no-selection');
+        const grpSubscribe = document.getElementById('grp-branding-subscribe');
+        const grpTransform = document.getElementById('grp-branding-transform');
+        const grpSource = document.getElementById('grp-branding-source');
+        const grpSequence = document.getElementById('grp-branding-sequence');
+
+        if (!obj) {
+          if (tag) tag.innerText = 'BRANDING';
+          if (boxNoSel) boxNoSel.style.display = 'flex';
+          if (grpSubscribe) grpSubscribe.style.display = 'none';
+          if (grpTransform) grpTransform.style.display = 'none';
+          if (grpSource) grpSource.style.display = 'none';
+          if (grpSequence) grpSequence.style.display = 'none';
+          return;
+        }
+
+        try {
+          if (boxNoSel) boxNoSel.style.display = 'none';
+          const isIntroOrOutro = (obj.type === 'Intro' || obj.type === 'Outro');
+          const isSubscribe = (obj.type === 'Subscribe Animation');
+
+          // Header tag matching screenshots
+          if (tag) {
+            if (isSubscribe) tag.innerText = 'SOCIAL WIDGET';
+            else if (obj.type === 'Intro') tag.innerText = 'INTRO SEQUENCE';
+            else if (obj.type === 'Outro') tag.innerText = 'OUTRO SEQUENCE';
+            else tag.innerText = 'BRANDING';
+          }
+
+          // Card Visibility matching Gambar 1, 2, 3
+          if (grpSubscribe) grpSubscribe.style.display = isSubscribe ? 'flex' : 'none';
+          if (grpTransform) grpTransform.style.display = isIntroOrOutro ? 'none' : 'flex';
+          if (grpSource) grpSource.style.display = isIntroOrOutro ? 'none' : 'flex';
+          if (grpSequence) grpSequence.style.display = isIntroOrOutro ? 'flex' : 'none';
+
+          if (!isIntroOrOutro) {
+            // GAMBAR 3: Subscribe Interval
+            if (isSubscribe) {
+              const selInterval = document.getElementById('sel-branding-interval');
+              if (selInterval) selInterval.value = obj.intervalMinutes !== undefined ? obj.intervalMinutes : 5;
+            }
+
+            // GAMBAR 1 & 3: Transform & Shape
+            const selShape = document.getElementById('sel-branding-shapemode');
+            if (selShape) selShape.value = obj.shapeMode || 'Original';
+
+            const chkUniform = document.getElementById('chk-branding-uniformscale');
+            if (chkUniform) chkUniform.checked = !!obj.uniformScale;
+
+            const sliderWidth = document.getElementById('slider-branding-width');
+            const valWidth = document.getElementById('val-branding-width');
+            const widthVal = obj.width !== undefined && !isNaN(obj.width) ? obj.width : 360;
+            if (sliderWidth) sliderWidth.value = widthVal;
+            if (valWidth) valWidth.innerText = `${widthVal}`;
+
+            const sliderHeight = document.getElementById('slider-branding-height');
+            const valHeight = document.getElementById('val-branding-height');
+            const heightVal = obj.height !== undefined && !isNaN(obj.height) ? obj.height : 180;
+            if (sliderHeight) sliderHeight.value = heightVal;
+            if (valHeight) valHeight.innerText = `${heightVal}`;
+
+            const sliderRot = document.getElementById('slider-branding-rotation');
+            const valRot = document.getElementById('val-branding-rotation');
+            const rotVal = obj.rotation !== undefined && !isNaN(obj.rotation) ? obj.rotation : 0;
+            if (sliderRot) sliderRot.value = rotVal;
+            if (valRot) valRot.innerText = `${rotVal}`;
+
+            const sliderOpacity = document.getElementById('slider-branding-opacity');
+            const valOpacity = document.getElementById('val-branding-opacity');
+            const opVal = obj.opacity !== undefined ? (obj.opacity > 1 ? Math.round(obj.opacity) : Math.round(obj.opacity * 100)) : 100;
+            if (sliderOpacity) sliderOpacity.value = opVal;
+            if (valOpacity) valOpacity.innerText = `${opVal}`;
+
+            // Image & Media Preview
+            const imgPrev = document.getElementById('img-branding-preview');
+            const txtPrevEmpty = document.getElementById('txt-branding-preview-empty');
+            if (obj.source) {
+              if (imgPrev) { imgPrev.src = obj.source; imgPrev.style.display = 'block'; }
+              if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+            } else {
+              if (imgPrev) { imgPrev.src = ''; imgPrev.style.display = 'none'; }
+              if (txtPrevEmpty) txtPrevEmpty.style.display = 'block';
+            }
+          } else {
+            // GAMBAR 2: Intro / Outro Sequence fields
+            const lblTitle = document.getElementById('lbl-branding-seq-title');
+            const lblEnable = document.getElementById('lbl-branding-seq-enable');
+            const lblStyle = document.getElementById('lbl-branding-seq-style');
+            const lblDur = document.getElementById('lbl-branding-seq-dur-label');
+
+            if (lblTitle) lblTitle.innerText = obj.type === 'Outro' ? 'OUTRO SEQUENCE SETTINGS' : 'INTRO SEQUENCE SETTINGS';
+            if (lblEnable) lblEnable.innerText = obj.type === 'Outro' ? 'Enable Outro' : 'Enable Intro';
+            if (lblStyle) lblStyle.innerText = obj.type === 'Outro' ? 'Outro Style' : 'Intro Style';
+            if (lblDur) lblDur.innerText = obj.type === 'Outro' ? 'Outro Duration' : 'Intro Duration';
+
+            const chkEnable = document.getElementById('chk-branding-seq-enable');
+            if (chkEnable) chkEnable.checked = obj.visible !== false;
+
+            const currentStyle = obj.introStyle || (obj.type === 'Outro' ? 'Fade from Black' : 'Focus Pull (Blur)');
+            const selIntroStyle = document.getElementById('sel-branding-introstyle');
+            if (selIntroStyle) selIntroStyle.value = currentStyle;
+
+            m7UpdateBrandingIntroStyle(currentStyle, false);
+
+            const selSeqDur = document.getElementById('sel-branding-seq-dur');
+            if (selSeqDur) selSeqDur.value = obj.introDuration || '3s';
+
+            const sliderSingleIntensity = document.getElementById('slider-branding-single-intensity');
+            const valSingleIntensity = document.getElementById('val-branding-single-intensity');
+            if (sliderSingleIntensity) sliderSingleIntensity.value = obj.intensity || 40;
+            if (valSingleIntensity) valSingleIntensity.innerText = obj.intensity || 40;
+
+            const sliderBlur = document.getElementById('slider-branding-blur');
+            const valBlur = document.getElementById('val-branding-blur');
+            if (sliderBlur) sliderBlur.value = obj.intensity || 40;
+            if (valBlur) valBlur.innerText = obj.intensity || 40;
+
+            const sliderDark = document.getElementById('slider-branding-dark');
+            const valDark = document.getElementById('val-branding-dark');
+            if (sliderDark) sliderDark.value = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+            if (valDark) valDark.innerText = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+
+            const sliderBgDark = document.getElementById('slider-branding-bgdark');
+            const valBgDark = document.getElementById('val-branding-bgdark');
+            if (sliderBgDark) sliderBgDark.value = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+            if (valBgDark) valBgDark.innerText = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+
+            const sliderBgBlur = document.getElementById('slider-branding-bgblur');
+            const valBgBlur = document.getElementById('val-branding-bgblur');
+            if (sliderBgBlur) sliderBgBlur.value = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
+            if (valBgBlur) valBgBlur.innerText = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
+
+            const selTextTrans = document.getElementById('sel-branding-texttrans');
+            if (selTextTrans) selTextTrans.value = obj.textTransition || 'Fade In/Out';
+
+            const selMainTrans = document.getElementById('sel-branding-maintrans');
+            if (selMainTrans) selMainTrans.value = obj.mainTransition || 'Fade to Video';
+
+            const selParaCount = document.getElementById('sel-branding-paracount');
+            if (selParaCount) selParaCount.value = obj.paragraphCount || 1;
+            m7UpdateBrandingParaCount(obj.paragraphCount || 1, false);
+
+            const selParaDur = document.getElementById('sel-branding-paradur');
+            if (selParaDur) selParaDur.value = obj.paragraphDuration || '5s';
+
+            const txtP1 = document.getElementById('txt-branding-p1');
+            if (txtP1) txtP1.value = obj.introText1 || '';
+            const txtP2 = document.getElementById('txt-branding-p2');
+            if (txtP2) txtP2.value = obj.introText2 || '';
+            const txtP3 = document.getElementById('txt-branding-p3');
+            if (txtP3) txtP3.value = obj.introText3 || '';
+
+            const selFont = document.getElementById('sel-branding-font');
+            if (selFont) selFont.value = obj.introFontFamily || 'Inter';
+
+            const sliderFontSize = document.getElementById('slider-branding-fontsize');
+            const valFontSize = document.getElementById('val-branding-fontsize');
+            if (sliderFontSize) sliderFontSize.value = obj.introFontSize || 32;
+            if (valFontSize) valFontSize.innerText = obj.introFontSize || 32;
+
+            const colTextColor = document.getElementById('col-branding-textcolor');
+            if (colTextColor) colTextColor.value = obj.introTextColor || '#ffffff';
+
+            const selAlign = document.getElementById('sel-branding-align');
+            if (selAlign) selAlign.value = obj.introTextAlign || 'center';
+          }
+        } catch(err) {
+          console.error('[M7 Sync Branding Error]', err);
+        }
+      }
+
+      /* === 6. THUMBNAIL STUDIO MODULE (STATIC 2D JPG CANVAS) === */
+      let activeThumbnailObjects = [
+        {
+          id: 'thumb_txt_1',
+          name: 'Headline Judul',
+          text: 'DANGDUT VIRAL ID',
+          fontFamily: 'Outfit',
+          fontSize: 90,
+          fontWeight: 'Extra-Bold',
+          fillType: 'gradient',
+          color: '#ffffff',
+          color2: '#f59e0b',
+          gradAngle: 90,
+          hasStroke: true,
+          strokeColor: '#000000',
+          strokeWidth: 8,
+          hasGlow: false,
+          glowAmount: 15,
+          glowColor: '#f97316',
+          hasShadow: true,
+          shadowColor: '#000000',
+          shadowBlur: 20,
+          shadowOffsetX: 4,
+          shadowOffsetY: 6,
+          tiltX: 0,
+          tiltY: 0,
+          perspective: 60,
+          x: 0,
+          y: -60,
+          rotation: 0,
+          scale: 100,
+          opacity: 100,
+          textAlign: 'center'
+        },
+        {
+          id: 'thumb_txt_2',
+          name: 'Sub-Judul / Artis',
+          text: 'Lagu Dangdut Viral • Hits Terbaru',
+          fontFamily: 'Inter',
+          fontSize: 44,
+          fontWeight: 'Bold',
+          fillType: 'solid',
+          color: '#38bdf8',
+          color2: '#0284c7',
+          gradAngle: 90,
+          hasStroke: true,
+          strokeColor: '#000000',
+          strokeWidth: 4,
+          hasGlow: false,
+          glowAmount: 10,
+          glowColor: '#38bdf8',
+          hasShadow: true,
+          shadowColor: '#000000',
+          shadowBlur: 14,
+          shadowOffsetX: 2,
+          shadowOffsetY: 4,
+          tiltX: 0,
+          tiltY: 0,
+          perspective: 60,
+          x: 0,
+          y: 35,
+          rotation: 0,
+          scale: 100,
+          opacity: 100,
+          textAlign: 'center'
+        }
+      ];
+      let activeSelectedThumbnailIndex = 0;
+      let thumbBgState = {
+        type: 'image',
+        src: '',
+        color: '#090b10',
+        gradColor1: '#0f172a',
+        gradColor2: '#1e1b4b',
+        darkness: 20,
+        blur: 0,
+        imageElement: null
+      };
+
+      function m7SetThumbBgType(type) {
+        thumbBgState.type = type;
+        const tabImg = document.getElementById('tab-thumb-bg-img');
+        const tabColor = document.getElementById('tab-thumb-bg-color');
+        const tabGrad = document.getElementById('tab-thumb-bg-grad');
+        const secImg = document.getElementById('sec-thumb-bg-image-controls');
+        const secColor = document.getElementById('sec-thumb-bg-color-controls');
+        const secGrad = document.getElementById('sec-thumb-bg-grad-controls');
+        const badge = document.getElementById('badge-thumb-bg-type');
+
+        if (tabImg) tabImg.classList.toggle('active', type === 'image');
+        if (tabColor) tabColor.classList.toggle('active', type === 'color');
+        if (tabGrad) tabGrad.classList.toggle('active', type === 'gradient');
+
+        if (secImg) secImg.style.display = type === 'image' ? 'flex' : 'none';
+        if (secColor) secColor.style.display = type === 'color' ? 'flex' : 'none';
+        if (secGrad) secGrad.style.display = type === 'gradient' ? 'flex' : 'none';
+        if (badge) badge.innerText = type.toUpperCase();
+
+        m7DrawThumbnailCanvas();
+        m7ScheduleAutosave();
+      }
+
+      function m7UpdateThumbBgProp(prop, val) {
+        thumbBgState[prop] = val;
+        if (prop === 'darkness') {
+          const valEl = document.getElementById('val-thumb-bg-darkness');
+          if (valEl) valEl.innerText = `${val}%`;
+        } else if (prop === 'blur') {
+          const valEl = document.getElementById('val-thumb-bg-blur');
+          if (valEl) valEl.innerText = `${val}px`;
+        }
+        m7DrawThumbnailCanvas();
+        m7ScheduleAutosave();
+      }
+
+      function m7HandleThumbBgUpload(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target.result;
+          thumbBgState.src = dataUrl;
+          thumbBgState.type = 'image';
+          const img = new Image();
+          img.onload = () => {
+            thumbBgState.imageElement = img;
+            m7SetThumbBgType('image');
+            m7DrawThumbnailCanvas();
+          };
+          img.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function m7CopyVideoBgToThumbnail() {
+        if (activeBackgrounds.length > 0 && activeBackgrounds[activeSelectedBgIndex]) {
+          const currentBg = activeBackgrounds[activeSelectedBgIndex];
+          if (currentBg.src || (currentBg.mediaObj && currentBg.mediaObj.src)) {
+            const bgSrc = currentBg.src || currentBg.mediaObj.src;
+            thumbBgState.src = bgSrc;
+            thumbBgState.type = 'image';
+            const img = new Image();
+            img.onload = () => {
+              thumbBgState.imageElement = img;
+              m7SetThumbBgType('image');
+              m7DrawThumbnailCanvas();
+            };
+            img.src = bgSrc;
+            return;
+          }
+        }
+        // Fallback: take a snapshot from current 3D canvas
+        const srcCanvas = document.querySelector('#viewport canvas') || document.querySelector('.Stage__stage canvas');
+        if (srcCanvas) {
+          try {
+            const dataUrl = srcCanvas.toDataURL('image/jpeg', 0.95);
+            thumbBgState.src = dataUrl;
+            thumbBgState.type = 'image';
+            const img = new Image();
+            img.onload = () => {
+              thumbBgState.imageElement = img;
+              m7SetThumbBgType('image');
+              m7DrawThumbnailCanvas();
+            };
+            img.src = dataUrl;
+          } catch(e) {
+            console.warn('[M7 Thumbnail] Could not capture canvas bg:', e);
+          }
+        }
+      }
+
+      function m7AddThumbTextDirect(preset) {
+        const id = 'thumb_txt_' + Date.now();
+        let newObj = {
+          id: id,
+          name: preset,
+          text: 'NEW TEXT',
+          fontFamily: 'Outfit',
+          fontSize: 60,
+          fontWeight: 'Extra-Bold',
+          fillType: 'solid',
+          color: '#ffffff',
+          color2: '#f59e0b',
+          gradAngle: 90,
+          hasStroke: true,
+          strokeColor: '#000000',
+          strokeWidth: 6,
+          hasGlow: false,
+          glowAmount: 15,
+          glowColor: '#f97316',
+          hasShadow: true,
+          shadowColor: '#000000',
+          shadowBlur: 20,
+          shadowOffsetX: 4,
+          shadowOffsetY: 6,
+          tiltX: 0,
+          tiltY: 0,
+          perspective: 60,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          scale: 100,
+          opacity: 100,
+          textAlign: 'center'
+        };
+
+        if (preset === 'Headline') {
+          newObj.name = 'Headline Judul';
+          newObj.text = 'DANGDUT VIRAL ID';
+          newObj.fontSize = 90;
+          newObj.fontWeight = 'Extra-Bold';
+          newObj.fillType = 'gradient';
+          newObj.color = '#ffffff';
+          newObj.color2 = '#fbbf24';
+          newObj.strokeWidth = 8;
+          newObj.y = -80;
+        } else if (preset === 'Subtitle') {
+          newObj.name = 'Sub-Judul / Artis';
+          newObj.text = 'Lagu Dangdut Viral • Hits Terbaru';
+          newObj.fontSize = 46;
+          newObj.fontWeight = 'Bold';
+          newObj.color = '#38bdf8';
+          newObj.strokeWidth = 4;
+          newObj.y = 25;
+        } else if (preset === 'Badge') {
+          newObj.name = 'Badge / Label';
+          newObj.text = '🔥 FULL ALBUM 2026';
+          newObj.fontSize = 32;
+          newObj.fontWeight = 'Black';
+          newObj.color = '#ffffff';
+          newObj.hasStroke = true;
+          newObj.strokeColor = '#ef4444';
+          newObj.strokeWidth = 4;
+          newObj.y = 110;
+        } else if (preset === 'Tracklist') {
+          newObj.name = 'Tracklist Box';
+          newObj.text = '01. Lagu Pertama\n02. Lagu Kedua\n03. Lagu Ketiga\n04. Lagu Keempat';
+          newObj.fontSize = 28;
+          newObj.fontWeight = 'Semi-Bold';
+          newObj.textAlign = 'left';
+          newObj.x = -450;
+          newObj.y = 0;
+          newObj.strokeWidth = 3;
+        } else {
+          newObj.name = 'Custom Text';
+          newObj.text = 'Teks Baru';
+          newObj.fontSize = 50;
+        }
+
+        activeThumbnailObjects.push(newObj);
+        activeSelectedThumbnailIndex = activeThumbnailObjects.length - 1;
+        m7RenderThumbnailList();
+        m7SyncInspectorToThumbnail(newObj);
+        m7DrawThumbnailCanvas();
+        m7UpdateThumbnailGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7SelectThumbText(idx) {
+        if (idx < 0 || idx >= activeThumbnailObjects.length) return;
+        activeSelectedThumbnailIndex = idx;
+        m7RenderThumbnailList();
+        m7SyncInspectorToThumbnail(activeThumbnailObjects[idx]);
+        m7DrawThumbnailCanvas();
+        m7UpdateThumbnailGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7RemoveThumbText(idx) {
+        if (idx < 0 || idx >= activeThumbnailObjects.length) return;
+        activeThumbnailObjects.splice(idx, 1);
+        if (activeSelectedThumbnailIndex >= activeThumbnailObjects.length) {
+          activeSelectedThumbnailIndex = activeThumbnailObjects.length - 1;
+        }
+        m7RenderThumbnailList();
+        if (activeSelectedThumbnailIndex >= 0 && activeThumbnailObjects[activeSelectedThumbnailIndex]) {
+          m7SyncInspectorToThumbnail(activeThumbnailObjects[activeSelectedThumbnailIndex]);
+        } else {
+          const insp = document.getElementById('m7-inspector-thumbnail');
+          const noSel = document.getElementById('box-thumb-no-selection');
+          if (noSel) noSel.style.display = 'flex';
+          const cards = insp ? insp.querySelectorAll('.m7-inspector-card, .m7-layer-remove') : [];
+          cards.forEach(c => c.style.display = 'none');
+        }
+        m7DrawThumbnailCanvas();
+        m7UpdateThumbnailGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7DeleteActiveThumbText() {
+        if (activeSelectedThumbnailIndex >= 0) {
+          m7RemoveThumbText(activeSelectedThumbnailIndex);
+        }
+      }
+
+      function m7UpdateThumbTextProp(prop, val) {
+        if (activeSelectedThumbnailIndex < 0 || !activeThumbnailObjects[activeSelectedThumbnailIndex]) return;
+        const obj = activeThumbnailObjects[activeSelectedThumbnailIndex];
+        obj[prop] = val;
+
+        if (prop === 'fontSize') {
+          const valEl = document.getElementById('val-thumb-fontsize');
+          if (valEl) valEl.innerText = val;
+        } else if (prop === 'strokeWidth') {
+          const valEl = document.getElementById('val-thumb-strokewidth');
+          if (valEl) valEl.innerText = `${val}px`;
+        } else if (prop === 'glowAmount') {
+          const valEl = document.getElementById('val-thumb-glow');
+          if (valEl) valEl.innerText = val;
+        } else if (prop === 'shadowBlur') {
+          const valEl = document.getElementById('val-thumb-shadowblur');
+          if (valEl) valEl.innerText = val;
+        } else if (prop === 'shadowOffsetY') {
+          const valEl = document.getElementById('val-thumb-shadowy');
+          if (valEl) valEl.innerText = val;
+        } else if (prop === 'tiltX') {
+          const valEl = document.getElementById('val-thumb-tiltx');
+          if (valEl) valEl.innerText = `${val}°`;
+        } else if (prop === 'tiltY') {
+          const valEl = document.getElementById('val-thumb-tilty');
+          if (valEl) valEl.innerText = `${val}°`;
+        } else if (prop === 'x') {
+          const valEl = document.getElementById('val-thumb-posx');
+          if (valEl) valEl.innerText = val;
+        } else if (prop === 'y') {
+          const valEl = document.getElementById('val-thumb-posy');
+          if (valEl) valEl.innerText = val;
+        } else if (prop === 'rotation') {
+          const valEl = document.getElementById('val-thumb-rotation');
+          if (valEl) valEl.innerText = `${val}°`;
+        } else if (prop === 'scale') {
+          const valEl = document.getElementById('val-thumb-scale');
+          if (valEl) valEl.innerText = `${val}%`;
+        } else if (prop === 'opacity') {
+          const valEl = document.getElementById('val-thumb-opacity');
+          if (valEl) valEl.innerText = `${val}%`;
+        } else if (prop === 'gradAngle') {
+          const valEl = document.getElementById('val-thumb-gradangle');
+          if (valEl) valEl.innerText = `${val}°`;
+        } else if (prop === 'fillType') {
+          const wrap2 = document.getElementById('grp-thumb-color2-wrap');
+          const wrapA = document.getElementById('grp-thumb-gradangle-wrap');
+          const lbl1 = document.getElementById('lbl-thumb-color1');
+          if (wrap2) wrap2.style.display = val === 'gradient' ? 'block' : 'none';
+          if (wrapA) wrapA.style.display = val === 'gradient' ? 'block' : 'none';
+          if (lbl1) lbl1.innerText = val === 'gradient' ? 'Primary Color (Start)' : 'Text Color';
+        } else if (prop === 'hasStroke') {
+          const sub = document.getElementById('grp-thumb-stroke-sub');
+          if (sub) sub.style.display = val ? 'flex' : 'none';
+        } else if (prop === 'hasGlow') {
+          const sub = document.getElementById('grp-thumb-glow-sub');
+          if (sub) sub.style.display = val ? 'flex' : 'none';
+        } else if (prop === 'hasShadow') {
+          const sub = document.getElementById('grp-thumb-shadow-sub');
+          if (sub) sub.style.display = val ? 'flex' : 'none';
+        }
+
+        m7DrawThumbnailCanvas();
+        m7UpdateThumbnailGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7UpdateThumbTextPosPreset(preset) {
+        if (activeSelectedThumbnailIndex < 0 || !activeThumbnailObjects[activeSelectedThumbnailIndex]) return;
+        const obj = activeThumbnailObjects[activeSelectedThumbnailIndex];
+        if (preset === 'Center') { obj.x = 0; obj.y = 0; }
+        else if (preset === 'Top Center') { obj.x = 0; obj.y = -350; }
+        else if (preset === 'Bottom Center') { obj.x = 0; obj.y = 350; }
+        else if (preset === 'Top Left') { obj.x = -500; obj.y = -350; }
+        else if (preset === 'Bottom Left') { obj.x = -500; obj.y = 350; }
+
+        const inX = document.getElementById('slider-thumb-posx');
+        const inY = document.getElementById('slider-thumb-posy');
+        const valX = document.getElementById('val-thumb-posx');
+        const valY = document.getElementById('val-thumb-posy');
+        if (inX) inX.value = obj.x;
+        if (inY) inY.value = obj.y;
+        if (valX) valX.innerText = obj.x;
+        if (valY) valY.innerText = obj.y;
+
+        m7DrawThumbnailCanvas();
+        m7UpdateThumbnailGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7ResetThumb3D() {
+        if (activeSelectedThumbnailIndex < 0 || !activeThumbnailObjects[activeSelectedThumbnailIndex]) return;
+        const obj = activeThumbnailObjects[activeSelectedThumbnailIndex];
+        obj.tiltX = 0;
+        obj.tiltY = 0;
+        obj.perspective = 60;
+        const inTX = document.getElementById('slider-thumb-tiltx');
+        const inTY = document.getElementById('slider-thumb-tilty');
+        const valTX = document.getElementById('val-thumb-tiltx');
+        const valTY = document.getElementById('val-thumb-tilty');
+        if (inTX) inTX.value = 0;
+        if (inTY) inTY.value = 0;
+        if (valTX) valTX.innerText = '0°';
+        if (valTY) valTY.innerText = '0°';
+        m7DrawThumbnailCanvas();
+        m7ScheduleAutosave();
+      }
+
+      function m7RenderThumbnailList() {
+        const list = document.getElementById('m7-thumb-layers-list');
+        const count = document.getElementById('m7-thumb-count');
+        if (count) count.innerText = activeThumbnailObjects.length;
+        if (!list) return;
+
+        list.innerHTML = '';
+        if (activeThumbnailObjects.length === 0) {
+          list.innerHTML = `
+            <div id="m7-empty-thumb-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+              No thumbnail text layers. Choose a preset above to add.
+            </div>
+          `;
+          return;
+        }
+
+        activeThumbnailObjects.forEach((obj, idx) => {
+          const isSel = idx === activeSelectedThumbnailIndex;
+          const card = document.createElement('div');
+          card.className = `m7-layer-item ${isSel ? 'active' : ''}`;
+          card.onclick = () => m7SelectThumbText(idx);
+
+          const previewText = (obj.text || obj.name || 'Text').split('\n')[0];
+          card.innerHTML = `
+            <div class="m7-layer-item-left">
+              <span class="m7-layer-idx">${String(idx + 1).padStart(2, '0')}</span>
+              <span class="m7-layer-icon">✍️</span>
+              <div class="m7-layer-details">
+                <span class="m7-layer-name" style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${obj.name || previewText}</span>
+                <span class="m7-layer-sub" style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${previewText}</span>
+              </div>
+            </div>
+            <div class="m7-layer-item-right">
+              <button class="m7-layer-remove-btn" title="Remove Layer" onclick="event.stopPropagation(); m7RemoveThumbText(${idx})">✕</button>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      }
+
+      function m7SyncInspectorToThumbnail(obj) {
+        const insp = document.getElementById('m7-inspector-thumbnail');
+        const noSel = document.getElementById('box-thumb-no-selection');
+        if (!insp) return;
+
+        if (!obj) {
+          if (noSel) noSel.style.display = 'flex';
+          const cards = insp.querySelectorAll('.m7-inspector-card, .m7-layer-remove');
+          cards.forEach(c => c.style.display = 'none');
+          return;
+        }
+
+        if (noSel) noSel.style.display = 'none';
+        const cards = insp.querySelectorAll('.m7-inspector-card, .m7-layer-remove');
+        cards.forEach(c => c.style.display = 'flex');
+
+        const txtContent = document.getElementById('txt-thumb-content');
+        if (txtContent) txtContent.value = obj.text || '';
+
+        const selFont = document.getElementById('sel-thumb-font');
+        if (selFont) selFont.value = obj.fontFamily || 'Outfit';
+
+        const selWeight = document.getElementById('sel-thumb-weight');
+        if (selWeight) selWeight.value = obj.fontWeight || 'Extra-Bold';
+
+        const slSize = document.getElementById('slider-thumb-fontsize');
+        const valSize = document.getElementById('val-thumb-fontsize');
+        if (slSize) slSize.value = obj.fontSize || 90;
+        if (valSize) valSize.innerText = obj.fontSize || 90;
+
+        const selAlign = document.getElementById('sel-thumb-align');
+        if (selAlign) selAlign.value = obj.textAlign || 'center';
+
+        const selFill = document.getElementById('sel-thumb-filltype');
+        if (selFill) selFill.value = obj.fillType || 'solid';
+
+        const col1 = document.getElementById('col-thumb-color1');
+        if (col1) col1.value = obj.color || '#ffffff';
+
+        const col2 = document.getElementById('col-thumb-color2');
+        if (col2) col2.value = obj.color2 || '#f59e0b';
+
+        const slGradA = document.getElementById('slider-thumb-gradangle');
+        const valGradA = document.getElementById('val-thumb-gradangle');
+        if (slGradA) slGradA.value = obj.gradAngle !== undefined ? obj.gradAngle : 90;
+        if (valGradA) valGradA.innerText = `${obj.gradAngle !== undefined ? obj.gradAngle : 90}°`;
+
+        const wrap2 = document.getElementById('grp-thumb-color2-wrap');
+        const wrapA = document.getElementById('grp-thumb-gradangle-wrap');
+        const lbl1 = document.getElementById('lbl-thumb-color1');
+        if (wrap2) wrap2.style.display = obj.fillType === 'gradient' ? 'block' : 'none';
+        if (wrapA) wrapA.style.display = obj.fillType === 'gradient' ? 'block' : 'none';
+        if (lbl1) lbl1.innerText = obj.fillType === 'gradient' ? 'Primary Color (Start)' : 'Text Color';
+
+        const chkStroke = document.getElementById('chk-thumb-stroke');
+        if (chkStroke) chkStroke.checked = !!obj.hasStroke;
+        const subStroke = document.getElementById('grp-thumb-stroke-sub');
+        if (subStroke) subStroke.style.display = obj.hasStroke ? 'flex' : 'none';
+
+        const slStroke = document.getElementById('slider-thumb-strokewidth');
+        const valStroke = document.getElementById('val-thumb-strokewidth');
+        if (slStroke) slStroke.value = obj.strokeWidth || 6;
+        if (valStroke) valStroke.innerText = `${obj.strokeWidth || 6}px`;
+
+        const colStroke = document.getElementById('col-thumb-strokecolor');
+        if (colStroke) colStroke.value = obj.strokeColor || '#000000';
+
+        const chkGlow = document.getElementById('chk-thumb-glow');
+        if (chkGlow) chkGlow.checked = !!obj.hasGlow;
+        const subGlow = document.getElementById('grp-thumb-glow-sub');
+        if (subGlow) subGlow.style.display = obj.hasGlow ? 'flex' : 'none';
+
+        const slGlow = document.getElementById('slider-thumb-glow');
+        const valGlow = document.getElementById('val-thumb-glow');
+        if (slGlow) slGlow.value = obj.glowAmount || 15;
+        if (valGlow) valGlow.innerText = obj.glowAmount || 15;
+
+        const colGlow = document.getElementById('col-thumb-glowcolor');
+        if (colGlow) colGlow.value = obj.glowColor || '#f97316';
+
+        const chkShadow = document.getElementById('chk-thumb-shadow');
+        if (chkShadow) chkShadow.checked = obj.hasShadow !== false;
+        const subShadow = document.getElementById('grp-thumb-shadow-sub');
+        if (subShadow) subShadow.style.display = obj.hasShadow !== false ? 'flex' : 'none';
+
+        const slShadowBlur = document.getElementById('slider-thumb-shadowblur');
+        const valShadowBlur = document.getElementById('val-thumb-shadowblur');
+        if (slShadowBlur) slShadowBlur.value = obj.shadowBlur || 20;
+        if (valShadowBlur) valShadowBlur.innerText = obj.shadowBlur || 20;
+
+        const slShadowY = document.getElementById('slider-thumb-shadowy');
+        const valShadowY = document.getElementById('val-thumb-shadowy');
+        if (slShadowY) slShadowY.value = obj.shadowOffsetY !== undefined ? obj.shadowOffsetY : 6;
+        if (valShadowY) valShadowY.innerText = obj.shadowOffsetY !== undefined ? obj.shadowOffsetY : 6;
+
+        const colShadow = document.getElementById('col-thumb-shadowcolor');
+        if (colShadow) colShadow.value = obj.shadowColor || '#000000';
+
+        const slTiltX = document.getElementById('slider-thumb-tiltx');
+        const valTiltX = document.getElementById('val-thumb-tiltx');
+        if (slTiltX) slTiltX.value = obj.tiltX || 0;
+        if (valTiltX) valTiltX.innerText = `${obj.tiltX || 0}°`;
+
+        const slTiltY = document.getElementById('slider-thumb-tilty');
+        const valTiltY = document.getElementById('val-thumb-tilty');
+        if (slTiltY) slTiltY.value = obj.tiltY || 0;
+        if (valTiltY) valTiltY.innerText = `${obj.tiltY || 0}°`;
+
+        const slPosX = document.getElementById('slider-thumb-posx');
+        const valPosX = document.getElementById('val-thumb-posx');
+        if (slPosX) slPosX.value = obj.x || 0;
+        if (valPosX) valPosX.innerText = obj.x || 0;
+
+        const slPosY = document.getElementById('slider-thumb-posy');
+        const valPosY = document.getElementById('val-thumb-posy');
+        if (slPosY) slPosY.value = obj.y || 0;
+        if (valPosY) valPosY.innerText = obj.y || 0;
+
+        const slRot = document.getElementById('slider-thumb-rotation');
+        const valRot = document.getElementById('val-thumb-rotation');
+        if (slRot) slRot.value = obj.rotation || 0;
+        if (valRot) valRot.innerText = `${obj.rotation || 0}°`;
+
+        const slScale = document.getElementById('slider-thumb-scale');
+        const valScale = document.getElementById('val-thumb-scale');
+        if (slScale) slScale.value = obj.scale || 100;
+        if (valScale) valScale.innerText = `${obj.scale || 100}%`;
+
+        const slOpacity = document.getElementById('slider-thumb-opacity');
+        const valOpacity = document.getElementById('val-thumb-opacity');
+        if (slOpacity) slOpacity.value = obj.opacity || 100;
+        if (valOpacity) valOpacity.innerText = `${obj.opacity || 100}%`;
+      }
+
+      function m7DrawThumbnailCanvas() {
+        const canvas = document.getElementById('m7-thumbnail-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = 1920;
+        const H = 1080;
+
+        ctx.save();
+        ctx.clearRect(0, 0, W, H);
+
+        // 1. Draw Background
+        if (thumbBgState.type === 'image' && thumbBgState.imageElement) {
+          const img = thumbBgState.imageElement;
+          const imgRatio = img.width / img.height;
+          const canvasRatio = W / H;
+          let drawW = W, drawH = H, drawX = 0, drawY = 0;
+
+          if (imgRatio > canvasRatio) {
+            drawH = H;
+            drawW = H * imgRatio;
+            drawX = (W - drawW) / 2;
+          } else {
+            drawW = W;
+            drawH = W / imgRatio;
+            drawY = (H - drawH) / 2;
+          }
+
+          if (thumbBgState.blur > 0) {
+            ctx.filter = `blur(${thumbBgState.blur}px)`;
+          }
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          ctx.filter = 'none';
+        } else if (thumbBgState.type === 'gradient') {
+          const grad = ctx.createLinearGradient(0, 0, W, H);
+          grad.addColorStop(0, thumbBgState.gradColor1 || '#0f172a');
+          grad.addColorStop(1, thumbBgState.gradColor2 || '#1e1b4b');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, W, H);
+        } else {
+          ctx.fillStyle = thumbBgState.color || '#090b10';
+          ctx.fillRect(0, 0, W, H);
+        }
+
+        // Overlay Darkness
+        const darkness = (thumbBgState.darkness || 0) / 100;
+        if (darkness > 0) {
+          ctx.fillStyle = `rgba(0, 0, 0, ${darkness})`;
+          ctx.fillRect(0, 0, W, H);
+        }
+
+        // 2. Draw Text Layers
+        activeThumbnailObjects.forEach((obj) => {
+          if (!obj.text) return;
+          ctx.save();
+
+          const centerX = (W / 2) + (obj.x || 0);
+          const centerY = (H / 2) + (obj.y || 0);
+          ctx.translate(centerX, centerY);
+
+          if (obj.rotation) {
+            ctx.rotate((obj.rotation * Math.PI) / 180);
+          }
+
+          const scale = (obj.scale || 100) / 100;
+          if (scale !== 1) {
+            ctx.scale(scale, scale);
+          }
+
+          ctx.globalAlpha = Math.max(0, Math.min(1, (obj.opacity || 100) / 100));
+
+          // Font setup
+          const weight = obj.fontWeight === 'Black' ? '900' : (obj.fontWeight === 'Extra-Bold' ? '800' : (obj.fontWeight === 'Bold' ? 'bold' : 'normal'));
+          ctx.font = `${weight} ${obj.fontSize || 60}px "${obj.fontFamily || 'Outfit'}", sans-serif`;
+          ctx.textAlign = obj.textAlign || 'center';
+          ctx.textBaseline = 'middle';
+
+          const lines = String(obj.text).split('\n');
+          const lineHeight = (obj.fontSize || 60) * 1.25;
+          const totalTextH = lines.length * lineHeight;
+          const startY = - (totalTextH / 2) + (lineHeight / 2);
+
+          lines.forEach((line, lineIdx) => {
+            const lineY = startY + (lineIdx * lineHeight);
+
+            // Shadow
+            if (obj.hasShadow !== false) {
+              ctx.shadowColor = obj.shadowColor || 'rgba(0,0,0,0.8)';
+              ctx.shadowBlur = obj.shadowBlur || 20;
+              ctx.shadowOffsetX = obj.shadowOffsetX !== undefined ? obj.shadowOffsetX : 4;
+              ctx.shadowOffsetY = obj.shadowOffsetY !== undefined ? obj.shadowOffsetY : 6;
+            } else {
+              ctx.shadowColor = 'transparent';
+              ctx.shadowBlur = 0;
+            }
+
+            // Outer Glow
+            if (obj.hasGlow) {
+              ctx.save();
+              ctx.shadowColor = obj.glowColor || '#f97316';
+              ctx.shadowBlur = obj.glowAmount || 15;
+              ctx.strokeStyle = obj.glowColor || '#f97316';
+              ctx.lineWidth = (obj.strokeWidth || 6) + 4;
+              ctx.strokeText(line, 0, lineY);
+              ctx.restore();
+            }
+
+            // Stroke
+            if (obj.hasStroke) {
+              ctx.strokeStyle = obj.strokeColor || '#000000';
+              ctx.lineWidth = obj.strokeWidth || 6;
+              ctx.lineJoin = 'round';
+              ctx.miterLimit = 2;
+              ctx.strokeText(line, 0, lineY);
+            }
+
+            // Fill
+            if (obj.fillType === 'gradient') {
+              const textMetrics = ctx.measureText(line);
+              const angleRad = ((obj.gradAngle !== undefined ? obj.gradAngle : 90) * Math.PI) / 180;
+              const gradW = textMetrics.width || 400;
+              const gradH = obj.fontSize || 60;
+              const x1 = - (gradW / 2) * Math.cos(angleRad);
+              const y1 = - (gradH / 2) * Math.sin(angleRad);
+              const x2 = (gradW / 2) * Math.cos(angleRad);
+              const y2 = (gradH / 2) * Math.sin(angleRad);
+
+              const fillGrad = ctx.createLinearGradient(x1, y1, x2, y2);
+              fillGrad.addColorStop(0, obj.color || '#ffffff');
+              fillGrad.addColorStop(1, obj.color2 || '#f59e0b');
+              ctx.fillStyle = fillGrad;
+            } else {
+              ctx.fillStyle = obj.color || '#ffffff';
+            }
+
+            ctx.fillText(line, 0, lineY);
+          });
+
+          ctx.restore();
+        });
+
+        ctx.restore();
+      }
+
+      function m7DownloadThumbnailJPG() {
+        m7DrawThumbnailCanvas();
+        const canvas = document.getElementById('m7-thumbnail-canvas');
+        if (!canvas) return;
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `thumbnail_${Date.now()}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      function m7CaptureCurrentThumbnailBase64() {
+        m7DrawThumbnailCanvas();
+        const canvas = document.getElementById('m7-thumbnail-canvas');
+        if (!canvas) return { saved: false, base64Data: '' };
+
+        return {
+          saved: true,
+          base64Data: canvas.toDataURL('image/jpeg', 0.95),
+          width: 1920,
+          height: 1080,
+          format: 'jpeg'
+        };
+      }
+
+      function m7UpdateThumbnailGizmo() {
+        const gizmo = document.getElementById('m7-thumb-gizmo-box');
+        const badge = document.getElementById('m7-thumb-gizmo-badge');
+        const canvas = document.getElementById('m7-thumbnail-canvas');
+        if (!gizmo || !canvas) return;
+
+        if (activeCategory !== 'thumbnail' || activeSelectedThumbnailIndex < 0 || !activeThumbnailObjects[activeSelectedThumbnailIndex]) {
+          gizmo.style.display = 'none';
+          return;
+        }
+
+        const obj = activeThumbnailObjects[activeSelectedThumbnailIndex];
+        const cRect = canvas.getBoundingClientRect();
+        if (cRect.width === 0 || cRect.height === 0) {
+          gizmo.style.display = 'none';
+          return;
+        }
+
+        const scaleX = cRect.width / 1920;
+        const scaleY = cRect.height / 1080;
+
+        const ctx = canvas.getContext('2d');
+        ctx.font = `${obj.fontSize || 60}px "${obj.fontFamily || 'Outfit'}"`;
+        const lines = String(obj.text || '').split('\n');
+        let maxLineW = 100;
+        lines.forEach(l => {
+          const w = ctx.measureText(l).width;
+          if (w > maxLineW) maxLineW = w;
+        });
+
+        const boxW = (maxLineW + 40) * ((obj.scale || 100) / 100);
+        const boxH = (lines.length * (obj.fontSize || 60) * 1.3 + 20) * ((obj.scale || 100) / 100);
+
+        const canvasLeft = (1920 / 2) + (obj.x || 0) - (boxW / 2);
+        const canvasTop = (1080 / 2) + (obj.y || 0) - (boxH / 2);
+
+        const left = canvasLeft * scaleX;
+        const top = canvasTop * scaleY;
+        const screenW = boxW * scaleX;
+        const screenH = boxH * scaleY;
+
+        gizmo.style.display = 'block';
+        gizmo.style.left = `${Math.round(left)}px`;
+        gizmo.style.top = `${Math.round(top)}px`;
+        gizmo.style.width = `${Math.round(screenW)}px`;
+        gizmo.style.height = `${Math.round(screenH)}px`;
+
+        if (badge) badge.innerText = obj.name || 'THUMBNAIL TEXT';
+      }
+
+      function m7InitThumbnailGizmoInteraction() {
+        const gizmo = document.getElementById('m7-thumb-gizmo-box');
+        const canvas = document.getElementById('m7-thumbnail-canvas');
+        if (!gizmo || !canvas) return;
+
+        let isDragging = false;
+        let isResizing = false;
+        let resizeHandle = '';
+        let startX = 0, startY = 0;
+        let origObjX = 0, origObjY = 0;
+        let origFontSize = 60;
+
+        gizmo.addEventListener('mousedown', (e) => {
+          if (e.target.dataset.thumbHandle) {
+            isResizing = true;
+            resizeHandle = e.target.dataset.thumbHandle;
+          } else if (e.target.id === 'm7-thumb-gizmo-del-btn') {
+            return;
+          } else {
+            isDragging = true;
+          }
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          startX = e.clientX;
+          startY = e.clientY;
+          if (activeSelectedThumbnailIndex >= 0 && activeThumbnailObjects[activeSelectedThumbnailIndex]) {
+            origObjX = activeThumbnailObjects[activeSelectedThumbnailIndex].x || 0;
+            origObjY = activeThumbnailObjects[activeSelectedThumbnailIndex].y || 0;
+            origFontSize = activeThumbnailObjects[activeSelectedThumbnailIndex].fontSize || 60;
+          }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+          if (!isDragging && !isResizing) return;
+          if (activeSelectedThumbnailIndex < 0 || !activeThumbnailObjects[activeSelectedThumbnailIndex]) return;
+
+          const obj = activeThumbnailObjects[activeSelectedThumbnailIndex];
+          const cRect = canvas.getBoundingClientRect();
+          const scaleX = 1920 / cRect.width;
+          const scaleY = 1080 / cRect.height;
+          const dx = (e.clientX - startX) * scaleX;
+          const dy = (e.clientY - startY) * scaleY;
+
+          if (isDragging) {
+            obj.x = Math.round(origObjX + dx);
+            obj.y = Math.round(origObjY + dy);
+            const inX = document.getElementById('slider-thumb-posx');
+            const inY = document.getElementById('slider-thumb-posy');
+            const valX = document.getElementById('val-thumb-posx');
+            const valY = document.getElementById('val-thumb-posy');
+            if (inX) inX.value = obj.x;
+            if (inY) inY.value = obj.y;
+            if (valX) valX.innerText = obj.x;
+            if (valY) valY.innerText = obj.y;
+
+            m7DrawThumbnailCanvas();
+            m7UpdateThumbnailGizmo();
+          } else if (isResizing) {
+            const factor = Math.max(0.2, Math.min(4.0, 1 + (dx / 400)));
+            obj.fontSize = Math.max(12, Math.min(300, Math.round(origFontSize * factor)));
+            const inSize = document.getElementById('slider-thumb-fontsize');
+            const valSize = document.getElementById('val-thumb-fontsize');
+            if (inSize) inSize.value = obj.fontSize;
+            if (valSize) valSize.innerText = obj.fontSize;
+
+            m7DrawThumbnailCanvas();
+            m7UpdateThumbnailGizmo();
+          }
+        });
+
+        window.addEventListener('mouseup', () => {
+          if (isDragging || isResizing) {
+            isDragging = false;
+            isResizing = false;
+            m7ScheduleAutosave();
+          }
+        });
+      }
+
       /* === 5. CANVA-STYLE ON-CANVAS DIRECT MANIPULATION GIZMO === */
       let m7IsGizmoSelected = false;
       let m7IsDraggingGizmo = false;
@@ -6236,6 +8870,8 @@
           m7RemoveVisualizer(activeSelectedVizIndex);
         } else if ((activeCategory === 'text' || activeCategory === 'lyrics') && activeSelectedTextIndex >= 0 && activeTextObjects[activeSelectedTextIndex]) {
           m7RemoveTextObject(activeSelectedTextIndex);
+        } else if (activeCategory === 'branding' && activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex]) {
+          m7RemoveBrandingObject(activeSelectedBrandingIndex);
         }
       }
 
@@ -6246,6 +8882,46 @@
         const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 854, height: 480 };
         const stageW = stageSize.width || 854;
         const stageH = stageSize.height || 480;
+
+        if (activeCategory === 'branding' && activeBrandingObjects[activeSelectedBrandingIndex]) {
+          const item = activeBrandingObjects[activeSelectedBrandingIndex];
+          if (item.type === 'Intro' || item.type === 'Outro') return null;
+          const disp = item.display;
+
+          return {
+            type: 'branding',
+            item: item,
+            display: disp,
+            name: item.name || 'Branding',
+            getX: () => (item.x || 0),
+            getY: () => (item.y || 0),
+            getW: () => Math.round(280 * ((item.scale || 100) / 100)),
+            getH: () => Math.round(120 * ((item.scale || 100) / 100)),
+            getShadowH: () => 0,
+            getFontSize: () => item.scale || 100,
+            setPos: (x, y) => {
+              item.x = Math.round(x);
+              item.y = Math.round(y);
+              if (disp) disp.update({ x: item.x, y: item.y });
+              const inX = document.getElementById('slider-branding-posx');
+              const inY = document.getElementById('slider-branding-posy');
+              const valX = document.getElementById('val-branding-posx');
+              const valY = document.getElementById('val-branding-posy');
+              if (inX) inX.value = item.x;
+              if (inY) inY.value = item.y;
+              if (valX) valX.innerText = item.x;
+              if (valY) valY.innerText = item.y;
+            },
+            setFontSize: (newScale) => {
+              item.scale = Math.max(10, Math.min(200, Math.round(newScale)));
+              m7DrawBrandingCanvas(item);
+              const inScale = document.getElementById('slider-branding-scale');
+              const valScale = document.getElementById('val-branding-scale');
+              if (inScale) inScale.value = item.scale;
+              if (valScale) valScale.innerText = `${item.scale}%`;
+            }
+          };
+        }
 
         if ((activeCategory === 'text' || activeCategory === 'lyrics') && activeTextObjects[activeSelectedTextIndex]) {
           const item = activeTextObjects[activeSelectedTextIndex];
@@ -6718,6 +9394,9 @@
           }
         } catch(e) {}
 
+        // Capture high-res static thumbnail data (JPG)
+        const thumbData = m7CaptureCurrentThumbnailBase64();
+
         const payload = {
           outputFilename: outName,
           backgroundName: currentBg ? currentBg.name : 'Background Canvas',
@@ -6725,7 +9404,8 @@
           tracks: playlistTracks.map(t => t.path || t.name),
           duration: totalSecs || 10,
           fps: 60,
-          quality: 'High'
+          quality: 'High',
+          thumbnail: thumbData
         };
 
         // Dispatch directly to MediaFactory Queue Manager
@@ -6794,6 +9474,58 @@
             audioFile: audioPath,
             duration: totalDuration
           });
+
+          // 1. Save Thumbnail (JPG) into render output folder
+          try {
+            const thumbData = job.m7Payload?.thumbnail || job.thumbnail || m7CaptureCurrentThumbnailBase64();
+            if (thumbData && thumbData.base64Data) {
+              const base64Clean = thumbData.base64Data.split(';base64,').pop();
+              await fetch('/api/m7/save-output-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  outputFolder: outputFolder,
+                  filename: 'thumbnail.jpg',
+                  base64Data: base64Clean
+                })
+              });
+            }
+
+            // 2. Save metadata.json & render.json into render output folder
+            const metaObj = {
+              title: outFilename,
+              mode: 'Mode 7 (Astrofox)',
+              duration: totalDuration,
+              playlist: playlistTracks.map((t, idx) => ({
+                index: idx + 1,
+                title: t.name || `Track ${idx + 1}`,
+                duration: t.duration || 0,
+                durationStr: t.durationStr || '0:00'
+              })),
+              thumbnail: 'thumbnail.jpg',
+              createdAt: new Date().toISOString()
+            };
+            await fetch('/api/m7/save-output-file', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                outputFolder: outputFolder,
+                filename: 'metadata.json',
+                textContent: JSON.stringify(metaObj, null, 2)
+              })
+            });
+            await fetch('/api/m7/save-output-file', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                outputFolder: outputFolder,
+                filename: 'render.json',
+                textContent: JSON.stringify(metaObj, null, 2)
+              })
+            });
+          } catch(e) {
+            console.warn('[M7 Render] Error saving thumbnail/metadata output:', e);
+          }
 
           if (window.__ASTROFOX_VIDEO__ && window.__ASTROFOX_VIDEO__.startRender) {
             window.__ASTROFOX_VIDEO__.startRender({
@@ -6926,7 +9658,51 @@
               name: t.properties?.name || t.name,
               properties: { ...(t.properties || {}) }
             })),
-            activeSelectedTextIndex: activeSelectedTextIndex
+            activeSelectedTextIndex: activeSelectedTextIndex,
+            activeBrandingObjects: activeBrandingObjects.map(b => ({
+              id: b.id,
+              name: b.name,
+              type: b.type,
+              source: b.source,
+              x: b.x,
+              y: b.y,
+              position: b.position,
+              scale: b.scale,
+              opacity: b.opacity,
+              shadow: b.shadow,
+              brandColor: b.brandColor,
+              animationType: b.animationType,
+              animationIntensity: b.animationIntensity,
+              visible: b.visible,
+              introStyle: b.introStyle,
+              introDuration: b.introDuration,
+              intensity: b.intensity,
+              darkIntensity: b.darkIntensity,
+              blurIntensity: b.blurIntensity,
+              textTransition: b.textTransition,
+              mainTransition: b.mainTransition,
+              paragraphCount: b.paragraphCount,
+              paragraphDuration: b.paragraphDuration,
+              introText1: b.introText1,
+              introText2: b.introText2,
+              introText3: b.introText3,
+              introFontFamily: b.introFontFamily,
+              introFontSize: b.introFontSize,
+              introTextColor: b.introTextColor,
+              introTextAlign: b.introTextAlign
+            })),
+            activeSelectedBrandingIndex: activeSelectedBrandingIndex,
+            activeThumbnailObjects: activeThumbnailObjects.map(t => ({ ...t })),
+            activeSelectedThumbnailIndex: activeSelectedThumbnailIndex,
+            thumbBgState: {
+              type: thumbBgState.type,
+              src: thumbBgState.src,
+              color: thumbBgState.color,
+              gradColor1: thumbBgState.gradColor1,
+              gradColor2: thumbBgState.gradColor2,
+              darkness: thumbBgState.darkness,
+              blur: thumbBgState.blur
+            }
           };
 
           // 1. Save synchronously to localStorage
@@ -7193,7 +9969,50 @@
             }
           }
 
-          // 8. Restore Navigation Category
+          // 8. Restore Branding Objects (M3 Parity)
+          if (savedState.activeBrandingObjects && Array.isArray(savedState.activeBrandingObjects) && savedState.activeBrandingObjects.length > 0) {
+            activeBrandingObjects = [];
+            for (let i = 0; i < savedState.activeBrandingObjects.length; i++) {
+              const b = savedState.activeBrandingObjects[i];
+              const obj = { ...b, isBranding: true };
+              if (obj.type !== 'Intro' && obj.type !== 'Outro') {
+                m7CreateBrandingDisplay(obj);
+                if (obj.source) {
+                  m7SetBrandingImageSource(obj, obj.source);
+                }
+              }
+              activeBrandingObjects.push(obj);
+            }
+            activeSelectedBrandingIndex = (savedState.activeSelectedBrandingIndex >= 0 && savedState.activeSelectedBrandingIndex < activeBrandingObjects.length)
+              ? savedState.activeSelectedBrandingIndex
+              : 0;
+            m7RenderBrandingList();
+            if (activeBrandingObjects[activeSelectedBrandingIndex]) {
+              m7SyncInspectorToBranding(activeBrandingObjects[activeSelectedBrandingIndex]);
+            }
+          }
+
+          // 8b. Restore Thumbnail Studio State
+          if (savedState.thumbBgState) {
+            thumbBgState = { ...thumbBgState, ...savedState.thumbBgState };
+            if (thumbBgState.type === 'image' && thumbBgState.src) {
+              const img = new Image();
+              img.onload = () => {
+                thumbBgState.imageElement = img;
+                if (activeCategory === 'thumbnail') m7DrawThumbnailCanvas();
+              };
+              img.src = thumbBgState.src;
+            }
+          }
+          if (savedState.activeThumbnailObjects && Array.isArray(savedState.activeThumbnailObjects) && savedState.activeThumbnailObjects.length > 0) {
+            activeThumbnailObjects = savedState.activeThumbnailObjects.map(t => ({ ...t }));
+            activeSelectedThumbnailIndex = (savedState.activeSelectedThumbnailIndex >= 0 && savedState.activeSelectedThumbnailIndex < activeThumbnailObjects.length)
+              ? savedState.activeSelectedThumbnailIndex
+              : 0;
+            m7RenderThumbnailList();
+          }
+
+          // 9. Restore Navigation Category
           if (savedState.activeCategory) {
             m7SelectCategory(savedState.activeCategory);
           }
@@ -7203,6 +10022,10 @@
             m7EnforceLayerOrder(scene);
           }
           m7UpdateGizmo();
+          if (activeCategory === 'thumbnail') {
+            m7DrawThumbnailCanvas();
+            m7UpdateThumbnailGizmo();
+          }
         } catch (err) {
           console.error('[M7 Autosave] Error restoring workspace state:', err);
         } finally {
@@ -7245,6 +10068,7 @@
           }
           m7InitVideoProgressTracking();
           m7InitCanvasGizmoInteraction();
+          m7InitThumbnailGizmoInteraction();
 
           // Hook player events to playlist UI
           if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.player) {

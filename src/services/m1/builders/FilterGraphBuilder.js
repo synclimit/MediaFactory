@@ -1,20 +1,17 @@
-import { SegmentBuilder } from './SegmentBuilder.js';
-import { PlaybackBuilder } from './PlaybackBuilder.js';
-import { LoopBuilder } from './LoopBuilder.js';
-import { OverlayBuilder } from './OverlayBuilder.js';
-import { EncoderBuilder } from './EncoderBuilder.js';
-
 export class FilterGraphBuilder {
   static async buildStage1(job) {
     const nodes = [];
+    const ts = Date.now();
     
-    // Stage 1: Trim -> Slow Mo -> Scale
+    const { SegmentBuilder } = await import(`./SegmentBuilder.js?v=${ts}`);
     const segmentNode = await SegmentBuilder.build(job);
     if (segmentNode) nodes.push(segmentNode);
     
+    const { PlaybackBuilder } = await import(`./PlaybackBuilder.js?v=${ts}`);
     const playbackNode = await PlaybackBuilder.build(job);
     if (playbackNode) nodes.push(playbackNode);
     
+    const { EncoderBuilder } = await import(`./EncoderBuilder.js?v=${ts}`);
     const encoderNode = await EncoderBuilder.build(job);
     if (encoderNode) nodes.push(encoderNode);
     
@@ -23,12 +20,13 @@ export class FilterGraphBuilder {
 
   static async buildStage2(job) {
     const nodes = [];
+    const ts = Date.now();
     
-    // Stage 2: Concat -> Overlay
-    // Note: LoopBuilder doesn't produce filters anymore, it produces inputs
+    const { LoopBuilder } = await import(`./LoopBuilder.js?v=${ts}`);
     const loopNode = await LoopBuilder.build(job);
     if (loopNode) nodes.push(loopNode);
     
+    const { OverlayBuilder } = await import(`./OverlayBuilder.js?v=${ts}`);
     const overlayNodes = await OverlayBuilder.build(job);
     nodes.push(...overlayNodes);
     

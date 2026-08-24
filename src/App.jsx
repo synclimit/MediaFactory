@@ -1773,23 +1773,22 @@ export default function App() {
             logo: { 
               enabled: Boolean(slot.useLogoChannel), 
               asset: slot.customLogo || workspaceConfig?.branding?.logo || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).logo } catch(e) { return 'logo.png' } })() || 'logo.png', 
-              opacity: 1, 
-              position: slot.logoPosition || 'bottom-right' 
+              position: slot.logoPosition || workspaceConfig?.branding?.logoPosition || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).logoPosition } catch(e) { return 'bottom-right' } })() || 'bottom-right' 
             },
             subscribe: { 
               enabled: Boolean(slot.useSubscribe), 
               asset: slot.customSubscribe || workspaceConfig?.branding?.subscribeAnim || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).subscribeAnim } catch(e) { return 'subscribe.webm' } })() || 'subscribe.webm', 
-              position: slot.subscribePosition || 'center' 
+              position: slot.subscribePosition || workspaceConfig?.branding?.subscribeAnimPosition || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).subscribeAnimPosition } catch(e) { return 'bottom-center' } })() || 'bottom-center' 
             },
             overlay: { 
               enabled: Boolean(slot.useOverlay), 
               asset: slot.customOverlay || workspaceConfig?.branding?.overlay || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).overlay } catch(e) { return 'overlay.png' } })() || 'overlay.png', 
-              position: slot.overlayPosition || 'bottom-left' 
+              position: slot.overlayPosition || workspaceConfig?.branding?.overlayPosition || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).overlayPosition } catch(e) { return 'bottom-left' } })() || 'bottom-left' 
             },
             watermark: { 
               enabled: Boolean(slot.useWatermark), 
               asset: slot.customWatermark || workspaceConfig?.branding?.watermark || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).watermark } catch(e) { return 'watermark.png' } })() || 'watermark.png', 
-              position: slot.watermarkPosition || 'top-left' 
+              position: slot.watermarkPosition || workspaceConfig?.branding?.watermarkPosition || (() => { try { return JSON.parse(localStorage.getItem(`mf_workspace_branding_${activeWorkspace}`)).watermarkPosition } catch(e) { return 'top-left' } })() || 'top-left' 
             }
           },
           outputName: slot.outputName,
@@ -2114,9 +2113,10 @@ export default function App() {
   const handleGenerateM7Configuration = async (jobPayload = {}) => {
     try {
       const outFileName = jobPayload.outputFilename || `m7_astrofox_${Date.now()}.mp4`;
+      const bundleName = outFileName.replace(/\.mp4$/i, '').trim();
       const customOutputDir = workspaceConfig?.output?.main || (activeWorkspace ? localStorage.getItem(`mf_workspace_output_${activeWorkspace}`) : '') || 'Output';
       const cleanDir = (customOutputDir || 'Output').replace(/[/\\]+$/, '');
-      const outFolder = `${cleanDir}/M7_Astrofox/`;
+      const outFolder = `${cleanDir}/M7_Astrofox/${bundleName}/`;
 
       const newJob = {
         id: 'm7_q_' + Date.now(),
@@ -2128,11 +2128,12 @@ export default function App() {
         isPaused: false,
         inputVideo: jobPayload.backgroundName || 'Astrofox Canvas',
         tracks: (jobPayload.tracks && jobPayload.tracks.length > 0) ? jobPayload.tracks : [jobPayload.audioFile || 'Audio Track'],
-        outputFiles: [outFileName],
+        outputFiles: [outFileName, 'thumbnail.jpg', 'metadata.json', 'render.json', 'render.log'],
         outputFolder: outFolder,
         totalDurationSec: jobPayload.duration || 10,
         progress: 0,
         renderMode: 'ASTROFOX_NATIVE',
+        thumbnail: jobPayload.thumbnail,
         m7Payload: jobPayload
       };
 

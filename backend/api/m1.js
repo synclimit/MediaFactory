@@ -103,7 +103,7 @@ router.post('/api/m1/render', async (req, res) => {
         jobs[jobId] = { status: 'RENDERING', progress: 0, failureReason: null, outputFiles: job.outputFiles };
         console.log('[M1 Render] Job created', jobId);
         
-        const M1RenderEngine = await import('../../src/services/m1/M1RenderEngine.js');
+        const M1RenderEngine = await import(`../../src/services/m1/M1RenderEngine.js?v=${Date.now()}`);
         M1RenderEngine.processM1Job(
             job,
             (progress, msg) => {

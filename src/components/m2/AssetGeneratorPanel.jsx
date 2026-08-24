@@ -147,6 +147,16 @@ export default function AssetGeneratorPanel({ isDevMode, addLog, addNotification
         }
     };
 
+    const handleRemoveItem = (id) => {
+        setQueue(prev => prev.filter(j => j.id !== id));
+    };
+
+    const handleClearQueue = () => {
+        setQueue([]);
+        setTargetFolder('');
+        localStorage.removeItem('m2_asset_target_folder');
+    };
+
     return (
         <div className="flex-1 grid grid-cols-12 gap-3 p-4 overflow-hidden bg-transparent z-10 relative font-sans">
             {/* Background elements */}
@@ -307,7 +317,26 @@ export default function AssetGeneratorPanel({ isDevMode, addLog, addNotification
                             <div className="px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[9px] font-bold uppercase tracking-wider animate-pulse">
                                 {isProcessing ? 'Active' : 'Standby'}
                             </div>
+                            {queue.length > 0 && (
+                                <span className="text-[10px] text-gray-400 font-mono">
+                                    ({queue.length} file)
+                                </span>
+                            )}
                         </div>
+
+                        {queue.length > 0 && !isProcessing && (
+                            <button
+                                type="button"
+                                onClick={handleClearQueue}
+                                className="text-[10px] text-gray-400 hover:text-red-400 bg-[#161822] hover:bg-red-950/30 px-2.5 py-1 rounded border border-[#2a2c33] hover:border-red-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                                title="Hapus semua item dari antrean"
+                            >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                <span>Hapus Semua</span>
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2 custom-scrollbar relative">
@@ -326,7 +355,7 @@ export default function AssetGeneratorPanel({ isDevMode, addLog, addNotification
                             </div>
                         ) : (
                             queue.map((job) => (
-                                <AssetJobItem key={job.id} job={job} />
+                                <AssetJobItem key={job.id} job={job} onRemove={handleRemoveItem} />
                             ))
                         )}
                     </div>

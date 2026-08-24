@@ -1,7 +1,7 @@
 {
   "name": "mediafactory",
   "private": true,
-  "version": "1.0.36",
+  "version": "1.0.37",
   "description": "MediaFactory Desktop App",
   "author": "MediaFactory",
   "repository": {
@@ -15,7 +15,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "electron:serve": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:serve": "cross-env NODE_ENV=development concurrently \"npm run dev\" \"wait-on tcp:127.0.0.1:5173 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:publish": "npm run build && electron-builder -p always"
   },

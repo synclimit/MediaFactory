@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, Trash2, CheckCircle2, ChevronRight, Zap, Play, Edit2, Clock, Globe, Video, Music, Bell, Plus, Image as ImageIcon, Type, Layout, Sliders, Palette, Settings2, ZoomIn, ZoomOut, Maximize,
-  AlignLeft, AlignCenter, AlignRight, Bold, Italic
+  AlignLeft, AlignCenter, AlignRight, Bold, Italic, RotateCcw
 } from 'lucide-react';
 
 
@@ -505,167 +505,144 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
 
       {/* 40% CENTER: CARD EDITOR (Row Layout) */}
       <div className="flex-1 flex gap-3 min-w-[500px] h-full">
-        
-        <div className={`flex-1 bg-[#12131b] border border-[#2e3346] rounded-xl flex items-center justify-center relative overflow-hidden shadow-inner group/canvas ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-             style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(249,115,22,0.06) 1px, transparent 1px)', backgroundSize: '20px 20px', backgroundPosition: `${pan.x}px ${pan.y}px` }}
-             onMouseDown={(e) => {
-               if (e.target.closest('.card-content') || e.target.closest('button')) return;
-               setIsDragging(true);
-               setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-             }}
-             onMouseMove={(e) => {
-               if (isResizingScale) {
-                 const dx = e.clientX - resizeStart.x;
-                 setBoxScale(Math.max(30, Math.min(300, resizeStart.scale + (dx * (100/zoom)))));
-                 return;
-               }
-               if (isResizingWidth) {
-                 const dx = e.clientX - resizeStart.x;
-                 setBoxWidth(Math.max(30, Math.min(100, resizeStart.width + (dx * 0.5 * (100/zoom)))));
-                 return;
-               }
-               if (isDraggingBox) {
-                 setBoxPos({ x: (e.clientX - boxDragStart.x) * (100/zoom), y: (e.clientY - boxDragStart.y) * (100/zoom) });
-                 return;
-               }
-               if (!isDragging) return;
-               setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
-             }}
-             onMouseUp={() => { setIsDragging(false); setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsDraggingImage(false); }}
-             onMouseLeave={() => { setIsDragging(false); setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsDraggingImage(false); }}>
-             
-          {/* Top Laser Hairline */}
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-orange-500/70 to-transparent pointer-events-none z-30"></div>
+        {/* 9:16 LIVE PREVIEW CARD */}
+        <div 
+          className="flex-1 flex justify-center items-center h-full min-h-0 relative select-none"
+          onMouseMove={(e) => {
+          if (isResizingScale) {
+            const dx = e.clientX - resizeStart.x;
+            setBoxScale(Math.max(30, Math.min(200, resizeStart.scale + dx)));
+            return;
+          }
+          if (isResizingWidth) {
+            const dx = e.clientX - resizeStart.x;
+            setBoxWidth(Math.max(40, Math.min(100, resizeStart.width + dx * 0.5)));
+            return;
+          }
+          if (isDraggingBox) {
+            const newX = Math.max(-100, Math.min(100, e.clientX - boxDragStart.x));
+            const newY = Math.max(-350, Math.min(20, e.clientY - boxDragStart.y));
+            setBoxPos({ x: newX, y: newY });
+            return;
+          }
+        }}
+        onMouseUp={() => { setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsDraggingImage(false); }}
+        onMouseLeave={() => { setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsDraggingImage(false); }}
+      >
+        {/* THE CARD ITSELF (9:16) */}
+        <div 
+          className="w-[405px] h-[720px] max-h-full aspect-[9/16] relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_25px_rgba(249,115,22,0.2)] ring-1 ring-orange-500/40 rounded-xl cursor-default group card-content shrink-0"
+          style={{ backgroundColor: colorBackground }}
+        >
+          {/* Background Image Area (Always Full Height) */}
+          <div className="absolute inset-0 z-0 h-full">
+            <div className="w-full h-full bg-[#1a1c23] relative overflow-hidden flex items-start justify-center">
+               {image ? (
+                  <>
+                     <div className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 scale-110" style={{ backgroundImage: `url(${image})` }}></div>
+                     <div className="w-[85%] mx-auto h-full relative group/img overflow-hidden cursor-move"
+                          onMouseDown={(e) => {
+                             setIsDraggingImage(true);
+                             setImageDragStart({ x: e.clientX, y: e.clientY, posX: imagePosX, posY: imagePosY });
+                             e.preventDefault();
+                             e.stopPropagation();
+                          }}
+                          onWheel={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setImageScale(s => Math.max(50, Math.min(300, Number(s) + (e.deltaY > 0 ? -5 : 5))));
+                          }}>
+                       <img src={image} className="absolute z-10 max-w-none pointer-events-none" 
+                            style={{ 
+                                width: `${imageScale}%`, 
+                                height: 'auto',
+                                left: `${(100 - imageScale) * (imagePosX / 100)}%`,
+                                top: `${(720 - ((405 * 0.85 * (imageScale / 100)) / (imgAspect || 1))) * (imagePosY / 100)}px`
+                            }} 
+                            draggable={false}
+                            onLoad={(e) => setImgAspect(e.target.naturalWidth / e.target.naturalHeight)}
+                       />
+                       <div className="absolute top-2 left-2 z-20 bg-black/60 text-orange-300 text-[9px] px-2 py-1 rounded border border-orange-500/40 opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none font-mono">Scroll to Zoom, Drag to Move</div>
+                     </div>
+                  </>
+               ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-40">
+                    <ImageIcon size={40} className="text-orange-400"/>
+                    <span className="text-xs font-mono text-gray-400">NO IMAGE LOADED</span>
+                  </div>
+               )}
+            </div>
+          </div>
 
-          {/* Zoom Controls Overlay */}
-          <div className="absolute top-3 right-3 z-50 flex items-center gap-2 bg-[#161822]/90 backdrop-blur-md rounded-lg px-2.5 py-1 border border-orange-500/30 opacity-0 group-hover/canvas:opacity-100 transition-opacity shadow-[0_0_12px_rgba(249,115,22,0.2)]">
-            <button onClick={() => setZoom(z => Math.max(10, z - 10))} className="p-1 text-gray-300 hover:text-orange-400 cursor-pointer"><ZoomOut size={14}/></button>
-            <span className="text-[11px] font-mono font-bold text-orange-400 w-[40px] text-center">{zoom}%</span>
-            <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="p-1 text-gray-300 hover:text-orange-400 cursor-pointer"><ZoomIn size={14}/></button>
-            <div className="w-px h-4 bg-orange-500/30 mx-1"></div>
-            <button onClick={() => setZoom(100)} className="p-1 text-gray-300 hover:text-orange-400 cursor-pointer"><Maximize size={14}/></button>
+          {/* Text Box Content Area (Safe Margins inside 9:16) */}
+          <div className="absolute inset-x-0 bottom-6 z-10 flex flex-col justify-end items-center pointer-events-none px-4">
+             <div className="w-full relative flex flex-col justify-end">
+             {/* Dynamic Theme Box Wrapper */}
+             <div 
+                className={`relative flex flex-col justify-end cursor-move group/box p-4 pointer-events-auto rounded-xl`}
+                onMouseDown={(e) => {
+                    if (e.target.tagName === 'H2' || e.target.tagName === 'P') return;
+                    setIsDraggingBox(true);
+                    setBoxDragStart({ x: e.clientX - boxPos.x, y: e.clientY - boxPos.y });
+                    e.stopPropagation();
+                }}
+                style={{
+                    width: `${boxWidth}%`,
+                    height: boxHeight > 0 ? `${boxHeight}px` : 'auto',
+                    margin: '0 auto',
+                    transform: `translate(${boxPos.x}px, ${boxPos.y}px) scale(${boxScale / 100})`,
+                    transformOrigin: 'bottom center',
+                    boxSizing: 'border-box',
+                    backgroundColor: cardTheme === 'Minimal Quote' ? 'transparent' : colorBackground,
+                    backgroundImage: cardTheme === 'Gradient Overlay' ? `linear-gradient(to top, ${colorBackground} 10%, transparent 100%)` : 'none',
+                    borderLeft: (cardTheme === 'Accent Left' || cardTheme === 'Minimal Quote') ? `5px solid ${colorPrimary}` : 'none',
+                    border: cardTheme === 'Bordered Box' ? `2px solid ${colorPrimary}` : (cardTheme === 'Accent Left' || cardTheme === 'Minimal Quote') ? undefined : 'none',
+                    borderRadius: cardTheme === 'Pill Shape' ? '24px' : '12px',
+                    clipPath: cardTheme === 'Slanted Bottom' ? 'polygon(0 8%, 100% 0, 100% 100%, 0 100%)' : 'none',
+                    opacity: cardTheme === 'Glass Box' ? 0.88 : 1
+                }}
+             >
+                 <h2 key={`head-${headlineAnim}`} className={`leading-[1.25] mb-2.5 drop-shadow-lg outline-none hover:ring-2 ring-orange-500/50 rounded-sm cursor-text break-words ${getAnimClass(headlineAnim)}`}
+                     style={{ fontFamily: headlineFont, fontSize: `${headlineSize}px`, color: headlineColor, textAlign: headlineAlign, fontWeight: headlineWeight, fontStyle: headlineItalic ? 'italic' : 'normal' }}
+                     contentEditable suppressContentEditableWarning
+                     onBlur={e => setHeadline(e.currentTarget.textContent)}>{headline}</h2>
+                 
+                 <p key={`sum-${summaryAnim}`} className={`leading-relaxed mb-0.5 drop-shadow-md outline-none hover:ring-2 ring-orange-500/50 rounded-sm cursor-text break-words ${getAnimClass(summaryAnim)}`}
+                    style={{ fontFamily: summaryFont, fontSize: `${summarySize}px`, color: summaryColor, textAlign: summaryAlign, fontWeight: summaryWeight, fontStyle: summaryItalic ? 'italic' : 'normal' }}
+                    contentEditable suppressContentEditableWarning
+                    onBlur={e => setSummary(e.currentTarget.textContent)}>{summary}</p>
+
+                 {/* Custom On-Canvas Resize Handles */}
+                 <div 
+                   className="absolute -bottom-2 -right-2 w-4 h-4 bg-orange-500 rounded-full cursor-nwse-resize border-2 border-white shadow-md z-50 opacity-0 group-hover/box:opacity-100 transition-opacity"
+                   onMouseDown={(e) => {
+                       e.stopPropagation();
+                       setIsResizingScale(true);
+                       setResizeStart({ x: e.clientX, scale: boxScale, width: boxWidth });
+                   }}
+                 />
+                 <div 
+                   className="absolute top-1/2 -right-2 w-2 h-6 -translate-y-1/2 bg-orange-500 rounded-full cursor-ew-resize border border-white shadow-md z-50 opacity-0 group-hover/box:opacity-100 transition-opacity"
+                   onMouseDown={(e) => {
+                       e.stopPropagation();
+                       setIsResizingWidth(true);
+                       setResizeStart({ x: e.clientX, scale: boxScale, width: boxWidth });
+                   }}
+                 />
+             </div>
+             </div>
           </div>
           
-          <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] font-bold font-['Rajdhani'] text-orange-400 uppercase tracking-widest bg-black/60 px-2.5 py-1 rounded border border-orange-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
-            LIVE EDITOR 9:16
-          </div>
-          
-          {/* Transform Container for Zoom/Pan */}
-          <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})`, transition: isDragging ? 'none' : 'transform 0.1s ease-out' }}>
-            
-            {/* THE CARD ITSELF (9:16) */}
-            <div className="w-[405px] h-[720px] relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(249,115,22,0.15)] ring-1 ring-orange-500/30 rounded-lg cursor-default group card-content"
-                 style={{ backgroundColor: colorBackground }}>
-            
-            {/* Background Image Area (Always Full Height) */}
-            <div className="absolute inset-0 z-0 h-full">
-              <div className="w-full h-full bg-[#1a1c23] relative overflow-hidden flex items-start justify-center">
-                 {image ? (
-                    <>
-                       <div className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 scale-110" style={{ backgroundImage: `url(${image})` }}></div>
-                       <div className="w-[85%] mx-auto h-full relative group/img overflow-hidden cursor-move"
-                            onMouseDown={(e) => {
-                               setIsDraggingImage(true);
-                               setImageDragStart({ x: e.clientX, y: e.clientY, posX: imagePosX, posY: imagePosY });
-                               e.preventDefault();
-                               e.stopPropagation();
-                            }}
-                            onWheel={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setImageScale(s => Math.max(50, Math.min(300, Number(s) + (e.deltaY > 0 ? -5 : 5))));
-                            }}>
-                         <img src={image} className="absolute z-10 max-w-none pointer-events-none" 
-                              style={{ 
-                                  width: `${imageScale}%`, 
-                                  height: 'auto',
-                                  left: `${(100 - imageScale) * (imagePosX / 100)}%`,
-                                  top: `${(720 - ((405 * 0.85 * (imageScale / 100)) / (imgAspect || 1))) * (imagePosY / 100)}px`
-                              }} 
-                              draggable={false}
-                              onLoad={(e) => setImgAspect(e.target.naturalWidth / e.target.naturalHeight)}
-                         />
-                         <div className="absolute top-2 left-2 z-20 bg-black/60 text-orange-300 text-[9px] px-2 py-1 rounded border border-orange-500/40 opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none font-mono">Scroll to Zoom, Drag to Move</div>
-                       </div>
-                    </>
-                 ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-40">
-                      <ImageIcon size={40} className="text-orange-400"/>
-                      <span className="text-xs font-mono text-gray-400">NO IMAGE LOADED</span>
-                    </div>
-                 )}
-              </div>
+          {/* Loading Overlay */}
+          {isProcessing && (
+            <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+              <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-[10px] font-bold tracking-widest uppercase text-white animate-pulse">Reading URL...</span>
             </div>
+          )}
 
-            {/* Text Box Content Area */}
-            <div className="absolute inset-0 z-10 flex flex-col justify-end items-center pointer-events-none">
-               <div className="w-[85%] relative flex flex-col justify-end">
-               {/* Dynamic Theme Box Wrapper */}
-               <div 
-                  className={`relative flex flex-col justify-end cursor-move group/box p-5 mb-10 pointer-events-auto`}
-                  onMouseDown={(e) => {
-                      if (e.target.tagName === 'H2' || e.target.tagName === 'P') return;
-                      setIsDraggingBox(true);
-                      setBoxDragStart({ x: e.clientX - (boxPos.x / (100/zoom)), y: e.clientY - (boxPos.y / (100/zoom)) });
-                      e.stopPropagation();
-                  }}
-                  style={{
-                      width: `${boxWidth}%`,
-                      height: boxHeight > 0 ? `${boxHeight}px` : 'auto',
-                      margin: boxWidth < 100 ? '0 auto' : undefined,
-                      transform: `translate(${boxPos.x}px, ${boxPos.y}px) scale(${boxScale / 100})`,
-                      transformOrigin: 'bottom center',
-                      backgroundColor: cardTheme === 'Minimal Quote' ? 'transparent' : colorBackground,
-                      backgroundImage: cardTheme === 'Gradient Overlay' ? `linear-gradient(to top, ${colorBackground} 10%, transparent 100%)` : 'none',
-                      borderLeft: (cardTheme === 'Accent Left' || cardTheme === 'Minimal Quote') ? `6px solid ${colorPrimary}` : 'none',
-                      border: cardTheme === 'Bordered Box' ? `2px solid ${colorPrimary}` : (cardTheme === 'Accent Left' || cardTheme === 'Minimal Quote') ? undefined : 'none',
-                      borderRadius: cardTheme === 'Pill Shape' ? '9999px' : '0px',
-                      clipPath: cardTheme === 'Slanted Bottom' ? 'polygon(0 15%, 100% 0, 100% 100%, 0 100%)' : 'none',
-                      opacity: cardTheme === 'Glass Box' ? 0.8 : 1
-                  }}
-               >
-                   <h2 key={`head-${headlineAnim}`} className={`leading-[1.25] mb-3 drop-shadow-lg outline-none hover:ring-2 ring-orange-500/50 rounded-sm cursor-text ${getAnimClass(headlineAnim)}`}
-                       style={{ fontFamily: headlineFont, fontSize: `${headlineSize}px`, color: headlineColor, textAlign: headlineAlign, fontWeight: headlineWeight, fontStyle: headlineItalic ? 'italic' : 'normal' }}
-                       contentEditable suppressContentEditableWarning
-                       onBlur={e => setHeadline(e.currentTarget.textContent)}>{headline}</h2>
-                   
-                   <p key={`sum-${summaryAnim}`} className={`leading-relaxed mb-1 drop-shadow-md outline-none hover:ring-2 ring-orange-500/50 rounded-sm cursor-text ${getAnimClass(summaryAnim)}`}
-                      style={{ fontFamily: summaryFont, fontSize: `${summarySize}px`, color: summaryColor, textAlign: summaryAlign, fontWeight: summaryWeight, fontStyle: summaryItalic ? 'italic' : 'normal' }}
-                      contentEditable suppressContentEditableWarning
-                      onBlur={e => setSummary(e.currentTarget.textContent)}>{summary}</p>
-
-                   {/* Custom On-Canvas Resize Handles */}
-                   <div 
-                     className="absolute -bottom-2 -right-2 w-4 h-4 bg-orange-500 rounded-full cursor-nwse-resize border-2 border-white shadow-md z-50 opacity-0 group-hover/box:opacity-100 transition-opacity"
-                     onMouseDown={(e) => {
-                         e.stopPropagation();
-                         setIsResizingScale(true);
-                         setResizeStart({ x: e.clientX, scale: boxScale, width: boxWidth });
-                     }}
-                   />
-                   <div 
-                     className="absolute top-1/2 -right-2 w-2 h-6 -translate-y-1/2 bg-orange-500 rounded-full cursor-ew-resize border border-white shadow-md z-50 opacity-0 group-hover/box:opacity-100 transition-opacity"
-                     onMouseDown={(e) => {
-                         e.stopPropagation();
-                         setIsResizingWidth(true);
-                         setResizeStart({ x: e.clientX, scale: boxScale, width: boxWidth });
-                     }}
-                   />
-               </div>
-               </div>
-            </div>
-            {/* Loading Overlay */}
-            {isProcessing && (
-              <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
-                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-[10px] font-bold tracking-widest uppercase text-white animate-pulse">Reading URL...</span>
-              </div>
-            )}
-
-            </div>
-          </div>
         </div>
+      </div>
 
         {/* RIGHT SIDE: CONTROLS */}
         <div className="w-[240px] flex flex-col gap-3 h-full">
@@ -779,6 +756,14 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                    <input type="range" min="30" max="100" value={boxWidth} onChange={e=>setBoxWidth(e.target.value)} className="w-full accent-orange-500"/>
                    <label className="text-[9px] text-gray-400 flex justify-between uppercase font-bold mb-1 mt-2 font-['Rajdhani'] tracking-wider"><span>Box Height</span> <span className="text-orange-400 font-mono">{boxHeight === 0 ? 'Auto' : boxHeight + 'px'}</span></label>
                    <input type="range" min="0" max="500" value={boxHeight} onChange={e=>setBoxHeight(Number(e.target.value))} className="w-full accent-orange-500"/>
+                   
+                   <button 
+                      type="button" 
+                      onClick={() => { setBoxPos({ x: 0, y: 0 }); setBoxScale(100); setBoxWidth(100); }} 
+                      className="w-full mt-3 py-1.5 px-2 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 rounded-lg text-[9.5px] font-bold font-['Rajdhani'] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <RotateCcw size={11} /> Reset Posisi & Ukuran Box
+                    </button>
                  </div>
                </div>
             )}
@@ -826,6 +811,14 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                    <label className="text-[9px] text-gray-400 uppercase font-bold font-['Rajdhani'] tracking-wider">Border Radius ({borderRadius}px)</label>
                    <input type="range" min="0" max="32" value={borderRadius} onChange={e=>setBorderRadius(e.target.value)} className="w-full accent-orange-500 mt-1"/>
                  </div>
+                 
+                 <button 
+                    type="button" 
+                    onClick={() => { setBoxPos({ x: 0, y: 0 }); setBoxScale(100); setBoxWidth(100); }} 
+                    className="w-full mt-2 py-1.5 px-2 bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 rounded-lg text-[9.5px] font-bold font-['Rajdhani'] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <RotateCcw size={11} /> Reset Posisi Box ke Tengah
+                  </button>
               </div>
             )}
           </div>

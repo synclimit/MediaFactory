@@ -301,6 +301,50 @@ router.put('/api/v1/system/workspace/:name/settings', async (req, res) => {
     } catch (e) { res.standardResponse(null, { status: "error", message: e.message }, false); }
 });
 
+router.post('/api/v1/system/workspace/:name/upload-branding', express.json({ limit: '100mb' }), async (req, res) => {
+    try {
+        const { type, filename, base64Data } = req.body;
+        if (!base64Data) {
+            return res.status(400).json({ success: false, error: 'No data provided' });
+        }
+        const wsName = req.params.name;
+        const assetsDir = path.resolve(process.cwd(), '.mediafactory', 'assets', 'branding', wsName);
+        fs.mkdirSync(assetsDir, { recursive: true });
+        
+        let ext = path.extname(filename || '');
+        if (base64Data.startsWith('data:image/png') || !ext) {
+            ext = '.png';
+        }
+        const safeBase = path.basename(filename || 'file', path.extname(filename || '')).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const cleanName = `${type || 'asset'}_${Date.now()}_${safeBase}${ext}`;
+        const filePath = path.join(assetsDir, cleanName);
+        
+        const base64Pure = base64Data.replace(/^data:[^;]+;base64,/, '');
+        fs.writeFileSync(filePath, Buffer.from(base64Pure, 'base64'));
+        
+        // Update workspace settings
+        const wsService = ServiceRegistry.resolve('WorkspaceService');
+        const currentSettings = (await wsService.getSettings(wsName)) || {};
+        if (!currentSettings.branding) currentSettings.branding = {};
+        
+        if (type === 'logo') currentSettings.branding.logo = filePath;
+        else if (type === 'watermark') currentSettings.branding.watermark = filePath;
+        else if (type === 'overlay') currentSettings.branding.overlay = filePath;
+        else if (type === 'subscribeAnim') currentSettings.branding.subscribeAnim = filePath;
+        
+        await wsService.saveSettings(wsName, currentSettings);
+        
+        res.json({
+            success: true,
+            filePath,
+            viewUrl: `/api/v1/system/file-view?path=${encodeURIComponent(filePath)}`,
+            settings: currentSettings
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 // --- Hardware Endpoints ---
 router.get('/api/v1/system/hardware', async (req, res) => {
     const hwService = ServiceRegistry.resolve('HardwareService');

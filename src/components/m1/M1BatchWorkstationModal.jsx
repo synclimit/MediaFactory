@@ -47,6 +47,7 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
   // Description Modal State
   const [descModalIdx, setDescModalIdx] = useState(null);
   const [tempDesc, setTempDesc] = useState('');
+  const [batchRephrasing, setBatchRephrasing] = useState(false);
 
   // ─── SYNCED MASTER OVERLAYS STATE (4 Workspace Default Overlays) ───
   const allSubscribe = m1Slots.length > 0 && m1Slots.every(s => s?.useSubscribe);
@@ -584,18 +585,71 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
       {descModalIdx !== null && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setDescModalIdx(null)}></div>
-          <div className="relative bg-[#1c1e29] border border-[#3b3f54] hover:border-orange-500/50 rounded-xl p-5 w-[90vw] max-w-[600px] shadow-2xl z-10 flex flex-col gap-4 animate-scale-up overflow-hidden transition-colors">
-            <div className="flex items-center justify-between border-b border-[#2d3142] pb-3">
+          <div className="relative bg-[#1c1e29] border border-[#3b3f54] hover:border-orange-500/50 rounded-xl p-5 w-[90vw] max-w-[640px] shadow-2xl z-10 flex flex-col gap-4 animate-scale-up overflow-hidden transition-colors">
+            <div className="flex items-center justify-between border-b border-[#2d3142] pb-3 flex-wrap gap-2">
               <h3 className="text-white font-black text-sm uppercase tracking-wider flex items-center gap-2">
                 <span className="text-orange-400">EDIT DESKRIPSI</span> / SEGMENT {String(descModalIdx + 1).padStart(2, '0')}
               </h3>
-              <button onClick={() => setDescModalIdx(null)} className="text-gray-400 hover:text-white cursor-pointer">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={batchRephrasing || !tempDesc}
+                  onClick={async () => {
+                    if (!tempDesc.trim()) return;
+                    setBatchRephrasing(true);
+                    let geminiKey = localStorage.getItem('mf_gemini_api_key') || '';
+                    let groqKey = localStorage.getItem('mf_groq_api_key') || '';
+                    let openaiKey = '';
+                    try {
+                      const raw = localStorage.getItem('mf_api_keys');
+                      if (raw) {
+                        const parsed = JSON.parse(raw);
+                        const g = parsed.find(k => (k.platform === 'google' || k.platform === 'gemini') && k.key);
+                        if (g && !geminiKey) geminiKey = g.key;
+                        const gr = parsed.find(k => k.platform === 'groq' && k.key);
+                        if (gr && !groqKey) groqKey = gr.key;
+                        const o = parsed.find(k => k.platform === 'openai' && k.key);
+                        if (o) openaiKey = o.key;
+                      }
+                    } catch(e) {}
+                    const provider = geminiKey ? 'gemini' : (groqKey ? 'groq' : (openaiKey ? 'openai' : 'gemini'));
+                    const apiKey = geminiKey || groqKey || openaiKey || '';
+                    try {
+                      const res = await fetch(getApiUrl('/api/v1/ai/rephrase'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          text: tempDesc,
+                          title: m1Slots[descModalIdx]?.videoTitle || '',
+                          style: 'clean_rephrase',
+                          apiKey,
+                          provider
+                        })
+                      });
+                      const d = await res.json();
+                      if (d && d.success && d.rephrased) {
+                        setTempDesc(d.rephrased);
+                      }
+                    } catch(e) {
+                      console.error(e);
+                    } finally {
+                      setBatchRephrasing(false);
+                    }
+                  }}
+                  className="bg-gradient-to-r from-purple-600 via-orange-500 to-amber-500 hover:from-purple-500 hover:to-amber-400 text-white font-black text-[10px] tracking-wider uppercase px-3 py-1 rounded shadow flex items-center gap-1.5 cursor-pointer disabled:opacity-40 border border-white/20"
+                >
+                  {batchRephrasing ? 'REPHRASING...' : '✨ AI REPHRASE'}
+                </button>
+
+                <button onClick={() => setDescModalIdx(null)} className="text-gray-400 hover:text-white cursor-pointer">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
             </div>
 
             <textarea
-              rows={8}
+              rows={9}
               value={tempDesc}
               onChange={(e) => setTempDesc(e.target.value)}
               placeholder="Ketik deskripsi video di sini..."

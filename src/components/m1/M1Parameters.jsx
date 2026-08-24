@@ -51,45 +51,78 @@ export default function M1Parameters({
       </div>
       
       {/* HORIZONTAL CUSTOM DURATION MODE */}
-      <div className="border-t border-white/5 pt-3 mt-3 flex items-center gap-6 w-full h-[34px]">
+      <div className="border-t border-white/5 pt-3 mt-3 flex items-center justify-between gap-3 w-full">
         
         {/* Label Left */}
-        <label className="flex items-center gap-2.5 cursor-pointer group shrink-0">
+        <label className="flex items-center gap-2.5 cursor-pointer group shrink-0 select-none">
           <div className={`w-4 h-4 border flex items-center justify-center rounded transition-colors ${isCustomMode ? 'bg-orange-500 border-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : 'bg-black/50 border-[#444] group-hover:border-orange-500/50'}`}>
             {isCustomMode && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7"></path></svg>}
           </div>
           <span className={`text-[12px] font-black tracking-widest uppercase transition-colors ${isCustomMode ? 'text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]' : 'text-gray-400 group-hover:text-gray-300'}`}>
             Custom Duration
           </span>
-          <input type="checkbox" className="hidden" checked={isCustomMode} onChange={(e) => {
-            setIsCustomMode(e.target.checked);
-            if (e.target.checked) setM1TargetSegment(15);
-            else setM1TargetSegment(10); // Default fallback when unchecked
-          }} />
+          <input 
+            type="checkbox" 
+            className="hidden" 
+            checked={isCustomMode} 
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setIsCustomMode(checked);
+              if (checked) {
+                if ([5, 6, 7, 8, 9, 10].includes(m1TargetSegment)) {
+                  setM1TargetSegment(15);
+                }
+              } else {
+                setM1TargetSegment(10);
+              }
+            }} 
+          />
         </label>
 
-        {/* Input Right (Always visible, disabled if not custom mode) */}
-        <div className={`flex items-center bg-gradient-to-br from-[#1a1c23] to-[#111216] border rounded-lg p-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_0_10px_rgba(249,115,22,0.1)] transition-colors h-[34px] w-[140px] ${
-          isCustomMode ? 'border-[#333] focus-within:border-orange-500/80 opacity-100' : 'border-transparent opacity-40 grayscale pointer-events-none'
+        {/* Stepper + Input Right */}
+        <div className={`flex items-center gap-1 bg-[#111218] border rounded-lg p-1 shadow-inner transition-all h-[34px] shrink-0 ${
+          isCustomMode ? 'border-orange-500/70 bg-[#161822] shadow-[0_0_12px_rgba(249,115,22,0.15)] opacity-100' : 'border-[#2d3142] opacity-40 grayscale pointer-events-none'
         }`}>
+          <button
+            type="button"
+            disabled={!isCustomMode || m1TargetSegment <= 1}
+            onClick={() => setM1TargetSegment(prev => Math.max(1, (parseInt(prev) || 1) - 1))}
+            className="w-6 h-6 rounded bg-[#222533] hover:bg-orange-600 text-gray-300 hover:text-white font-black text-xs flex items-center justify-center transition-colors cursor-pointer disabled:opacity-30 shrink-0"
+          >
+            -
+          </button>
+
           <input 
-            type="number" 
-            min="1"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={m1TargetSegment}
             disabled={!isCustomMode}
             onChange={(e) => {
-               const val = parseInt(e.target.value) || 1;
-               setM1TargetSegment(val);
+              const cleaned = e.target.value.replace(/[^0-9]/g, '');
+              const val = parseInt(cleaned);
+              setM1TargetSegment(isNaN(val) ? '' : val);
             }}
-            className="flex-1 w-full bg-transparent text-white font-mono font-bold text-[13px] outline-none text-center"
+            onBlur={() => {
+              if (!m1TargetSegment || m1TargetSegment < 1) {
+                setM1TargetSegment(1);
+              }
+            }}
+            className="w-8 bg-transparent text-white font-mono font-black text-[13px] text-center outline-none px-0.5"
           />
-          <span className="text-gray-400 font-black text-[9px] pr-2 uppercase tracking-widest border-l border-[#333] pl-2 ml-1">
-            MINUTES
-          </span>
+
+          <button
+            type="button"
+            disabled={!isCustomMode}
+            onClick={() => setM1TargetSegment(prev => (parseInt(prev) || 0) + 1)}
+            className="w-6 h-6 rounded bg-[#222533] hover:bg-orange-600 text-gray-300 hover:text-white font-black text-xs flex items-center justify-center transition-colors cursor-pointer shrink-0"
+          >
+            +
+          </button>
         </div>
       </div>
       
-      <p className="text-gray-400 font-medium text-[11px]">
+      <p className="text-gray-400 font-medium text-[11px] mt-2">
         Video akan dibagi menjadi <span className="text-orange-500 font-black text-[14px] px-1 drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]">{slotCount}</span> segment
       </p>
 

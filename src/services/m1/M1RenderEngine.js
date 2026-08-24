@@ -3,7 +3,6 @@ import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 
-import { FilterGraphBuilder } from './builders/FilterGraphBuilder.js';
 
 function resolveYtDlpPath() {
   const candidatePaths = [
@@ -193,7 +192,7 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     job.tempSegmentDuration = targetDuration;
     
     // Final render duration strictly follows audio duration
-    const finalTargetDuration = job.audioDurationSec;
+    const finalTargetDuration = job.audioDurationSec || job.audioDuration || job.targetDuration || 10;
     job.computedTargetDuration = finalTargetDuration;
 
     // Helper to run FFmpeg with Deadlock & Memory Overflow Protection
@@ -254,6 +253,7 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     updateProgress(5, 'Preparing Stage 1');
     log('Stage 1', 'Start Temp Encode');
     
+    const { FilterGraphBuilder } = await import(`./builders/FilterGraphBuilder.js?v=${Date.now()}`);
     const stage1Graph = await FilterGraphBuilder.buildStage1(job);
     const stage1Args = ['-y', ...stage1Graph.globalInputArgs, '-i', videoIn];
     
@@ -321,6 +321,7 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
         '-pix_fmt', 'yuv420p',
         '-c:a', 'aac',
         '-b:a', '192k',
+        '-t', `${finalTargetDuration}`,
         '-max_muxing_queue_size', '2048'
       );
 
