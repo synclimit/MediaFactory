@@ -22,6 +22,14 @@
   "build": {
     "appId": "com.mediafactory.app",
     "productName": "MediaFactory",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "synclimit",
+        "repo": "MediaFactory",
+        "releaseType": "release"
+      }
+    ],
     "asar": true,
     "files": [
       "dist/**/*",
