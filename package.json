@@ -1,7 +1,7 @@
 {
   "name": "mediafactory",
   "private": true,
-  "version": "1.0.37",
+  "version": "1.0.38",
   "description": "MediaFactory Desktop App",
   "author": "MediaFactory",
   "repository": {
@@ -31,6 +31,9 @@
       }
     ],
     "asar": true,
+    "asarUnpack": [
+      "m7-astrofox/app/**/*"
+    ],
     "files": [
       "dist/**/*",
       "backend/**/*",
@@ -39,6 +42,7 @@
       "electron/main.cjs",
       "electron/**/*",
       "src/**/*",
+      "m7-astrofox/app/**/*",
       "node_modules/**/*",
       "package.json",
       "!dummy.mp4",
@@ -71,13 +75,13 @@
         "filter": [
           "**/*"
         ]
-      }
-    ],
-    "publish": [
+      },
       {
-        "provider": "github",
-        "owner": "synclimit",
-        "repo": "MediaFactory"
+        "from": "m7-astrofox/app",
+        "to": "m7-astrofox/app",
+        "filter": [
+          "**/*"
+        ]
       }
     ]
   },

@@ -34,7 +34,24 @@ safeMount(() => app.use(require('./api/m7.js')));
 safeMount(() => app.use(require('./api/ai.js')));
 
 // Serve isolated M7 Astrofox app
-const m7AppPath = require('path').join(__dirname, '..', 'm7-astrofox', 'app');
+let m7AppPath = require('path').join(__dirname, '..', 'm7-astrofox', 'app');
+if (process.resourcesPath) {
+    const fs = require('fs');
+    const path = require('path');
+    const candidatePaths = [
+        path.join(process.resourcesPath, 'app.asar.unpacked', 'm7-astrofox', 'app'),
+        path.join(process.resourcesPath, 'm7-astrofox', 'app'),
+        path.join(process.resourcesPath, 'app.asar', 'm7-astrofox', 'app'),
+        path.join(process.cwd(), 'm7-astrofox', 'app')
+    ];
+    for (const p of candidatePaths) {
+        if (fs.existsSync(p)) {
+            m7AppPath = p;
+            break;
+        }
+    }
+}
+console.log('[MediaFactory Server] Serving M7 Astrofox app from:', m7AppPath);
 app.use('/m7-app', express.static(m7AppPath, {
     setHeaders: (res) => {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
