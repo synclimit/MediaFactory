@@ -11,3 +11,4 @@ export CaYaturBackgroundDisplay from './CaYaturBackgroundDisplay';
 export CaYaturVisualizerDisplay from './CaYaturVisualizerDisplay';
 export ParticleDisplay from './ParticleDisplay';
 export VisualFXDisplay from './VisualFXDisplay';
+export CandleFlameDisplay from './CandleFlameDisplay';

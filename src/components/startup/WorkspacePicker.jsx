@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Avatar from '../ui/Avatar';
-import { Play, FolderSync, Plus, Trash2 } from 'lucide-react';
+import { Play, FolderSync, Plus, Trash2, FolderOpen } from 'lucide-react';
 import { getApiUrl } from '../../utils/apiUrl';
 
 export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, onNewWorkspace }) {
@@ -75,6 +75,55 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
 
     const handleSelect = (name) => {
         setSelected(name);
+    };
+
+    const handleImportWorkspace = async () => {
+        try {
+            let selectedFolder = null;
+            if (window.require) {
+                try {
+                    const { ipcRenderer } = window.require('electron');
+                    const paths = await ipcRenderer.invoke('show-open-dialog', {
+                        title: 'Select Existing Workspace Folder',
+                        properties: ['openDirectory']
+                    });
+                    if (paths && paths.length > 0) selectedFolder = paths[0];
+                } catch(e) {}
+            }
+            if (!selectedFolder) {
+                const res = await fetch(getApiUrl('/api/v1/system/select-directory'), { method: 'POST' }).catch(() => null);
+                if (res) {
+                    const data = await res.json().catch(() => null);
+                    if (data?.path) selectedFolder = data.path;
+                }
+            }
+            if (!selectedFolder) return;
+
+            setIsLoading(true);
+            const res = await fetch(getApiUrl('/api/v1/system/workspace/import-folder'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folderPath: selectedFolder })
+            });
+            const data = await res.json();
+            if (data.success && data.workspaceName) {
+                try {
+                    const cached = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
+                    if (!cached.includes(data.workspaceName)) {
+                        cached.push(data.workspaceName);
+                        localStorage.setItem('mf_created_workspaces', JSON.stringify(cached));
+                    }
+                } catch(e) {}
+                await loadWorkspaces();
+                handleOpen(data.workspaceName);
+            } else {
+                alert('Failed to import workspace: ' + (data.error || 'Unknown error'));
+            }
+        } catch(e) {
+            console.error('Import error:', e);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleOpen = async (name) => {
@@ -244,6 +293,17 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                             <Plus size={24} className="text-gray-500 group-hover:text-orange-500 transition-colors" />
                         </div>
                         <span className="text-gray-400 group-hover:text-white font-black text-[14px] tracking-widest uppercase transition-colors">New Workspace</span>
+                    </div>
+
+                    <div 
+                        className="relative w-[340px] rounded-xl border border-dashed border-[#2a2c33] hover:border-cyan-500/50 bg-black/20 hover:bg-[#131b24]/50 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 group min-h-[220px]"
+                        onClick={handleImportWorkspace}
+                    >
+                        <div className="w-14 h-14 rounded-full border-2 border-[#2a2c33] group-hover:border-cyan-500/50 bg-[#14151a] group-hover:bg-cyan-500/10 flex items-center justify-center mb-4 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_20px_rgba(6,182,212,0.2)]">
+                            <FolderOpen size={24} className="text-gray-500 group-hover:text-cyan-400 transition-colors" />
+                        </div>
+                        <span className="text-gray-400 group-hover:text-cyan-300 font-black text-[14px] tracking-widest uppercase transition-colors">Import / Locate</span>
+                        <span className="text-[10px] text-gray-500 font-mono mt-1">Open existing folder on disk</span>
                     </div>
                 </div>
             </div>

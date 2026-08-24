@@ -196,6 +196,20 @@ router.post('/api/v1/system/workspace/create', async (req, res) => {
     }
 });
 
+router.post('/api/v1/system/workspace/import-folder', async (req, res) => {
+    try {
+        const { folderPath } = req.body;
+        if (!folderPath) {
+            return res.json({ success: false, error: 'Folder path is required' });
+        }
+        const wsService = ServiceRegistry.resolve('WorkspaceService');
+        const result = await wsService.importWorkspaceFromFolder(folderPath);
+        res.json({ success: true, ...result });
+    } catch (e) {
+        res.json({ success: false, error: e.message });
+    }
+});
+
 router.post('/api/v1/system/open-folder', async (req, res) => {
     try {
         const { exec } = require('child_process');

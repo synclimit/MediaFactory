@@ -317,6 +317,50 @@ class WorkspaceService {
         };
         await walk(dirPath);
         return count;
+    async importWorkspaceFromFolder(folderPath) {
+        const fs = require('fs').promises;
+        const fsSync = require('fs');
+        const path = require('path');
+        
+        if (!folderPath || !fsSync.existsSync(folderPath)) {
+            throw new Error('Folder path does not exist');
+        }
+
+        const folderName = path.basename(folderPath);
+        const targetPath = path.join(this.basePath, folderName);
+
+        // If not already in this.basePath, copy it
+        if (path.resolve(folderPath).toLowerCase() !== path.resolve(targetPath).toLowerCase()) {
+            const storage = this._getStorage();
+            if (!fsSync.existsSync(targetPath)) {
+                await storage.copy(folderPath, targetPath);
+            }
+        }
+
+        // Initialize structure and manifest if needed
+        await this._initializeFolderTree(targetPath);
+        await this._initializeDatabases(targetPath);
+
+        const manifestPath = path.join(targetPath, 'workspace.manifest.json');
+        if (!fsSync.existsSync(manifestPath)) {
+            const config = this._getConfig();
+            const manifest = {
+                workspaceId: require('crypto').randomUUID(),
+                name: folderName,
+                schemaVersion: 1,
+                databaseVersion: 1,
+                pluginVersion: 1,
+                migrationVersion: 1,
+                activePlugins: [],
+                compatibleMediaFactoryVersion: "v4.2.0",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            await config.save(manifestPath, { data: manifest });
+        }
+
+        this.setCurrentWorkspace(folderName);
+        return { success: true, workspaceName: folderName };
     }
 
     async listWorkspaces() {
@@ -327,13 +371,33 @@ class WorkspaceService {
 
         const candidateBases = [
             this.basePath,
-            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Workspaces'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'Workspaces'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Local', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Local', 'mediafactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'mediafactory', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactory'),
+            path.join(os.homedir(), 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'MediaFactory'),
             path.resolve(process.cwd(), '.mediafactory', 'Workspaces'),
             path.resolve(process.cwd(), '.mediafactory_data', 'Workspaces'),
+            path.resolve(process.cwd(), 'Workspaces'),
+            'c:/MediaFactory/Workspaces',
+            'c:/MediaFactoryData/Workspaces',
+            'c:/MediaFactory',
+            'c:/Users/Public/MediaFactory/Workspaces',
+            'd:/MediaFactory/Workspaces',
             'd:/MediaFactory/.mediafactory/Workspaces',
-            'd:/MediaFactory/.mediafactory_data/Workspaces'
+            'd:/MediaFactory/.mediafactory_data/Workspaces',
+            'd:/MediaFactory',
+            'e:/MediaFactory/Workspaces',
+            'e:/MediaFactory'
         ];
 
         const workspaces = [];
@@ -350,6 +414,18 @@ class WorkspaceService {
                         if (seenNames.has(wsName) || wsName.startsWith('.')) continue;
 
                         const wsFolder = path.join(basePath, wsName);
+
+                        // If discovered in another candidate path, ensure it is mirrored to this.basePath
+                        if (path.resolve(basePath).toLowerCase() !== path.resolve(this.basePath).toLowerCase()) {
+                            const targetFolder = path.join(this.basePath, wsName);
+                            if (!fsSync.existsSync(targetFolder)) {
+                                try {
+                                    const storage = this._getStorage();
+                                    await storage.copy(wsFolder, targetFolder);
+                                } catch(err) {}
+                            }
+                        }
+
                         const manifestPath = path.join(wsFolder, 'workspace.manifest.json');
                         const configPath = path.join(wsFolder, 'Config', 'workspace.json');
 

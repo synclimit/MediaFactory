@@ -2419,7 +2419,41 @@
 
         </div>
 
-        <!-- 6. TEXT OBJECTS SECTION (M3 PARITY) -->
+        <!-- 6. OVERLAY OBJECTS SECTION (PROTOTYPE 01: CANDLE FLAME) -->
+        <div id="m7-section-overlay" style="display:none; flex-direction:column; gap:12px;">
+          <div class="m7-panel-header">
+            <span class="m7-dot-orange"></span>
+            <span>ANIMATED OVERLAY</span>
+          </div>
+
+          <!-- Overlay Preset Cards -->
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <!-- 1. Candle Flame -->
+            <div class="m7-text-obj-card" id="card-overlay-candle-flame" onclick="m7SelectOrAddOverlayPreset('Candle Flame')">
+              <div class="m7-text-obj-icon" style="background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.3); color:#f59e0b;">🕯️</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Candle Flame</div>
+                <div class="m7-text-obj-desc">Natural flickering candle flame particle simulation</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+          </div>
+
+          <!-- ACTIVE OVERLAY LAYERS LIST -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.5px; text-transform:uppercase;">ACTIVE OVERLAYS</span>
+              <span style="font-size:9px; background:rgba(249,115,22,0.15); color:#f97316; padding:1px 6px; border-radius:10px; font-weight:bold;" id="m7-overlay-count">0</span>
+            </div>
+            <div id="m7-overlay-list" style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto;">
+              <div id="m7-empty-overlay-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                No overlays active. Choose Candle Flame above to add to screen.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. TEXT OBJECTS SECTION (M3 PARITY) -->
         <div id="m7-section-text" style="display:none; flex-direction:column; gap:12px;">
           <div class="m7-panel-header">
             <span class="m7-dot-orange"></span>
@@ -3584,7 +3618,119 @@
 
         </div>
 
-        <!-- 7. INSPECTOR: BRANDING SETTINGS (MATCHING USER SCREENSHOTS) -->
+        <!-- INSPECTOR: OVERLAY SETTINGS (PROTOTYPE 01: CANDLE FLAME) -->
+        <div id="m7-inspector-overlay" style="display:none; flex-direction:column; gap:12px;">
+
+          <!-- Empty state when no overlay layer is selected -->
+          <div id="box-overlay-no-selection" style="font-size:11px; color:#6b7280; text-align:center; padding:28px 12px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:10px; line-height:1.6; display:none; flex-direction:column; align-items:center; justify-content:center; gap:6px;">
+            <span style="font-size:24px;">🕯️</span>
+            <b style="color:#e5e7eb; font-size:12px;">No Overlay Selected</b>
+            <span style="color:#9ca3af; font-size:10px;">Choose <b>Candle Flame</b> on the left to add and configure.</span>
+          </div>
+
+          <!-- Card 1: 🕯️ CANDLE FLAME DYNAMICS -->
+          <div class="m7-inspector-card" id="grp-overlay-dynamics">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 🕯️ CANDLE FLAME SETTINGS
+            </div>
+            
+            <div class="m7-toggle-row">
+              <span>Enable Flame</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-overlay-enable" checked onchange="m7UpdateOverlayProp('enabled', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Animation Speed</span>
+                <span class="m7-control-val" id="val-overlay-speed">1.0x</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="300" value="100" id="slider-overlay-speed" oninput="m7UpdateOverlayProp('speed', parseFloat((this.value/100).toFixed(2)))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Flame Height</span>
+                <span class="m7-control-val" id="val-overlay-height">1.0x</span>
+              </div>
+              <input type="range" class="m7-slider" min="20" max="250" value="100" id="slider-overlay-height" oninput="m7UpdateOverlayProp('flameHeight', parseFloat((this.value/100).toFixed(2)))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Flame Width</span>
+                <span class="m7-control-val" id="val-overlay-width">1.0x</span>
+              </div>
+              <input type="range" class="m7-slider" min="20" max="250" value="100" id="slider-overlay-width" oninput="m7UpdateOverlayProp('flameWidth', parseFloat((this.value/100).toFixed(2)))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Blending Mode</span>
+              </div>
+              <select class="m7-select" id="sel-overlay-blend" onchange="m7UpdateOverlayProp('blendMode', this.value)">
+                <option value="Additive" selected>Additive (Glowing)</option>
+                <option value="Normal">Normal (Standard Alpha)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Card 2: 📐 TRANSFORM & POSITION -->
+          <div class="m7-inspector-card" id="grp-overlay-transform">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 📐 TRANSFORM & POSITION
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Position X</span>
+                <span class="m7-control-val" id="val-overlay-posx">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-960" max="960" value="0" id="slider-overlay-posx" oninput="m7UpdateOverlayProp('x', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Position Y</span>
+                <span class="m7-control-val" id="val-overlay-posy">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-540" max="540" value="0" id="slider-overlay-posy" oninput="m7UpdateOverlayProp('y', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Scale (%)</span>
+                <span class="m7-control-val" id="val-overlay-scale">100%</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="400" value="100" id="slider-overlay-scale" oninput="m7UpdateOverlayProp('scale', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Rotation (Tilt)</span>
+                <span class="m7-control-val" id="val-overlay-rotation">0°</span>
+              </div>
+              <input type="range" class="m7-slider" min="-180" max="180" value="0" id="slider-overlay-rotation" oninput="m7UpdateOverlayProp('rotation', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Opacity</span>
+                <span class="m7-control-val" id="val-overlay-opacity">100</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-overlay-opacity" oninput="m7UpdateOverlayProp('opacity', parseInt(this.value))">
+            </div>
+          </div>
+
+          <!-- Card 3: DELETE OVERLAY -->
+          <button class="m7-layer-remove" style="padding:10px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="m7DeleteActiveOverlay()">
+            🗑️ Delete Overlay Object
+          </button>
+        </div>
+
+        <!-- 8. INSPECTOR: BRANDING SETTINGS (MATCHING USER SCREENSHOTS) -->
         <div id="m7-inspector-branding" style="display:none; flex-direction:column; gap:12px;">
 
           <!-- Empty state when no branding layer is selected -->
@@ -4401,6 +4547,7 @@
         const secViz = document.getElementById('m7-section-viz');
         const secParticle = document.getElementById('m7-section-particle');
         const secFx = document.getElementById('m7-section-fx');
+        const secOverlay = document.getElementById('m7-section-overlay');
         const secText = document.getElementById('m7-section-text');
         const secBranding = document.getElementById('m7-section-branding');
         const secThumbnail = document.getElementById('m7-section-thumbnail');
@@ -4410,6 +4557,7 @@
         const inspViz = document.getElementById('m7-inspector-viz');
         const inspParticle = document.getElementById('m7-inspector-particle');
         const inspFx = document.getElementById('m7-inspector-fx');
+        const inspOverlay = document.getElementById('m7-inspector-overlay');
         const inspText = document.getElementById('m7-inspector-text');
         const inspBranding = document.getElementById('m7-inspector-branding');
         const inspThumbnail = document.getElementById('m7-inspector-thumbnail');
@@ -4420,8 +4568,8 @@
         const thumbViewport = document.getElementById('m7-thumbnail-viewport');
 
         // Hide all sections first
-        [secBg, secPlaylist, secViz, secParticle, secFx, secText, secBranding, secThumbnail].forEach(s => { if (s) s.style.display = 'none'; });
-        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspText, inspBranding, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+        [secBg, secPlaylist, secViz, secParticle, secFx, secOverlay, secText, secBranding, secThumbnail].forEach(s => { if (s) s.style.display = 'none'; });
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspOverlay, inspText, inspBranding, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
 
         if (type === 'thumbnail') {
           // Switch to dedicated Static JPG Thumbnail Canvas
@@ -4471,6 +4619,20 @@
             if (inspFx) inspFx.style.display = 'flex';
             if (tag) tag.innerText = 'VISUAL FX';
             m7InitGenrePresetsUI();
+          } else if (type === 'overlay') {
+            if (secOverlay) secOverlay.style.display = 'flex';
+            if (inspOverlay) {
+              inspOverlay.style.display = 'flex';
+              inspOverlay.style.setProperty('display', 'flex', 'important');
+            }
+            if (tag) tag.innerText = 'OVERLAY';
+            if (activeSelectedOverlayIndex >= 0 && activeOverlayObjects[activeSelectedOverlayIndex]) {
+              m7SelectOverlayObject(activeSelectedOverlayIndex);
+            } else if (activeOverlayObjects.length > 0) {
+              m7SelectOverlayObject(0);
+            } else {
+              m7SelectOrAddOverlayPreset('Candle Flame');
+            }
           } else if (type === 'text' || type === 'lyrics') {
             if (secText) secText.style.display = 'flex';
             if (inspText) inspText.style.display = 'flex';
@@ -7980,6 +8142,331 @@
         }
       }
 
+      /* === 5c. OVERLAY MODULE (PROTOTYPE 01: CANDLE FLAME) === */
+      let activeOverlayObjects = [];
+      let activeSelectedOverlayIndex = -1;
+
+      function m7SelectOrAddOverlayPreset(type) {
+        const presetKey = 'candle-flame';
+        document.querySelectorAll('#m7-section-overlay .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-overlay-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        const existingIdx = activeOverlayObjects.findIndex(o => o.type === type || o.name === type);
+        if (existingIdx >= 0) {
+          m7SelectOverlayObject(existingIdx);
+        } else {
+          m7AddOverlayDirect(type);
+        }
+      }
+
+      function m7AddOverlayDirect(type) {
+        const newObj = {
+          id: 'overlay_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          name: 'Candle Flame',
+          type: 'Candle Flame',
+          isOverlay: true,
+          enabled: true,
+          x: 0,
+          y: 0,
+          scale: 100,
+          rotation: 0,
+          opacity: 100,
+          speed: 1.0,
+          flameHeight: 1.0,
+          flameWidth: 1.0,
+          blendMode: 'Additive',
+          particleCount: 160,
+          colorOuter: '#f59e0b',
+          colorCore: '#fef08a',
+        };
+
+        m7CreateOverlayDisplay(newObj);
+        activeOverlayObjects.push(newObj);
+        activeSelectedOverlayIndex = activeOverlayObjects.length - 1;
+
+        m7RenderOverlayList();
+        m7SyncInspectorToOverlay(newObj);
+        m7IsGizmoSelected = true;
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7CreateOverlayDisplay(obj) {
+        const scene = getOrCreateActiveScene();
+        if (!scene) return;
+
+        const core = window.__ASTROFOX_CORE__;
+        if (!core || !core.library) return;
+
+        const CandleClass = core.library.get('displays')?.CandleFlameDisplay;
+        if (!CandleClass) {
+          console.warn('[M7 Overlay] CandleFlameDisplay not found in core library');
+          return;
+        }
+
+        try {
+          const display = new CandleClass({
+            x: obj.x || 0,
+            y: obj.y || 0,
+            scale: obj.scale || 100,
+            rotation: obj.rotation || 0,
+            opacity: obj.opacity !== undefined ? obj.opacity : 100,
+            speed: obj.speed || 1.0,
+            flameHeight: obj.flameHeight || 1.0,
+            flameWidth: obj.flameWidth || 1.0,
+            blendMode: obj.blendMode || 'Additive',
+            enabled: obj.enabled !== false,
+          });
+
+          scene.addElement(display);
+          obj.display = display;
+        } catch(err) {
+          console.error('[M7 Overlay Create Error]', err);
+        }
+      }
+
+      function m7RenderOverlayList() {
+        const listEl = document.getElementById('m7-overlay-list');
+        const countEl = document.getElementById('m7-overlay-count');
+        if (countEl) countEl.innerText = activeOverlayObjects.length;
+        if (!listEl) return;
+
+        if (activeOverlayObjects.length === 0) {
+          listEl.innerHTML = `
+            <div id="m7-empty-overlay-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+              No overlays active. Choose Candle Flame above to add to screen.
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = '';
+        activeOverlayObjects.forEach((item, idx) => {
+          const isSelected = (idx === activeSelectedOverlayIndex);
+          const row = document.createElement('div');
+          row.className = `m7-layer-item ${isSelected ? 'active' : ''}`;
+          row.onclick = () => {
+            m7SelectOverlayObject(idx);
+          };
+
+          const numStr = String(idx + 1).padStart(2, '0');
+          row.innerHTML = `
+            <span class="m7-layer-remove" title="Remove Overlay Layer" onclick="event.stopPropagation(); m7RemoveOverlayObject(${idx})">✕</span>
+            <span style="color:#6b7280; font-family:monospace; font-weight:800;">${numStr}</span>
+            <span>🕯️</span>
+            <span class="m7-layer-name">${item.name}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      function m7SelectOverlayObject(idx) {
+        if (idx < 0 || idx >= activeOverlayObjects.length) return;
+        activeSelectedOverlayIndex = idx;
+        const item = activeOverlayObjects[idx];
+
+        document.querySelectorAll('#m7-section-overlay .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-overlay-candle-flame');
+        if (cardEl) cardEl.classList.add('active');
+
+        const inspOverlay = document.getElementById('m7-inspector-overlay');
+        if (inspOverlay) {
+          inspOverlay.style.display = 'flex';
+          inspOverlay.style.setProperty('display', 'flex', 'important');
+        }
+        m7RenderOverlayList();
+        m7SyncInspectorToOverlay(item);
+        m7IsGizmoSelected = true;
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7RemoveOverlayObject(idx) {
+        if (idx < 0 || idx >= activeOverlayObjects.length) return;
+        const removed = activeOverlayObjects.splice(idx, 1)[0];
+        const scene = getOrCreateActiveScene();
+        if (scene && removed && removed.display) {
+          scene.removeElement(removed.display);
+        }
+
+        if (activeOverlayObjects.length === 0) {
+          activeSelectedOverlayIndex = -1;
+          m7IsGizmoSelected = false;
+        } else {
+          activeSelectedOverlayIndex = Math.min(activeSelectedOverlayIndex, activeOverlayObjects.length - 1);
+          if (activeSelectedOverlayIndex < 0) activeSelectedOverlayIndex = 0;
+        }
+
+        m7RenderOverlayList();
+        if (activeSelectedOverlayIndex >= 0 && activeOverlayObjects[activeSelectedOverlayIndex]) {
+          m7SyncInspectorToOverlay(activeOverlayObjects[activeSelectedOverlayIndex]);
+        } else {
+          m7SyncInspectorToOverlay(null);
+        }
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7DeleteActiveOverlay() {
+        if (activeSelectedOverlayIndex >= 0) {
+          m7RemoveOverlayObject(activeSelectedOverlayIndex);
+        }
+      }
+
+      function m7UpdateOverlayProp(prop, val) {
+        if (activeSelectedOverlayIndex < 0 || !activeOverlayObjects[activeSelectedOverlayIndex]) return;
+        const obj = activeOverlayObjects[activeSelectedOverlayIndex];
+        obj[prop] = val;
+
+        if (prop === 'enabled') {
+          const chk = document.getElementById('chk-overlay-enable');
+          if (chk) chk.checked = !!val;
+        }
+        if (prop === 'speed') {
+          const valEl = document.getElementById('val-overlay-speed');
+          if (valEl) valEl.innerText = `${val}x`;
+        }
+        if (prop === 'flameHeight') {
+          const valEl = document.getElementById('val-overlay-height');
+          if (valEl) valEl.innerText = `${val}x`;
+        }
+        if (prop === 'flameWidth') {
+          const valEl = document.getElementById('val-overlay-width');
+          if (valEl) valEl.innerText = `${val}x`;
+        }
+        if (prop === 'x') {
+          const valEl = document.getElementById('val-overlay-posx');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'y') {
+          const valEl = document.getElementById('val-overlay-posy');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'scale') {
+          const valEl = document.getElementById('val-overlay-scale');
+          if (valEl) valEl.innerText = `${val}%`;
+        }
+        if (prop === 'rotation') {
+          const valEl = document.getElementById('val-overlay-rotation');
+          if (valEl) valEl.innerText = `${val}°`;
+        }
+        if (prop === 'opacity') {
+          const valEl = document.getElementById('val-overlay-opacity');
+          if (valEl) valEl.innerText = val;
+        }
+
+        if (obj.display) {
+          obj.display.update({
+            x: obj.x,
+            y: obj.y,
+            scale: obj.scale,
+            rotation: obj.rotation,
+            opacity: obj.opacity,
+            speed: obj.speed,
+            flameHeight: obj.flameHeight,
+            flameWidth: obj.flameWidth,
+            blendMode: obj.blendMode,
+            enabled: obj.enabled !== false,
+          });
+        }
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7SyncInspectorToOverlay(obj) {
+        const inspBg = document.getElementById('m7-inspector-bg');
+        const inspPlaylist = document.getElementById('m7-inspector-playlist');
+        const inspViz = document.getElementById('m7-inspector-viz');
+        const inspParticle = document.getElementById('m7-inspector-particle');
+        const inspFx = document.getElementById('m7-inspector-fx');
+        const inspOverlay = document.getElementById('m7-inspector-overlay');
+        const inspText = document.getElementById('m7-inspector-text');
+        const inspBranding = document.getElementById('m7-inspector-branding');
+        const inspThumbnail = document.getElementById('m7-inspector-thumbnail');
+        const tag = document.getElementById('m7-inspector-tag');
+
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspText, inspBranding, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+        if (inspOverlay) {
+          inspOverlay.style.display = 'flex';
+          inspOverlay.style.setProperty('display', 'flex', 'important');
+        }
+        if (tag) tag.innerText = 'OVERLAY';
+
+        const boxNoSel = document.getElementById('box-overlay-no-selection');
+        const grpDynamics = document.getElementById('grp-overlay-dynamics');
+        const grpTransform = document.getElementById('grp-overlay-transform');
+
+        if (!obj) {
+          if (boxNoSel) boxNoSel.style.display = 'flex';
+          if (grpDynamics) grpDynamics.style.display = 'none';
+          if (grpTransform) grpTransform.style.display = 'none';
+          return;
+        }
+
+        try {
+          if (boxNoSel) boxNoSel.style.display = 'none';
+          if (grpDynamics) grpDynamics.style.display = 'flex';
+          if (grpTransform) grpTransform.style.display = 'flex';
+
+          const chkEnable = document.getElementById('chk-overlay-enable');
+          if (chkEnable) chkEnable.checked = obj.enabled !== false;
+
+          const sliderSpeed = document.getElementById('slider-overlay-speed');
+          const valSpeed = document.getElementById('val-overlay-speed');
+          const spdVal = obj.speed !== undefined ? obj.speed : 1.0;
+          if (sliderSpeed) sliderSpeed.value = Math.round(spdVal * 100);
+          if (valSpeed) valSpeed.innerText = `${spdVal}x`;
+
+          const sliderH = document.getElementById('slider-overlay-height');
+          const valH = document.getElementById('val-overlay-height');
+          const hVal = obj.flameHeight !== undefined ? obj.flameHeight : 1.0;
+          if (sliderH) sliderH.value = Math.round(hVal * 100);
+          if (valH) valH.innerText = `${hVal}x`;
+
+          const sliderW = document.getElementById('slider-overlay-width');
+          const valW = document.getElementById('val-overlay-width');
+          const wVal = obj.flameWidth !== undefined ? obj.flameWidth : 1.0;
+          if (sliderW) sliderW.value = Math.round(wVal * 100);
+          if (valW) valW.innerText = `${wVal}x`;
+
+          const selBlend = document.getElementById('sel-overlay-blend');
+          if (selBlend) selBlend.value = obj.blendMode || 'Additive';
+
+          const sliderX = document.getElementById('slider-overlay-posx');
+          const valX = document.getElementById('val-overlay-posx');
+          const xVal = obj.x !== undefined ? obj.x : 0;
+          if (sliderX) sliderX.value = xVal;
+          if (valX) valX.innerText = `${xVal}`;
+
+          const sliderY = document.getElementById('slider-overlay-posy');
+          const valY = document.getElementById('val-overlay-posy');
+          const yVal = obj.y !== undefined ? obj.y : 0;
+          if (sliderY) sliderY.value = yVal;
+          if (valY) valY.innerText = `${yVal}`;
+
+          const sliderScale = document.getElementById('slider-overlay-scale');
+          const valScale = document.getElementById('val-overlay-scale');
+          const scaleVal = obj.scale !== undefined ? obj.scale : 100;
+          if (sliderScale) sliderScale.value = scaleVal;
+          if (valScale) valScale.innerText = `${scaleVal}%`;
+
+          const sliderRot = document.getElementById('slider-overlay-rotation');
+          const valRot = document.getElementById('val-overlay-rotation');
+          const rotVal = obj.rotation !== undefined ? obj.rotation : 0;
+          if (sliderRot) sliderRot.value = rotVal;
+          if (valRot) valRot.innerText = `${rotVal}°`;
+
+          const sliderOp = document.getElementById('slider-overlay-opacity');
+          const valOp = document.getElementById('val-overlay-opacity');
+          const opVal = obj.opacity !== undefined ? obj.opacity : 100;
+          if (sliderOp) sliderOp.value = opVal;
+          if (valOp) valOp.innerText = `${opVal}`;
+        } catch(err) {
+          console.error('[M7 Sync Overlay Error]', err);
+        }
+      }
+
       /* === 6. THUMBNAIL STUDIO MODULE (STATIC 2D JPG CANVAS) === */
       let activeThumbnailObjects = [
         {
@@ -9012,6 +9499,30 @@
               if (slH) slH.innerText = clampedH;
               if (inH) inH.value = clampedH;
             }
+          };
+        }
+
+        if (activeCategory === 'overlay' && activeOverlayObjects[activeSelectedOverlayIndex]) {
+          const item = activeOverlayObjects[activeSelectedOverlayIndex];
+          const disp = item.display;
+          return {
+            type: 'overlay',
+            item: item,
+            display: disp,
+            name: item.name || 'Candle Flame',
+            getX: () => (item.x || 0),
+            getY: () => (item.y || 0),
+            getW: () => 140 * ((item.scale || 100) / 100),
+            getH: () => 200 * ((item.scale || 100) / 100),
+            getShadowH: () => 0,
+            setPos: (x, y) => {
+              m7UpdateOverlayProp('x', Math.round(x));
+              m7UpdateOverlayProp('y', Math.round(y));
+            },
+            setFontSize: (newScale) => {
+              m7UpdateOverlayProp('scale', Math.max(10, Math.min(400, Math.round(newScale))));
+            },
+            setSize: (w, h) => {}
           };
         }
 
