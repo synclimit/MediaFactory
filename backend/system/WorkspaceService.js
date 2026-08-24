@@ -317,6 +317,8 @@ class WorkspaceService {
         };
         await walk(dirPath);
         return count;
+    }
+
     async importWorkspaceFromFolder(folderPath) {
         const fs = require('fs').promises;
         const fsSync = require('fs');
@@ -371,33 +373,12 @@ class WorkspaceService {
 
         const candidateBases = [
             this.basePath,
-            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactoryData', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Local', 'MediaFactory', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Local', 'mediafactory', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'MediaFactory', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'mediafactory', 'Workspaces'),
-            path.join(os.homedir(), 'Documents', 'MediaFactory', 'Workspaces'),
-            path.join(os.homedir(), 'Documents', 'MediaFactoryData', 'Workspaces'),
-            path.join(os.homedir(), 'Documents', 'MediaFactory'),
-            path.join(os.homedir(), 'MediaFactory', 'Workspaces'),
-            path.join(os.homedir(), 'MediaFactory'),
-            path.resolve(process.cwd(), '.mediafactory', 'Workspaces'),
-            path.resolve(process.cwd(), '.mediafactory_data', 'Workspaces'),
             path.resolve(process.cwd(), 'Workspaces'),
-            'c:/MediaFactory/Workspaces',
-            'c:/MediaFactoryData/Workspaces',
-            'c:/MediaFactory',
-            'c:/Users/Public/MediaFactory/Workspaces',
             'd:/MediaFactory/Workspaces',
             'd:/MediaFactory/.mediafactory/Workspaces',
             'd:/MediaFactory/.mediafactory_data/Workspaces',
-            'd:/MediaFactory',
             'e:/MediaFactory/Workspaces',
-            'e:/MediaFactory'
+            'f:/MediaFactory/Workspaces'
         ];
 
         const workspaces = [];

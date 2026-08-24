@@ -103,7 +103,7 @@ export default function App() {
     return localStorage.getItem('pipelineDrawerCollapsed') === 'true';
   });
 
-  const [appState, setAppState] = useState('SPLASH'); // 'SPLASH' | 'PICKER' | 'WIZARD' | 'EDITOR'
+  const [appState, setAppState] = useState('PICKER'); // 'PICKER' | 'WIZARD' | 'EDITOR' | 'WORKSPACE_LOADING'
   const [activeWorkspace, setActiveWorkspace] = useState(() => localStorage.getItem('mf_active_workspace') || 'Test 1');
   const [activeWorkspaceAvatar, setActiveWorkspaceAvatar] = useState(() => {
     const cur = localStorage.getItem('mf_active_workspace') || 'Test 1';

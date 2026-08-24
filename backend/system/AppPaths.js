@@ -7,31 +7,15 @@ class AppPaths {
         // Deteksi apakah sedang berjalan di Electron
         this.isElectron = !!(process.versions && process.versions.electron);
         
-        // Unified Data Directory across all processes (Main, Renderer, Backend Worker)
-        let userDataPath;
-        let documentsPath = path.join(os.homedir(), 'Documents', 'MediaFactory');
-
-        if (this.isElectron) {
-            try {
-                const { app } = require('electron');
-                if (app && typeof app.getPath === 'function') {
-                    userDataPath = path.join(app.getPath('userData'), 'MediaFactoryData');
-                    documentsPath = path.join(app.getPath('documents'), 'MediaFactory');
-                }
-            } catch(e) {}
-        }
-        
-        if (!userDataPath) {
-            userDataPath = path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData');
-        }
-
         const installDir = this.getAppInstallDir();
-        const installWorkspaces = path.join(installDir, 'Workspaces');
-        if (fs.existsSync(installWorkspaces)) {
-            this.workspaceDir = installWorkspaces;
-        }
+        const appDataRoot = path.join(installDir, '.mediafactory_data');
 
-        this.settingsFile = path.join(userDataPath, 'system_settings.json');
+        this.workspaceDir = path.join(installDir, 'Workspaces');
+        this.diagnosticsDir = path.join(appDataRoot, 'Diagnostics');
+        this.cacheDir = path.join(appDataRoot, 'Cache');
+        this.cacheCleanupMode = 'never'; // Default
+        this.outputDir = path.join(installDir, 'Output');
+        this.settingsFile = path.join(appDataRoot, 'system_settings.json');
 
         if (fs.existsSync(this.settingsFile)) {
             try {

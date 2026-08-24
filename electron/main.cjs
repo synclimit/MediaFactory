@@ -2,6 +2,14 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
+// Redirect Electron User Data completely off Drive C: into the installation directory on Drive D:
+const appInstallDir = process.resourcesPath ? path.resolve(process.resourcesPath, '..') : process.cwd();
+const localUserDataDir = path.join(appInstallDir, '.mediafactory_data', 'electron_user_data');
+try {
+    if (!fs.existsSync(localUserDataDir)) fs.mkdirSync(localUserDataDir, { recursive: true });
+    app.setPath('userData', localUserDataDir);
+} catch (e) {}
+
 // Global Exception Handler to write crash logs and show error dialog
 function writeCrashLog(err) {
     try {
@@ -26,20 +34,22 @@ process.on('unhandledRejection', (reason) => {
     writeCrashLog(reason);
 });
 
-// Single Instance Lock
-const gotTheLock = app.requestSingleInstanceLock();
-if (!gotTheLock) {
-    console.log('[Electron] Another instance is already running. Quitting new instance...');
-    app.quit();
-    process.exit(0);
-} else {
-    app.on('second-instance', () => {
-        if (mainWindow) {
-            if (mainWindow.isMinimized()) mainWindow.restore();
-            mainWindow.focus();
-            try { mainWindow.webContents.reloadIgnoringCache(); } catch(e) {}
-        }
-    });
+// Single Instance Lock (Production only)
+if (app.isPackaged) {
+    const gotTheLock = app.requestSingleInstanceLock();
+    if (!gotTheLock) {
+        console.log('[Electron] Another instance is already running. Quitting new instance...');
+        app.quit();
+        process.exit(0);
+    } else {
+        app.on('second-instance', () => {
+            if (mainWindow) {
+                if (mainWindow.isMinimized()) mainWindow.restore();
+                mainWindow.focus();
+                try { mainWindow.webContents.reloadIgnoringCache(); } catch(e) {}
+            }
+        });
+    }
 }
 
 const { autoUpdater } = require('electron-updater');
@@ -100,49 +110,52 @@ async function createWindow() {
         }
     });
 
-    let isViteRunning = false;
-    try {
-        const http = require('http');
-        isViteRunning = await new Promise((resolve) => {
-            const req = http.get('http://127.0.0.1:5173', { timeout: 600 }, (res) => resolve(res.statusCode < 500));
-            req.on('error', () => resolve(false));
-            req.on('timeout', () => { req.destroy(); resolve(false); });
-        });
-    } catch(e) {}
-
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
     const targetUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
 
-    async function loadWithRetry(url, maxAttempts = 12, intervalMs = 400) {
+    async function loadWithRetry(url, maxAttempts = 20, intervalMs = 250) {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             if (!mainWindow || mainWindow.isDestroyed()) return;
             try {
                 await mainWindow.loadURL(url);
+                console.log(`[Electron] Successfully loaded UI from: ${url} (attempt ${attempt})`);
                 return;
             } catch (err) {
-                console.warn(`[Electron] loadURL attempt ${attempt}/${maxAttempts} failed:`, err ? err.message : err);
+                console.warn(`[Electron] loadURL attempt ${attempt}/${maxAttempts} failed for ${url}:`, err ? err.message : err);
                 if (attempt < maxAttempts) {
                     await new Promise(r => setTimeout(r, intervalMs));
-                } else if (fs.existsSync(indexPath)) {
-                    console.log('[Electron] Fallback to loadFile:', indexPath);
+                } else if (url !== targetUrl) {
+                    console.log(`[Electron] Falling back to local server URL: ${targetUrl}`);
                     try {
-                        await mainWindow.loadFile(indexPath, { query: { serverPort: String(serverPort) } });
+                        await mainWindow.loadURL(targetUrl);
+                        return;
                     } catch (e2) {
-                        console.error('[Electron] loadFile failed:', e2);
+                        console.error('[Electron] Fallback loadURL failed:', e2);
                     }
                 }
             }
         }
     }
 
-    if (isViteRunning) {
-        const viteUrl = `http://127.0.0.1:5173?serverPort=${serverPort}`;
-        console.log('[Electron] Loading UI via active Vite Dev Server:', viteUrl);
-        loadWithRetry(viteUrl);
+    if (isDev) {
+        mainWindow.webContents.openDevTools();
+        const http = require('http');
+        const isViteAlive = await new Promise((resolve) => {
+            const req = http.get('http://127.0.0.1:5173', { timeout: 350 }, (res) => resolve(res.statusCode < 500));
+            req.on('error', () => resolve(false));
+            req.on('timeout', () => { req.destroy(); resolve(false); });
+        });
+
+        if (isViteAlive) {
+            const viteUrl = `http://127.0.0.1:5173?serverPort=${serverPort}`;
+            console.log('[Electron] Development Mode: Connecting to Vite Dev Server:', viteUrl);
+            loadWithRetry(viteUrl);
+        } else {
+            console.log(`[Electron] Vite dev server not running. Loading built UI via local backend server: ${targetUrl}`);
+            loadWithRetry(targetUrl);
+        }
     } else {
-        console.log('[Electron] Loading UI via local HTTP backend server:', targetUrl);
+        console.log('[Electron] Production Mode: Connecting to local backend server:', targetUrl);
         loadWithRetry(targetUrl);
     }
 
