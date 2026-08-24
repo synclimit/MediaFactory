@@ -115,31 +115,35 @@ async function createWindow() {
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
     const targetUrl = `http://127.0.0.1:${serverPort}?serverPort=${serverPort}`;
 
+    async function loadWithRetry(url, maxAttempts = 12, intervalMs = 400) {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            if (!mainWindow || mainWindow.isDestroyed()) return;
+            try {
+                await mainWindow.loadURL(url);
+                return;
+            } catch (err) {
+                console.warn(`[Electron] loadURL attempt ${attempt}/${maxAttempts} failed:`, err ? err.message : err);
+                if (attempt < maxAttempts) {
+                    await new Promise(r => setTimeout(r, intervalMs));
+                } else if (fs.existsSync(indexPath)) {
+                    console.log('[Electron] Fallback to loadFile:', indexPath);
+                    try {
+                        await mainWindow.loadFile(indexPath, { query: { serverPort: String(serverPort) } });
+                    } catch (e2) {
+                        console.error('[Electron] loadFile failed:', e2);
+                    }
+                }
+            }
+        }
+    }
+
     if (isViteRunning) {
         const viteUrl = `http://127.0.0.1:5173?serverPort=${serverPort}`;
         console.log('[Electron] Loading UI via active Vite Dev Server:', viteUrl);
-        mainWindow.loadURL(viteUrl).catch((err) => {
-            console.error('[Electron] Vite loadURL error, falling back to backend server:', err);
-            mainWindow.loadURL(targetUrl).catch((e2) => console.error('[Electron] Backend loadURL error:', e2));
-        });
-    } else if (serverPort && backendServer) {
-        console.log('[Electron] Loading UI via local HTTP backend server:', targetUrl);
-        mainWindow.loadURL(targetUrl).catch((err) => {
-            console.error('[Electron] HTTP loadURL error, falling back to local file:', err);
-            if (fs.existsSync(indexPath)) {
-                mainWindow.loadFile(indexPath, { query: { serverPort: String(serverPort) } }).catch((e2) => console.error('[Electron] loadFile error:', e2));
-            }
-        });
-    } else if (fs.existsSync(indexPath)) {
-        console.log('[Electron] Loading UI via local build file:', indexPath);
-        mainWindow.loadFile(indexPath, { query: { serverPort: String(serverPort) } }).catch((err) => {
-            console.error('[Electron] loadFile error:', err);
-        });
+        loadWithRetry(viteUrl);
     } else {
-        console.log('[Electron] Fallback: Loading UI via default backend URL:', targetUrl);
-        mainWindow.loadURL(targetUrl).catch((err) => {
-            console.error('[Electron] loadURL error:', err);
-        });
+        console.log('[Electron] Loading UI via local HTTP backend server:', targetUrl);
+        loadWithRetry(targetUrl);
     }
 
     mainWindow.on('closed', () => {
