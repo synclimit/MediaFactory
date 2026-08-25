@@ -5775,9 +5775,9 @@
           if (name === 'ImageDisplay' || name === 'Image' || name === 'ShaderBackgroundDisplay' || name === 'CaYaturBackgroundDisplay') return 0; // Layer 1 (Background)
           if (name === 'GeometryDisplay' || name === 'Geometry' || name === 'ParticleDisplay' || name === 'Particle' || name.includes('Candle') || name.includes('Overlay')) return 1; // Layer 2 (Particles & 3D Overlays)
           if (name.includes('Spectrum') || name.includes('SoundWave') || name.includes('Wave') || name.includes('Visualizer') || name.includes('Harmonics')) return 2; // Layer 3 (Spectrum Visualizer)
-          if (name.includes('Text') || name.includes('Lyrics') || name.includes('Brand') || name.includes('Logo') || name.includes('Watermark') || name.includes('Subscribe')) return 3; // Layer 4 (Text, Lyrics, Branding)
+          if (name.includes('Text') || name.includes('Lyrics') || name.includes('Brand') || name.includes('Logo') || name.includes('Watermark') || name.includes('Subscribe') || name.includes('Particle 2') || name.includes('part2') || name.includes('Intro') || name.includes('Outro')) return 3; // Layer 4 (Text, Lyrics, Branding, Particle 2)
           if (name === 'VisualFXDisplay' || name === 'VisualFX') return 4; // Layer 5 (Master Visual FX Overlay)
-          return 2;
+          return 3;
         };
 
         // Sort displays in-place strictly by layer priority
@@ -8281,8 +8281,8 @@
         if (!scene) return;
 
         const canvas = document.createElement('canvas');
-        canvas.width = obj.width || 360;
-        canvas.height = obj.height || 180;
+        canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
+        canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
         const ctx = canvas.getContext('2d');
 
         obj.canvas = canvas;
@@ -8290,21 +8290,24 @@
 
         m7DrawParticle2Canvas(obj);
 
-        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
-          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
-          if (DisplayClass) {
-            try {
-              const display = new DisplayClass({
-                name: obj.name,
-                x: obj.x || 0,
-                y: obj.y || 0,
-                opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
-              });
-              display.canvas = canvas;
-              obj.display = display;
-              scene.addElement(display);
-              m7EnforceLayerOrder(scene);
-            } catch(e) {}
+        const core = window.__ASTROFOX_CORE__;
+        const TextClass = core?.library?.get('displays')?.TextDisplay;
+        if (TextClass) {
+          try {
+            const display = new TextClass({
+              name: obj.name || 'Particle 2 Layer',
+              x: obj.x || 0,
+              y: obj.y || 0,
+              rotation: obj.rotation || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+            });
+            display.canvas = canvas;
+            display.text = { update: () => {}, render: () => {} };
+            obj.display = display;
+            scene.addElement(display);
+            m7EnforceLayerOrder(scene);
+          } catch(e) {
+            console.error('[M7 Particle 2] Display creation failed:', e);
           }
         }
       }
@@ -8322,7 +8325,7 @@
         ctx.clearRect(0, 0, w, h);
 
         ctx.save();
-        ctx.globalAlpha = obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0;
+        ctx.globalAlpha = 1.0;
 
         ctx.translate(w / 2, h / 2);
         if (obj.rotation) {
@@ -8359,11 +8362,11 @@
           ctx.clip();
         }
 
-        if (obj.source && obj.imageElement && obj.imageElement.complete) {
+        if (obj.source && obj.imageElement && obj.imageElement.complete && obj.imageElement.naturalWidth > 0) {
           const img = obj.imageElement;
-          const ratio = Math.min(w / img.width, h / img.height);
-          const drawW = img.width * ratio;
-          const drawH = img.height * ratio;
+          const ratio = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+          const drawW = img.naturalWidth * ratio;
+          const drawH = img.naturalHeight * ratio;
           const drawX = (w - drawW) / 2;
           const drawY = (h - drawH) / 2;
           ctx.drawImage(img, drawX, drawY, drawW, drawH);
@@ -8374,7 +8377,7 @@
             ctx.strokeStyle = col;
             ctx.lineWidth = 3;
             ctx.beginPath();
-            m7SafeRoundRect(ctx, 8, 8, w - 16, h - 16, 14);
+            m7SafeRoundRect(ctx, 6, 6, w - 12, h - 12, 14);
             ctx.fill();
             ctx.stroke();
 
@@ -8388,21 +8391,24 @@
             ctx.fillStyle = '#ffffff';
             ctx.fillText('DEFAULT LOGO', w * 0.62, h / 2);
           } else if (obj.type === 'Watermark') {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
             ctx.beginPath();
-            m7SafeRoundRect(ctx, 8, 8, w - 16, h - 16, 10);
+            m7SafeRoundRect(ctx, 6, 6, w - 12, h - 12, 10);
             ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
 
-            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.2)))}px "Segoe UI", Inter, monospace`;
+            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.22)))}px "Segoe UI", Inter, monospace`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
             ctx.fillText('💧 © MEDIAFACTORY', w / 2, h / 2);
           } else if (obj.type === 'Subscribe') {
-            const pillW = w - 16;
-            const pillH = h - 16;
-            const pillX = 8;
-            const pillY = 8;
+            const pillW = w - 12;
+            const pillH = h - 12;
+            const pillX = 6;
+            const pillY = 6;
 
             ctx.fillStyle = '#ef4444';
             ctx.beginPath();
@@ -8423,7 +8429,7 @@
             ctx.strokeStyle = '#f59e0b';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            m7SafeRoundRect(ctx, 8, 8, w - 16, h - 16, 12);
+            m7SafeRoundRect(ctx, 6, 6, w - 12, h - 12, 12);
             ctx.fill();
             ctx.stroke();
 
@@ -8435,14 +8441,14 @@
 
             ctx.font = `600 ${Math.max(10, Math.min(14, Math.floor(h * 0.15)))}px "Segoe UI", Inter, sans-serif`;
             ctx.fillStyle = '#9ca3af';
-            ctx.fillText(obj.text || 'Welcome to the Show', w / 2, h * 0.65);
+            ctx.fillText(obj.introText1 || 'Welcome to the Show', w / 2, h * 0.65);
           } else if (obj.type === 'Outro') {
             const style = obj.introStyle || 'Fade from Black';
             ctx.fillStyle = 'rgba(24, 16, 38, 0.85)';
             ctx.strokeStyle = '#a855f7';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            m7SafeRoundRect(ctx, 8, 8, w - 16, h - 16, 12);
+            m7SafeRoundRect(ctx, 6, 6, w - 12, h - 12, 12);
             ctx.fill();
             ctx.stroke();
 
@@ -8454,7 +8460,7 @@
 
             ctx.font = `600 ${Math.max(10, Math.min(14, Math.floor(h * 0.15)))}px "Segoe UI", Inter, sans-serif`;
             ctx.fillStyle = '#9ca3af';
-            ctx.fillText(obj.text || 'Thanks for Watching!', w / 2, h * 0.65);
+            ctx.fillText(obj.introText1 || 'Thanks for Watching!', w / 2, h * 0.65);
           }
         }
 
@@ -9706,8 +9712,8 @@
         if (!scene) return;
 
         const canvas = document.createElement('canvas');
-        canvas.width = 360;
-        canvas.height = 180;
+        canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
+        canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
         const ctx = canvas.getContext('2d');
 
         obj.canvas = canvas;
@@ -9715,21 +9721,24 @@
 
         m7DrawBrandingCanvas(obj);
 
-        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
-          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
-          if (DisplayClass) {
-            try {
-              const display = new DisplayClass({
-                name: obj.name,
-                x: obj.x,
-                y: obj.y,
-                opacity: obj.opacity
-              });
-              display.canvas = canvas;
-              obj.display = display;
-              scene.addElement(display);
-              m7EnforceLayerOrder(scene);
-            } catch(e) {}
+        const core = window.__ASTROFOX_CORE__;
+        const TextClass = core?.library?.get('displays')?.TextDisplay;
+        if (TextClass) {
+          try {
+            const display = new TextClass({
+              name: obj.name || 'Branding Layer',
+              x: obj.x || 0,
+              y: obj.y || 0,
+              rotation: obj.rotation || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+            });
+            display.canvas = canvas;
+            display.text = { update: () => {}, render: () => {} };
+            obj.display = display;
+            scene.addElement(display);
+            m7EnforceLayerOrder(scene);
+          } catch(e) {
+            console.error('[M7 Branding] Display creation failed:', e);
           }
         }
       }
@@ -10444,8 +10453,8 @@
         if (!scene) return;
 
         const canvas = document.createElement('canvas');
-        canvas.width = 360;
-        canvas.height = 180;
+        canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
+        canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
         const ctx = canvas.getContext('2d');
 
         obj.canvas = canvas;
@@ -10453,21 +10462,24 @@
 
         m7DrawBranding2Canvas(obj);
 
-        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
-          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
-          if (DisplayClass) {
-            try {
-              const display = new DisplayClass({
-                name: obj.name,
-                x: obj.x,
-                y: obj.y,
-                opacity: obj.opacity
-              });
-              display.canvas = canvas;
-              obj.display = display;
-              scene.addElement(display);
-              m7EnforceLayerOrder(scene);
-            } catch(e) {}
+        const core = window.__ASTROFOX_CORE__;
+        const TextClass = core?.library?.get('displays')?.TextDisplay;
+        if (TextClass) {
+          try {
+            const display = new TextClass({
+              name: obj.name || 'Branding 2 Layer',
+              x: obj.x || 0,
+              y: obj.y || 0,
+              rotation: obj.rotation || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+            });
+            display.canvas = canvas;
+            display.text = { update: () => {}, render: () => {} };
+            obj.display = display;
+            scene.addElement(display);
+            m7EnforceLayerOrder(scene);
+          } catch(e) {
+            console.error('[M7 Branding 2] Display creation failed:', e);
           }
         }
       }
@@ -11118,8 +11130,8 @@
         if (!scene) return;
 
         const canvas = document.createElement('canvas');
-        canvas.width = obj.width || 360;
-        canvas.height = obj.height || 180;
+        canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
+        canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
         const ctx = canvas.getContext('2d');
 
         obj.canvas = canvas;
@@ -11127,21 +11139,24 @@
 
         m7DrawBranding3Canvas(obj);
 
-        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
-          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
-          if (DisplayClass) {
-            try {
-              const display = new DisplayClass({
-                name: obj.name,
-                x: obj.x,
-                y: obj.y,
-                opacity: obj.opacity
-              });
-              display.canvas = canvas;
-              obj.display = display;
-              scene.addElement(display);
-              m7EnforceLayerOrder(scene);
-            } catch(e) {}
+        const core = window.__ASTROFOX_CORE__;
+        const TextClass = core?.library?.get('displays')?.TextDisplay;
+        if (TextClass) {
+          try {
+            const display = new TextClass({
+              name: obj.name || 'Branding 3 Layer',
+              x: obj.x || 0,
+              y: obj.y || 0,
+              rotation: obj.rotation || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+            });
+            display.canvas = canvas;
+            display.text = { update: () => {}, render: () => {} };
+            obj.display = display;
+            scene.addElement(display);
+            m7EnforceLayerOrder(scene);
+          } catch(e) {
+            console.error('[M7 Branding 3] Display creation failed:', e);
           }
         }
       }
@@ -11919,8 +11934,8 @@
         if (!scene) return;
 
         const canvas = document.createElement('canvas');
-        canvas.width = obj.width || 360;
-        canvas.height = obj.height || 180;
+        canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
+        canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
         const ctx = canvas.getContext('2d');
 
         obj.canvas = canvas;
@@ -11928,21 +11943,24 @@
 
         m7DrawBranding4Canvas(obj);
 
-        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
-          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
-          if (DisplayClass) {
-            try {
-              const display = new DisplayClass({
-                name: obj.name,
-                x: obj.x,
-                y: obj.y,
-                opacity: obj.opacity
-              });
-              display.canvas = canvas;
-              obj.display = display;
-              scene.addElement(display);
-              m7EnforceLayerOrder(scene);
-            } catch(e) {}
+        const core = window.__ASTROFOX_CORE__;
+        const TextClass = core?.library?.get('displays')?.TextDisplay;
+        if (TextClass) {
+          try {
+            const display = new TextClass({
+              name: obj.name || 'Branding 4 Layer',
+              x: obj.x || 0,
+              y: obj.y || 0,
+              rotation: obj.rotation || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+            });
+            display.canvas = canvas;
+            display.text = { update: () => {}, render: () => {} };
+            obj.display = display;
+            scene.addElement(display);
+            m7EnforceLayerOrder(scene);
+          } catch(e) {
+            console.error('[M7 Branding 4] Display creation failed:', e);
           }
         }
       }
