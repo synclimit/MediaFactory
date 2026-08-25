@@ -8280,6 +8280,16 @@
         const scene = getOrCreateActiveScene();
         if (!scene) return;
 
+        // Clean up any legacy TextDisplay objects from old versions
+        if (scene.displays) {
+          for (let i = scene.displays.length - 1; i >= 0; i--) {
+            const d = scene.displays[i];
+            if (d && (d.name === obj.name || d.name === 'Particle 2 Layer' || d.name === 'Brand Logo' || d.name === 'Watermark' || d.name === 'Subscribe Animation') && d.constructor && d.constructor.name === 'TextDisplay') {
+              scene.removeElement(d);
+            }
+          }
+        }
+
         const canvas = document.createElement('canvas');
         canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
         canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
@@ -8291,23 +8301,36 @@
         m7DrawParticle2Canvas(obj);
 
         const core = window.__ASTROFOX_CORE__;
-        const TextClass = core?.library?.get('displays')?.TextDisplay;
-        if (TextClass) {
+        const ImageClass = core?.library?.get('displays')?.ImageDisplay;
+        if (ImageClass) {
           try {
-            const display = new TextClass({
-              name: obj.name || 'Particle 2 Layer',
+            const dataUrl = canvas.toDataURL('image/png');
+            const display = new ImageClass({
+              name: obj.name || 'Brand Object',
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
               x: obj.x || 0,
               y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
               rotation: obj.rotation || 0,
-              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+              fixed: false
             });
-            display.canvas = canvas;
-            display.text = { update: () => {}, render: () => {} };
             obj.display = display;
             scene.addElement(display);
+            display.update({
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
+              x: obj.x || 0,
+              y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
+              rotation: obj.rotation || 0,
+              fixed: false
+            });
             m7EnforceLayerOrder(scene);
           } catch(e) {
-            console.error('[M7 Particle 2] Display creation failed:', e);
+            console.error('[M7 Particle 2] ImageDisplay creation failed:', e);
           }
         }
       }
@@ -8466,8 +8489,18 @@
 
         ctx.restore();
 
-        if (obj.display && obj.display.pass && obj.display.pass.texture) {
-          obj.display.pass.texture.needsUpdate = true;
+        if (obj.display && obj.display.update) {
+          const dataUrl = canvas.toDataURL('image/png');
+          obj.display.update({
+            src: dataUrl,
+            width: obj.width || 360,
+            height: obj.height || 180,
+            x: obj.x || 0,
+            y: obj.y || 0,
+            opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
+            rotation: obj.rotation || 0,
+            fixed: false
+          });
         }
       }
 
@@ -9711,6 +9744,16 @@
         const scene = getOrCreateActiveScene();
         if (!scene) return;
 
+        // Clean up legacy TextDisplay objects
+        if (scene.displays) {
+          for (let i = scene.displays.length - 1; i >= 0; i--) {
+            const d = scene.displays[i];
+            if (d && (d.name === obj.name || d.name === 'Branding Layer' || d.name === 'Brand Logo' || d.name === 'Watermark' || d.name === 'Subscribe Animation') && d.constructor && d.constructor.name === 'TextDisplay') {
+              scene.removeElement(d);
+            }
+          }
+        }
+
         const canvas = document.createElement('canvas');
         canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
         canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
@@ -9722,44 +9765,78 @@
         m7DrawBrandingCanvas(obj);
 
         const core = window.__ASTROFOX_CORE__;
-        const TextClass = core?.library?.get('displays')?.TextDisplay;
-        if (TextClass) {
+        const ImageClass = core?.library?.get('displays')?.ImageDisplay;
+        if (ImageClass) {
           try {
-            const display = new TextClass({
+            const dataUrl = canvas.toDataURL('image/png');
+            const display = new ImageClass({
               name: obj.name || 'Branding Layer',
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
               x: obj.x || 0,
               y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
               rotation: obj.rotation || 0,
-              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+              fixed: false
             });
-            display.canvas = canvas;
-            display.text = { update: () => {}, render: () => {} };
             obj.display = display;
             scene.addElement(display);
+            display.update({
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
+              x: obj.x || 0,
+              y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
+              rotation: obj.rotation || 0,
+              fixed: false
+            });
             m7EnforceLayerOrder(scene);
           } catch(e) {
-            console.error('[M7 Branding] Display creation failed:', e);
+            console.error('[M7 Branding] ImageDisplay creation failed:', e);
           }
         }
       }
 
-      function m7SetBrandingImageSource(obj, src) {
-        if (!obj) return;
+      async function m7SetBrandingImageSource(obj, src) {
+        if (!obj || !src) return;
         obj.source = src;
-        const normalizedSrc = m7NormalizeMediaSrc(src);
+
+        let dataUrl = src;
+        if (typeof src === 'string' && (src.includes(':\\') || src.startsWith('file:///') || (!src.startsWith('data:') && !src.startsWith('blob:') && !src.startsWith('http')))) {
+          if (window.__ASTROFOX__ && window.__ASTROFOX__.readImageFile) {
+            try {
+              const res = await window.__ASTROFOX__.readImageFile(src.replace(/^file:\/\/\//, ''));
+              if (res) dataUrl = res;
+            } catch(e) {}
+          }
+        }
+
+        const normalizedSrc = (dataUrl && (dataUrl.startsWith('data:') || dataUrl.startsWith('blob:') || dataUrl.startsWith('http'))) ? dataUrl : m7NormalizeMediaSrc(dataUrl);
+
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
           obj.imageElement = img;
+          if (img.naturalWidth && img.naturalHeight) {
+            const aspect = img.naturalWidth / img.naturalHeight;
+            if (!obj.customDimensionsSet) {
+              if (aspect >= 1) {
+                obj.width = Math.min(480, Math.max(180, Math.round(180 * aspect)));
+                obj.height = 180;
+              } else {
+                obj.width = 180;
+                obj.height = Math.min(480, Math.max(180, Math.round(180 / aspect)));
+              }
+            }
+          }
           m7DrawBrandingCanvas(obj);
           if (activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex] === obj) {
             const imgPrev = document.getElementById('img-branding-preview');
             const txtPrevEmpty = document.getElementById('txt-branding-preview-empty');
             if (imgPrev) { imgPrev.src = normalizedSrc; imgPrev.style.display = 'block'; }
             if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
-          }
-          if (obj.display && obj.display.update) {
-            obj.display.update({ x: obj.x, y: obj.y });
           }
           m7UpdateGizmo();
           m7ScheduleAutosave();
@@ -10452,6 +10529,16 @@
         const scene = getOrCreateActiveScene();
         if (!scene) return;
 
+        // Clean up legacy TextDisplay objects
+        if (scene.displays) {
+          for (let i = scene.displays.length - 1; i >= 0; i--) {
+            const d = scene.displays[i];
+            if (d && (d.name === obj.name || d.name === 'Branding 2 Layer' || d.name === 'Brand Logo' || d.name === 'Watermark' || d.name === 'Subscribe Animation') && d.constructor && d.constructor.name === 'TextDisplay') {
+              scene.removeElement(d);
+            }
+          }
+        }
+
         const canvas = document.createElement('canvas');
         canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
         canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
@@ -10463,23 +10550,36 @@
         m7DrawBranding2Canvas(obj);
 
         const core = window.__ASTROFOX_CORE__;
-        const TextClass = core?.library?.get('displays')?.TextDisplay;
-        if (TextClass) {
+        const ImageClass = core?.library?.get('displays')?.ImageDisplay;
+        if (ImageClass) {
           try {
-            const display = new TextClass({
+            const dataUrl = canvas.toDataURL('image/png');
+            const display = new ImageClass({
               name: obj.name || 'Branding 2 Layer',
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
               x: obj.x || 0,
               y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
               rotation: obj.rotation || 0,
-              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+              fixed: false
             });
-            display.canvas = canvas;
-            display.text = { update: () => {}, render: () => {} };
             obj.display = display;
             scene.addElement(display);
+            display.update({
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
+              x: obj.x || 0,
+              y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
+              rotation: obj.rotation || 0,
+              fixed: false
+            });
             m7EnforceLayerOrder(scene);
           } catch(e) {
-            console.error('[M7 Branding 2] Display creation failed:', e);
+            console.error('[M7 Branding 2] ImageDisplay creation failed:', e);
           }
         }
       }
@@ -11129,6 +11229,16 @@
         const scene = getOrCreateActiveScene();
         if (!scene) return;
 
+        // Clean up legacy TextDisplay objects
+        if (scene.displays) {
+          for (let i = scene.displays.length - 1; i >= 0; i--) {
+            const d = scene.displays[i];
+            if (d && (d.name === obj.name || d.name === 'Branding 3 Layer' || d.name === 'Brand Logo' || d.name === 'Watermark' || d.name === 'Subscribe Animation') && d.constructor && d.constructor.name === 'TextDisplay') {
+              scene.removeElement(d);
+            }
+          }
+        }
+
         const canvas = document.createElement('canvas');
         canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
         canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
@@ -11140,23 +11250,36 @@
         m7DrawBranding3Canvas(obj);
 
         const core = window.__ASTROFOX_CORE__;
-        const TextClass = core?.library?.get('displays')?.TextDisplay;
-        if (TextClass) {
+        const ImageClass = core?.library?.get('displays')?.ImageDisplay;
+        if (ImageClass) {
           try {
-            const display = new TextClass({
+            const dataUrl = canvas.toDataURL('image/png');
+            const display = new ImageClass({
               name: obj.name || 'Branding 3 Layer',
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
               x: obj.x || 0,
               y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
               rotation: obj.rotation || 0,
-              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+              fixed: false
             });
-            display.canvas = canvas;
-            display.text = { update: () => {}, render: () => {} };
             obj.display = display;
             scene.addElement(display);
+            display.update({
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
+              x: obj.x || 0,
+              y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
+              rotation: obj.rotation || 0,
+              fixed: false
+            });
             m7EnforceLayerOrder(scene);
           } catch(e) {
-            console.error('[M7 Branding 3] Display creation failed:', e);
+            console.error('[M7 Branding 3] ImageDisplay creation failed:', e);
           }
         }
       }
@@ -11933,6 +12056,16 @@
         const scene = getOrCreateActiveScene();
         if (!scene) return;
 
+        // Clean up legacy TextDisplay objects
+        if (scene.displays) {
+          for (let i = scene.displays.length - 1; i >= 0; i--) {
+            const d = scene.displays[i];
+            if (d && (d.name === obj.name || d.name === 'Branding 4 Layer' || d.name === 'Brand Logo' || d.name === 'Watermark' || d.name === 'Subscribe Animation') && d.constructor && d.constructor.name === 'TextDisplay') {
+              scene.removeElement(d);
+            }
+          }
+        }
+
         const canvas = document.createElement('canvas');
         canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
         canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
@@ -11944,23 +12077,36 @@
         m7DrawBranding4Canvas(obj);
 
         const core = window.__ASTROFOX_CORE__;
-        const TextClass = core?.library?.get('displays')?.TextDisplay;
-        if (TextClass) {
+        const ImageClass = core?.library?.get('displays')?.ImageDisplay;
+        if (ImageClass) {
           try {
-            const display = new TextClass({
+            const dataUrl = canvas.toDataURL('image/png');
+            const display = new ImageClass({
               name: obj.name || 'Branding 4 Layer',
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
               x: obj.x || 0,
               y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
               rotation: obj.rotation || 0,
-              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+              fixed: false
             });
-            display.canvas = canvas;
-            display.text = { update: () => {}, render: () => {} };
             obj.display = display;
             scene.addElement(display);
+            display.update({
+              src: dataUrl,
+              width: obj.width || 360,
+              height: obj.height || 180,
+              x: obj.x || 0,
+              y: obj.y || 0,
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
+              rotation: obj.rotation || 0,
+              fixed: false
+            });
             m7EnforceLayerOrder(scene);
           } catch(e) {
-            console.error('[M7 Branding 4] Display creation failed:', e);
+            console.error('[M7 Branding 4] ImageDisplay creation failed:', e);
           }
         }
       }
