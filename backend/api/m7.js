@@ -440,6 +440,11 @@ router.get('/api/m7/audio-stream', (req, res) => {
       res.writeHead(200, head);
       fs.createReadStream(targetPath).pipe(res);
     }
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 // Media File Streaming Endpoint for M7 Images/Videos
 router.get('/api/m7/media-file', (req, res) => {
   try {

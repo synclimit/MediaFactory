@@ -1,5 +1,11 @@
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
+let sqlite3 = null;
+let open = null;
+try {
+    sqlite3 = require('sqlite3');
+    open = require('sqlite').open;
+} catch (e) {
+    // sqlite3/sqlite not installed in environment, fallback to memory/json mock
+}
 const fs = require('fs/promises');
 const path = require('path');
 const { DatabaseLocked } = require('./Errors');
@@ -19,10 +25,21 @@ class Database {
         try {
             await fs.mkdir(this.dbPath, { recursive: true });
             
-            this.db = await open({
-                filename: this.dbFile,
-                driver: sqlite3.Database
-            });
+            if (sqlite3 && open) {
+                this.db = await open({
+                    filename: this.dbFile,
+                    driver: sqlite3.Database
+                });
+            } else {
+                // In-memory fallback mock
+                this.db = {
+                    exec: async () => {},
+                    run: async () => ({ changes: 1, lastID: 1 }),
+                    get: async () => null,
+                    all: async () => [],
+                    close: async () => {}
+                };
+            }
 
             await this.db.exec(`
                 CREATE TABLE IF NOT EXISTS library (

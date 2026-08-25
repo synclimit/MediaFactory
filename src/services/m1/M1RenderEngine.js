@@ -21,7 +21,9 @@ function resolveFFmpegPath() {
   const candidatePaths = [
     process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffmpeg.exe') : '',
     process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'ffmpeg.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'ffmpeg.exe') : '',
     path.join(process.cwd(), 'backend', 'bin', 'ffmpeg.exe'),
+    path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe'),
     path.join(process.cwd(), 'bin', 'ffmpeg.exe')
   ];
   for (const p of candidatePaths) {
@@ -31,10 +33,17 @@ function resolveFFmpegPath() {
 }
 
 function resolveFFmpegDir() {
+  const ffmpegPath = resolveFFmpegPath();
+  if (ffmpegPath && ffmpegPath !== 'ffmpeg' && existsSync(ffmpegPath)) {
+    return path.dirname(ffmpegPath);
+  }
   const candidatePaths = [
     process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin') : '',
     process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin') : '',
-    path.join(process.cwd(), 'backend', 'bin')
+    process.resourcesPath ? path.join(process.resourcesPath, 'bin') : '',
+    path.join(process.cwd(), 'backend', 'bin'),
+    path.join(process.cwd(), 'backend', 'ffmpeg'),
+    path.join(process.cwd(), 'bin')
   ];
   for (const p of candidatePaths) {
     if (p && existsSync(p)) return p;
