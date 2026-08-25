@@ -1511,6 +1511,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span class="m7-rail-label">Particle</span>
       </button>
+      <button class="m7-rail-item" id="rail-btn-particle2" title="Particle 2 & Multi-Layer System" onclick="m7SelectCategory('particle2')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/><circle cx="18" cy="18" r="5" fill="#f59e0b" stroke="none"/><text x="18" y="21" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">2</text></svg>
+        <span class="m7-rail-label">Particle 2</span>
+      </button>
       <button class="m7-rail-item" id="rail-btn-fx" title="Post-Processing & Visual FX" onclick="m7SelectCategory('fx')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         <span class="m7-rail-label">Visual FX</span>
@@ -2314,6 +2318,73 @@
                 <span class="m7-viz-model-badge">PRESET</span>
                 <div class="m7-viz-model-icon">⭐</div>
                 <div class="m7-viz-model-name">Sparkle Stars</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4b. PARTICLE 2 SECTION (CLONED FROM PARTICLE ARCHITECTURE) -->
+        <div id="m7-section-particle2" style="display:none; flex-direction:column; gap:12px;">
+          <div class="m7-panel-header">
+            <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span>
+            <span>PARTICLE 2</span>
+          </div>
+
+          <div class="m7-type-tabs">
+            <button class="m7-type-tab active" id="tab-particle2-systems" onclick="m7SetParticle2SubTab('systems')">✨ PARTICLES 2</button>
+            <button class="m7-type-tab" id="tab-particle2-presets" onclick="m7SetParticle2SubTab('presets')">📄 PRESETS</button>
+          </div>
+
+          <!-- 1. SYSTEMS VIEW -->
+          <div id="m7-particle2-systems-view" style="display:flex; flex-direction:column; gap:12px;">
+            <button class="m7-folder-btn" onclick="m7AddParticle2System()" style="padding:12px; font-size:12px; font-weight:900; letter-spacing:0.6px; text-transform:uppercase; border-color:rgba(245,158,11,0.4); background:linear-gradient(135deg, rgba(245,158,11,0.15), rgba(217,119,6,0.25));">
+              <span style="color:#f59e0b;">+ ADD SYSTEM 2</span>
+            </button>
+
+            <div class="m7-section-title-badge">
+              <span>ACTIVE SYSTEMS 2</span>
+              <span class="m7-badge-num" id="m7-particle2-count" style="background:#f59e0b;">0</span>
+            </div>
+
+            <div id="m7-particle2-list" style="display:flex; flex-direction:column; gap:6px;">
+              <div id="m7-empty-particle2-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:24px 12px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                No particle 2 systems active.
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. PRESETS VIEW -->
+          <div id="m7-particle2-presets-view" style="display:none; flex-direction:column; gap:8px;">
+            <div class="m7-viz-model-grid">
+              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('floating_dust')">
+                <span class="m7-viz-model-badge">PRESET</span>
+                <div class="m7-viz-model-icon">✨</div>
+                <div class="m7-viz-model-name">Floating Dust 2</div>
+              </div>
+              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('neon_rain')">
+                <span class="m7-viz-model-badge">PRESET</span>
+                <div class="m7-viz-model-icon">🌧️</div>
+                <div class="m7-viz-model-name">Neon Rain 2</div>
+              </div>
+              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('starfield_warp')">
+                <span class="m7-viz-model-badge">PRESET</span>
+                <div class="m7-viz-model-icon">🚀</div>
+                <div class="m7-viz-model-name">Starfield Warp 2</div>
+              </div>
+              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('firefly_swarm')">
+                <span class="m7-viz-model-badge">PRESET</span>
+                <div class="m7-viz-model-icon">💡</div>
+                <div class="m7-viz-model-name">Fireflies 2</div>
+              </div>
+              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('music_notes')">
+                <span class="m7-viz-model-badge">PRESET</span>
+                <div class="m7-viz-model-icon">🎵</div>
+                <div class="m7-viz-model-name">Music Notes 2</div>
+              </div>
+              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('sparkling_stars')">
+                <span class="m7-viz-model-badge">PRESET</span>
+                <div class="m7-viz-model-icon">⭐</div>
+                <div class="m7-viz-model-name">Sparkle Stars 2</div>
               </div>
             </div>
           </div>
@@ -3474,6 +3545,202 @@
                 <span class="m7-switch-slider"></span>
               </label>
             </div>
+          </div>
+
+        </div>
+
+        <!-- 4b. INSPECTOR: PARTICLE 2 SETTINGS -->
+        <div id="m7-inspector-particle2" style="display:none; flex-direction:column; gap:12px;">
+          
+          <!-- Card 1: PARTICLE 2 SETTINGS -->
+          <div class="m7-inspector-card">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> PARTICLE 2 SETTINGS
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Shape</span>
+              </div>
+              <select class="m7-select" id="sel-part2-shape" onchange="m7UpdateParticle2Param('shape', this.value)">
+                <option value="shape_circle">shape_circle</option>
+                <option value="shape_square">shape_square</option>
+                <option value="shape_triangle">shape_triangle</option>
+                <option value="shape_diamond">shape_diamond</option>
+                <option value="shape_hexagon">shape_hexagon</option>
+                <option value="shape_star">shape_star</option>
+                <option value="shape_heart">shape_heart</option>
+                <option value="shape_music_note">shape_music_note</option>
+                <option value="shape_lightning">shape_lightning</option>
+                <option value="shape_flame">shape_flame</option>
+                <option value="shape_snowflake">shape_snowflake</option>
+                <option value="shape_leaf">shape_leaf</option>
+                <option value="shape_feather">shape_feather</option>
+                <option value="shape_bubble">shape_bubble</option>
+                <option value="shape_droplet">shape_droplet</option>
+                <option value="shape_crystal">shape_crystal</option>
+                <option value="shape_pixel">shape_pixel</option>
+                <option value="shape_ring">shape_ring</option>
+              </select>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Flow</span>
+              </div>
+              <select class="m7-select" id="sel-part2-flow" onchange="m7UpdateParticle2Param('flow', this.value)">
+                <option value="flow_static">flow_static</option>
+                <option value="flow_drift">flow_drift</option>
+                <option value="flow_float">flow_float</option>
+                <option value="flow_rain">flow_rain</option>
+                <option value="flow_snow">flow_snow</option>
+                <option value="flow_wind_left">flow_wind_left</option>
+                <option value="flow_wind_right">flow_wind_right</option>
+                <option value="flow_swirl">flow_swirl</option>
+                <option value="flow_spiral">flow_spiral</option>
+                <option value="flow_orbit">flow_orbit</option>
+                <option value="flow_explosion">flow_explosion</option>
+                <option value="flow_implosion">flow_implosion</option>
+                <option value="flow_starfield">flow_starfield</option>
+                <option value="flow_pulse">flow_pulse</option>
+                <option value="flow_wave">flow_wave</option>
+                <option value="flow_fountain">flow_fountain</option>
+              </select>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Trail</span>
+              </div>
+              <select class="m7-select" id="sel-part2-trail" onchange="m7UpdateParticle2Param('trail', this.value)">
+                <option value="trail_none">trail_none</option>
+                <option value="trail_fade">trail_fade</option>
+                <option value="trail_glow">trail_glow</option>
+                <option value="trail_light">trail_light</option>
+                <option value="trail_smoke">trail_smoke</option>
+                <option value="trail_fire">trail_fire</option>
+                <option value="trail_energy">trail_energy</option>
+                <option value="trail_rainbow">trail_rainbow</option>
+                <option value="trail_dotted">trail_dotted</option>
+                <option value="trail_pixel">trail_pixel</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Card 2: APPEARANCE -->
+          <div class="m7-inspector-card">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> APPEARANCE
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Fill Color</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="color" id="col-part2-fill" value="#f59e0b" onchange="m7UpdateParticle2Param('fillColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Stroke Color</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="color" id="col-part2-stroke" value="#000000" onchange="m7UpdateParticle2Param('strokeColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Stroke Width</span>
+                <span class="m7-control-val" id="val-part2-strokeWidth">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="10" step="1" value="0" id="slider-part2-strokeWidth" oninput="m7UpdateParticle2Param('strokeWidth', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Opacity</span>
+                <span class="m7-control-val" id="val-part2-opacity">100</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" step="1" value="100" id="slider-part2-opacity" oninput="m7UpdateParticle2Param('opacity', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Blend Mode</span>
+              </div>
+              <select class="m7-select" id="sel-part2-blend" onchange="m7UpdateParticle2Param('blendMode', this.value)">
+                <option value="Normal">Normal</option>
+                <option value="Screen" selected>Screen</option>
+                <option value="Multiply">Multiply</option>
+                <option value="Add">Add</option>
+                <option value="Overlay">Overlay</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Card 3: TRANSFORM & EMISSION -->
+          <div class="m7-inspector-card">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> TRANSFORM & EMISSION
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Count</span>
+                <span class="m7-control-val" id="val-part2-count">50</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="500" step="5" value="50" id="slider-part2-count" oninput="m7UpdateParticle2Param('count', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Scale</span>
+                <span class="m7-control-val" id="val-part2-scale">1.0</span>
+              </div>
+              <input type="range" class="m7-slider" min="0.1" max="5.0" step="0.1" value="1.0" id="slider-part2-scale" oninput="m7UpdateParticle2Param('scale', parseFloat(this.value))">
+            </div>
+            <div class="m7-toggle-row">
+              <span>Random Scale</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-part2-randomScale" checked onchange="m7UpdateParticle2Param('randomScale', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Rotation</span>
+                <span class="m7-control-val" id="val-part2-rotation">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="360" step="1" value="0" id="slider-part2-rotation" oninput="m7UpdateParticle2Param('rotation', parseInt(this.value))">
+            </div>
+            <div class="m7-toggle-row">
+              <span>Random Rotation</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-part2-randomRotation" checked onchange="m7UpdateParticle2Param('randomRotation', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Speed</span>
+                <span class="m7-control-val" id="val-part2-speed">1.0</span>
+              </div>
+              <input type="range" class="m7-slider" min="0.1" max="5.0" step="0.1" value="1.0" id="slider-part2-speed" oninput="m7UpdateParticle2Param('speed', parseFloat(this.value))">
+            </div>
+          </div>
+
+          <!-- Card 4: REACTIVITY -->
+          <div class="m7-inspector-card">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> REACTIVITY
+            </div>
+            <div class="m7-toggle-row">
+              <span>Beat Reactive</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-part2-beatReactive" checked onchange="m7UpdateParticle2Param('beatReactive', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Card 5: DELETE -->
+          <div class="m7-inspector-card">
+            <button class="m7-folder-btn" onclick="m7DeleteActiveParticle2()" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#ef4444; width:100%; justify-content:center; font-weight:800;">
+              <span>🗑️ Delete Active Particle 2 System</span>
+            </button>
           </div>
 
         </div>
@@ -5355,6 +5622,10 @@
         beatPulsing: true
       };
 
+      // Particle 2 State
+      let activeParticle2s = []; // [{ id, name, config, display }]
+      let activeSelectedParticle2Index = 0;
+
       // Branding State (Full M3 Parity)
       let activeBrandingObjects = []; // [{ id, name, type, source, imageElement, x, y, position, scale, opacity, shadow, brandColor, animationType, animationIntensity, visible, introStyle, introDuration, intensity, darkIntensity, blurIntensity, textTransition, mainTransition, paragraphCount, paragraphDuration, introText1, introText2, introText3, introFontFamily, introFontSize, introTextColor, introTextAlign, canvas, ctx, display }]
       let activeSelectedBrandingIndex = -1;
@@ -5468,6 +5739,7 @@
         const secPlaylist = document.getElementById('m7-section-playlist');
         const secViz = document.getElementById('m7-section-viz');
         const secParticle = document.getElementById('m7-section-particle');
+        const secParticle2 = document.getElementById('m7-section-particle2');
         const secFx = document.getElementById('m7-section-fx');
         const secOverlay = document.getElementById('m7-section-overlay');
         const secText = document.getElementById('m7-section-text');
@@ -5481,6 +5753,7 @@
         const inspPlaylist = document.getElementById('m7-inspector-playlist');
         const inspViz = document.getElementById('m7-inspector-viz');
         const inspParticle = document.getElementById('m7-inspector-particle');
+        const inspParticle2 = document.getElementById('m7-inspector-particle2');
         const inspFx = document.getElementById('m7-inspector-fx');
         const inspOverlay = document.getElementById('m7-inspector-overlay');
         const inspText = document.getElementById('m7-inspector-text');
@@ -5496,8 +5769,8 @@
         const thumbViewport = document.getElementById('m7-thumbnail-viewport');
 
         // Hide all sections first
-        [secBg, secPlaylist, secViz, secParticle, secFx, secOverlay, secText, secBranding, secBranding2, secBranding3, secBranding4, secThumbnail].forEach(s => { if (s) s.style.display = 'none'; });
-        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspOverlay, inspText, inspBranding, inspBranding2, inspBranding3, inspBranding4, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+        [secBg, secPlaylist, secViz, secParticle, secParticle2, secFx, secOverlay, secText, secBranding, secBranding2, secBranding3, secBranding4, secThumbnail].forEach(s => { if (s) s.style.display = 'none'; });
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspParticle2, inspFx, inspOverlay, inspText, inspBranding, inspBranding2, inspBranding3, inspBranding4, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
 
         if (type === 'thumbnail') {
           // Switch to dedicated Static JPG Thumbnail Canvas
@@ -5542,6 +5815,14 @@
             if (secParticle) secParticle.style.display = 'flex';
             if (inspParticle) inspParticle.style.display = 'flex';
             if (tag) tag.innerText = 'PARTICLE';
+          } else if (type === 'particle2') {
+            if (secParticle2) secParticle2.style.display = 'flex';
+            if (inspParticle2) inspParticle2.style.display = 'flex';
+            if (tag) tag.innerText = 'PARTICLE 2';
+            m7RenderParticle2List();
+            if (activeParticle2s.length > 0 && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+              m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index].display);
+            }
           } else if (type === 'fx' || type === 'visualfx') {
             if (secFx) secFx.style.display = 'flex';
             if (inspFx) inspFx.style.display = 'flex';
@@ -7760,6 +8041,283 @@
             const flowLabel = (currentPart.config.flow || 'float').replace('flow_', '').toUpperCase();
             currentPart.name = `Particle: ${shapeLabel} ${flowLabel}`;
             m7RenderParticleList();
+          }
+        }
+        m7EnforceLayerOrder(scene);
+        m7ScheduleAutosave();
+      }
+
+      /* === 4b. PARTICLE 2 MODULE FUNCTIONS === */
+      let currentParticle2SubTab = 'systems';
+      let particle2Params = {
+        shape: 'shape_circle',
+        flow: 'flow_float',
+        trail: 'trail_none',
+        fillColor: '#f59e0b',
+        strokeColor: '#000000',
+        strokeWidth: 0,
+        opacity: 100,
+        blendMode: 'Screen',
+        count: 50,
+        scale: 1.0,
+        randomScale: true,
+        rotation: 0,
+        randomRotation: true,
+        speed: 1.0,
+        beatReactive: true
+      };
+
+      function m7SetParticle2SubTab(subTab) {
+        currentParticle2SubTab = subTab;
+        const tabSys = document.getElementById('tab-particle2-systems');
+        const tabPre = document.getElementById('tab-particle2-presets');
+        const viewSys = document.getElementById('m7-particle2-systems-view');
+        const viewPre = document.getElementById('m7-particle2-presets-view');
+
+        if (tabSys) tabSys.classList.toggle('active', subTab === 'systems');
+        if (tabPre) tabPre.classList.toggle('active', subTab === 'presets');
+        if (viewSys) viewSys.style.display = (subTab === 'systems') ? 'flex' : 'none';
+        if (viewPre) viewPre.style.display = (subTab === 'presets') ? 'flex' : 'none';
+      }
+
+      function m7AddParticle2System(customProps = null) {
+        const scene = getOrCreateActiveScene();
+        if (!scene) return;
+        const core = window.__ASTROFOX_CORE__;
+        if (!core || !core.library) return;
+
+        const ParticleClass = core.library.get('displays')?.ParticleDisplay;
+        if (!ParticleClass) return;
+
+        const stage = getAstrofoxStage();
+        const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 1920, height: 1080 };
+        const stageW = stageSize.width || 1920;
+        const stageH = stageSize.height || 1080;
+
+        const config = customProps ? { ...particle2Params, ...customProps } : { ...particle2Params };
+        config.width = stageW;
+        config.height = stageH;
+
+        const display = new ParticleClass(config);
+        display.isParticle2 = true;
+        scene.addElement(display);
+        m7EnforceLayerOrder(scene);
+
+        const shapeLabel = (config.shape || 'circle').replace('shape_', '').toUpperCase();
+        const flowLabel = (config.flow || 'float').replace('flow_', '').toUpperCase();
+        const name = `Particle 2: ${shapeLabel} ${flowLabel}`;
+
+        const partItem = {
+          id: display.id || ('part2_' + Date.now()),
+          name: name,
+          config: config,
+          display: display,
+          isParticle2: true
+        };
+
+        activeParticle2s.push(partItem);
+        activeSelectedParticle2Index = activeParticle2s.length - 1;
+        m7RenderParticle2List();
+        m7SyncInspectorToParticle2(display);
+        m7ScheduleAutosave();
+      }
+
+      function m7ApplyParticle2Preset(presetKey) {
+        const presets = {
+          floating_dust: { shape: 'shape_circle', flow: 'flow_float', trail: 'trail_none', fillColor: '#f59e0b', strokeWidth: 0, opacity: 80, count: 60, scale: 0.8, speed: 0.8, blendMode: 'Screen', beatReactive: true },
+          neon_rain: { shape: 'shape_droplet', flow: 'flow_rain', trail: 'trail_fade', fillColor: '#fbbf24', strokeWidth: 0, opacity: 90, count: 80, scale: 1.2, speed: 1.5, blendMode: 'Add', beatReactive: true },
+          starfield_warp: { shape: 'shape_star', flow: 'flow_starfield', trail: 'trail_light', fillColor: '#fcd34d', strokeWidth: 0, opacity: 100, count: 90, scale: 1.4, speed: 1.8, blendMode: 'Screen', beatReactive: true },
+          firefly_swarm: { shape: 'shape_circle', flow: 'flow_drift', trail: 'trail_glow', fillColor: '#d97706', strokeWidth: 0, opacity: 95, count: 50, scale: 1.0, speed: 0.6, blendMode: 'Screen', beatReactive: true },
+          music_notes: { shape: 'shape_music_note', flow: 'flow_fountain', trail: 'trail_fade', fillColor: '#f59e0b', strokeWidth: 0, opacity: 100, count: 40, scale: 1.5, speed: 1.2, blendMode: 'Screen', beatReactive: true },
+          sparkling_stars: { shape: 'shape_star', flow: 'flow_swirl', trail: 'trail_rainbow', fillColor: '#fef08a', strokeWidth: 0, opacity: 100, count: 60, scale: 1.2, speed: 1.0, blendMode: 'Screen', beatReactive: true }
+        };
+
+        const preset = presets[presetKey];
+        if (!preset) return;
+
+        if (activeParticle2s.length > 0 && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+          const current = activeParticle2s[activeSelectedParticle2Index];
+          Object.assign(particle2Params, preset);
+          current.display.update(preset);
+          current.config = { ...current.config, ...preset };
+          const shapeLabel = (preset.shape || 'circle').replace('shape_', '').toUpperCase();
+          const flowLabel = (preset.flow || 'float').replace('flow_', '').toUpperCase();
+          current.name = `Particle 2: ${shapeLabel} ${flowLabel}`;
+          m7RenderParticle2List();
+          m7SyncInspectorToParticle2(current.display);
+          m7ScheduleAutosave();
+        } else {
+          m7AddParticle2System(preset);
+        }
+      }
+
+      function m7RenderParticle2List() {
+        const listEl = document.getElementById('m7-particle2-list');
+        const countEl = document.getElementById('m7-particle2-count');
+        if (countEl) countEl.innerText = activeParticle2s.length;
+        if (!listEl) return;
+
+        if (activeParticle2s.length === 0) {
+          listEl.innerHTML = `
+            <div id="m7-empty-particle2-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:24px 12px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+              No particle 2 systems active.
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = '';
+        activeParticle2s.forEach((item, idx) => {
+          const isSelected = (idx === activeSelectedParticle2Index);
+          const row = document.createElement('div');
+          row.className = `m7-layer-item ${isSelected ? 'active' : ''}`;
+          row.onclick = () => {
+            activeSelectedParticle2Index = idx;
+            m7RenderParticle2List();
+            m7SyncInspectorToParticle2(item.display);
+            m7ScheduleAutosave();
+          };
+
+          const numStr = String(idx + 1).padStart(2, '0');
+
+          row.innerHTML = `
+            <span class="m7-layer-remove" title="Remove Particle 2 System" onclick="event.stopPropagation(); m7RemoveParticle2(${idx})">✕</span>
+            <span style="color:#f59e0b; font-family:monospace; font-weight:800;">${numStr}</span>
+            <span>✨</span>
+            <span class="m7-layer-name">${item.name}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      function m7RemoveParticle2(idx) {
+        const item = activeParticle2s[idx];
+        if (!item) return;
+
+        const scene = getOrCreateActiveScene();
+        if (scene && item.display) {
+          scene.removeElement(item.display);
+        }
+
+        activeParticle2s.splice(idx, 1);
+        if (activeParticle2s.length === 0) {
+          activeSelectedParticle2Index = -1;
+        } else {
+          activeSelectedParticle2Index = Math.min(activeSelectedParticle2Index, activeParticle2s.length - 1);
+          if (activeSelectedParticle2Index < 0) activeSelectedParticle2Index = 0;
+        }
+
+        m7RenderParticle2List();
+        if (scene) m7EnforceLayerOrder(scene);
+        if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+          m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index].display);
+        }
+        m7ScheduleAutosave();
+      }
+
+      function m7DeleteActiveParticle2() {
+        if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+          m7RemoveParticle2(activeSelectedParticle2Index);
+        }
+      }
+
+      function m7SyncInspectorToParticle2(display) {
+        if (!display) return;
+        const props = display.properties || {};
+        Object.assign(particle2Params, props);
+
+        const selShape = document.getElementById('sel-part2-shape');
+        if (selShape && props.shape) selShape.value = props.shape;
+
+        const selFlow = document.getElementById('sel-part2-flow');
+        if (selFlow && props.flow) selFlow.value = props.flow;
+
+        const selTrail = document.getElementById('sel-part2-trail');
+        if (selTrail && props.trail) selTrail.value = props.trail;
+
+        const colFill = document.getElementById('col-part2-fill');
+        if (colFill && props.fillColor) colFill.value = props.fillColor;
+
+        const colStroke = document.getElementById('col-part2-stroke');
+        if (colStroke && props.strokeColor) colStroke.value = props.strokeColor;
+
+        const slStroke = document.getElementById('slider-part2-strokeWidth');
+        const valStroke = document.getElementById('val-part2-strokeWidth');
+        if (slStroke && props.strokeWidth !== undefined) {
+          slStroke.value = props.strokeWidth;
+          if (valStroke) valStroke.innerText = props.strokeWidth;
+        }
+
+        const slOpacity = document.getElementById('slider-part2-opacity');
+        const valOpacity = document.getElementById('val-part2-opacity');
+        if (slOpacity && props.opacity !== undefined) {
+          slOpacity.value = props.opacity;
+          if (valOpacity) valOpacity.innerText = props.opacity;
+        }
+
+        const selBlend = document.getElementById('sel-part2-blend');
+        if (selBlend && props.blendMode) selBlend.value = props.blendMode;
+
+        const slCount = document.getElementById('slider-part2-count');
+        const valCount = document.getElementById('val-part2-count');
+        if (slCount && props.count !== undefined) {
+          slCount.value = props.count;
+          if (valCount) valCount.innerText = props.count;
+        }
+
+        const slScale = document.getElementById('slider-part2-scale');
+        const valScale = document.getElementById('val-part2-scale');
+        if (slScale && props.scale !== undefined) {
+          slScale.value = props.scale;
+          if (valScale) valScale.innerText = props.scale;
+        }
+
+        const chkRandScale = document.getElementById('chk-part2-randomScale');
+        if (chkRandScale && props.randomScale !== undefined) chkRandScale.checked = !!props.randomScale;
+
+        const slRot = document.getElementById('slider-part2-rotation');
+        const valRot = document.getElementById('val-part2-rotation');
+        if (slRot && props.rotation !== undefined) {
+          slRot.value = props.rotation;
+          if (valRot) valRot.innerText = props.rotation;
+        }
+
+        const chkRandRot = document.getElementById('chk-part2-randomRotation');
+        if (chkRandRot && props.randomRotation !== undefined) chkRandRot.checked = !!props.randomRotation;
+
+        const slSpeed = document.getElementById('slider-part2-speed');
+        const valSpeed = document.getElementById('val-part2-speed');
+        if (slSpeed && props.speed !== undefined) {
+          slSpeed.value = props.speed;
+          if (valSpeed) valSpeed.innerText = props.speed;
+        }
+
+        const chkBeat = document.getElementById('chk-part2-beatReactive');
+        if (chkBeat && props.beatReactive !== undefined) chkBeat.checked = !!props.beatReactive;
+
+        m7EnforceLayerOrder();
+      }
+
+      function m7UpdateParticle2Param(prop, val) {
+        particle2Params[prop] = val;
+        const valEl = document.getElementById('val-part2-' + prop);
+        if (valEl) valEl.innerText = val;
+
+        const scene = getOrCreateActiveScene();
+        if (!scene) return;
+
+        if (activeParticle2s.length > 0 && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+          const currentPart = activeParticle2s[activeSelectedParticle2Index];
+          const updates = {};
+          updates[prop] = val;
+          currentPart.display.update(updates);
+          currentPart.config[prop] = val;
+
+          if (prop === 'shape' || prop === 'flow') {
+            const shapeLabel = (currentPart.config.shape || 'circle').replace('shape_', '').toUpperCase();
+            const flowLabel = (currentPart.config.flow || 'float').replace('flow_', '').toUpperCase();
+            currentPart.name = `Particle 2: ${shapeLabel} ${flowLabel}`;
+            m7RenderParticle2List();
           }
         }
         m7EnforceLayerOrder(scene);
@@ -12986,10 +13544,15 @@
             activeParticles: activeParticles.map(pt => ({
               id: pt.id,
               name: pt.name,
-              shape: pt.shape,
-              material: pt.material
+              config: pt.config
             })),
             activeSelectedParticleIndex: activeSelectedParticleIndex,
+            activeParticle2s: activeParticle2s.map(pt => ({
+              id: pt.id,
+              name: pt.name,
+              config: pt.config
+            })),
+            activeSelectedParticle2Index: activeSelectedParticle2Index,
             activeEffects: activeEffects.map(eff => ({
               id: eff.id,
               name: eff.name,
@@ -13300,6 +13863,24 @@
             });
             if (particleState.preset) {
               m7ApplyParticlePreset(particleState.preset);
+            }
+          }
+
+          // 5b. Restore Particle 2 Systems
+          if (savedState.activeParticle2s && Array.isArray(savedState.activeParticle2s) && savedState.activeParticle2s.length > 0) {
+            activeParticle2s = [];
+            for (let i = 0; i < savedState.activeParticle2s.length; i++) {
+              const pt = savedState.activeParticle2s[i];
+              if (pt.config) {
+                m7AddParticle2System(pt.config);
+              }
+            }
+            if (savedState.activeSelectedParticle2Index >= 0 && savedState.activeSelectedParticle2Index < activeParticle2s.length) {
+              activeSelectedParticle2Index = savedState.activeSelectedParticle2Index;
+            }
+            m7RenderParticle2List();
+            if (activeParticle2s[activeSelectedParticle2Index]) {
+              m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index].display);
             }
           }
 
