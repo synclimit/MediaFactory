@@ -3642,6 +3642,59 @@
             </div>
           </div>
 
+          <!-- GAMBAR 2: INTRO / OUTRO SEQUENCE SETTINGS (FOR INTRO & OUTRO) -->
+          <div class="m7-inspector-card" id="grp-particle2-sequence" style="display:none;">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> <span id="lbl-part2-seq-title">INTRO SEQUENCE SETTINGS</span>
+            </div>
+            <div class="m7-toggle-row">
+              <span id="lbl-part2-seq-enable">Enable Intro</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-part2-seq-enable" checked onchange="m7UpdateParticle2Prop('visible', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span id="lbl-part2-seq-style">Intro Style</span>
+              </div>
+              <select class="m7-select" id="sel-part2-introstyle" onchange="m7UpdateParticle2IntroStyle(this.value)">
+                <option value="Focus Pull (Blur)" selected>Focus Pull (Blur)</option>
+                <option value="Fade from Black">Fade from Black</option>
+                <option value="Fade from White">Fade from White</option>
+                <option value="Cinematic Vignette">Cinematic Vignette</option>
+                <option value="Effect Blur">Effect Blur</option>
+                <option value="Paragraph (Text)">Paragraph (Text)</option>
+              </select>
+            </div>
+
+            <div class="m7-control-group" id="grp-part2-seq-dur-wrap">
+              <div class="m7-control-label-row">
+                <span id="lbl-part2-seq-dur-label">Intro Duration</span>
+                <span class="m7-control-val" id="val-part2-seq-dur">3.0s</span>
+              </div>
+              <input type="range" class="m7-slider" min="0.5" max="15.0" step="0.5" value="3.0" id="slider-part2-seq-dur" oninput="m7UpdateParticle2Prop('duration', parseFloat(this.value))">
+            </div>
+
+            <div class="m7-control-group" id="grp-part2-effect-intensity-control">
+              <div class="m7-control-label-row">
+                <span>Effect Intensity</span>
+                <span class="m7-control-val" id="val-part2-single-intensity">75</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="75" id="slider-part2-single-intensity" oninput="m7UpdateParticle2Prop('intensity', parseInt(this.value))">
+            </div>
+
+            <!-- Paragraph (Text) Storytelling Controls -->
+            <div id="grp-part2-paragraph-controls" style="display:none; flex-direction:column; gap:8px;">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Message / Text</span>
+                </div>
+                <input type="text" class="m7-input" id="inp-part2-seq-text" placeholder="Enter sequence text..." value="Welcome to the Show" oninput="m7UpdateParticle2Prop('text', this.value)">
+              </div>
+            </div>
+          </div>
+
           <!-- DELETE LAYER BUTTON -->
           <div class="m7-inspector-card">
             <button class="m7-folder-btn" onclick="m7DeleteActiveParticle2()" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#ef4444; width:100%; justify-content:center; font-weight:800;">
@@ -7977,16 +8030,66 @@
         m7ScheduleAutosave();
       }
 
+      /* === WORKSPACE BRANDING ASSET HELPER === */
+      function m7GetWorkspaceBrandingAsset(assetType) {
+        try {
+          const activeWs = localStorage.getItem('mf_active_workspace') || 'DEFAULT';
+          const keys = [
+            `mf_workspace_branding_${activeWs}`,
+            `mf_workspace_branding_${activeWs.toLowerCase()}`,
+            `mf_workspace_branding_${activeWs.toUpperCase()}`,
+            'mf_workspace_branding_DEFAULT',
+            'mf_workspace_branding_default'
+          ];
+          for (let k of keys) {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw);
+                if (assetType === 'logo' && (parsed.logo || parsed.avatar || parsed.channelThumbnail)) return parsed.logo || parsed.avatar || parsed.channelThumbnail;
+                if (assetType === 'watermark' && parsed.watermark) return parsed.watermark;
+                if (assetType === 'subscribe' && (parsed.subscribeAnim || parsed.subscribe)) return parsed.subscribeAnim || parsed.subscribe;
+                if (assetType === 'overlay' && parsed.overlay) return parsed.overlay;
+              } catch(e) {}
+            }
+          }
+          if (assetType === 'logo') {
+            const avKeys = [
+              `mf_workspace_avatar_${activeWs}`,
+              `mf_workspace_avatar_${activeWs.toLowerCase()}`,
+              `mf_workspace_avatar_${activeWs.toUpperCase()}`,
+              'mf_workspace_avatar_DEFAULT',
+              'mf_workspace_avatar_default'
+            ];
+            for (let k of avKeys) {
+              const av = localStorage.getItem(k);
+              if (av) return av;
+            }
+          }
+        } catch(e) {}
+        return null;
+      }
+
       /* === 4b. PARTICLE 2 MODULE FUNCTIONS (LOGO, WATERMARK, INTRO, OUTRO, SUBSCRIBE) === */
       function m7SelectOrAddParticle2Preset(type) {
         let name = type;
-        if (type === 'Logo') name = 'Brand Logo';
-        else if (type === 'Watermark') name = 'Watermark';
-        else if (type === 'Intro') name = 'Intro Sequence';
-        else if (type === 'Outro') name = 'Outro Sequence';
-        else if (type === 'Subscribe' || type === 'Subscribe Animation') {
+        let assetKey = 'logo';
+        if (type === 'Logo') {
+          name = 'Brand Logo';
+          assetKey = 'logo';
+        } else if (type === 'Watermark') {
+          name = 'Watermark';
+          assetKey = 'watermark';
+        } else if (type === 'Intro') {
+          name = 'Intro Sequence';
+          assetKey = 'intro';
+        } else if (type === 'Outro') {
+          name = 'Outro Sequence';
+          assetKey = 'outro';
+        } else if (type === 'Subscribe' || type === 'Subscribe Animation') {
           type = 'Subscribe';
           name = 'Subscribe Animation';
+          assetKey = 'subscribe';
         }
 
         const existingIdx = activeParticle2s.findIndex(b => b.type === type);
@@ -7994,6 +8097,9 @@
           m7SelectParticle2Object(existingIdx);
           return;
         }
+
+        // Fetch asset from Workspace branding
+        const wsAsset = (type === 'Logo' || type === 'Watermark' || type === 'Subscribe') ? m7GetWorkspaceBrandingAsset(assetKey) : null;
 
         const newObj = {
           id: 'part2_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
@@ -8009,11 +8115,38 @@
           x: type === 'Watermark' ? 320 : (type === 'Logo' ? 300 : 0),
           y: type === 'Watermark' ? 180 : (type === 'Logo' ? 160 : (type === 'Subscribe' ? 150 : 0)),
           position: (type === 'Watermark' || type === 'Logo') ? 'Bottom Right' : (type === 'Subscribe' ? 'Bottom Center' : 'Center'),
-          source: '',
-          imageElement: null
+          source: wsAsset || '',
+          imageElement: null,
+          // Intro / Outro sequence properties (Gambar 2 parity)
+          introStyle: (type === 'Outro' ? 'Fade from Black' : 'Focus Pull (Blur)'),
+          introDuration: (type === 'Outro' ? 5.0 : 3.0),
+          intensity: (type === 'Outro' ? 80 : 75),
+          visible: true,
+          text: (type === 'Outro' ? 'Thanks for Watching!' : 'Welcome to the Show')
         };
 
         m7CreateParticle2Display(newObj);
+        if (wsAsset) {
+          m7SetParticle2ImageSource(newObj, wsAsset);
+        } else if (type === 'Logo' || type === 'Watermark' || type === 'Subscribe') {
+          // Asynchronously query backend workspace settings in case local storage is cold
+          const activeWs = localStorage.getItem('mf_active_workspace') || 'DEFAULT';
+          fetch(`/api/v1/system/workspace/${encodeURIComponent(activeWs)}/settings`)
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.success && data.data && data.data.data && data.data.data.branding) {
+                const b = data.data.data.branding;
+                let found = null;
+                if (assetKey === 'logo') found = b.logo;
+                else if (assetKey === 'watermark') found = b.watermark;
+                else if (assetKey === 'subscribe') found = b.subscribeAnim || b.subscribe;
+                if (found) {
+                  m7SetParticle2ImageSource(newObj, found);
+                }
+              }
+            })
+            .catch(() => {});
+        }
 
         activeParticle2s.push(newObj);
         activeSelectedParticle2Index = activeParticle2s.length - 1;
@@ -8077,7 +8210,7 @@
         }
         ctx.translate(-w / 2, -h / 2);
 
-        // Shape Mode clipping
+        // Shape Mode clipping (Circle, Rounded Card, Squircle, Hexagon)
         const shapeMode = obj.shapeMode || 'Original';
         if (shapeMode === 'Circle' || shapeMode === 'Circle Mask') {
           ctx.beginPath();
@@ -8117,27 +8250,27 @@
         } else {
           if (obj.type === 'Logo') {
             const col = '#f59e0b';
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
             ctx.strokeStyle = col;
             ctx.lineWidth = 3;
             ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
+            m7SafeRoundRect(ctx, 8, 8, w - 16, h - 16, 14);
             ctx.fill();
             ctx.stroke();
 
-            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
+            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.32)))}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = col;
             ctx.fillText('🛡️', w * 0.28, h / 2);
 
-            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.22)))}px "Segoe UI", Inter, sans-serif`;
             ctx.fillStyle = '#ffffff';
-            ctx.fillText('BRAND LOGO', w * 0.62, h / 2);
+            ctx.fillText('DEFAULT LOGO', w * 0.62, h / 2);
           } else if (obj.type === 'Watermark') {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
             ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 10);
+            m7SafeRoundRect(ctx, 8, 8, w - 16, h - 16, 10);
             ctx.fill();
 
             ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.2)))}px "Segoe UI", Inter, monospace`;
@@ -8146,10 +8279,10 @@
             ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
             ctx.fillText('💧 © MEDIAFACTORY', w / 2, h / 2);
           } else if (obj.type === 'Subscribe') {
-            const pillW = w - 20;
-            const pillH = h - 20;
-            const pillX = 10;
-            const pillY = 10;
+            const pillW = w - 16;
+            const pillH = h - 16;
+            const pillX = 8;
+            const pillY = 8;
 
             ctx.fillStyle = '#ef4444';
             ctx.beginPath();
@@ -8165,33 +8298,43 @@
             ctx.font = `900 ${Math.max(12, Math.min(22, Math.floor(pillH * 0.38)))}px "Segoe UI", Inter, sans-serif`;
             ctx.fillText('SUBSCRIBE', pillX + pillW * 0.32, pillY + pillH / 2);
           } else if (obj.type === 'Intro') {
-            ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
-            ctx.strokeStyle = '#ef4444';
+            const style = obj.introStyle || 'Focus Pull (Blur)';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.strokeStyle = '#f59e0b';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 12);
+            m7SafeRoundRect(ctx, 8, 8, w - 16, h - 16, 12);
             ctx.fill();
             ctx.stroke();
 
-            ctx.font = `800 ${Math.max(12, Math.min(20, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.font = `800 ${Math.max(12, Math.min(20, Math.floor(h * 0.22)))}px "Segoe UI", Inter, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('🎬 INTRO SEQUENCE', w / 2, h / 2);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText('🎬 INTRO: ' + style.toUpperCase(), w / 2, h * 0.4);
+
+            ctx.font = `600 ${Math.max(10, Math.min(14, Math.floor(h * 0.15)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillStyle = '#9ca3af';
+            ctx.fillText(obj.text || 'Welcome to the Show', w / 2, h * 0.65);
           } else if (obj.type === 'Outro') {
-            ctx.fillStyle = 'rgba(168, 85, 247, 0.2)';
+            const style = obj.introStyle || 'Fade from Black';
+            ctx.fillStyle = 'rgba(24, 16, 38, 0.85)';
             ctx.strokeStyle = '#a855f7';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 12);
+            m7SafeRoundRect(ctx, 8, 8, w - 16, h - 16, 12);
             ctx.fill();
             ctx.stroke();
 
-            ctx.font = `800 ${Math.max(12, Math.min(20, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.font = `800 ${Math.max(12, Math.min(20, Math.floor(h * 0.22)))}px "Segoe UI", Inter, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('🔚 OUTRO SEQUENCE', w / 2, h / 2);
+            ctx.fillStyle = '#a855f7';
+            ctx.fillText('🔚 OUTRO: ' + style.toUpperCase(), w / 2, h * 0.4);
+
+            ctx.font = `600 ${Math.max(10, Math.min(14, Math.floor(h * 0.15)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillStyle = '#9ca3af';
+            ctx.fillText(obj.text || 'Thanks for Watching!', w / 2, h * 0.65);
           }
         }
 
@@ -8329,47 +8472,114 @@
       function m7SyncInspectorToParticle2(obj) {
         if (!obj) return;
 
-        const selShape = document.getElementById('sel-part2-shapemode');
-        if (selShape) selShape.value = obj.shapeMode || 'Original';
+        const isIntroOrOutro = (obj.type === 'Intro' || obj.type === 'Outro');
+        const tag = document.getElementById('m7-inspector-tag');
+        if (tag) {
+          if (obj.type === 'Intro') tag.innerText = 'INTRO SEQUENCE';
+          else if (obj.type === 'Outro') tag.innerText = 'OUTRO SEQUENCE';
+          else tag.innerText = 'PARTICLE 2';
+        }
 
-        const chkUniform = document.getElementById('chk-part2-uniformscale');
-        if (chkUniform) chkUniform.checked = !!obj.uniformScale;
+        const grpTransform = document.getElementById('grp-particle2-transform');
+        const grpSource = document.getElementById('grp-particle2-source');
+        const grpMatrix = document.getElementById('grp-particle2-matrix');
+        const grpSequence = document.getElementById('grp-particle2-sequence');
 
-        const sliderWidth = document.getElementById('slider-part2-width');
-        const valWidth = document.getElementById('val-part2-width');
-        const widthVal = (obj.width !== undefined && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
-        if (sliderWidth) sliderWidth.value = widthVal;
-        if (valWidth) valWidth.innerText = `${widthVal}`;
+        if (grpTransform) grpTransform.style.display = isIntroOrOutro ? 'none' : 'flex';
+        if (grpSource) grpSource.style.display = isIntroOrOutro ? 'none' : 'flex';
+        if (grpMatrix) grpMatrix.style.display = isIntroOrOutro ? 'none' : 'flex';
+        if (grpSequence) grpSequence.style.display = isIntroOrOutro ? 'flex' : 'none';
 
-        const sliderHeight = document.getElementById('slider-part2-height');
-        const valHeight = document.getElementById('val-part2-height');
-        const heightVal = (obj.height !== undefined && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
-        if (sliderHeight) sliderHeight.value = heightVal;
-        if (valHeight) valHeight.innerText = `${heightVal}`;
+        if (isIntroOrOutro) {
+          // GAMBAR 2 PARITY: Intro / Outro Sequence Controls
+          const lblTitle = document.getElementById('lbl-part2-seq-title');
+          const lblEnable = document.getElementById('lbl-part2-seq-enable');
+          const lblStyle = document.getElementById('lbl-part2-seq-style');
+          const lblDur = document.getElementById('lbl-part2-seq-dur-label');
 
-        const sliderRot = document.getElementById('slider-part2-rotation');
-        const valRot = document.getElementById('val-part2-rotation');
-        const rotVal = (obj.rotation !== undefined && !isNaN(obj.rotation)) ? Math.round(obj.rotation) : 0;
-        if (sliderRot) sliderRot.value = rotVal;
-        if (valRot) valRot.innerText = `${rotVal}`;
+          if (lblTitle) lblTitle.innerText = obj.type === 'Outro' ? 'OUTRO SEQUENCE SETTINGS' : 'INTRO SEQUENCE SETTINGS';
+          if (lblEnable) lblEnable.innerText = obj.type === 'Outro' ? 'Enable Outro' : 'Enable Intro';
+          if (lblStyle) lblStyle.innerText = obj.type === 'Outro' ? 'Outro Style' : 'Intro Style';
+          if (lblDur) lblDur.innerText = obj.type === 'Outro' ? 'Outro Duration' : 'Intro Duration';
 
-        const sliderOpacity = document.getElementById('slider-part2-opacity');
-        const valOpacity = document.getElementById('val-part2-opacity');
-        const opVal = (obj.opacity !== undefined && !isNaN(obj.opacity)) ? (obj.opacity > 1 ? Math.round(obj.opacity) : Math.round(obj.opacity * 100)) : 100;
-        if (sliderOpacity) sliderOpacity.value = opVal;
-        if (valOpacity) valOpacity.innerText = `${opVal}`;
+          const chkEnable = document.getElementById('chk-part2-seq-enable');
+          if (chkEnable) chkEnable.checked = obj.visible !== false;
 
-        const imgPrev = document.getElementById('img-part2-preview');
-        const txtPrevEmpty = document.getElementById('txt-part2-preview-empty');
-        if (obj.source) {
-          if (imgPrev) { imgPrev.src = obj.source; imgPrev.style.display = 'block'; }
-          if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+          const currentStyle = obj.introStyle || (obj.type === 'Outro' ? 'Fade from Black' : 'Focus Pull (Blur)');
+          const selIntroStyle = document.getElementById('sel-part2-introstyle');
+          if (selIntroStyle) selIntroStyle.value = currentStyle;
+
+          const sliderDur = document.getElementById('slider-part2-seq-dur');
+          const valDur = document.getElementById('val-part2-seq-dur');
+          const durVal = obj.introDuration !== undefined ? obj.introDuration : (obj.type === 'Outro' ? 5.0 : 3.0);
+          if (sliderDur) sliderDur.value = durVal;
+          if (valDur) valDur.innerText = `${durVal}s`;
+
+          const sliderIntensity = document.getElementById('slider-part2-single-intensity');
+          const valIntensity = document.getElementById('val-part2-single-intensity');
+          const intensityVal = obj.intensity !== undefined ? obj.intensity : (obj.type === 'Outro' ? 80 : 75);
+          if (sliderIntensity) sliderIntensity.value = intensityVal;
+          if (valIntensity) valIntensity.innerText = `${intensityVal}`;
+
+          const grpPara = document.getElementById('grp-part2-paragraph-controls');
+          if (grpPara) grpPara.style.display = (currentStyle === 'Paragraph (Text)') ? 'flex' : 'none';
+
+          const inpText = document.getElementById('inp-part2-seq-text');
+          if (inpText) inpText.value = obj.text || (obj.type === 'Outro' ? 'Thanks for Watching!' : 'Welcome to the Show');
         } else {
-          if (imgPrev) { imgPrev.src = ''; imgPrev.style.display = 'none'; }
-          if (txtPrevEmpty) txtPrevEmpty.style.display = 'block';
+          // GAMBAR 1 PARITY: Transform, Shape & Media Source
+          const selShape = document.getElementById('sel-part2-shapemode');
+          if (selShape) selShape.value = obj.shapeMode || 'Original';
+
+          const chkUniform = document.getElementById('chk-part2-uniformscale');
+          if (chkUniform) chkUniform.checked = !!obj.uniformScale;
+
+          const sliderWidth = document.getElementById('slider-part2-width');
+          const valWidth = document.getElementById('val-part2-width');
+          const widthVal = (obj.width !== undefined && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
+          if (sliderWidth) sliderWidth.value = widthVal;
+          if (valWidth) valWidth.innerText = `${widthVal}`;
+
+          const sliderHeight = document.getElementById('slider-part2-height');
+          const valHeight = document.getElementById('val-part2-height');
+          const heightVal = (obj.height !== undefined && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
+          if (sliderHeight) sliderHeight.value = heightVal;
+          if (valHeight) valHeight.innerText = `${heightVal}`;
+
+          const sliderRot = document.getElementById('slider-part2-rotation');
+          const valRot = document.getElementById('val-part2-rotation');
+          const rotVal = (obj.rotation !== undefined && !isNaN(obj.rotation)) ? Math.round(obj.rotation) : 0;
+          if (sliderRot) sliderRot.value = rotVal;
+          if (valRot) valRot.innerText = `${rotVal}`;
+
+          const sliderOpacity = document.getElementById('slider-part2-opacity');
+          const valOpacity = document.getElementById('val-part2-opacity');
+          const opVal = (obj.opacity !== undefined && !isNaN(obj.opacity)) ? (obj.opacity > 1 ? Math.round(obj.opacity) : Math.round(obj.opacity * 100)) : 100;
+          if (sliderOpacity) sliderOpacity.value = opVal;
+          if (valOpacity) valOpacity.innerText = `${opVal}`;
+
+          const imgPrev = document.getElementById('img-part2-preview');
+          const txtPrevEmpty = document.getElementById('txt-part2-preview-empty');
+          if (obj.source) {
+            if (imgPrev) { imgPrev.src = obj.source; imgPrev.style.display = 'block'; }
+            if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+          } else {
+            if (imgPrev) { imgPrev.src = ''; imgPrev.style.display = 'none'; }
+            if (txtPrevEmpty) txtPrevEmpty.style.display = 'block';
+          }
         }
 
         m7EnforceLayerOrder();
+      }
+
+      function m7UpdateParticle2IntroStyle(style) {
+        if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+          activeParticle2s[activeSelectedParticle2Index].introStyle = style;
+          const grpPara = document.getElementById('grp-part2-paragraph-controls');
+          if (grpPara) grpPara.style.display = (style === 'Paragraph (Text)') ? 'flex' : 'none';
+          m7DrawParticle2Canvas(activeParticle2s[activeSelectedParticle2Index]);
+          m7ScheduleAutosave();
+        }
       }
 
       function m7UpdateParticle2Prop(prop, val) {
@@ -8379,6 +8589,25 @@
 
         if (prop === 'uniformScale') {
           obj.uniformScale = !!val;
+        }
+        if (prop === 'visible') {
+          obj.visible = !!val;
+          if (obj.display) {
+            obj.display.visible = !!val;
+          }
+        }
+        if (prop === 'duration') {
+          obj.introDuration = val;
+          const valEl = document.getElementById('val-part2-seq-dur');
+          if (valEl) valEl.innerText = `${val}s`;
+        }
+        if (prop === 'intensity') {
+          obj.intensity = val;
+          const valEl = document.getElementById('val-part2-single-intensity');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'text') {
+          obj.text = val;
         }
         if (prop === 'width') {
           const valEl = document.getElementById('val-part2-width');
@@ -9176,7 +9405,14 @@
         else if (type === 'Outro') name = 'Outro Sequence';
         else if (type === 'Subscribe Animation') name = 'Subscribe Animation';
 
-        const isIntroOrOutro = (type === 'Intro' || type === 'Outro');
+        let assetKey = 'logo';
+        if (type === 'Logo') assetKey = 'logo';
+        else if (type === 'Watermark') assetKey = 'watermark';
+        else if (type === 'Subscribe Animation' || type === 'Subscribe') assetKey = 'subscribe';
+        else if (type === 'Intro') assetKey = 'intro';
+        else if (type === 'Outro') assetKey = 'outro';
+
+        const wsAsset = (type === 'Logo' || type === 'Watermark' || type === 'Subscribe Animation' || type === 'Subscribe') ? m7GetWorkspaceBrandingAsset(assetKey) : null;
 
         // Create default branding object
         const newObj = {
@@ -9209,15 +9445,15 @@
           beatPump: false,
           animationType: type === 'Subscribe Animation' ? 'Zoom Pulse' : 'None',
           animationIntensity: 100,
-          source: '',
+          source: wsAsset || '',
           imageElement: null,
           blend: 'Normal',
           intervalMinutes: 5,
           // Sequence settings
           visible: true,
           introStyle: type === 'Outro' ? 'Fade from Black' : 'Focus Pull (Blur)',
-          introDuration: '3s',
-          intensity: 40,
+          introDuration: type === 'Outro' ? 5.0 : 3.0,
+          intensity: type === 'Outro' ? 80 : 75,
           darkIntensity: 100,
           blurIntensity: 40,
           textTransition: 'Fade In/Out',
@@ -9234,18 +9470,23 @@
         };
 
         // Try to fetch workspace assets for default branding
-        try {
-          fetch('/api/v1/system/workspace/default/settings')
-            .then(res => res.json())
-            .then(data => {
-              if (data && data.success && data.data && data.data.data && data.data.data.branding) {
-                const b = data.data.data.branding;
-                if (type === 'Logo' && b.logo) m7SetBrandingImageSource(newObj, b.logo);
-                else if (type === 'Watermark' && b.watermark) m7SetBrandingImageSource(newObj, b.watermark);
-                else if (type === 'Subscribe Animation' && b.subscribeAnim) m7SetBrandingImageSource(newObj, b.subscribeAnim);
-              }
-            }).catch(() => {});
-        } catch(e) {}
+        if (wsAsset) {
+          m7SetBrandingImageSource(newObj, wsAsset);
+        } else {
+          try {
+            const activeWs = localStorage.getItem('mf_active_workspace') || 'DEFAULT';
+            fetch(`/api/v1/system/workspace/${encodeURIComponent(activeWs)}/settings`)
+              .then(res => res.json())
+              .then(data => {
+                if (data && data.success && data.data && data.data.data && data.data.data.branding) {
+                  const b = data.data.data.branding;
+                  if (type === 'Logo' && b.logo) m7SetBrandingImageSource(newObj, b.logo);
+                  else if (type === 'Watermark' && b.watermark) m7SetBrandingImageSource(newObj, b.watermark);
+                  else if (type === 'Subscribe Animation' && (b.subscribeAnim || b.subscribe)) m7SetBrandingImageSource(newObj, b.subscribeAnim || b.subscribe);
+                }
+              }).catch(() => {});
+          } catch(e) {}
+        }
 
         // Add visual display to Astrofox scene if visual element
         if (!isIntroOrOutro) {
