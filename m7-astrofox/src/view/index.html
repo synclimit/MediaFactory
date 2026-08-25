@@ -1511,10 +1511,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span class="m7-rail-label">Particle</span>
       </button>
-      <button class="m7-rail-item" id="rail-btn-particle2" title="Particle 2 & Multi-Layer System" onclick="m7SelectCategory('particle2')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/><circle cx="18" cy="18" r="5" fill="#f59e0b" stroke="none"/><text x="18" y="21" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">2</text></svg>
-        <span class="m7-rail-label">Particle 2</span>
-      </button>
       <button class="m7-rail-item" id="rail-btn-fx" title="Post-Processing & Visual FX" onclick="m7SelectCategory('fx')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         <span class="m7-rail-label">Visual FX</span>
@@ -1527,21 +1523,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         <span class="m7-rail-label">Text</span>
       </button>
-      <button class="m7-rail-item" id="rail-btn-branding" title="Canvas Resolution & Settings" onclick="m7SelectCategory('branding')">
+      <button class="m7-rail-item" id="rail-btn-branding" title="Branding Suite (Logo, Watermark, Intro, Outro, Subscribe)" onclick="m7SelectCategory('branding')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span class="m7-rail-label">Branding</span>
-      </button>
-      <button class="m7-rail-item" id="rail-btn-branding2" title="Branding 2 Layer & Overlays" onclick="m7SelectCategory('branding2')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/><circle cx="18" cy="18" r="5" fill="#a855f7" stroke="none"/><text x="18" y="21" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">2</text></svg>
-        <span class="m7-rail-label">Branding 2</span>
-      </button>
-      <button class="m7-rail-item" id="rail-btn-branding3" title="Branding 3: Dynamic 3D & Broadcast Suite" onclick="m7SelectCategory('branding3')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/><circle cx="18" cy="18" r="5" fill="#10b981" stroke="none"/><text x="18" y="21" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">3</text></svg>
-        <span class="m7-rail-label">Branding 3</span>
-      </button>
-      <button class="m7-rail-item" id="rail-btn-branding4" title="Branding 4: Ultra Parity Suite" onclick="m7SelectCategory('branding4')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/><circle cx="18" cy="18" r="5" fill="#38bdf8" stroke="none"/><text x="18" y="21" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">4</text></svg>
-        <span class="m7-rail-label">Branding 4</span>
       </button>
       <button class="m7-rail-item" id="rail-btn-thumbnail" title="Static Thumbnail Studio (JPG)" onclick="m7SelectCategory('thumbnail')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -4265,7 +4249,7 @@
             </div>
           </div>
 
-          <!-- GAMBAR 1 & 3: 📐 TRANSFORM & SHAPE (FOR LOGO, WATERMARK, SUBSCRIBE) -->
+          <!-- GAMBAR 1: 📐 TRANSFORM & SHAPE -->
           <div class="m7-inspector-card" id="grp-branding-transform">
             <div class="m7-card-title">
               <span class="m7-dot-orange"></span> 📐 TRANSFORM & SHAPE
@@ -4277,8 +4261,10 @@
               </div>
               <select class="m7-select" id="sel-branding-shapemode" onchange="m7UpdateBrandingProp('shapeMode', this.value)">
                 <option value="Original" selected>Original</option>
-                <option value="Circle">Circle</option>
-                <option value="Rounded Rect">Rounded Rect</option>
+                <option value="Rounded Card">Rounded Card</option>
+                <option value="Circle Mask">Circle Mask</option>
+                <option value="Squircle">Squircle</option>
+                <option value="Hexagon">Hexagon</option>
               </select>
             </div>
 
@@ -4295,7 +4281,7 @@
                 <span>Width</span>
                 <span class="m7-control-val" id="val-branding-width">360</span>
               </div>
-              <input type="range" class="m7-slider" min="10" max="1920" value="360" id="slider-branding-width" oninput="m7UpdateBrandingProp('width', parseInt(this.value))">
+              <input type="range" class="m7-slider" min="10" max="1920" step="2" value="360" id="slider-branding-width" oninput="m7UpdateBrandingProp('width', parseInt(this.value))">
             </div>
 
             <div class="m7-control-group">
@@ -4303,7 +4289,7 @@
                 <span>Height</span>
                 <span class="m7-control-val" id="val-branding-height">180</span>
               </div>
-              <input type="range" class="m7-slider" min="10" max="1080" value="180" id="slider-branding-height" oninput="m7UpdateBrandingProp('height', parseInt(this.value))">
+              <input type="range" class="m7-slider" min="10" max="1080" step="2" value="180" id="slider-branding-height" oninput="m7UpdateBrandingProp('height', parseInt(this.value))">
             </div>
 
             <div class="m7-control-group">
@@ -4311,7 +4297,7 @@
                 <span>Manual Rotation</span>
                 <span class="m7-control-val" id="val-branding-rotation">0</span>
               </div>
-              <input type="range" class="m7-slider" min="-180" max="180" value="0" id="slider-branding-rotation" oninput="m7UpdateBrandingProp('rotation', parseInt(this.value))">
+              <input type="range" class="m7-slider" min="-180" max="180" step="1" value="0" id="slider-branding-rotation" oninput="m7UpdateBrandingProp('rotation', parseInt(this.value))">
             </div>
 
             <div class="m7-control-group">
@@ -4319,11 +4305,11 @@
                 <span>Opacity</span>
                 <span class="m7-control-val" id="val-branding-opacity">100</span>
               </div>
-              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding-opacity" oninput="m7UpdateBrandingProp('opacity', parseInt(this.value))">
+              <input type="range" class="m7-slider" min="0" max="100" step="1" value="100" id="slider-branding-opacity" oninput="m7UpdateBrandingProp('opacity', parseInt(this.value))">
             </div>
           </div>
 
-          <!-- MEDIA & IMAGE SOURCE (FOR LOGO, WATERMARK, SUBSCRIBE) -->
+          <!-- MEDIA & IMAGE SOURCE -->
           <div class="m7-inspector-card" id="grp-branding-source">
             <div class="m7-card-title">
               <span class="m7-dot-orange"></span> 🖼️ MEDIA & IMAGE SOURCE
@@ -4333,10 +4319,28 @@
               <button class="m7-btn-secondary" style="width:100%; justify-content:center;" onclick="document.getElementById('file-branding-source').click()">
                 📁 Replace Media / Upload File
               </button>
-              <div id="box-branding-preview" style="width:100%; height:60px; background:#0e1117; border:1px solid rgba(255,255,255,0.08); border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+              <div id="box-branding-preview" style="width:100%; height:80px; background:#0e1117; border:1px solid rgba(255,255,255,0.08); border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
                 <img id="img-branding-preview" src="" style="max-height:100%; max-width:100%; object-fit:contain; display:none;">
                 <span id="txt-branding-preview-empty" style="font-size:10px; color:#6b7280;">No image loaded</span>
               </div>
+            </div>
+          </div>
+
+          <!-- ⚓ SCREEN ANCHOR MATRIX -->
+          <div class="m7-inspector-card" id="grp-branding-matrix">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> ⚓ SCREEN ANCHOR MATRIX
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetBrandingAnchor('TL')">Top Left</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetBrandingAnchor('TC')">Top Mid</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetBrandingAnchor('TR')">Top Right</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetBrandingAnchor('ML')">Mid Left</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetBrandingAnchor('Center')">Center</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetBrandingAnchor('MR')">Mid Right</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetBrandingAnchor('BL')">Bot Left</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetBrandingAnchor('BC')">Bot Mid</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetBrandingAnchor('BR')">Bot Right</button>
             </div>
           </div>
 
@@ -9250,14 +9254,30 @@
 
         // Shape Mode clipping
         const shapeMode = obj.shapeMode || 'Original';
-        if (shapeMode === 'Circle') {
+        if (shapeMode === 'Circle' || shapeMode === 'Circle Mask') {
           ctx.beginPath();
           const r = Math.min(w, h) / 2 - 4;
           ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
           ctx.clip();
-        } else if (shapeMode === 'Rounded Rect') {
+        } else if (shapeMode === 'Rounded Card' || shapeMode === 'Rounded Rect') {
           ctx.beginPath();
           m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, 20);
+          ctx.clip();
+        } else if (shapeMode === 'Squircle') {
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, Math.min(w, h) * 0.35);
+          ctx.clip();
+        } else if (shapeMode === 'Hexagon') {
+          ctx.beginPath();
+          const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 4;
+          for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 6;
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
           ctx.clip();
         }
 
@@ -9483,6 +9503,44 @@
           obj.display.update({ x: obj.x, y: obj.y, opacity: obj.opacity });
         }
         m7DrawBrandingCanvas(obj);
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7SetBrandingAnchor(anchor) {
+        if (activeSelectedBrandingIndex < 0 || !activeBrandingObjects[activeSelectedBrandingIndex]) return;
+        const obj = activeBrandingObjects[activeSelectedBrandingIndex];
+        const stage = getAstrofoxStage();
+        const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 1920, height: 1080 };
+        const sw = stageSize.width || 1920;
+        const sh = stageSize.height || 1080;
+        const w = (obj.width && !isNaN(obj.width)) ? obj.width : 360;
+        const h = (obj.height && !isNaN(obj.height)) ? obj.height : 180;
+        const marginX = 80;
+        const marginY = 60;
+
+        let targetX = 0;
+        let targetY = 0;
+
+        switch (anchor) {
+          case 'TL': targetX = -sw / 2 + w / 2 + marginX; targetY = -sh / 2 + h / 2 + marginY; break;
+          case 'TC': targetX = 0; targetY = -sh / 2 + h / 2 + marginY; break;
+          case 'TR': targetX = sw / 2 - w / 2 - marginX; targetY = -sh / 2 + h / 2 + marginY; break;
+          case 'ML': targetX = -sw / 2 + w / 2 + marginX; targetY = 0; break;
+          case 'Center': targetX = 0; targetY = 0; break;
+          case 'MR': targetX = sw / 2 - w / 2 - marginX; targetY = 0; break;
+          case 'BL': targetX = -sw / 2 + w / 2 + marginX; targetY = sh / 2 - h / 2 - marginY; break;
+          case 'BC': targetX = 0; targetY = sh / 2 - h / 2 - marginY; break;
+          case 'BR': targetX = sw / 2 - w / 2 - marginX; targetY = sh / 2 - h / 2 - marginY; break;
+        }
+
+        obj.x = Math.round(targetX);
+        obj.y = Math.round(targetY);
+        obj.position = anchor;
+
+        if (obj.display && obj.display.update) {
+          obj.display.update({ x: obj.x, y: obj.y });
+        }
         m7UpdateGizmo();
         m7ScheduleAutosave();
       }
