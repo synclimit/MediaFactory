@@ -7,9 +7,9 @@ const calculateGridLayout = (count) => {
   if (count === 1) return 'grid-cols-1';
   if (count === 2) return 'grid-cols-2';
   if (count === 3) return 'grid-cols-3';
-  if (count === 4) return 'grid-cols-2';
+  if (count === 4) return 'grid-cols-2 lg:grid-cols-4';
   if (count <= 6) return 'grid-cols-3';
-  return 'grid-cols-4 lg:grid-cols-5';
+  return 'grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5';
 };
 
 export default function M1SlotManager({ m1Slots, updateM1Slot, isDuplicateOutput, isDuplicateSource, isQueuedOutput, isQueuedSource, m1Watermark, setM1Watermark, m1Subscribe, setM1Subscribe, setActiveMode, handleAddToQueue }) {
@@ -38,7 +38,7 @@ export default function M1SlotManager({ m1Slots, updateM1Slot, isDuplicateOutput
           <div className="absolute bottom-3 right-3 w-1.5 h-1.5 rounded-full bg-black/50 border border-white/10 shadow-[inset_0_1px_1px_rgba(0,0,0,1)]"></div>
 
           {/* Header Line */}
-          <div className="flex items-center gap-4 border-b-2 border-[#333] pb-3 mb-4 relative z-30 shrink-0">
+          <div className="flex items-center gap-4 border-b-2 border-[#333] pb-3 mb-3 relative z-30 shrink-0">
             <span className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,1)] animate-pulse border-2 border-[#111] z-30 relative"></span>
             <h2 className="text-[13px] font-black uppercase tracking-[0.4em] text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] relative z-30">AUDIO ALLOCATION RENDER MODULES</h2>
             
@@ -69,11 +69,11 @@ export default function M1SlotManager({ m1Slots, updateM1Slot, isDuplicateOutput
             </div>
           </div>
         
-          {/* Dashboard Card Grid Container */}
-          <div className="flex-1 relative z-10 overflow-hidden pr-1 min-h-0 flex flex-col">
-            <div className={`grid ${calculateGridLayout(m1Slots.length)} gap-3 flex-1 min-h-0`}>
+          {/* Dashboard Card Grid Container (Scrollable) */}
+          <div className="flex-1 relative z-10 overflow-y-auto m1-scroll pr-1.5 min-h-0">
+            <div className={`grid ${calculateGridLayout(m1Slots.length)} gap-3 pb-2`}>
               {m1Slots.map((slot, idx) => (
-                <div key={slot.slotId || idx} className="animate-slide-down h-full" style={{ animationDelay: `${idx * 0.05}s`, animationFillMode: 'both' }}>
+                <div key={slot.slotId || idx} className="animate-slide-down" style={{ animationDelay: `${idx * 0.05}s`, animationFillMode: 'both' }}>
                   <M1SlotItem 
                     slot={slot}
                     idx={idx}

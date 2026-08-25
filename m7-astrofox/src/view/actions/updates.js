@@ -43,9 +43,16 @@ export async function checkForUpdates() {
   updateStore.setState({ status: 'checking', lastCheck: Date.now() });
 
   try {
-    const { updateInfo } = await api.invoke('check-for-updates');
+    const res = await api.invoke('check-for-updates');
+    if (!res || !res.updateInfo) {
+      updateStore.setState({ checked: true, status: null, hasUpdate: false });
+      return;
+    }
+    const { updateInfo } = res;
 
-    const hasUpdate = semver.gt(updateInfo.version, env.APP_VERSION);
+    const hasUpdate = (updateInfo && updateInfo.version && env && env.APP_VERSION)
+      ? semver.gt(updateInfo.version, env.APP_VERSION)
+      : false;
     const { autoUpdate } = configStore.getState();
     const status = autoUpdate && hasUpdate ? 'downloading' : null;
 

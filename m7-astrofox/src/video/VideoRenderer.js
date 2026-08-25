@@ -10,7 +10,7 @@ import { sleep } from 'utils/work';
 
 export default class VideoRenderer {
   constructor(renderer) {
-    const { FFMPEG_BINARY } = api.getEnvironment();
+    const { FFMPEG_BINARY = 'ffmpeg' } = (api && typeof api.getEnvironment === 'function') ? api.getEnvironment() : {};
 
     this.renderer = renderer;
     this.renderProcess = new RenderProcess(FFMPEG_BINARY);
@@ -57,7 +57,7 @@ export default class VideoRenderer {
       const { renderProcess, audioProcess, mergeProcess } = this;
 
       const id = uniqueId();
-      const { TEMP_PATH } = api.getEnvironment();
+      const { TEMP_PATH = 'D:\\MediaFactory\\Output\\Temp' } = (api && typeof api.getEnvironment === 'function') ? api.getEnvironment() : {};
       const tempVideoFile = path.join(TEMP_PATH, `${id}.video`);
       const tempAudioFile = path.join(TEMP_PATH, `${id}.audio`);
 

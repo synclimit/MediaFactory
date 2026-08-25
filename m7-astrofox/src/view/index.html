@@ -1527,6 +1527,18 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span class="m7-rail-label">Branding</span>
       </button>
+      <button class="m7-rail-item" id="rail-btn-branding2" title="Branding 2 Layer & Overlays" onclick="m7SelectCategory('branding2')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/><circle cx="18" cy="18" r="5" fill="#a855f7" stroke="none"/><text x="18" y="21" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">2</text></svg>
+        <span class="m7-rail-label">Branding 2</span>
+      </button>
+      <button class="m7-rail-item" id="rail-btn-branding3" title="Branding 3: Dynamic 3D & Broadcast Suite" onclick="m7SelectCategory('branding3')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/><circle cx="18" cy="18" r="5" fill="#10b981" stroke="none"/><text x="18" y="21" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">3</text></svg>
+        <span class="m7-rail-label">Branding 3</span>
+      </button>
+      <button class="m7-rail-item" id="rail-btn-branding4" title="Branding 4: Ultra Parity Suite" onclick="m7SelectCategory('branding4')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/><circle cx="18" cy="18" r="5" fill="#38bdf8" stroke="none"/><text x="18" y="21" font-size="8" font-weight="900" fill="#ffffff" text-anchor="middle">4</text></svg>
+        <span class="m7-rail-label">Branding 4</span>
+      </button>
       <button class="m7-rail-item" id="rail-btn-thumbnail" title="Static Thumbnail Studio (JPG)" onclick="m7SelectCategory('thumbnail')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         <span class="m7-rail-label">Thumbnail</span>
@@ -1564,6 +1576,7 @@
             <button class="m7-btn-secondary" onclick="m7ShuffleImage()">
               <span>🔀</span> SHUFFLE
             </button>
+            <input type="file" id="m7-bg-file-input" style="display:none;" onchange="m7HandleBgFileUpload(this)">
           </div>
 
           <!-- PULSEFORGE AUDIO-REACTIVE SHADERS ACCORDION/GRID -->
@@ -2576,6 +2589,229 @@
             <div id="m7-branding-list" style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto;">
               <div id="m7-empty-branding-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
                 No branding layers active. Choose an item above to add to screen.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8b. BRANDING 2 SECTION -->
+        <div id="m7-section-branding2" style="display:none; flex-direction:column; gap:12px;">
+          <div class="m7-panel-header">
+            <span class="m7-dot-orange"></span>
+            <span>BRANDING 2</span>
+          </div>
+
+          <!-- 5 Branding 2 Preset Cards -->
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <!-- 1. Logo 2 -->
+            <div class="m7-text-obj-card" id="card-branding2-logo" onclick="m7SelectOrAddBranding2Preset('Logo')">
+              <div class="m7-text-obj-icon" style="background:rgba(168,85,247,0.15); border-color:rgba(168,85,247,0.3); color:#a855f7;">🛡️</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Logo</div>
+                <div class="m7-text-obj-desc">Brand logo image overlay (Corner/Center)</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 2. Watermark 2 -->
+            <div class="m7-text-obj-card" id="card-branding2-watermark" onclick="m7SelectOrAddBranding2Preset('Watermark')">
+              <div class="m7-text-obj-icon" style="background:rgba(6,182,212,0.15); border-color:rgba(6,182,212,0.3); color:#06b6d4;">💧</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Watermark</div>
+                <div class="m7-text-obj-desc">Semi-transparent channel protection mark</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 3. Intro Sequence 2 -->
+            <div class="m7-text-obj-card" id="card-branding2-intro" onclick="m7SelectOrAddBranding2Preset('Intro')">
+              <div class="m7-text-obj-icon" style="background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.3); color:#f59e0b;">🎬</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Intro Sequence</div>
+                <div class="m7-text-obj-desc">Cinematic video opening & story paragraphs</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 4. Outro Sequence 2 -->
+            <div class="m7-text-obj-card" id="card-branding2-outro" onclick="m7SelectOrAddBranding2Preset('Outro')">
+              <div class="m7-text-obj-icon" style="background:rgba(99,102,241,0.15); border-color:rgba(99,102,241,0.3); color:#6366f1;">🔚</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Outro Sequence</div>
+                <div class="m7-text-obj-desc">Closing sequence & end screen cards</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+
+            <!-- 5. Subscribe Animation 2 -->
+            <div class="m7-text-obj-card" id="card-branding2-subscribe" onclick="m7SelectOrAddBranding2Preset('Subscribe Animation')">
+              <div class="m7-text-obj-icon" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.3); color:#ef4444;">🔔</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Subscribe Animation</div>
+                <div class="m7-text-obj-desc">Animated social subscribe & bell widget</div>
+              </div>
+              <span class="m7-add-plus">+</span>
+            </div>
+          </div>
+
+          <!-- ACTIVE BRANDING 2 LAYERS LIST -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.5px; text-transform:uppercase;">ACTIVE BRANDING 2 LAYERS</span>
+              <span style="font-size:9px; background:rgba(168,85,247,0.15); color:#a855f7; padding:1px 6px; border-radius:10px; font-weight:bold;" id="m7-branding2-count">0</span>
+            </div>
+            <div id="m7-branding2-list" style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto;">
+              <div id="m7-empty-branding2-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                No branding 2 layers active. Choose an item above to add to screen.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8c. BRANDING 3 SECTION (STUDIO SUITE 3) -->
+        <div id="m7-section-branding3" style="display:none; flex-direction:column; gap:12px;">
+          <div class="m7-panel-header" style="justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
+              <span>BRANDING 3</span>
+            </div>
+            <span style="font-size:8px; font-weight:800; color:#10b981; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); padding:2px 6px; border-radius:10px; text-transform:uppercase;">STUDIO 3</span>
+          </div>
+
+          <!-- 5 Branding 3 Presets -->
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <!-- 1. Logo 3 -->
+            <div class="m7-text-obj-card" id="card-branding3-logo" onclick="m7SelectOrAddBranding3Preset('Logo')">
+              <div class="m7-text-obj-icon" style="background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.3); color:#10b981;">🛡️</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Brand Logo 3</div>
+                <div class="m7-text-obj-desc">Primary brand logo mark & emblem overlay</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(16,185,129,0.2); color:#10b981;">+</span>
+            </div>
+
+            <!-- 2. Watermark 3 -->
+            <div class="m7-text-obj-card" id="card-branding3-watermark" onclick="m7SelectOrAddBranding3Preset('Watermark')">
+              <div class="m7-text-obj-icon" style="background:rgba(6,182,212,0.15); border-color:rgba(6,182,212,0.3); color:#06b6d4;">💧</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Watermark 3</div>
+                <div class="m7-text-obj-desc">Semi-transparent corner copyright & handle mark</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(6,182,212,0.2); color:#06b6d4;">+</span>
+            </div>
+
+            <!-- 3. Intro Sequence 3 -->
+            <div class="m7-text-obj-card" id="card-branding3-intro" onclick="m7SelectOrAddBranding3Preset('Intro')">
+              <div class="m7-text-obj-icon" style="background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.3); color:#f59e0b;">🎬</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Intro Sequence 3</div>
+                <div class="m7-text-obj-desc">Video opening title sequence & typography backdrop</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(245,158,11,0.2); color:#f59e0b;">+</span>
+            </div>
+
+            <!-- 4. Outro Sequence 3 -->
+            <div class="m7-text-obj-card" id="card-branding3-outro" onclick="m7SelectOrAddBranding3Preset('Outro')">
+              <div class="m7-text-obj-icon" style="background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.3); color:#8b5cf6;">🔚</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Outro Sequence 3</div>
+                <div class="m7-text-obj-desc">Closing credits, thank you & channel end screen</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(139,92,246,0.2); color:#8b5cf6;">+</span>
+            </div>
+
+            <!-- 5. Subscribe Animation 3 -->
+            <div class="m7-text-obj-card" id="card-branding3-subscribe" onclick="m7SelectOrAddBranding3Preset('Subscribe Animation')">
+              <div class="m7-text-obj-icon" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.3); color:#ef4444;">🔔</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Subscribe Animation 3</div>
+                <div class="m7-text-obj-desc">Animated social subscribe pill & bell reminder</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(239,68,68,0.2); color:#ef4444;">+</span>
+            </div>
+          </div>
+
+          <!-- ACTIVE BRANDING 3 LAYERS LIST -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.5px; text-transform:uppercase;">ACTIVE BRANDING 3 LAYERS</span>
+              <span style="font-size:9px; background:rgba(16,185,129,0.15); color:#10b981; padding:1px 6px; border-radius:10px; font-weight:bold;" id="m7-branding3-count">0</span>
+            </div>
+            <div id="m7-branding3-list" style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto;">
+              <div id="m7-empty-branding3-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                No branding 3 layers active. Choose an item above to add to screen.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8d. BRANDING 4 SECTION (PARTICLE ARCHITECTURE CLONE) -->
+        <div id="m7-section-branding4" style="display:none; flex-direction:column; gap:12px;">
+          <div class="m7-panel-header" style="justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="width:6px; height:6px; border-radius:50%; background:#38bdf8; box-shadow:0 0 8px #38bdf8;"></span>
+              <span>BRANDING 4</span>
+            </div>
+            <span style="font-size:8px; font-weight:800; color:#38bdf8; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); padding:2px 6px; border-radius:10px; text-transform:uppercase;">STUDIO 4</span>
+          </div>
+
+          <!-- 5 Branding 4 Presets -->
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div class="m7-text-obj-card active" id="card-branding4-logo" onclick="m7SelectOrAddBranding4Preset('Logo')">
+              <div class="m7-text-obj-icon" style="background:rgba(56,189,248,0.15); border-color:rgba(56,189,248,0.3); color:#38bdf8;">🛡️</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Brand Logo 4</div>
+                <div class="m7-text-obj-desc">Primary brand logo & emblem mark</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(56,189,248,0.2); color:#38bdf8;">+</span>
+            </div>
+
+            <div class="m7-text-obj-card" id="card-branding4-watermark" onclick="m7SelectOrAddBranding4Preset('Watermark')">
+              <div class="m7-text-obj-icon" style="background:rgba(6,182,212,0.15); border-color:rgba(6,182,212,0.3); color:#06b6d4;">💧</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Watermark 4</div>
+                <div class="m7-text-obj-desc">Semi-transparent corner copyright watermark</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(6,182,212,0.2); color:#06b6d4;">+</span>
+            </div>
+
+            <div class="m7-text-obj-card" id="card-branding4-intro" onclick="m7SelectOrAddBranding4Preset('Intro')">
+              <div class="m7-text-obj-icon" style="background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.3); color:#f59e0b;">🎬</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Intro Sequence 4</div>
+                <div class="m7-text-obj-desc">Opening stream title & sequence backdrop</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(245,158,11,0.2); color:#f59e0b;">+</span>
+            </div>
+
+            <div class="m7-text-obj-card" id="card-branding4-outro" onclick="m7SelectOrAddBranding4Preset('Outro')">
+              <div class="m7-text-obj-icon" style="background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.3); color:#8b5cf6;">🔚</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Outro Sequence 4</div>
+                <div class="m7-text-obj-desc">Ending credits & channel closing screen</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(139,92,246,0.2); color:#8b5cf6;">+</span>
+            </div>
+
+            <div class="m7-text-obj-card" id="card-branding4-subscribe" onclick="m7SelectOrAddBranding4Preset('Subscribe Animation')">
+              <div class="m7-text-obj-icon" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.3); color:#ef4444;">🔔</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Subscribe Animation 4</div>
+                <div class="m7-text-obj-desc">Animated social subscribe button pill</div>
+              </div>
+              <span class="m7-add-plus" style="background:rgba(239,68,68,0.2); color:#ef4444;">+</span>
+            </div>
+          </div>
+
+          <!-- ACTIVE BRANDING 4 LAYERS LIST -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.5px; text-transform:uppercase;">ACTIVE BRANDING 4 LAYERS</span>
+              <span style="font-size:9px; background:rgba(56,189,248,0.15); color:#38bdf8; padding:1px 6px; border-radius:10px; font-weight:bold;" id="m7-branding4-count">0</span>
+            </div>
+            <div id="m7-branding4-list" style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto;">
+              <div id="m7-empty-branding4-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                No branding 4 layers active. Choose an item above to add to screen.
               </div>
             </div>
           </div>
@@ -4035,6 +4271,685 @@
 
         </div>
 
+        <!-- 8b. INSPECTOR: BRANDING 2 SETTINGS -->
+        <div id="m7-inspector-branding2" style="display:none; flex-direction:column; gap:12px;">
+
+          <!-- Empty state when no branding 2 layer is selected -->
+          <div id="box-branding2-no-selection" style="font-size:11px; color:#6b7280; text-align:center; padding:28px 12px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:10px; line-height:1.6; display:none; flex-direction:column; align-items:center; justify-content:center; gap:6px;">
+            <span style="font-size:24px;">🛡️</span>
+            <b style="color:#e5e7eb; font-size:12px;">No Branding 2 Layer Selected</b>
+            <span style="color:#9ca3af; font-size:10px;">Choose a branding preset on the left (<b>Logo, Watermark, Intro, Outro, Subscribe</b>) to add and configure.</span>
+          </div>
+
+          <!-- SUBSCRIBE SETTINGS -->
+          <div class="m7-inspector-card" id="grp-branding2-subscribe" style="display:none;">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 🔔 SUBSCRIBE SETTINGS (BRANDING 2)
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Appearance Interval</span>
+              </div>
+              <select class="m7-select" id="sel-branding2-interval" onchange="m7UpdateBranding2Prop('intervalMinutes', parseInt(this.value))">
+                <option value="0">No Interval (Loop)</option>
+                <option value="5" selected>Every 5 Minutes</option>
+                <option value="10">Every 10 Minutes</option>
+                <option value="15">Every 15 Minutes</option>
+                <option value="20">Every 20 Minutes</option>
+                <option value="25">Every 25 Minutes</option>
+                <option value="30">Every 30 Minutes</option>
+              </select>
+              <span style="font-size:9px; color:#6b7280; line-height:1.3; margin-top:2px;">Animasi subscribe akan muncul berulang sesuai interval waktu ini.</span>
+            </div>
+          </div>
+
+          <!-- TRANSFORM & SHAPE -->
+          <div class="m7-inspector-card" id="grp-branding2-transform">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 📐 TRANSFORM & SHAPE (BRANDING 2)
+            </div>
+            
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Shape Mode</span>
+              </div>
+              <select class="m7-select" id="sel-branding2-shapemode" onchange="m7UpdateBranding2Prop('shapeMode', this.value)">
+                <option value="Original" selected>Original</option>
+                <option value="Circle">Circle</option>
+                <option value="Rounded Rect">Rounded Rect</option>
+              </select>
+            </div>
+
+            <div class="m7-toggle-row">
+              <span>Uniform Scale</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-branding2-uniformscale" onchange="m7UpdateBranding2Prop('uniformScale', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Width</span>
+                <span class="m7-control-val" id="val-branding2-width">360</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="1920" value="360" id="slider-branding2-width" oninput="m7UpdateBranding2Prop('width', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Height</span>
+                <span class="m7-control-val" id="val-branding2-height">180</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="1080" value="180" id="slider-branding2-height" oninput="m7UpdateBranding2Prop('height', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Manual Rotation</span>
+                <span class="m7-control-val" id="val-branding2-rotation">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-180" max="180" value="0" id="slider-branding2-rotation" oninput="m7UpdateBranding2Prop('rotation', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Opacity</span>
+                <span class="m7-control-val" id="val-branding2-opacity">100</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding2-opacity" oninput="m7UpdateBranding2Prop('opacity', parseInt(this.value))">
+            </div>
+          </div>
+
+          <!-- MEDIA & IMAGE SOURCE -->
+          <div class="m7-inspector-card" id="grp-branding2-source">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 🖼️ MEDIA & IMAGE SOURCE (BRANDING 2)
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <input type="file" id="file-branding2-source" accept="image/*" style="display:none;" onchange="m7HandleBranding2FileUpload(this)">
+              <button class="m7-btn-secondary" style="width:100%; justify-content:center;" onclick="document.getElementById('file-branding2-source').click()">
+                📁 Replace Media / Upload File
+              </button>
+              <div id="box-branding2-preview" style="width:100%; height:60px; background:#0e1117; border:1px solid rgba(255,255,255,0.08); border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <img id="img-branding2-preview" src="" style="max-height:100%; max-width:100%; object-fit:contain; display:none;">
+                <span id="txt-branding2-preview-empty" style="font-size:10px; color:#6b7280;">No image loaded</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- INTRO / OUTRO SEQUENCE SETTINGS -->
+          <div class="m7-inspector-card" id="grp-branding2-sequence" style="display:none;">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> <span id="lbl-branding2-seq-title">INTRO SEQUENCE SETTINGS</span>
+            </div>
+            <div class="m7-toggle-row">
+              <span id="lbl-branding2-seq-enable">Enable Intro</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-branding2-seq-enable" checked onchange="m7UpdateBranding2Prop('visible', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span id="lbl-branding2-seq-style">Intro Style</span>
+              </div>
+              <select class="m7-select" id="sel-branding2-introstyle" onchange="m7UpdateBranding2IntroStyle(this.value)">
+                <option value="Focus Pull (Blur)" selected>Focus Pull (Blur)</option>
+                <option value="Fade from Black">Fade from Black</option>
+                <option value="Fade from White">Fade from White</option>
+                <option value="Cinematic Vignette">Cinematic Vignette</option>
+                <option value="Effect Blur">Effect Blur</option>
+                <option value="Paragraph (Text)">Paragraph (Text)</option>
+              </select>
+            </div>
+
+            <!-- Non-paragraph duration -->
+            <div class="m7-control-group" id="grp-branding2-nonpara-dur">
+              <div class="m7-control-label-row">
+                <span id="lbl-branding2-seq-dur-label">Intro Duration</span>
+              </div>
+              <select class="m7-select" id="sel-branding2-seq-dur" onchange="m7UpdateBranding2Prop('introDuration', this.value)">
+                <option value="2s">2s</option>
+                <option value="3s" selected>3s</option>
+                <option value="4s">4s</option>
+                <option value="5s">5s</option>
+                <option value="6s">6s</option>
+                <option value="8s">8s</option>
+                <option value="10s">10s</option>
+              </select>
+            </div>
+
+            <!-- Single Effect Intensity Slider -->
+            <div class="m7-control-group" id="grp-branding2-effect-intensity-control" style="display:none;">
+              <div class="m7-control-label-row">
+                <span>Effect Intensity</span>
+                <span class="m7-control-val" id="val-branding2-single-intensity">40</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-branding2-single-intensity" oninput="m7UpdateBranding2Prop('intensity', parseInt(this.value))">
+            </div>
+
+            <!-- Effect blur controls -->
+            <div id="grp-branding2-blur-controls" style="display:none; flex-direction:column; gap:8px;">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Blur Intensity</span>
+                  <span class="m7-control-val" id="val-branding2-blur">40</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-branding2-blur" oninput="m7UpdateBranding2Prop('intensity', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Dark Intensity</span>
+                  <span class="m7-control-val" id="val-branding2-dark">100</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding2-dark" oninput="m7UpdateBranding2Prop('darkIntensity', parseInt(this.value))">
+              </div>
+            </div>
+
+            <!-- Paragraph (Text) Storytelling Controls -->
+            <div id="grp-branding2-paragraph-controls" style="display:none; flex-direction:column; gap:10px;">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Bg Dark Intensity</span>
+                  <span class="m7-control-val" id="val-branding2-bgdark">100</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding2-bgdark" oninput="m7UpdateBranding2Prop('darkIntensity', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Bg Blur Intensity</span>
+                  <span class="m7-control-val" id="val-branding2-bgblur">40</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-branding2-bgblur" oninput="m7UpdateBranding2Prop('blurIntensity', parseInt(this.value))">
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Text Transition</span>
+                </div>
+                <select class="m7-select" id="sel-branding2-texttrans" onchange="m7UpdateBranding2Prop('textTransition', this.value)">
+                  <option value="Handwriting (Sweep)">Handwriting (Sweep)</option>
+                  <option value="Focus Pull (Text)">Focus Pull (Text)</option>
+                  <option value="Cinematic Tracking">Cinematic Tracking</option>
+                  <option value="Fade In/Out" selected>Fade In/Out</option>
+                  <option value="Typewriter">Typewriter</option>
+                  <option value="Slide Up">Slide Up</option>
+                  <option value="Zoom In">Zoom In</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Main Video Transition</span>
+                </div>
+                <select class="m7-select" id="sel-branding2-maintrans" onchange="m7UpdateBranding2Prop('mainTransition', this.value)">
+                  <option value="Fade to Video" selected>Fade to Video</option>
+                  <option value="Flash White">Flash White</option>
+                  <option value="Blur Reveal">Blur Reveal</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Jumlah Paragraf</span>
+                </div>
+                <select class="m7-select" id="sel-branding2-paracount" onchange="m7UpdateBranding2ParaCount(parseInt(this.value))">
+                  <option value="1" selected>1 Paragraf</option>
+                  <option value="2">2 Paragraf</option>
+                  <option value="3">3 Paragraf</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Durasi Paragraf</span>
+                </div>
+                <select class="m7-select" id="sel-branding2-paradur" onchange="m7UpdateBranding2Prop('paragraphDuration', this.value)">
+                  <option value="3s">3s</option>
+                  <option value="4s">4s</option>
+                  <option value="5s" selected>5s</option>
+                  <option value="6s">6s</option>
+                  <option value="8s">8s</option>
+                  <option value="10s">10s</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Isi Teks Paragraf</span>
+                </div>
+                <div id="container-branding2-textareas" style="display:flex; flex-direction:column; gap:6px;">
+                  <textarea id="txt-branding2-p1" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 1..." oninput="m7UpdateBranding2Prop('introText1', this.value)"></textarea>
+                  <textarea id="txt-branding2-p2" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 2..." oninput="m7UpdateBranding2Prop('introText2', this.value)"></textarea>
+                  <textarea id="txt-branding2-p3" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 3..." oninput="m7UpdateBranding2Prop('introText3', this.value)"></textarea>
+                </div>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Font Family</span>
+                </div>
+                <select class="m7-select" id="sel-branding2-font" onchange="m7UpdateBranding2Prop('introFontFamily', this.value)">
+                  <option value="Great Vibes">Great Vibes</option>
+                  <option value="Dancing Script">Dancing Script</option>
+                  <option value="Pacifico">Pacifico</option>
+                  <option value="Playball">Playball</option>
+                  <option value="Inter" selected>Inter</option>
+                  <option value="Oswald">Oswald</option>
+                  <option value="Bebas Neue">Bebas Neue</option>
+                  <option value="Segoe UI">Segoe UI</option>
+                  <option value="Roboto">Roboto</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Font Size</span>
+                  <span class="m7-control-val" id="val-branding2-fontsize">32</span>
+                </div>
+                <input type="range" class="m7-slider" min="10" max="100" value="32" id="slider-branding2-fontsize" oninput="m7UpdateBranding2Prop('introFontSize', parseInt(this.value))">
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Text Color</span>
+                </div>
+                <input type="color" id="col-branding2-textcolor" value="#ffffff" onchange="m7UpdateBranding2Prop('introTextColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Text Align</span>
+                </div>
+                <select class="m7-select" id="sel-branding2-align" onchange="m7UpdateBranding2Prop('introTextAlign', this.value)">
+                  <option value="left">Left</option>
+                  <option value="center" selected>Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- DELETE OBJECT BUTTON -->
+          <button class="m7-layer-remove" style="padding:10px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="m7DeleteActiveBranding2()">
+            🗑️ Delete Branding 2 Object
+          </button>
+
+        </div>
+
+        <!-- 8c. INSPECTOR: BRANDING 3 (STUDIO SUITE 3) -->
+        <div id="m7-inspector-branding3" style="display:none; flex-direction:column; gap:12px;">
+
+          <!-- Empty state when no branding 3 layer is selected -->
+          <div id="box-branding3-no-selection" style="font-size:11px; color:#6b7280; text-align:center; padding:28px 12px; border:1.5px dashed rgba(16,185,129,0.2); border-radius:10px; line-height:1.6; display:none; flex-direction:column; align-items:center; justify-content:center; gap:6px;">
+            <span style="font-size:24px;">🛡️</span>
+            <b style="color:#10b981; font-size:12px;">No Branding 3 Layer Selected</b>
+            <span style="color:#9ca3af; font-size:10px;">Select or add a branding layer on the left (<b>Logo, Watermark, Intro, Outro, Subscribe</b>) to edit its properties.</span>
+          </div>
+
+          <!-- CARD 1: ⚓ 9-POINT BROADCAST ANCHOR MATRIX -->
+          <div class="m7-inspector-card" id="grp-branding3-matrix">
+            <div class="m7-card-title">
+              <span style="width:6px; height:6px; border-radius:50%; background:#10b981; display:inline-block;"></span> ⚓ SCREEN ANCHOR MATRIX
+            </div>
+
+            <!-- 9-Point Interactive Grid -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; background:#0c0e14; padding:6px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding3Anchor('Top Left')">↖ TL</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding3Anchor('Top Center')">↑ TC</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding3Anchor('Top Right')">↗ TR</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding3Anchor('Middle Left')">← ML</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding3Anchor('Center')">● Center</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding3Anchor('Middle Right')">→ MR</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding3Anchor('Bottom Left')">↙ BL</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding3Anchor('Bottom Center')">↓ BC</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding3Anchor('Bottom Right')">↘ BR</button>
+            </div>
+          </div>
+
+          <!-- CARD 2: 📐 TRANSFORM & SHAPE (LOGO, WATERMARK, SUBSCRIBE) -->
+          <div class="m7-inspector-card" id="grp-branding3-transform">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 📐 TRANSFORM & SHAPE
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Shape Mode</span>
+              </div>
+              <select class="m7-select" id="sel-branding3-shapemode" onchange="m7UpdateBranding3Prop('shapeMode', this.value)">
+                <option value="Original" selected>Original</option>
+                <option value="Rounded Card">Rounded Card</option>
+                <option value="Circle Mask">Circle Mask</option>
+                <option value="Squircle">Squircle</option>
+                <option value="Hexagon">Hexagon</option>
+              </select>
+            </div>
+
+            <div class="m7-toggle-row">
+              <span>Uniform Scale</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-branding3-uniformscale" onchange="m7UpdateBranding3Prop('uniformScale', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Width</span>
+                <span class="m7-control-val" id="val-branding3-width">360</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="1920" value="360" id="slider-branding3-width" oninput="m7UpdateBranding3Prop('width', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Height</span>
+                <span class="m7-control-val" id="val-branding3-height">180</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="1080" value="180" id="slider-branding3-height" oninput="m7UpdateBranding3Prop('height', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Manual Rotation</span>
+                <span class="m7-control-val" id="val-branding3-rotation">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-180" max="180" value="0" id="slider-branding3-rotation" oninput="m7UpdateBranding3Prop('rotation', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Opacity</span>
+                <span class="m7-control-val" id="val-branding3-opacity">100</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding3-opacity" oninput="m7UpdateBranding3Prop('opacity', parseInt(this.value))">
+            </div>
+          </div>
+
+          <!-- CARD 3: 🔔 SUBSCRIBE ANIMATION SETTINGS -->
+          <div class="m7-inspector-card" id="grp-branding3-subscribe" style="display:none;">
+            <div class="m7-card-title">
+              <span style="width:6px; height:6px; border-radius:50%; background:#ef4444; display:inline-block;"></span> 🔔 SUBSCRIBE WIDGET 3
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Interval Minute</span>
+              </div>
+              <select class="m7-select" id="sel-branding3-interval" onchange="m7UpdateBranding3Prop('intervalMinutes', parseInt(this.value))">
+                <option value="1">Every 1 Minute</option>
+                <option value="3">Every 3 Minutes</option>
+                <option value="5" selected>Every 5 Minutes</option>
+                <option value="10">Every 10 Minutes</option>
+                <option value="0">Continuous (Always On)</option>
+              </select>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Button Label</span>
+              </div>
+              <input type="text" id="txt-branding3-sublabel" class="m7-select" style="padding:6px 8px;" value="SUBSCRIBE" oninput="m7UpdateBranding3Prop('subLabel', this.value)">
+            </div>
+          </div>
+
+          <!-- CARD 4: 🎬 INTRO & OUTRO SEQUENCE SETTINGS -->
+          <div class="m7-inspector-card" id="grp-branding3-sequence" style="display:none;">
+            <div class="m7-card-title">
+              <span style="width:6px; height:6px; border-radius:50%; background:#f59e0b; display:inline-block;"></span> <span id="lbl-branding3-seq-title">🎬 INTRO SEQUENCE 3</span>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Sequence Style</span>
+              </div>
+              <select class="m7-select" id="sel-branding3-style" onchange="m7UpdateBranding3IntroStyle(this.value)">
+                <option value="Paragraph (Text)" selected>Paragraph (Text)</option>
+                <option value="Single Effect (Blur/Dark)">Single Effect (Blur/Dark)</option>
+              </select>
+            </div>
+
+            <!-- Single Effect Blur/Dark Controls -->
+            <div id="grp-branding3-blur-controls" style="display:none; flex-direction:column; gap:10px;">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Effect Intensity (Blur)</span>
+                  <span class="m7-control-val" id="val-branding3-blur">50</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="50" id="slider-branding3-blur" oninput="m7UpdateBranding3Prop('intensity', parseInt(this.value))">
+              </div>
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Effect Darkness</span>
+                  <span class="m7-control-val" id="val-branding3-dark">100</span>
+                </div>
+                <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding3-dark" oninput="m7UpdateBranding3Prop('darkIntensity', parseInt(this.value))">
+              </div>
+            </div>
+
+            <!-- Paragraph Text Controls -->
+            <div id="grp-branding3-paragraph-controls" style="display:flex; flex-direction:column; gap:10px;">
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Paragraph Count</span>
+                </div>
+                <select class="m7-select" id="sel-branding3-paracount" onchange="m7UpdateBranding3ParaCount(parseInt(this.value))">
+                  <option value="1" selected>1 Paragraph</option>
+                  <option value="2">2 Paragraphs</option>
+                  <option value="3">3 Paragraphs</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Paragraph Duration</span>
+                </div>
+                <select class="m7-select" id="sel-branding3-paradur" onchange="m7UpdateBranding3Prop('paragraphDuration', this.value)">
+                  <option value="3s">3 Seconds</option>
+                  <option value="5s" selected>5 Seconds</option>
+                  <option value="8s">8 Seconds</option>
+                  <option value="10s">10 Seconds</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Paragraph Text 1</span>
+                </div>
+                <textarea id="txt-branding3-p1" class="m7-select" style="height:55px; resize:vertical; padding:6px;" placeholder="Enter Paragraph 1..." oninput="m7UpdateBranding3Prop('introText1', this.value)"></textarea>
+              </div>
+
+              <div class="m7-control-group" id="grp-branding3-p2-wrap" style="display:none;">
+                <div class="m7-control-label-row">
+                  <span>Paragraph Text 2</span>
+                </div>
+                <textarea id="txt-branding3-p2" class="m7-select" style="height:55px; resize:vertical; padding:6px;" placeholder="Enter Paragraph 2..." oninput="m7UpdateBranding3Prop('introText2', this.value)"></textarea>
+              </div>
+
+              <div class="m7-control-group" id="grp-branding3-p3-wrap" style="display:none;">
+                <div class="m7-control-label-row">
+                  <span>Paragraph Text 3</span>
+                </div>
+                <textarea id="txt-branding3-p3" class="m7-select" style="height:55px; resize:vertical; padding:6px;" placeholder="Enter Paragraph 3..." oninput="m7UpdateBranding3Prop('introText3', this.value)"></textarea>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Font Family</span>
+                </div>
+                <select class="m7-select" id="sel-branding3-font" onchange="m7UpdateBranding3Prop('introFontFamily', this.value)">
+                  <option value="Outfit" selected>Outfit</option>
+                  <option value="Inter">Inter</option>
+                  <option value="Montserrat">Montserrat</option>
+                  <option value="Bebas Neue">Bebas Neue</option>
+                  <option value="Great Vibes">Great Vibes</option>
+                  <option value="Dancing Script">Dancing Script</option>
+                  <option value="Pacifico">Pacifico</option>
+                  <option value="Playball">Playball</option>
+                  <option value="Oswald">Oswald</option>
+                  <option value="Poppins">Poppins</option>
+                  <option value="Roboto">Roboto</option>
+                </select>
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Font Size</span>
+                  <span class="m7-control-val" id="val-branding3-fontsize">32</span>
+                </div>
+                <input type="range" class="m7-slider" min="14" max="72" value="32" id="slider-branding3-fontsize" oninput="m7UpdateBranding3Prop('introFontSize', parseInt(this.value))">
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Text Color</span>
+                </div>
+                <input type="color" id="col-branding3-textcolor" value="#ffffff" onchange="m7UpdateBranding3Prop('introTextColor', this.value)" style="width:100%; height:30px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+              </div>
+
+              <div class="m7-control-group">
+                <div class="m7-control-label-row">
+                  <span>Text Align</span>
+                </div>
+                <select class="m7-select" id="sel-branding3-align" onchange="m7UpdateBranding3Prop('introTextAlign', this.value)">
+                  <option value="center" selected>Center</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 5: 🖼️ MEDIA & LOGO OVERLAY -->
+          <div class="m7-inspector-card" id="grp-branding3-source">
+            <div class="m7-card-title">
+              <span style="width:6px; height:6px; border-radius:50%; background:#10b981; display:inline-block;"></span> 🖼️ IMAGE & MEDIA 3
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <input type="file" id="file-branding3-source" accept="image/*" style="display:none;" onchange="m7HandleBranding3FileUpload(this)">
+              <button type="button" class="m7-btn-secondary" style="width:100%; justify-content:center;" onclick="document.getElementById('file-branding3-source').click()">
+                📁 Upload Custom Image / Logo 3
+              </button>
+              <div id="box-branding3-preview" style="width:100%; height:60px; background:#0e1117; border:1px solid rgba(255,255,255,0.08); border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <img id="img-branding3-preview" src="" style="max-height:100%; max-width:100%; object-fit:contain; display:none;">
+                <span id="txt-branding3-preview-empty" style="font-size:10px; color:#6b7280;">Default Archetype Icon Active</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 6: DELETE LAYER -->
+          <button class="m7-layer-remove" style="padding:10px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="m7DeleteActiveBranding3()">
+            🗑️ Delete Branding 3 Object
+          </button>
+
+        </div>
+
+        <!-- 8d. INSPECTOR: BRANDING 4 (DIRECT PARTICLE-STYLE ARCHITECTURE) -->
+        <div id="m7-inspector-branding4" style="display:none; flex-direction:column; gap:12px;">
+
+          <!-- Card 1: 📐 TRANSFORM & SHAPE -->
+          <div class="m7-inspector-card" id="grp-branding4-transform">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 📐 TRANSFORM & SHAPE
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Shape Mode</span>
+              </div>
+              <select class="m7-select" id="sel-branding4-shapemode" onchange="m7UpdateBranding4Prop('shapeMode', this.value)">
+                <option value="Original" selected>Original</option>
+                <option value="Rounded Card">Rounded Card</option>
+                <option value="Circle Mask">Circle Mask</option>
+                <option value="Squircle">Squircle</option>
+                <option value="Hexagon">Hexagon</option>
+              </select>
+            </div>
+
+            <div class="m7-toggle-row">
+              <span>Uniform Scale</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-branding4-uniformscale" onchange="m7UpdateBranding4Prop('uniformScale', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Width</span>
+                <span class="m7-control-val" id="val-branding4-width">360</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="1920" value="360" id="slider-branding4-width" oninput="m7UpdateBranding4Prop('width', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Height</span>
+                <span class="m7-control-val" id="val-branding4-height">180</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="1080" value="180" id="slider-branding4-height" oninput="m7UpdateBranding4Prop('height', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Manual Rotation</span>
+                <span class="m7-control-val" id="val-branding4-rotation">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-180" max="180" value="0" id="slider-branding4-rotation" oninput="m7UpdateBranding4Prop('rotation', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Opacity</span>
+                <span class="m7-control-val" id="val-branding4-opacity">100</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding4-opacity" oninput="m7UpdateBranding4Prop('opacity', parseInt(this.value))">
+            </div>
+          </div>
+
+          <!-- Card 2: 🖼️ IMAGE & MEDIA 4 -->
+          <div class="m7-inspector-card" id="grp-branding4-source">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> 🖼️ IMAGE & MEDIA 4
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <input type="file" id="file-branding4-source" accept="image/*" style="display:none;" onchange="m7HandleBranding4FileUpload(this)">
+              <button type="button" class="m7-btn-secondary" style="width:100%; justify-content:center;" onclick="document.getElementById('file-branding4-source').click()">
+                📁 Upload Custom Image / Logo
+              </button>
+              <div id="box-branding4-preview" style="width:100%; height:60px; background:#0e1117; border:1px solid rgba(255,255,255,0.08); border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <img id="img-branding4-preview" src="" style="max-height:100%; max-width:100%; object-fit:contain; display:none;">
+                <span id="txt-branding4-preview-empty" style="font-size:10px; color:#6b7280;">Default Archetype Icon Active</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: ⚓ SCREEN ANCHOR MATRIX -->
+          <div class="m7-inspector-card" id="grp-branding4-matrix">
+            <div class="m7-card-title">
+              <span class="m7-dot-orange"></span> ⚓ SCREEN ANCHOR MATRIX
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; background:#0c0e14; padding:6px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding4Anchor('Top Left')">↖ TL</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding4Anchor('Top Center')">↑ TC</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding4Anchor('Top Right')">↗ TR</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding4Anchor('Middle Left')">← ML</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding4Anchor('Center')">● Center</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding4Anchor('Middle Right')">→ MR</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding4Anchor('Bottom Left')">↙ BL</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding4Anchor('Bottom Center')">↓ BC</button>
+              <button type="button" class="m7-btn-secondary" style="padding:4px; font-size:9px; justify-content:center;" onclick="m7SetBranding4Anchor('Bottom Right')">↘ BR</button>
+            </div>
+          </div>
+
+          <!-- Card 4: DELETE LAYER -->
+          <button class="m7-layer-remove" style="padding:10px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="m7DeleteActiveBranding4()">
+            🗑️ Delete Branding 4 Layer
+          </button>
+        </div>
+
         <!-- 9. INSPECTOR: THUMBNAIL TEXT SETTINGS -->
         <div id="m7-inspector-thumbnail" style="display:none; flex-direction:column; gap:12px;">
           <!-- Empty State -->
@@ -4383,7 +5298,6 @@
       <span>Add to Queue</span>
     </button>
 
-    <script src="m7-bridge.js"></script>
     <script src="app.js"></script>
 
     <!-- LIVE INTERACTIVE CONTROLLER SCRIPT -->
@@ -4445,6 +5359,14 @@
       let activeBrandingObjects = []; // [{ id, name, type, source, imageElement, x, y, position, scale, opacity, shadow, brandColor, animationType, animationIntensity, visible, introStyle, introDuration, intensity, darkIntensity, blurIntensity, textTransition, mainTransition, paragraphCount, paragraphDuration, introText1, introText2, introText3, introFontFamily, introFontSize, introTextColor, introTextAlign, canvas, ctx, display }]
       let activeSelectedBrandingIndex = -1;
 
+      // Branding 2 State (Brand New Isolated Layer System)
+      let activeBranding2Objects = [];
+      let activeSelectedBranding2Index = -1;
+
+      // Branding 3 State (Dynamic 3D & Broadcast Suite)
+      let activeBranding3Objects = [];
+      let activeSelectedBranding3Index = -1;
+
       let bgState = {
         darkness: 30,
         blur: 0,
@@ -4481,7 +5403,7 @@
           if (!display) return 99;
           const name = display.name || (display.constructor ? display.constructor.name : '') || display.displayName || '';
           if (name === 'ImageDisplay' || name === 'Image' || name === 'ShaderBackgroundDisplay' || name === 'CaYaturBackgroundDisplay') return 0; // Layer 1 (Background)
-          if (name === 'GeometryDisplay' || name === 'Geometry' || name === 'ParticleDisplay' || name === 'Particle') return 1; // Layer 2 (Particles)
+          if (name === 'GeometryDisplay' || name === 'Geometry' || name === 'ParticleDisplay' || name === 'Particle' || name.includes('Candle') || name.includes('Overlay')) return 1; // Layer 2 (Particles & 3D Overlays)
           if (name.includes('Spectrum') || name.includes('SoundWave') || name.includes('Wave') || name.includes('Visualizer') || name.includes('Harmonics')) return 2; // Layer 3 (Spectrum Visualizer)
           if (name.includes('Text') || name.includes('Lyrics') || name.includes('Brand') || name.includes('Logo') || name.includes('Watermark') || name.includes('Subscribe')) return 3; // Layer 4 (Text, Lyrics, Branding)
           if (name === 'VisualFXDisplay' || name === 'VisualFX') return 4; // Layer 5 (Master Visual FX Overlay)
@@ -4550,6 +5472,9 @@
         const secOverlay = document.getElementById('m7-section-overlay');
         const secText = document.getElementById('m7-section-text');
         const secBranding = document.getElementById('m7-section-branding');
+        const secBranding2 = document.getElementById('m7-section-branding2');
+        const secBranding3 = document.getElementById('m7-section-branding3');
+        const secBranding4 = document.getElementById('m7-section-branding4');
         const secThumbnail = document.getElementById('m7-section-thumbnail');
 
         const inspBg = document.getElementById('m7-inspector-bg');
@@ -4560,6 +5485,9 @@
         const inspOverlay = document.getElementById('m7-inspector-overlay');
         const inspText = document.getElementById('m7-inspector-text');
         const inspBranding = document.getElementById('m7-inspector-branding');
+        const inspBranding2 = document.getElementById('m7-inspector-branding2');
+        const inspBranding3 = document.getElementById('m7-inspector-branding3');
+        const inspBranding4 = document.getElementById('m7-inspector-branding4');
         const inspThumbnail = document.getElementById('m7-inspector-thumbnail');
         const tag = document.getElementById('m7-inspector-tag');
 
@@ -4568,8 +5496,8 @@
         const thumbViewport = document.getElementById('m7-thumbnail-viewport');
 
         // Hide all sections first
-        [secBg, secPlaylist, secViz, secParticle, secFx, secOverlay, secText, secBranding, secThumbnail].forEach(s => { if (s) s.style.display = 'none'; });
-        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspOverlay, inspText, inspBranding, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+        [secBg, secPlaylist, secViz, secParticle, secFx, secOverlay, secText, secBranding, secBranding2, secBranding3, secBranding4, secThumbnail].forEach(s => { if (s) s.style.display = 'none'; });
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspOverlay, inspText, inspBranding, inspBranding2, inspBranding3, inspBranding4, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
 
         if (type === 'thumbnail') {
           // Switch to dedicated Static JPG Thumbnail Canvas
@@ -4653,6 +5581,46 @@
               m7SelectBrandingObject(0);
             } else {
               m7SelectOrAddBrandingPreset('Logo');
+            }
+          } else if (type === 'branding2') {
+            if (secBranding2) secBranding2.style.display = 'flex';
+            if (inspBranding2) {
+              inspBranding2.style.display = 'flex';
+              inspBranding2.style.setProperty('display', 'flex', 'important');
+            }
+            if (tag) tag.innerText = 'BRANDING 2';
+            if (activeSelectedBranding2Index >= 0 && activeBranding2Objects[activeSelectedBranding2Index]) {
+              m7SelectBranding2Object(activeSelectedBranding2Index);
+            } else if (activeBranding2Objects.length > 0) {
+              m7SelectBranding2Object(0);
+            } else {
+              m7SelectOrAddBranding2Preset('Logo');
+            }
+          } else if (type === 'branding3') {
+            if (secBranding3) secBranding3.style.display = 'flex';
+            if (inspBranding3) {
+              inspBranding3.style.display = 'flex';
+              inspBranding3.style.setProperty('display', 'flex', 'important');
+            }
+            if (tag) tag.innerText = 'BRANDING 3';
+            if (activeSelectedBranding3Index >= 0 && activeBranding3Objects[activeSelectedBranding3Index]) {
+              m7SelectBranding3Object(activeSelectedBranding3Index);
+            } else if (activeBranding3Objects.length > 0) {
+              m7SelectBranding3Object(0);
+            } else {
+              m7SelectOrAddBranding3Preset('Logo');
+            }
+          } else if (type === 'branding4') {
+            if (secBranding4) secBranding4.style.display = 'flex';
+            if (inspBranding4) inspBranding4.style.display = 'flex';
+            if (tag) tag.innerText = 'BRANDING 4';
+            m7RenderBranding4List();
+            if (activeSelectedBranding4Index >= 0 && activeBranding4Objects[activeSelectedBranding4Index]) {
+              m7SelectBranding4Object(activeSelectedBranding4Index);
+            } else if (activeBranding4Objects.length > 0) {
+              m7SelectBranding4Object(0);
+            } else {
+              m7SelectOrAddBranding4Preset('Logo');
             }
           }
 
@@ -4742,17 +5710,65 @@
       }
 
       async function m7AddBgDirect() {
-        if (!window.__ASTROFOX__) return;
         const isVid = (currentBgType === 'video');
-        const filters = isVid 
-          ? [{ name: 'Videos', extensions: ['mp4', 'webm', 'mov', 'mkv', 'avi'] }]
-          : [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif'] }];
+        if (window.__ASTROFOX__ && window.__ASTROFOX__.showOpenDialog && !window.__ASTROFOX__.isWeb) {
+          try {
+            const filters = isVid 
+              ? [{ name: 'Videos', extensions: ['mp4', 'webm', 'mov', 'mkv', 'avi'] }]
+              : [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif'] }];
 
-        const res = await window.__ASTROFOX__.showOpenDialog({ filters });
-        if (res && !res.canceled && res.filePaths && res.filePaths.length > 0) {
-          const filePath = res.filePaths[0];
-          await m7LoadAndApplyBgFile(filePath, isVid ? 'video' : 'image');
+            const res = await window.__ASTROFOX__.showOpenDialog({ filters });
+            if (res && !res.canceled && res.filePaths && res.filePaths.length > 0) {
+              const filePath = res.filePaths[0];
+              await m7LoadAndApplyBgFile(filePath, isVid ? 'video' : 'image');
+              return;
+            }
+          } catch(e) {}
         }
+
+        const input = document.getElementById('m7-bg-file-input');
+        if (input) {
+          input.accept = isVid ? 'video/*' : 'image/*';
+          input.click();
+        }
+      }
+
+      async function m7HandleBgFileUpload(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        const isVid = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const dataUrl = e.target.result;
+          let physicalPath = '';
+          try {
+            const base64Data = dataUrl.split(',')[1];
+            if (base64Data) {
+              const sRes = await fetch('/api/m7/save-temp-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: file.name, base64Data })
+              });
+              const sJson = await sRes.json();
+              if (sJson && sJson.success && sJson.path) {
+                physicalPath = sJson.path;
+              }
+            }
+          } catch(err) {
+            console.warn('[M7] Failed saving temp file on backend:', err);
+          }
+          await m7LoadAndApplyBgFile(dataUrl, isVid ? 'video' : 'image', physicalPath || file.name);
+          input.value = null;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function m7NormalizeMediaSrc(src) {
+        if (!src) return '';
+        if (src.startsWith('data:') || src.startsWith('blob:') || src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/')) {
+          return src;
+        }
+        return `/api/m7/media-file?path=${encodeURIComponent(src)}`;
       }
 
       async function m7LoadAndApplyBgFile(filePath, type = 'image') {
@@ -4760,8 +5776,12 @@
           const name = filePath.split(/[\\\/]/).pop();
           let dataUrl = filePath;
           if (type === 'image' && window.__ASTROFOX__ && window.__ASTROFOX__.readImageFile) {
-            dataUrl = await window.__ASTROFOX__.readImageFile(filePath);
+            try {
+              const res = await window.__ASTROFOX__.readImageFile(filePath);
+              if (res) dataUrl = res;
+            } catch(e) {}
           }
+          dataUrl = m7NormalizeMediaSrc(dataUrl);
 
           if (type === 'video') {
             const video = document.createElement('video');
@@ -7595,6 +8615,7 @@
       function m7SetBrandingImageSource(obj, src) {
         if (!obj) return;
         obj.source = src;
+        const normalizedSrc = m7NormalizeMediaSrc(src);
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
@@ -7603,7 +8624,7 @@
           if (activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex] === obj) {
             const imgPrev = document.getElementById('img-branding-preview');
             const txtPrevEmpty = document.getElementById('txt-branding-preview-empty');
-            if (imgPrev) { imgPrev.src = src; imgPrev.style.display = 'block'; }
+            if (imgPrev) { imgPrev.src = normalizedSrc; imgPrev.style.display = 'block'; }
             if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
           }
           if (obj.display && obj.display.update) {
@@ -7612,7 +8633,7 @@
           m7UpdateGizmo();
           m7ScheduleAutosave();
         };
-        img.src = src;
+        img.src = normalizedSrc;
       }
 
       function m7HandleBrandingFileUpload(input) {
@@ -7960,12 +8981,15 @@
         const inspViz = document.getElementById('m7-inspector-viz');
         const inspParticle = document.getElementById('m7-inspector-particle');
         const inspFx = document.getElementById('m7-inspector-fx');
+        const inspOverlay = document.getElementById('m7-inspector-overlay');
         const inspText = document.getElementById('m7-inspector-text');
         const inspBranding = document.getElementById('m7-inspector-branding');
+        const inspBranding2 = document.getElementById('m7-inspector-branding2');
+        const inspBranding3 = document.getElementById('m7-inspector-branding3');
         const inspThumbnail = document.getElementById('m7-inspector-thumbnail');
         const tag = document.getElementById('m7-inspector-tag');
 
-        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspText, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspOverlay, inspText, inspBranding, inspBranding2, inspBranding3, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
         if (inspBranding) {
           inspBranding.style.display = 'flex';
           inspBranding.style.setProperty('display', 'flex', 'important');
@@ -7978,13 +9002,7 @@
         const grpSequence = document.getElementById('grp-branding-sequence');
 
         if (!obj) {
-          if (tag) tag.innerText = 'BRANDING';
-          if (boxNoSel) boxNoSel.style.display = 'flex';
-          if (grpSubscribe) grpSubscribe.style.display = 'none';
-          if (grpTransform) grpTransform.style.display = 'none';
-          if (grpSource) grpSource.style.display = 'none';
-          if (grpSequence) grpSequence.style.display = 'none';
-          return;
+          obj = { type: 'Logo', width: 360, height: 180, rotation: 0, opacity: 1.0, shapeMode: 'Original', uniformScale: false };
         }
 
         try {
@@ -8142,6 +9160,1729 @@
         }
       }
 
+      /* === 7b. BRANDING 2 MODULE FUNCTIONS (ISOLATED FULL SYSTEM) === */
+      function m7SelectOrAddBranding2Preset(type) {
+        const presetKey = type === 'Subscribe Animation' ? 'subscribe' : type.toLowerCase();
+        document.querySelectorAll('#m7-section-branding2 .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-branding2-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        // Look for existing object of this type in activeBranding2Objects
+        const existingIdx = activeBranding2Objects.findIndex(o => o.type === type);
+        if (existingIdx >= 0) {
+          m7SelectBranding2Object(existingIdx);
+        } else {
+          m7AddBranding2Direct(type);
+        }
+      }
+
+      function m7AddBranding2Direct(type) {
+        let name = type;
+        if (type === 'Logo') name = 'Logo 2';
+        else if (type === 'Watermark') name = 'Watermark 2';
+        else if (type === 'Intro') name = 'Intro Sequence 2';
+        else if (type === 'Outro') name = 'Outro Sequence 2';
+        else if (type === 'Subscribe Animation') name = 'Subscribe Animation 2';
+
+        const isIntroOrOutro = (type === 'Intro' || type === 'Outro');
+
+        // Create brand new branding 2 object
+        const newObj = {
+          id: 'branding2_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          name: name,
+          type: type,
+          isBranding2: true,
+          // Transform & Appearance
+          shapeMode: 'Original',
+          uniformScale: false,
+          width: 360,
+          height: 180,
+          rotation: 0,
+          x: type === 'Watermark' ? -320 : (type === 'Logo' ? -300 : 0),
+          y: type === 'Watermark' ? 180 : (type === 'Logo' ? 160 : (type === 'Subscribe Animation' ? -150 : 0)),
+          position: (type === 'Watermark' || type === 'Logo') ? 'Bottom Left' : (type === 'Subscribe Animation' ? 'Top Center' : 'Center'),
+          scale: type === 'Watermark' ? 80 : 100,
+          opacity: type === 'Watermark' ? 0.6 : 1.0,
+          shadow: type === 'Watermark' ? 30 : 50,
+          tiltX: 0,
+          tiltY: 0,
+          perspective: 60,
+          depth: 0,
+          insertDepth: false,
+          bgTransparent: true,
+          bgColor: '#000000',
+          hasBorder: false,
+          brandColor: type === 'Subscribe Animation' ? '#ef4444' : '#a855f7',
+          beatZoom: false,
+          beatPump: false,
+          animationType: type === 'Subscribe Animation' ? 'Zoom Pulse' : 'None',
+          animationIntensity: 100,
+          source: '',
+          imageElement: null,
+          blend: 'Normal',
+          intervalMinutes: 5,
+          // Sequence settings
+          visible: true,
+          introStyle: type === 'Outro' ? 'Fade from Black' : 'Focus Pull (Blur)',
+          introDuration: '3s',
+          intensity: 40,
+          darkIntensity: 100,
+          blurIntensity: 40,
+          textTransition: 'Fade In/Out',
+          mainTransition: 'Fade to Video',
+          paragraphCount: 1,
+          paragraphDuration: '5s',
+          introText1: '',
+          introText2: '',
+          introText3: '',
+          introFontFamily: 'Inter',
+          introFontSize: 32,
+          introTextColor: '#ffffff',
+          introTextAlign: 'center'
+        };
+
+        // Add visual display to Astrofox scene if visual element
+        if (!isIntroOrOutro) {
+          m7CreateBranding2Display(newObj);
+        }
+
+        activeBranding2Objects.push(newObj);
+        activeSelectedBranding2Index = activeBranding2Objects.length - 1;
+
+        m7RenderBranding2List();
+        m7SyncInspectorToBranding2(newObj);
+        m7IsGizmoSelected = !isIntroOrOutro;
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7CreateBranding2Display(obj) {
+        if (obj.type === 'Intro' || obj.type === 'Outro') return;
+        const scene = getOrCreateActiveScene();
+        if (!scene) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 360;
+        canvas.height = 180;
+        const ctx = canvas.getContext('2d');
+
+        obj.canvas = canvas;
+        obj.ctx = ctx;
+
+        m7DrawBranding2Canvas(obj);
+
+        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
+          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
+          if (DisplayClass) {
+            try {
+              const display = new DisplayClass({
+                name: obj.name,
+                x: obj.x,
+                y: obj.y,
+                opacity: obj.opacity
+              });
+              display.canvas = canvas;
+              obj.display = display;
+              scene.addElement(display);
+              m7EnforceLayerOrder(scene);
+            } catch(e) {}
+          }
+        }
+      }
+
+      function m7SetBranding2ImageSource(obj, src) {
+        if (!obj) return;
+        obj.source = src;
+        const normalizedSrc = m7NormalizeMediaSrc(src);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          obj.imageElement = img;
+          m7DrawBranding2Canvas(obj);
+          if (activeSelectedBranding2Index >= 0 && activeBranding2Objects[activeSelectedBranding2Index] === obj) {
+            const imgPrev = document.getElementById('img-branding2-preview');
+            const txtPrevEmpty = document.getElementById('txt-branding2-preview-empty');
+            if (imgPrev) { imgPrev.src = normalizedSrc; imgPrev.style.display = 'block'; }
+            if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+          }
+          if (obj.display && obj.display.update) {
+            obj.display.update({ x: obj.x, y: obj.y });
+          }
+          m7UpdateGizmo();
+          m7ScheduleAutosave();
+        };
+        img.src = normalizedSrc;
+      }
+
+      function m7HandleBranding2FileUpload(input) {
+        if (!input.files || input.files.length === 0) return;
+        if (activeSelectedBranding2Index < 0 || !activeBranding2Objects[activeSelectedBranding2Index]) return;
+        const obj = activeBranding2Objects[activeSelectedBranding2Index];
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          m7SetBranding2ImageSource(obj, e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function m7DrawBranding2Canvas(obj) {
+        if (!obj || !obj.canvas) return;
+        const canvas = obj.canvas;
+        const w = obj.width !== undefined && !isNaN(obj.width) ? obj.width : 360;
+        const h = obj.height !== undefined && !isNaN(obj.height) ? obj.height : 180;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        const ctx = obj.ctx || canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.globalAlpha = obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0;
+
+        // Rotation & Center
+        ctx.translate(w / 2, h / 2);
+        if (obj.rotation) {
+          ctx.rotate((obj.rotation * Math.PI) / 180);
+        }
+        ctx.translate(-w / 2, -h / 2);
+
+        // Shape Mode clipping
+        const shapeMode = obj.shapeMode || 'Original';
+        if (shapeMode === 'Circle') {
+          ctx.beginPath();
+          const r = Math.min(w, h) / 2 - 4;
+          ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+          ctx.clip();
+        } else if (shapeMode === 'Rounded Rect') {
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, 20);
+          ctx.clip();
+        }
+
+        if (obj.source && obj.imageElement && obj.imageElement.complete) {
+          const img = obj.imageElement;
+          const ratio = Math.min(w / img.width, h / img.height);
+          const drawW = img.width * ratio;
+          const drawH = img.height * ratio;
+          const drawX = (w - drawW) / 2;
+          const drawY = (h - drawH) / 2;
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        } else {
+          if (obj.type === 'Logo') {
+            const col = '#a855f7';
+            ctx.fillStyle = 'rgba(17, 24, 39, 0.92)';
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = col;
+            ctx.fillText('🛡️', w * 0.28, h / 2);
+
+            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('BRANDING 2', w * 0.64, h / 2);
+          } else if (obj.type === 'Watermark') {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 10);
+            ctx.fill();
+
+            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.2)))}px "Segoe UI", Inter, monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText('💧 BRANDING 2 MARK', w / 2, h / 2);
+          } else if (obj.type === 'Subscribe Animation') {
+            const pillW = w - 20;
+            const pillH = h - 20;
+            const pillX = 10;
+            const pillY = 10;
+
+            const grad = ctx.createLinearGradient(pillX, pillY, pillX + pillW, pillY);
+            grad.addColorStop(0, '#ef4444');
+            grad.addColorStop(1, '#dc2626');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+            ctx.fill();
+
+            ctx.font = `bold ${Math.max(14, Math.min(26, Math.floor(pillH * 0.45)))}px sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('🔔', pillX + pillW * 0.1, pillY + pillH / 2);
+
+            ctx.font = `900 ${Math.max(12, Math.min(22, Math.floor(pillH * 0.38)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillText('SUBSCRIBE 2', pillX + pillW * 0.3, pillY + pillH / 2);
+          }
+        }
+
+        ctx.restore();
+
+        if (obj.display && obj.display.pass && obj.display.pass.texture) {
+          obj.display.pass.texture.needsUpdate = true;
+        }
+      }
+
+      function m7RenderBranding2List() {
+        const listEl = document.getElementById('m7-branding2-list');
+        const countEl = document.getElementById('m7-branding2-count');
+        if (countEl) countEl.innerText = activeBranding2Objects.length;
+        if (!listEl) return;
+
+        if (activeBranding2Objects.length === 0) {
+          listEl.innerHTML = `
+            <div id="m7-empty-branding2-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+              No branding 2 layers active. Choose an item above to add to screen.
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = '';
+        activeBranding2Objects.forEach((item, idx) => {
+          const isSelected = (idx === activeSelectedBranding2Index);
+          const row = document.createElement('div');
+          row.className = `m7-layer-item ${isSelected ? 'active' : ''}`;
+          row.onclick = () => {
+            m7SelectBranding2Object(idx);
+          };
+
+          const numStr = String(idx + 1).padStart(2, '0');
+          let icon = '🛡️';
+          if (item.type === 'Watermark') icon = '💧';
+          else if (item.type === 'Intro') icon = '🎬';
+          else if (item.type === 'Outro') icon = '🔚';
+          else if (item.type === 'Subscribe Animation') icon = '🔔';
+
+          row.innerHTML = `
+            <span class="m7-layer-remove" title="Remove Branding 2 Layer" onclick="event.stopPropagation(); m7RemoveBranding2Object(${idx})">✕</span>
+            <span style="color:#6b7280; font-family:monospace; font-weight:800;">${numStr}</span>
+            <span>${icon}</span>
+            <span class="m7-layer-name">${item.name}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      function m7SelectBranding2Object(idx) {
+        if (idx < 0 || idx >= activeBranding2Objects.length) return;
+        activeSelectedBranding2Index = idx;
+        const item = activeBranding2Objects[idx];
+
+        // Highlight preset card in left Category panel
+        const presetKey = item.type === 'Subscribe Animation' ? 'subscribe' : (item.type || 'logo').toLowerCase();
+        document.querySelectorAll('#m7-section-branding2 .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-branding2-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        const inspBranding2 = document.getElementById('m7-inspector-branding2');
+        if (inspBranding2) {
+          inspBranding2.style.display = 'flex';
+          inspBranding2.style.setProperty('display', 'flex', 'important');
+        }
+        m7RenderBranding2List();
+        m7SyncInspectorToBranding2(item);
+        m7IsGizmoSelected = (item.type !== 'Intro' && item.type !== 'Outro');
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7RemoveBranding2Object(idx) {
+        if (idx < 0 || idx >= activeBranding2Objects.length) return;
+        const removed = activeBranding2Objects.splice(idx, 1)[0];
+        const scene = getOrCreateActiveScene();
+        if (scene && removed && removed.display) {
+          scene.removeElement(removed.display);
+        }
+
+        if (activeBranding2Objects.length === 0) {
+          activeSelectedBranding2Index = -1;
+          m7IsGizmoSelected = false;
+        } else {
+          activeSelectedBranding2Index = Math.min(activeSelectedBranding2Index, activeBranding2Objects.length - 1);
+          if (activeSelectedBranding2Index < 0) activeSelectedBranding2Index = 0;
+        }
+
+        m7RenderBranding2List();
+        if (activeSelectedBranding2Index >= 0 && activeBranding2Objects[activeSelectedBranding2Index]) {
+          m7SyncInspectorToBranding2(activeBranding2Objects[activeSelectedBranding2Index]);
+        } else {
+          m7SyncInspectorToBranding2(null);
+        }
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7DeleteActiveBranding2() {
+        if (activeSelectedBranding2Index >= 0) {
+          m7RemoveBranding2Object(activeSelectedBranding2Index);
+        }
+      }
+
+      function m7UpdateBranding2Prop(prop, val) {
+        if (activeSelectedBranding2Index < 0 || !activeBranding2Objects[activeSelectedBranding2Index]) return;
+        const obj = activeBranding2Objects[activeSelectedBranding2Index];
+        obj[prop] = val;
+
+        if (prop === 'uniformScale') {
+          obj.uniformScale = !!val;
+        }
+        if (prop === 'width') {
+          const valEl = document.getElementById('val-branding2-width');
+          if (valEl) valEl.innerText = val;
+          if (obj.uniformScale) {
+            const aspect = (obj.height && obj.width) ? (obj.height / val) : 0.5;
+            obj.height = Math.max(10, Math.round(val * aspect));
+            const sliderH = document.getElementById('slider-branding2-height');
+            const valH = document.getElementById('val-branding2-height');
+            if (sliderH) sliderH.value = obj.height;
+            if (valH) valH.innerText = obj.height;
+          }
+        }
+        if (prop === 'height') {
+          const valEl = document.getElementById('val-branding2-height');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'rotation') {
+          const valEl = document.getElementById('val-branding2-rotation');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'opacity') {
+          const valEl = document.getElementById('val-branding2-opacity');
+          if (valEl) valEl.innerText = val;
+          obj.opacity = val / 100;
+        }
+        if (prop === 'intensity') {
+          const valEl = document.getElementById('val-branding2-blur');
+          const valSingle = document.getElementById('val-branding2-single-intensity');
+          if (valEl) valEl.innerText = val;
+          if (valSingle) valSingle.innerText = val;
+        }
+        if (prop === 'darkIntensity') {
+          const valEl = document.getElementById('val-branding2-dark');
+          const valBgDark = document.getElementById('val-branding2-bgdark');
+          if (valEl) valEl.innerText = val;
+          if (valBgDark) valBgDark.innerText = val;
+        }
+        if (prop === 'blurIntensity') {
+          const valEl = document.getElementById('val-branding2-bgblur');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'introFontSize') {
+          const valEl = document.getElementById('val-branding2-fontsize');
+          if (valEl) valEl.innerText = val;
+        }
+
+        if (obj.display) {
+          obj.display.update({ x: obj.x, y: obj.y, opacity: obj.opacity });
+        }
+        m7DrawBranding2Canvas(obj);
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7UpdateBranding2IntroStyle(style, updateObj = true) {
+        if (updateObj && activeSelectedBranding2Index >= 0 && activeBranding2Objects[activeSelectedBranding2Index]) {
+          activeBranding2Objects[activeSelectedBranding2Index].introStyle = style;
+        }
+
+        const grpNonParaDur = document.getElementById('grp-branding2-nonpara-dur');
+        const grpBlurControls = document.getElementById('grp-branding2-blur-controls');
+        const grpSingleEffectControl = document.getElementById('grp-branding2-effect-intensity-control');
+        const grpParaControls = document.getElementById('grp-branding2-paragraph-controls');
+
+        if (style === 'Paragraph (Text)') {
+          if (grpNonParaDur) grpNonParaDur.style.display = 'none';
+          if (grpBlurControls) grpBlurControls.style.display = 'none';
+          if (grpSingleEffectControl) grpSingleEffectControl.style.display = 'none';
+          if (grpParaControls) grpParaControls.style.display = 'flex';
+        } else if (style === 'Effect Blur') {
+          if (grpNonParaDur) grpNonParaDur.style.display = 'flex';
+          if (grpBlurControls) grpBlurControls.style.display = 'flex';
+          if (grpSingleEffectControl) grpSingleEffectControl.style.display = 'none';
+          if (grpParaControls) grpParaControls.style.display = 'none';
+        } else {
+          if (grpNonParaDur) grpNonParaDur.style.display = 'flex';
+          if (grpBlurControls) grpBlurControls.style.display = 'none';
+          if (grpSingleEffectControl) grpSingleEffectControl.style.display = 'flex';
+          if (grpParaControls) grpParaControls.style.display = 'none';
+        }
+
+        if (updateObj) m7ScheduleAutosave();
+      }
+
+      function m7UpdateBranding2ParaCount(count, updateObj = true) {
+        if (updateObj && activeSelectedBranding2Index >= 0 && activeBranding2Objects[activeSelectedBranding2Index]) {
+          activeBranding2Objects[activeSelectedBranding2Index].paragraphCount = count;
+        }
+
+        const txtP1 = document.getElementById('txt-branding2-p1');
+        const txtP2 = document.getElementById('txt-branding2-p2');
+        const txtP3 = document.getElementById('txt-branding2-p3');
+
+        if (txtP1) txtP1.style.display = count >= 1 ? 'block' : 'none';
+        if (txtP2) txtP2.style.display = count >= 2 ? 'block' : 'none';
+        if (txtP3) txtP3.style.display = count >= 3 ? 'block' : 'none';
+
+        if (updateObj) m7ScheduleAutosave();
+      }
+
+      function m7SyncInspectorToBranding2(obj) {
+        const inspBg = document.getElementById('m7-inspector-bg');
+        const inspPlaylist = document.getElementById('m7-inspector-playlist');
+        const inspViz = document.getElementById('m7-inspector-viz');
+        const inspParticle = document.getElementById('m7-inspector-particle');
+        const inspFx = document.getElementById('m7-inspector-fx');
+        const inspOverlay = document.getElementById('m7-inspector-overlay');
+        const inspText = document.getElementById('m7-inspector-text');
+        const inspBranding = document.getElementById('m7-inspector-branding');
+        const inspBranding2 = document.getElementById('m7-inspector-branding2');
+        const inspBranding3 = document.getElementById('m7-inspector-branding3');
+        const inspThumbnail = document.getElementById('m7-inspector-thumbnail');
+        const tag = document.getElementById('m7-inspector-tag');
+
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspOverlay, inspText, inspBranding, inspBranding2, inspBranding3, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+        if (inspBranding2) {
+          inspBranding2.style.display = 'flex';
+          inspBranding2.style.setProperty('display', 'flex', 'important');
+        }
+
+        const boxNoSel = document.getElementById('box-branding2-no-selection');
+        const grpSubscribe = document.getElementById('grp-branding2-subscribe');
+        const grpTransform = document.getElementById('grp-branding2-transform');
+        const grpSource = document.getElementById('grp-branding2-source');
+        const grpSequence = document.getElementById('grp-branding2-sequence');
+
+        if (!obj) {
+          obj = { type: 'Logo', width: 360, height: 180, rotation: 0, opacity: 1.0, shapeMode: 'Original', uniformScale: false };
+        }
+
+        try {
+          if (boxNoSel) boxNoSel.style.display = 'none';
+          const isIntroOrOutro = (obj.type === 'Intro' || obj.type === 'Outro');
+          const isSubscribe = (obj.type === 'Subscribe Animation');
+
+          if (tag) {
+            if (isSubscribe) tag.innerText = 'SUBSCRIBE 2';
+            else if (obj.type === 'Intro') tag.innerText = 'INTRO 2';
+            else if (obj.type === 'Outro') tag.innerText = 'OUTRO 2';
+            else tag.innerText = 'BRANDING 2';
+          }
+
+          if (grpSubscribe) grpSubscribe.style.display = isSubscribe ? 'flex' : 'none';
+          if (grpTransform) grpTransform.style.display = isIntroOrOutro ? 'none' : 'flex';
+          if (grpSource) grpSource.style.display = isIntroOrOutro ? 'none' : 'flex';
+          if (grpSequence) grpSequence.style.display = isIntroOrOutro ? 'flex' : 'none';
+
+          if (!isIntroOrOutro) {
+            if (isSubscribe) {
+              const selInterval = document.getElementById('sel-branding2-interval');
+              if (selInterval) selInterval.value = obj.intervalMinutes !== undefined ? obj.intervalMinutes : 5;
+            }
+
+            const selShape = document.getElementById('sel-branding2-shapemode');
+            if (selShape) selShape.value = obj.shapeMode || 'Original';
+
+            const chkUniform = document.getElementById('chk-branding2-uniformscale');
+            if (chkUniform) chkUniform.checked = !!obj.uniformScale;
+
+            const sliderWidth = document.getElementById('slider-branding2-width');
+            const valWidth = document.getElementById('val-branding2-width');
+            const widthVal = obj.width !== undefined && !isNaN(obj.width) ? obj.width : 360;
+            if (sliderWidth) sliderWidth.value = widthVal;
+            if (valWidth) valWidth.innerText = `${widthVal}`;
+
+            const sliderHeight = document.getElementById('slider-branding2-height');
+            const valHeight = document.getElementById('val-branding2-height');
+            const heightVal = obj.height !== undefined && !isNaN(obj.height) ? obj.height : 180;
+            if (sliderHeight) sliderHeight.value = heightVal;
+            if (valHeight) valHeight.innerText = `${heightVal}`;
+
+            const sliderRot = document.getElementById('slider-branding2-rotation');
+            const valRot = document.getElementById('val-branding2-rotation');
+            const rotVal = obj.rotation !== undefined && !isNaN(obj.rotation) ? obj.rotation : 0;
+            if (sliderRot) sliderRot.value = rotVal;
+            if (valRot) valRot.innerText = `${rotVal}`;
+
+            const sliderOpacity = document.getElementById('slider-branding2-opacity');
+            const valOpacity = document.getElementById('val-branding2-opacity');
+            const opVal = obj.opacity !== undefined ? (obj.opacity > 1 ? Math.round(obj.opacity) : Math.round(obj.opacity * 100)) : 100;
+            if (sliderOpacity) sliderOpacity.value = opVal;
+            if (valOpacity) valOpacity.innerText = `${opVal}`;
+
+            const imgPrev = document.getElementById('img-branding2-preview');
+            const txtPrevEmpty = document.getElementById('txt-branding2-preview-empty');
+            if (obj.source) {
+              if (imgPrev) { imgPrev.src = obj.source; imgPrev.style.display = 'block'; }
+              if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+            } else {
+              if (imgPrev) { imgPrev.src = ''; imgPrev.style.display = 'none'; }
+              if (txtPrevEmpty) txtPrevEmpty.style.display = 'block';
+            }
+          } else {
+            const lblTitle = document.getElementById('lbl-branding2-seq-title');
+            const lblEnable = document.getElementById('lbl-branding2-seq-enable');
+            const lblStyle = document.getElementById('lbl-branding2-seq-style');
+            const lblDur = document.getElementById('lbl-branding2-seq-dur-label');
+
+            if (lblTitle) lblTitle.innerText = obj.type === 'Outro' ? 'OUTRO SEQUENCE 2 SETTINGS' : 'INTRO SEQUENCE 2 SETTINGS';
+            if (lblEnable) lblEnable.innerText = obj.type === 'Outro' ? 'Enable Outro' : 'Enable Intro';
+            if (lblStyle) lblStyle.innerText = obj.type === 'Outro' ? 'Outro Style' : 'Intro Style';
+            if (lblDur) lblDur.innerText = obj.type === 'Outro' ? 'Outro Duration' : 'Intro Duration';
+
+            const chkEnable = document.getElementById('chk-branding2-seq-enable');
+            if (chkEnable) chkEnable.checked = obj.visible !== false;
+
+            const currentStyle = obj.introStyle || (obj.type === 'Outro' ? 'Fade from Black' : 'Focus Pull (Blur)');
+            const selIntroStyle = document.getElementById('sel-branding2-introstyle');
+            if (selIntroStyle) selIntroStyle.value = currentStyle;
+
+            m7UpdateBranding2IntroStyle(currentStyle, false);
+
+            const selSeqDur = document.getElementById('sel-branding2-seq-dur');
+            if (selSeqDur) selSeqDur.value = obj.introDuration || '3s';
+
+            const sliderSingleIntensity = document.getElementById('slider-branding2-single-intensity');
+            const valSingleIntensity = document.getElementById('val-branding2-single-intensity');
+            if (sliderSingleIntensity) sliderSingleIntensity.value = obj.intensity || 40;
+            if (valSingleIntensity) valSingleIntensity.innerText = obj.intensity || 40;
+
+            const sliderBlur = document.getElementById('slider-branding2-blur');
+            const valBlur = document.getElementById('val-branding2-blur');
+            if (sliderBlur) sliderBlur.value = obj.intensity || 40;
+            if (valBlur) valBlur.innerText = obj.intensity || 40;
+
+            const sliderDark = document.getElementById('slider-branding2-dark');
+            const valDark = document.getElementById('val-branding2-dark');
+            if (sliderDark) sliderDark.value = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+            if (valDark) valDark.innerText = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+
+            const sliderBgDark = document.getElementById('slider-branding2-bgdark');
+            const valBgDark = document.getElementById('val-branding2-bgdark');
+            if (sliderBgDark) sliderBgDark.value = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+            if (valBgDark) valBgDark.innerText = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+
+            const sliderBgBlur = document.getElementById('slider-branding2-bgblur');
+            const valBgBlur = document.getElementById('val-branding2-bgblur');
+            if (sliderBgBlur) sliderBgBlur.value = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
+            if (valBgBlur) valBgBlur.innerText = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
+
+            const selTextTrans = document.getElementById('sel-branding2-texttrans');
+            if (selTextTrans) selTextTrans.value = obj.textTransition || 'Fade In/Out';
+
+            const selMainTrans = document.getElementById('sel-branding2-maintrans');
+            if (selMainTrans) selMainTrans.value = obj.mainTransition || 'Fade to Video';
+
+            const selParaCount = document.getElementById('sel-branding2-paracount');
+            if (selParaCount) selParaCount.value = obj.paragraphCount || 1;
+            m7UpdateBranding2ParaCount(obj.paragraphCount || 1, false);
+
+            const selParaDur = document.getElementById('sel-branding2-paradur');
+            if (selParaDur) selParaDur.value = obj.paragraphDuration || '5s';
+
+            const txtP1 = document.getElementById('txt-branding2-p1');
+            if (txtP1) txtP1.value = obj.introText1 || '';
+            const txtP2 = document.getElementById('txt-branding2-p2');
+            if (txtP2) txtP2.value = obj.introText2 || '';
+            const txtP3 = document.getElementById('txt-branding2-p3');
+            if (txtP3) txtP3.value = obj.introText3 || '';
+
+            const selFont = document.getElementById('sel-branding2-font');
+            if (selFont) selFont.value = obj.introFontFamily || 'Inter';
+
+            const sliderFontSize = document.getElementById('slider-branding2-fontsize');
+            const valFontSize = document.getElementById('val-branding2-fontsize');
+            if (sliderFontSize) sliderFontSize.value = obj.introFontSize || 32;
+            if (valFontSize) valFontSize.innerText = obj.introFontSize || 32;
+
+            const colTextColor = document.getElementById('col-branding2-textcolor');
+            if (colTextColor) colTextColor.value = obj.introTextColor || '#ffffff';
+
+            const selAlign = document.getElementById('sel-branding2-align');
+            if (selAlign) selAlign.value = obj.introTextAlign || 'center';
+          }
+        } catch(err) {
+          console.error('[M7 Sync Branding 2 Error]', err);
+        }
+      }
+
+      /* === 7c. BRANDING 3 MODULE (STUDIO SUITE 3) === */
+      function m7SelectOrAddBranding3Preset(type) {
+        const presetKey = type === 'Subscribe Animation' ? 'subscribe' : type.toLowerCase();
+        document.querySelectorAll('#m7-section-branding3 .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-branding3-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        const existingIdx = activeBranding3Objects.findIndex(o => o.type === type);
+        if (existingIdx >= 0) {
+          m7SelectBranding3Object(existingIdx);
+        } else {
+          m7AddBranding3Direct(type);
+        }
+      }
+
+      function m7AddBranding3Direct(type) {
+        let name = type;
+        if (type === 'Logo') name = 'Logo 3';
+        else if (type === 'Watermark') name = 'Watermark 3';
+        else if (type === 'Intro') name = 'Intro Sequence 3';
+        else if (type === 'Outro') name = 'Outro Sequence 3';
+        else if (type === 'Subscribe Animation') name = 'Subscribe Animation 3';
+
+        const isIntroOrOutro = (type === 'Intro' || type === 'Outro');
+
+        const newObj = {
+          id: 'branding3_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          name: name,
+          type: type,
+          isBranding3: true,
+          // Transform & Appearance
+          shapeMode: 'Original',
+          uniformScale: false,
+          width: 360,
+          height: 180,
+          rotation: 0,
+          x: type === 'Watermark' ? -320 : (type === 'Logo' ? -300 : 0),
+          y: type === 'Watermark' ? 180 : (type === 'Logo' ? 160 : (type === 'Subscribe Animation' ? -150 : 0)),
+          anchor: (type === 'Watermark' || type === 'Logo') ? 'Bottom Left' : (type === 'Subscribe Animation' ? 'Top Center' : 'Center'),
+          scale: type === 'Watermark' ? 80 : 100,
+          opacity: type === 'Watermark' ? 0.6 : 1.0,
+          // Subscribe Specific
+          intervalMinutes: 5,
+          subLabel: 'SUBSCRIBE',
+          // Intro & Outro Sequence Specific
+          introStyle: 'Paragraph (Text)',
+          intensity: 50,
+          darkIntensity: 100,
+          paragraphCount: 1,
+          paragraphDuration: '5s',
+          introText1: type === 'Intro' ? 'WELCOME TO THE OFFICIAL STREAM' : 'THANKS FOR WATCHING',
+          introText2: '',
+          introText3: '',
+          introFontFamily: 'Outfit',
+          introFontSize: 32,
+          introTextColor: '#ffffff',
+          introTextAlign: 'center',
+          // Media Asset
+          source: '',
+          imageElement: null,
+          canvas: null,
+          ctx: null,
+          display: null
+        };
+
+        if (!isIntroOrOutro) {
+          m7CreateBranding3Display(newObj);
+        }
+
+        activeBranding3Objects.push(newObj);
+        activeSelectedBranding3Index = activeBranding3Objects.length - 1;
+
+        m7RenderBranding3List();
+        m7SyncInspectorToBranding3(newObj);
+        m7IsGizmoSelected = !isIntroOrOutro;
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7SetBranding3Anchor(anchor) {
+        if (activeSelectedBranding3Index < 0 || !activeBranding3Objects[activeSelectedBranding3Index]) return;
+        const obj = activeBranding3Objects[activeSelectedBranding3Index];
+        obj.anchor = anchor;
+
+        let newX = 0, newY = 0;
+        if (anchor === 'Top Left') { newX = -320; newY = -210; }
+        else if (anchor === 'Top Center') { newX = 0; newY = -220; }
+        else if (anchor === 'Top Right') { newX = 320; newY = -210; }
+        else if (anchor === 'Middle Left') { newX = -320; newY = 0; }
+        else if (anchor === 'Center') { newX = 0; newY = 0; }
+        else if (anchor === 'Middle Right') { newX = 320; newY = 0; }
+        else if (anchor === 'Bottom Left') { newX = -320; newY = 210; }
+        else if (anchor === 'Bottom Center') { newX = 0; newY = 210; }
+        else if (anchor === 'Bottom Right') { newX = 320; newY = 210; }
+
+        obj.x = newX;
+        obj.y = newY;
+
+        const sliderX = document.getElementById('slider-branding3-posx');
+        const valX = document.getElementById('val-branding3-posx');
+        if (sliderX) sliderX.value = newX;
+        if (valX) valX.innerText = newX;
+
+        const sliderY = document.getElementById('slider-branding3-posy');
+        const valY = document.getElementById('val-branding3-posy');
+        if (sliderY) sliderY.value = newY;
+        if (valY) valY.innerText = newY;
+
+        if (obj.display) {
+          obj.display.update({ x: obj.x, y: obj.y });
+        }
+        m7DrawBranding3Canvas(obj);
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7CreateBranding3Display(obj) {
+        const scene = getOrCreateActiveScene();
+        if (!scene) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = obj.width || 360;
+        canvas.height = obj.height || 180;
+        const ctx = canvas.getContext('2d');
+
+        obj.canvas = canvas;
+        obj.ctx = ctx;
+
+        m7DrawBranding3Canvas(obj);
+
+        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
+          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
+          if (DisplayClass) {
+            try {
+              const display = new DisplayClass({
+                name: obj.name,
+                x: obj.x,
+                y: obj.y,
+                opacity: obj.opacity
+              });
+              display.canvas = canvas;
+              obj.display = display;
+              scene.addElement(display);
+              m7EnforceLayerOrder(scene);
+            } catch(e) {}
+          }
+        }
+      }
+
+      function m7SetBranding3ImageSource(obj, src) {
+        if (!obj) return;
+        obj.source = src;
+        const normalizedSrc = m7NormalizeMediaSrc(src);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          obj.imageElement = img;
+          m7DrawBranding3Canvas(obj);
+          if (activeSelectedBranding3Index >= 0 && activeBranding3Objects[activeSelectedBranding3Index] === obj) {
+            const imgPrev = document.getElementById('img-branding3-preview');
+            const txtPrevEmpty = document.getElementById('txt-branding3-preview-empty');
+            if (imgPrev) { imgPrev.src = normalizedSrc; imgPrev.style.display = 'block'; }
+            if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+          }
+          if (obj.display && obj.display.update) {
+            obj.display.update({ x: obj.x, y: obj.y });
+          }
+          m7UpdateGizmo();
+          m7ScheduleAutosave();
+        };
+        img.src = normalizedSrc;
+      }
+
+      function m7HandleBranding3FileUpload(input) {
+        if (!input.files || input.files.length === 0) return;
+        if (activeSelectedBranding3Index < 0 || !activeBranding3Objects[activeSelectedBranding3Index]) return;
+        const obj = activeBranding3Objects[activeSelectedBranding3Index];
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          m7SetBranding3ImageSource(obj, e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function m7DrawBranding3Canvas(obj) {
+        if (!obj || !obj.canvas) return;
+        const canvas = obj.canvas;
+        const w = obj.width || 360;
+        const h = obj.height || 180;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        const ctx = obj.ctx || canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.globalAlpha = obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0;
+
+        if (obj.rotation) {
+          ctx.translate(w / 2, h / 2);
+          ctx.rotate((obj.rotation * Math.PI) / 180);
+          ctx.translate(-w / 2, -h / 2);
+        }
+
+        // Shape Clipping
+        if (obj.shapeMode === 'Circle Mask') {
+          ctx.beginPath();
+          ctx.arc(w / 2, h / 2, Math.min(w, h) / 2 - 4, 0, Math.PI * 2);
+          ctx.clip();
+        } else if (obj.shapeMode === 'Rounded Card') {
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, 16);
+          ctx.clip();
+        } else if (obj.shapeMode === 'Squircle') {
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, 28);
+          ctx.clip();
+        }
+
+        if (obj.source && obj.imageElement && obj.imageElement.complete) {
+          const img = obj.imageElement;
+          let drawX = 0, drawY = 0, drawW = w, drawH = h;
+          if (obj.shapeMode === 'Original') {
+            const aspect = img.naturalWidth / img.naturalHeight;
+            if (w / h > aspect) {
+              drawW = h * aspect;
+              drawX = (w - drawW) / 2;
+            } else {
+              drawH = w / aspect;
+              drawY = (h - drawH) / 2;
+            }
+          }
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        } else {
+          if (obj.type === 'Logo') {
+            const col = '#10b981';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = col;
+            ctx.fillText('🛡️', w * 0.28, h / 2);
+
+            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('BRAND LOGO 3', w * 0.62, h / 2);
+          } else if (obj.type === 'Watermark') {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 10);
+            ctx.fill();
+
+            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.2)))}px "Segoe UI", Inter, monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillText('💧 © BRANDING 3', w / 2, h / 2);
+          } else if (obj.type === 'Subscribe Animation') {
+            const pillW = w - 20;
+            const pillH = h - 20;
+            const pillX = 10;
+            const pillY = 10;
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+            ctx.fill();
+
+            ctx.font = `bold ${Math.max(14, Math.min(26, Math.floor(pillH * 0.45)))}px sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('🔔', pillX + pillW * 0.1, pillY + pillH / 2);
+
+            ctx.font = `900 ${Math.max(12, Math.min(22, Math.floor(pillH * 0.38)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillText(obj.subLabel || 'SUBSCRIBE 3', pillX + pillW * 0.3, pillY + pillH / 2);
+          }
+        }
+
+        ctx.restore();
+
+        if (obj.display && obj.display.pass && obj.display.pass.texture) {
+          obj.display.pass.texture.needsUpdate = true;
+        }
+      }
+
+      function m7RenderBranding3List() {
+        const listEl = document.getElementById('m7-branding3-list');
+        const countEl = document.getElementById('m7-branding3-count');
+        if (countEl) countEl.innerText = activeBranding3Objects.length;
+        if (!listEl) return;
+
+        if (activeBranding3Objects.length === 0) {
+          listEl.innerHTML = `
+            <div id="m7-empty-branding3-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+              No branding 3 layers active. Choose an item above to add to screen.
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = '';
+        activeBranding3Objects.forEach((item, idx) => {
+          const isSelected = (idx === activeSelectedBranding3Index);
+          const row = document.createElement('div');
+          row.className = `m7-layer-item ${isSelected ? 'active' : ''}`;
+          row.onclick = () => {
+            m7SelectBranding3Object(idx);
+          };
+
+          const numStr = String(idx + 1).padStart(2, '0');
+          let icon = '🛡️';
+          if (item.type === 'Watermark') icon = '💧';
+          else if (item.type === 'Intro') icon = '🎬';
+          else if (item.type === 'Outro') icon = '🔚';
+          else if (item.type === 'Subscribe Animation') icon = '🔔';
+
+          row.innerHTML = `
+            <span class="m7-layer-remove" title="Remove Branding 3 Layer" onclick="event.stopPropagation(); m7RemoveBranding3Object(${idx})">✕</span>
+            <span style="color:#10b981; font-family:monospace; font-weight:800;">${numStr}</span>
+            <span>${icon}</span>
+            <span class="m7-layer-name">${item.name}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      function m7SelectBranding3Object(idx) {
+        if (idx < 0 || idx >= activeBranding3Objects.length) return;
+        activeSelectedBranding3Index = idx;
+        const item = activeBranding3Objects[idx];
+
+        const presetKey = item.type === 'Subscribe Animation' ? 'subscribe' : (item.type || 'logo').toLowerCase();
+        document.querySelectorAll('#m7-section-branding3 .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-branding3-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        const inspBranding3 = document.getElementById('m7-inspector-branding3');
+        if (inspBranding3) {
+          inspBranding3.style.display = 'flex';
+          inspBranding3.style.setProperty('display', 'flex', 'important');
+        }
+        m7RenderBranding3List();
+        m7SyncInspectorToBranding3(item);
+        m7IsGizmoSelected = (item.type !== 'Intro' && item.type !== 'Outro');
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7RemoveBranding3Object(idx) {
+        if (idx < 0 || idx >= activeBranding3Objects.length) return;
+        const removed = activeBranding3Objects.splice(idx, 1)[0];
+        const scene = getOrCreateActiveScene();
+        if (scene && removed && removed.display) {
+          scene.removeElement(removed.display);
+        }
+
+        if (activeBranding3Objects.length === 0) {
+          activeSelectedBranding3Index = -1;
+          m7IsGizmoSelected = false;
+        } else {
+          activeSelectedBranding3Index = Math.min(activeSelectedBranding3Index, activeBranding3Objects.length - 1);
+          if (activeSelectedBranding3Index < 0) activeSelectedBranding3Index = 0;
+        }
+
+        m7RenderBranding3List();
+        if (activeSelectedBranding3Index >= 0 && activeBranding3Objects[activeSelectedBranding3Index]) {
+          m7SyncInspectorToBranding3(activeBranding3Objects[activeSelectedBranding3Index]);
+        } else {
+          m7SyncInspectorToBranding3(null);
+        }
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7DeleteActiveBranding3() {
+        if (activeSelectedBranding3Index >= 0) {
+          m7RemoveBranding3Object(activeSelectedBranding3Index);
+        }
+      }
+
+      function m7UpdateBranding3Prop(prop, val) {
+        if (activeSelectedBranding3Index < 0 || !activeBranding3Objects[activeSelectedBranding3Index]) return;
+        const obj = activeBranding3Objects[activeSelectedBranding3Index];
+        obj[prop] = val;
+
+        if (prop === 'uniformScale') {
+          obj.uniformScale = !!val;
+        }
+        if (prop === 'width') {
+          const valEl = document.getElementById('val-branding3-width');
+          if (valEl) valEl.innerText = val;
+          if (obj.uniformScale) {
+            const aspect = (obj.height && obj.width) ? (obj.height / val) : 0.5;
+            obj.height = Math.max(10, Math.round(val * aspect));
+            const sliderH = document.getElementById('slider-branding3-height');
+            const valH = document.getElementById('val-branding3-height');
+            if (sliderH) sliderH.value = obj.height;
+            if (valH) valH.innerText = obj.height;
+          }
+        }
+        if (prop === 'height') {
+          const valEl = document.getElementById('val-branding3-height');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'rotation') {
+          const valEl = document.getElementById('val-branding3-rotation');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'opacity') {
+          const valEl = document.getElementById('val-branding3-opacity');
+          if (valEl) valEl.innerText = val;
+          obj.opacity = val / 100;
+        }
+        if (prop === 'intensity') {
+          const valEl = document.getElementById('val-branding3-blur');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'darkIntensity') {
+          const valEl = document.getElementById('val-branding3-dark');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'introFontSize') {
+          const valEl = document.getElementById('val-branding3-fontsize');
+          if (valEl) valEl.innerText = val;
+        }
+
+        if (obj.display) {
+          obj.display.update({ x: obj.x, y: obj.y, opacity: obj.opacity });
+        }
+        m7DrawBranding3Canvas(obj);
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7UpdateBranding3IntroStyle(style, updateObj = true) {
+        if (updateObj && activeSelectedBranding3Index >= 0 && activeBranding3Objects[activeSelectedBranding3Index]) {
+          activeBranding3Objects[activeSelectedBranding3Index].introStyle = style;
+        }
+
+        const grpBlurControls = document.getElementById('grp-branding3-blur-controls');
+        const grpParaControls = document.getElementById('grp-branding3-paragraph-controls');
+
+        if (style === 'Paragraph (Text)') {
+          if (grpBlurControls) grpBlurControls.style.display = 'none';
+          if (grpParaControls) grpParaControls.style.display = 'flex';
+        } else {
+          if (grpBlurControls) grpBlurControls.style.display = 'flex';
+          if (grpParaControls) grpParaControls.style.display = 'none';
+        }
+
+        if (updateObj) m7ScheduleAutosave();
+      }
+
+      function m7UpdateBranding3ParaCount(count, updateObj = true) {
+        if (updateObj && activeSelectedBranding3Index >= 0 && activeBranding3Objects[activeSelectedBranding3Index]) {
+          activeBranding3Objects[activeSelectedBranding3Index].paragraphCount = count;
+        }
+
+        const wrapP2 = document.getElementById('grp-branding3-p2-wrap');
+        const wrapP3 = document.getElementById('grp-branding3-p3-wrap');
+
+        if (wrapP2) wrapP2.style.display = count >= 2 ? 'flex' : 'none';
+        if (wrapP3) wrapP3.style.display = count >= 3 ? 'flex' : 'none';
+
+        if (updateObj) m7ScheduleAutosave();
+      }
+
+      function m7SyncInspectorToBranding3(obj) {
+        const inspBg = document.getElementById('m7-inspector-bg');
+        const inspPlaylist = document.getElementById('m7-inspector-playlist');
+        const inspViz = document.getElementById('m7-inspector-viz');
+        const inspParticle = document.getElementById('m7-inspector-particle');
+        const inspFx = document.getElementById('m7-inspector-fx');
+        const inspOverlay = document.getElementById('m7-inspector-overlay');
+        const inspText = document.getElementById('m7-inspector-text');
+        const inspBranding = document.getElementById('m7-inspector-branding');
+        const inspBranding2 = document.getElementById('m7-inspector-branding2');
+        const inspBranding3 = document.getElementById('m7-inspector-branding3');
+        const inspThumbnail = document.getElementById('m7-inspector-thumbnail');
+        const tag = document.getElementById('m7-inspector-tag');
+
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspOverlay, inspText, inspBranding, inspBranding2, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+        if (inspBranding3) {
+          inspBranding3.style.display = 'flex';
+          inspBranding3.style.setProperty('display', 'flex', 'important');
+        }
+
+        const boxNoSel = document.getElementById('box-branding3-no-selection');
+        const grpMatrix = document.getElementById('grp-branding3-matrix');
+        const grpTransform = document.getElementById('grp-branding3-transform');
+        const grpSubscribe = document.getElementById('grp-branding3-subscribe');
+        const grpSequence = document.getElementById('grp-branding3-sequence');
+        const grpSource = document.getElementById('grp-branding3-source');
+
+        if (!obj) {
+          obj = { type: 'Logo', width: 360, height: 180, rotation: 0, opacity: 1.0, shapeMode: 'Original', uniformScale: false };
+        }
+
+        try {
+          if (boxNoSel) boxNoSel.style.display = 'none';
+          const isIntroOrOutro = (obj.type === 'Intro' || obj.type === 'Outro');
+          const isSubscribe = (obj.type === 'Subscribe Animation');
+
+          if (tag) {
+            if (isSubscribe) tag.innerText = 'SUBSCRIBE 3';
+            else if (obj.type === 'Intro') tag.innerText = 'INTRO 3';
+            else if (obj.type === 'Outro') tag.innerText = 'OUTRO 3';
+            else tag.innerText = 'BRANDING 3';
+          }
+
+          if (grpMatrix) grpMatrix.style.display = isIntroOrOutro ? 'none' : 'flex';
+          if (grpTransform) grpTransform.style.display = isIntroOrOutro ? 'none' : 'flex';
+          if (grpSubscribe) grpSubscribe.style.display = isSubscribe ? 'flex' : 'none';
+          if (grpSequence) grpSequence.style.display = isIntroOrOutro ? 'flex' : 'none';
+          if (grpSource) grpSource.style.display = isIntroOrOutro ? 'none' : 'flex';
+
+          if (!isIntroOrOutro) {
+            // Subscribe Interval & Label
+            if (isSubscribe) {
+              const selInterval = document.getElementById('sel-branding3-interval');
+              if (selInterval) selInterval.value = obj.intervalMinutes !== undefined ? obj.intervalMinutes : 5;
+              const txtSubLabel = document.getElementById('txt-branding3-sublabel');
+              if (txtSubLabel) txtSubLabel.value = obj.subLabel || 'SUBSCRIBE';
+            }
+
+            // Transform & Shape
+            const selShape = document.getElementById('sel-branding3-shapemode');
+            if (selShape) selShape.value = obj.shapeMode || 'Original';
+
+            const chkUniform = document.getElementById('chk-branding3-uniformscale');
+            if (chkUniform) chkUniform.checked = !!obj.uniformScale;
+
+            const sliderWidth = document.getElementById('slider-branding3-width');
+            const valWidth = document.getElementById('val-branding3-width');
+            const widthVal = obj.width !== undefined && !isNaN(obj.width) ? obj.width : 360;
+            if (sliderWidth) sliderWidth.value = widthVal;
+            if (valWidth) valWidth.innerText = `${widthVal}`;
+
+            const sliderHeight = document.getElementById('slider-branding3-height');
+            const valHeight = document.getElementById('val-branding3-height');
+            const heightVal = obj.height !== undefined && !isNaN(obj.height) ? obj.height : 180;
+            if (sliderHeight) sliderHeight.value = heightVal;
+            if (valHeight) valHeight.innerText = `${heightVal}`;
+
+            const sliderPosX = document.getElementById('slider-branding3-posx');
+            const valPosX = document.getElementById('val-branding3-posx');
+            if (sliderPosX) sliderPosX.value = obj.x || 0;
+            if (valPosX) valPosX.innerText = `${obj.x || 0}`;
+
+            const sliderPosY = document.getElementById('slider-branding3-posy');
+            const valPosY = document.getElementById('val-branding3-posy');
+            if (sliderPosY) sliderPosY.value = obj.y || 0;
+            if (valPosY) valPosY.innerText = `${obj.y || 0}`;
+
+            const sliderRot = document.getElementById('slider-branding3-rotation');
+            const valRot = document.getElementById('val-branding3-rotation');
+            const rotVal = obj.rotation !== undefined && !isNaN(obj.rotation) ? obj.rotation : 0;
+            if (sliderRot) sliderRot.value = rotVal;
+            if (valRot) valRot.innerText = `${rotVal}`;
+
+            const sliderOpacity = document.getElementById('slider-branding3-opacity');
+            const valOpacity = document.getElementById('val-branding3-opacity');
+            const opVal = obj.opacity !== undefined ? (obj.opacity > 1 ? Math.round(obj.opacity) : Math.round(obj.opacity * 100)) : 100;
+            if (sliderOpacity) sliderOpacity.value = opVal;
+            if (valOpacity) valOpacity.innerText = `${opVal}`;
+
+            // Image & Media Preview
+            const imgPrev = document.getElementById('img-branding3-preview');
+            const txtPrevEmpty = document.getElementById('txt-branding3-preview-empty');
+            if (obj.source) {
+              if (imgPrev) { imgPrev.src = obj.source; imgPrev.style.display = 'block'; }
+              if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+            } else {
+              if (imgPrev) { imgPrev.src = ''; imgPrev.style.display = 'none'; }
+              if (txtPrevEmpty) txtPrevEmpty.style.display = 'block';
+            }
+          } else {
+            // Sequence Card for Intro / Outro
+            const lblTitle = document.getElementById('lbl-branding3-seq-title');
+            if (lblTitle) lblTitle.innerText = obj.type === 'Intro' ? '🎬 INTRO SEQUENCE 3' : '🔚 OUTRO SEQUENCE 3';
+
+            const selStyle = document.getElementById('sel-branding3-style');
+            if (selStyle) selStyle.value = obj.introStyle || 'Paragraph (Text)';
+            m7UpdateBranding3IntroStyle(obj.introStyle || 'Paragraph (Text)', false);
+
+            const sliderIntensity = document.getElementById('slider-branding3-blur');
+            const valIntensity = document.getElementById('val-branding3-blur');
+            if (sliderIntensity) sliderIntensity.value = obj.intensity !== undefined ? obj.intensity : 50;
+            if (valIntensity) valIntensity.innerText = obj.intensity !== undefined ? obj.intensity : 50;
+
+            const sliderDark = document.getElementById('slider-branding3-dark');
+            const valDark = document.getElementById('val-branding3-dark');
+            if (sliderDark) sliderDark.value = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+            if (valDark) valDark.innerText = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+
+            const selParaCount = document.getElementById('sel-branding3-paracount');
+            if (selParaCount) selParaCount.value = obj.paragraphCount || 1;
+            m7UpdateBranding3ParaCount(obj.paragraphCount || 1, false);
+
+            const selParaDur = document.getElementById('sel-branding3-paradur');
+            if (selParaDur) selParaDur.value = obj.paragraphDuration || '5s';
+
+            const txtP1 = document.getElementById('txt-branding3-p1');
+            if (txtP1) txtP1.value = obj.introText1 || '';
+            const txtP2 = document.getElementById('txt-branding3-p2');
+            if (txtP2) txtP2.value = obj.introText2 || '';
+            const txtP3 = document.getElementById('txt-branding3-p3');
+            if (txtP3) txtP3.value = obj.introText3 || '';
+
+            const selFont = document.getElementById('sel-branding3-font');
+            if (selFont) selFont.value = obj.introFontFamily || 'Outfit';
+
+            const sliderFontSize = document.getElementById('slider-branding3-fontsize');
+            const valFontSize = document.getElementById('val-branding3-fontsize');
+            if (sliderFontSize) sliderFontSize.value = obj.introFontSize || 32;
+            if (valFontSize) valFontSize.innerText = obj.introFontSize || 32;
+
+            const colTextColor = document.getElementById('col-branding3-textcolor');
+            if (colTextColor) colTextColor.value = obj.introTextColor || '#ffffff';
+
+            const selAlign = document.getElementById('sel-branding3-align');
+            if (selAlign) selAlign.value = obj.introTextAlign || 'center';
+          }
+        } catch(err) {
+          console.error('[M7 Sync Branding 3 Error]', err);
+        }
+      }
+
+      /* === 7d. BRANDING 4 MODULE (PARITY WITH PARTICLE ARCHITECTURE) === */
+      let activeBranding4Objects = [];
+      let activeSelectedBranding4Index = -1;
+
+      function m7SelectOrAddBranding4Preset(type) {
+        const presetKey = type === 'Subscribe Animation' ? 'subscribe' : type.toLowerCase();
+        document.querySelectorAll('#m7-section-branding4 .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-branding4-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        const existingIdx = activeBranding4Objects.findIndex(o => o.type === type);
+        if (existingIdx >= 0) {
+          m7SelectBranding4Object(existingIdx);
+        } else {
+          m7AddBranding4Direct(type);
+        }
+      }
+
+      function m7AddBranding4Direct(type) {
+        let name = type;
+        if (type === 'Logo') name = 'Logo 4';
+        else if (type === 'Watermark') name = 'Watermark 4';
+        else if (type === 'Intro') name = 'Intro Sequence 4';
+        else if (type === 'Outro') name = 'Outro Sequence 4';
+        else if (type === 'Subscribe Animation') name = 'Subscribe Animation 4';
+
+        const newObj = {
+          id: 'branding4_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          name: name,
+          type: type,
+          isBranding4: true,
+          shapeMode: 'Original',
+          uniformScale: false,
+          width: 360,
+          height: 180,
+          rotation: 0,
+          x: type === 'Watermark' ? -320 : (type === 'Logo' ? -300 : 0),
+          y: type === 'Watermark' ? 180 : (type === 'Logo' ? 160 : 0),
+          anchor: (type === 'Watermark' || type === 'Logo') ? 'Bottom Left' : 'Center',
+          scale: 100,
+          opacity: type === 'Watermark' ? 0.6 : 1.0,
+          source: '',
+          imageElement: null,
+          canvas: null,
+          ctx: null,
+          display: null
+        };
+
+        m7CreateBranding4Display(newObj);
+        activeBranding4Objects.push(newObj);
+        activeSelectedBranding4Index = activeBranding4Objects.length - 1;
+
+        m7RenderBranding4List();
+        m7SyncInspectorToBranding4(newObj);
+        m7IsGizmoSelected = true;
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7SelectBranding4Object(idx) {
+        if (idx < 0 || idx >= activeBranding4Objects.length) return;
+        activeSelectedBranding4Index = idx;
+        const item = activeBranding4Objects[idx];
+
+        const presetKey = item.type === 'Subscribe Animation' ? 'subscribe' : (item.type || 'logo').toLowerCase();
+        document.querySelectorAll('#m7-section-branding4 .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-branding4-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        m7RenderBranding4List();
+        m7SyncInspectorToBranding4(item);
+        m7IsGizmoSelected = true;
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7RenderBranding4List() {
+        const listEl = document.getElementById('m7-branding4-list');
+        const countEl = document.getElementById('m7-branding4-count');
+        if (countEl) countEl.innerText = activeBranding4Objects.length;
+        if (!listEl) return;
+
+        if (activeBranding4Objects.length === 0) {
+          listEl.innerHTML = `
+            <div id="m7-empty-branding4-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+              No branding 4 layers active. Choose an item above to add to screen.
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = '';
+        activeBranding4Objects.forEach((item, idx) => {
+          const isSelected = (idx === activeSelectedBranding4Index);
+          const row = document.createElement('div');
+          row.className = `m7-layer-item ${isSelected ? 'active' : ''}`;
+          row.onclick = () => {
+            m7SelectBranding4Object(idx);
+          };
+
+          const numStr = String(idx + 1).padStart(2, '0');
+          let icon = '🛡️';
+          if (item.type === 'Watermark') icon = '💧';
+          else if (item.type === 'Intro') icon = '🎬';
+          else if (item.type === 'Outro') icon = '🔚';
+          else if (item.type === 'Subscribe Animation') icon = '🔔';
+
+          row.innerHTML = `
+            <span class="m7-layer-remove" title="Remove Layer" onclick="event.stopPropagation(); m7RemoveBranding4Object(${idx})">✕</span>
+            <span style="color:#38bdf8; font-family:monospace; font-weight:800;">${numStr}</span>
+            <span>${icon}</span>
+            <span class="m7-layer-name">${item.name}</span>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+
+      function m7RemoveBranding4Object(idx) {
+        if (idx < 0 || idx >= activeBranding4Objects.length) return;
+        const removed = activeBranding4Objects.splice(idx, 1)[0];
+        const scene = getOrCreateActiveScene();
+        if (scene && removed && removed.display) {
+          scene.removeElement(removed.display);
+        }
+        if (activeBranding4Objects.length === 0) {
+          activeSelectedBranding4Index = -1;
+        } else {
+          activeSelectedBranding4Index = Math.min(activeSelectedBranding4Index, activeBranding4Objects.length - 1);
+          if (activeSelectedBranding4Index < 0) activeSelectedBranding4Index = 0;
+        }
+        m7RenderBranding4List();
+        if (activeSelectedBranding4Index >= 0 && activeBranding4Objects[activeSelectedBranding4Index]) {
+          m7SyncInspectorToBranding4(activeBranding4Objects[activeSelectedBranding4Index]);
+        } else {
+          m7SyncInspectorToBranding4(null);
+        }
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7DeleteActiveBranding4() {
+        if (activeSelectedBranding4Index >= 0) {
+          m7RemoveBranding4Object(activeSelectedBranding4Index);
+        }
+      }
+
+      function m7SyncInspectorToBranding4(obj) {
+        const inspBg = document.getElementById('m7-inspector-bg');
+        const inspPlaylist = document.getElementById('m7-inspector-playlist');
+        const inspViz = document.getElementById('m7-inspector-viz');
+        const inspParticle = document.getElementById('m7-inspector-particle');
+        const inspFx = document.getElementById('m7-inspector-fx');
+        const inspOverlay = document.getElementById('m7-inspector-overlay');
+        const inspText = document.getElementById('m7-inspector-text');
+        const inspBranding = document.getElementById('m7-inspector-branding');
+        const inspBranding2 = document.getElementById('m7-inspector-branding2');
+        const inspBranding3 = document.getElementById('m7-inspector-branding3');
+        const inspBranding4 = document.getElementById('m7-inspector-branding4');
+        const inspThumbnail = document.getElementById('m7-inspector-thumbnail');
+        const tag = document.getElementById('m7-inspector-tag');
+
+        [inspBg, inspPlaylist, inspViz, inspParticle, inspFx, inspOverlay, inspText, inspBranding, inspBranding2, inspBranding3, inspThumbnail].forEach(i => { if (i) i.style.display = 'none'; });
+        if (inspBranding4) {
+          inspBranding4.style.display = 'flex';
+        }
+        if (tag) tag.innerText = 'BRANDING 4';
+
+        if (!obj) {
+          obj = { type: 'Logo', width: 360, height: 180, rotation: 0, opacity: 1.0, shapeMode: 'Original', uniformScale: false };
+        }
+
+        const selShape = document.getElementById('sel-branding4-shapemode');
+        if (selShape) selShape.value = obj.shapeMode || 'Original';
+
+        const chkUniform = document.getElementById('chk-branding4-uniformscale');
+        if (chkUniform) chkUniform.checked = !!obj.uniformScale;
+
+        const sliderWidth = document.getElementById('slider-branding4-width');
+        const valWidth = document.getElementById('val-branding4-width');
+        const widthVal = obj.width !== undefined && !isNaN(obj.width) ? obj.width : 360;
+        if (sliderWidth) sliderWidth.value = widthVal;
+        if (valWidth) valWidth.innerText = `${widthVal}`;
+
+        const sliderHeight = document.getElementById('slider-branding4-height');
+        const valHeight = document.getElementById('val-branding4-height');
+        const heightVal = obj.height !== undefined && !isNaN(obj.height) ? obj.height : 180;
+        if (sliderHeight) sliderHeight.value = heightVal;
+        if (valHeight) valHeight.innerText = `${heightVal}`;
+
+        const sliderRot = document.getElementById('slider-branding4-rotation');
+        const valRot = document.getElementById('val-branding4-rotation');
+        const rotVal = obj.rotation !== undefined && !isNaN(obj.rotation) ? obj.rotation : 0;
+        if (sliderRot) sliderRot.value = rotVal;
+        if (valRot) valRot.innerText = `${rotVal}`;
+
+        const sliderOpacity = document.getElementById('slider-branding4-opacity');
+        const valOpacity = document.getElementById('val-branding4-opacity');
+        const opVal = obj.opacity !== undefined ? (obj.opacity > 1 ? Math.round(obj.opacity) : Math.round(obj.opacity * 100)) : 100;
+        if (sliderOpacity) sliderOpacity.value = opVal;
+        if (valOpacity) valOpacity.innerText = `${opVal}`;
+
+        const imgPrev = document.getElementById('img-branding4-preview');
+        const txtPrevEmpty = document.getElementById('txt-branding4-preview-empty');
+        if (obj.source) {
+          if (imgPrev) { imgPrev.src = obj.source; imgPrev.style.display = 'block'; }
+          if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+        } else {
+          if (imgPrev) { imgPrev.src = ''; imgPrev.style.display = 'none'; }
+          if (txtPrevEmpty) txtPrevEmpty.style.display = 'block';
+        }
+      }
+
+      function m7UpdateBranding4Prop(prop, val) {
+        if (activeSelectedBranding4Index < 0 || !activeBranding4Objects[activeSelectedBranding4Index]) return;
+        const obj = activeBranding4Objects[activeSelectedBranding4Index];
+        obj[prop] = val;
+
+        if (prop === 'uniformScale') obj.uniformScale = !!val;
+        if (prop === 'width') {
+          const valEl = document.getElementById('val-branding4-width');
+          if (valEl) valEl.innerText = val;
+          if (obj.uniformScale) {
+            const aspect = (obj.height && obj.width) ? (obj.height / val) : 0.5;
+            obj.height = Math.max(10, Math.round(val * aspect));
+            const sliderH = document.getElementById('slider-branding4-height');
+            const valH = document.getElementById('val-branding4-height');
+            if (sliderH) sliderH.value = obj.height;
+            if (valH) valH.innerText = obj.height;
+          }
+        }
+        if (prop === 'height') {
+          const valEl = document.getElementById('val-branding4-height');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'rotation') {
+          const valEl = document.getElementById('val-branding4-rotation');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'opacity') {
+          const valEl = document.getElementById('val-branding4-opacity');
+          if (valEl) valEl.innerText = val;
+          obj.opacity = val / 100;
+        }
+
+        if (obj.display) {
+          obj.display.update({ x: obj.x, y: obj.y, opacity: obj.opacity });
+        }
+        m7DrawBranding4Canvas(obj);
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7SetBranding4Anchor(anchor) {
+        if (activeSelectedBranding4Index < 0 || !activeBranding4Objects[activeSelectedBranding4Index]) return;
+        const obj = activeBranding4Objects[activeSelectedBranding4Index];
+        obj.anchor = anchor;
+
+        let newX = 0, newY = 0;
+        if (anchor === 'Top Left') { newX = -320; newY = -210; }
+        else if (anchor === 'Top Center') { newX = 0; newY = -220; }
+        else if (anchor === 'Top Right') { newX = 320; newY = -210; }
+        else if (anchor === 'Middle Left') { newX = -320; newY = 0; }
+        else if (anchor === 'Center') { newX = 0; newY = 0; }
+        else if (anchor === 'Middle Right') { newX = 320; newY = 0; }
+        else if (anchor === 'Bottom Left') { newX = -320; newY = 210; }
+        else if (anchor === 'Bottom Center') { newX = 0; newY = 210; }
+        else if (anchor === 'Bottom Right') { newX = 320; newY = 210; }
+
+        obj.x = newX;
+        obj.y = newY;
+
+        if (obj.display) {
+          obj.display.update({ x: obj.x, y: obj.y });
+        }
+        m7DrawBranding4Canvas(obj);
+        m7UpdateGizmo();
+        m7ScheduleAutosave();
+      }
+
+      function m7CreateBranding4Display(obj) {
+        const scene = getOrCreateActiveScene();
+        if (!scene) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = obj.width || 360;
+        canvas.height = obj.height || 180;
+        const ctx = canvas.getContext('2d');
+
+        obj.canvas = canvas;
+        obj.ctx = ctx;
+
+        m7DrawBranding4Canvas(obj);
+
+        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
+          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
+          if (DisplayClass) {
+            try {
+              const display = new DisplayClass({
+                name: obj.name,
+                x: obj.x,
+                y: obj.y,
+                opacity: obj.opacity
+              });
+              display.canvas = canvas;
+              obj.display = display;
+              scene.addElement(display);
+              m7EnforceLayerOrder(scene);
+            } catch(e) {}
+          }
+        }
+      }
+
+      function m7SetBranding4ImageSource(obj, src) {
+        if (!obj) return;
+        obj.source = src;
+        const normalizedSrc = m7NormalizeMediaSrc(src);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          obj.imageElement = img;
+          m7DrawBranding4Canvas(obj);
+          if (activeSelectedBranding4Index >= 0 && activeBranding4Objects[activeSelectedBranding4Index] === obj) {
+            const imgPrev = document.getElementById('img-branding4-preview');
+            const txtPrevEmpty = document.getElementById('txt-branding4-preview-empty');
+            if (imgPrev) { imgPrev.src = normalizedSrc; imgPrev.style.display = 'block'; }
+            if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+          }
+          if (obj.display && obj.display.update) {
+            obj.display.update({ x: obj.x, y: obj.y });
+          }
+          m7UpdateGizmo();
+          m7ScheduleAutosave();
+        };
+        img.src = normalizedSrc;
+      }
+
+      function m7HandleBranding4FileUpload(input) {
+        if (!input.files || input.files.length === 0) return;
+        if (activeSelectedBranding4Index < 0 || !activeBranding4Objects[activeSelectedBranding4Index]) return;
+        const obj = activeBranding4Objects[activeSelectedBranding4Index];
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          m7SetBranding4ImageSource(obj, e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function m7DrawBranding4Canvas(obj) {
+        if (!obj || !obj.canvas) return;
+        const canvas = obj.canvas;
+        const w = obj.width || 360;
+        const h = obj.height || 180;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        const ctx = obj.ctx || canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.globalAlpha = obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0;
+
+        if (obj.rotation) {
+          ctx.translate(w / 2, h / 2);
+          ctx.rotate((obj.rotation * Math.PI) / 180);
+          ctx.translate(-w / 2, -h / 2);
+        }
+
+        if (obj.shapeMode === 'Circle Mask') {
+          ctx.beginPath();
+          ctx.arc(w / 2, h / 2, Math.min(w, h) / 2 - 4, 0, Math.PI * 2);
+          ctx.clip();
+        } else if (obj.shapeMode === 'Rounded Card') {
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, 16);
+          ctx.clip();
+        } else if (obj.shapeMode === 'Squircle') {
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, 28);
+          ctx.clip();
+        }
+
+        if (obj.source && obj.imageElement && obj.imageElement.complete) {
+          const img = obj.imageElement;
+          let drawX = 0, drawY = 0, drawW = w, drawH = h;
+          if (obj.shapeMode === 'Original') {
+            const aspect = img.naturalWidth / img.naturalHeight;
+            if (w / h > aspect) {
+              drawW = h * aspect;
+              drawX = (w - drawW) / 2;
+            } else {
+              drawH = w / aspect;
+              drawY = (h - drawH) / 2;
+            }
+          }
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        } else {
+          const col = '#38bdf8';
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = col;
+          let icon = '🛡️';
+          if (obj.type === 'Watermark') icon = '💧';
+          else if (obj.type === 'Intro') icon = '🎬';
+          else if (obj.type === 'Outro') icon = '🔚';
+          else if (obj.type === 'Subscribe Animation') icon = '🔔';
+          ctx.fillText(icon, w * 0.28, h / 2);
+
+          ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(obj.name.toUpperCase(), w * 0.62, h / 2);
+        }
+
+        ctx.restore();
+
+        if (obj.display && obj.display.pass && obj.display.pass.texture) {
+          obj.display.pass.texture.needsUpdate = true;
+        }
+      }
+
       /* === 5c. OVERLAY MODULE (PROTOTYPE 01: CANDLE FLAME) === */
       let activeOverlayObjects = [];
       let activeSelectedOverlayIndex = -1;
@@ -8220,7 +10961,9 @@
           });
 
           scene.addElement(display);
+          display.update(obj);
           obj.display = display;
+          m7EnforceLayerOrder(scene);
         } catch(err) {
           console.error('[M7 Overlay Create Error]', err);
         }
@@ -9359,6 +12102,8 @@
           m7RemoveTextObject(activeSelectedTextIndex);
         } else if (activeCategory === 'branding' && activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex]) {
           m7RemoveBrandingObject(activeSelectedBrandingIndex);
+        } else if (activeCategory === 'branding2' && activeSelectedBranding2Index >= 0 && activeBranding2Objects[activeSelectedBranding2Index]) {
+          m7RemoveBranding2Object(activeSelectedBranding2Index);
         }
       }
 
@@ -9406,6 +12151,97 @@
               const valScale = document.getElementById('val-branding-scale');
               if (inScale) inScale.value = item.scale;
               if (valScale) valScale.innerText = `${item.scale}%`;
+            }
+          };
+        }
+
+        if (activeCategory === 'branding2' && activeBranding2Objects[activeSelectedBranding2Index]) {
+          const item = activeBranding2Objects[activeSelectedBranding2Index];
+          if (item.type === 'Intro' || item.type === 'Outro') return null;
+          const disp = item.display;
+
+          return {
+            type: 'branding2',
+            item: item,
+            display: disp,
+            name: item.name || 'Branding 2',
+            getX: () => (item.x || 0),
+            getY: () => (item.y || 0),
+            getW: () => Math.round(280 * ((item.scale || 100) / 100)),
+            getH: () => Math.round(120 * ((item.scale || 100) / 100)),
+            getShadowH: () => 0,
+            getFontSize: () => item.scale || 100,
+            setPos: (x, y) => {
+              item.x = Math.round(x);
+              item.y = Math.round(y);
+              if (disp) disp.update({ x: item.x, y: item.y });
+            },
+            setFontSize: (newScale) => {
+              item.scale = Math.max(10, Math.min(200, Math.round(newScale)));
+              m7DrawBranding2Canvas(item);
+            }
+          };
+        }
+
+        if (activeCategory === 'branding3' && activeBranding3Objects[activeSelectedBranding3Index]) {
+          const item = activeBranding3Objects[activeSelectedBranding3Index];
+          if (item.type === 'Intro' || item.type === 'Outro') return null;
+          const disp = item.display;
+
+          return {
+            type: 'branding3',
+            item: item,
+            display: disp,
+            name: item.name || 'Branding 3',
+            getX: () => (item.x || 0),
+            getY: () => (item.y || 0),
+            getW: () => Math.round((item.width || 360) * ((item.scale || 100) / 100)),
+            getH: () => Math.round((item.height || 180) * ((item.scale || 100) / 100)),
+            getShadowH: () => 0,
+            getFontSize: () => item.scale || 100,
+            setPos: (x, y) => {
+              item.x = Math.round(x);
+              item.y = Math.round(y);
+              if (disp) disp.update({ x: item.x, y: item.y });
+              const inX = document.getElementById('slider-branding3-posx');
+              const inY = document.getElementById('slider-branding3-posy');
+              const valX = document.getElementById('val-branding3-posx');
+              const valY = document.getElementById('val-branding3-posy');
+              if (inX) inX.value = item.x;
+              if (inY) inY.value = item.y;
+              if (valX) valX.innerText = item.x;
+              if (valY) valY.innerText = item.y;
+            },
+            setFontSize: (newScale) => {
+              item.scale = Math.max(10, Math.min(300, Math.round(newScale)));
+              m7DrawBranding3Canvas(item);
+            }
+          };
+        }
+
+        if (activeCategory === 'branding4' && activeBranding4Objects[activeSelectedBranding4Index]) {
+          const item = activeBranding4Objects[activeSelectedBranding4Index];
+          const disp = item.display;
+
+          return {
+            type: 'branding4',
+            item: item,
+            display: disp,
+            name: item.name || 'Branding 4',
+            getX: () => (item.x || 0),
+            getY: () => (item.y || 0),
+            getW: () => Math.round((item.width || 360) * ((item.scale || 100) / 100)),
+            getH: () => Math.round((item.height || 180) * ((item.scale || 100) / 100)),
+            getShadowH: () => 0,
+            getFontSize: () => item.scale || 100,
+            setPos: (x, y) => {
+              item.x = Math.round(x);
+              item.y = Math.round(y);
+              if (disp) disp.update({ x: item.x, y: item.y });
+            },
+            setFontSize: (newScale) => {
+              item.scale = Math.max(10, Math.min(300, Math.round(newScale)));
+              m7DrawBranding4Canvas(item);
             }
           };
         }
@@ -10203,6 +13039,45 @@
               introTextAlign: b.introTextAlign
             })),
             activeSelectedBrandingIndex: activeSelectedBrandingIndex,
+            activeBranding2Objects: activeBranding2Objects.map(b => ({
+              id: b.id,
+              name: b.name,
+              type: b.type,
+              source: b.source,
+              x: b.x,
+              y: b.y,
+              position: b.position,
+              scale: b.scale,
+              opacity: b.opacity,
+              shadow: b.shadow,
+              brandColor: b.brandColor,
+              animationType: b.animationType,
+              animationIntensity: b.animationIntensity,
+              visible: b.visible,
+              introStyle: b.introStyle,
+              introDuration: b.introDuration,
+              intensity: b.intensity,
+              darkIntensity: b.darkIntensity,
+              blurIntensity: b.blurIntensity,
+              textTransition: b.textTransition,
+              mainTransition: b.mainTransition,
+              paragraphCount: b.paragraphCount,
+              paragraphDuration: b.paragraphDuration,
+              introText1: b.introText1,
+              introText2: b.introText2,
+              introText3: b.introText3,
+              introFontFamily: b.introFontFamily,
+              introFontSize: b.introFontSize,
+              introTextColor: b.introTextColor,
+              introTextAlign: b.introTextAlign,
+              shapeMode: b.shapeMode,
+              uniformScale: b.uniformScale,
+              width: b.width,
+              height: b.height,
+              rotation: b.rotation,
+              intervalMinutes: b.intervalMinutes
+            })),
+            activeSelectedBranding2Index: activeSelectedBranding2Index,
             activeThumbnailObjects: activeThumbnailObjects.map(t => ({ ...t })),
             activeSelectedThumbnailIndex: activeSelectedThumbnailIndex,
             thumbBgState: {
@@ -10333,8 +13208,8 @@
                   if (sRes.ok) trackBuffer = await sRes.arrayBuffer();
                 } catch(e) {}
               }
-              if (!trackBuffer) {
-                trackBuffer = await m7GetAudioFromDB(trk.id || trk.name);
+              if (!trackBuffer && typeof m7GetAudioFromDB === 'function') {
+                try { trackBuffer = await m7GetAudioFromDB(trk.id || trk.name); } catch(e) {}
               }
               playlistTracks.push({
                 id: trk.id || ('trk_' + Date.now() + '_' + i),
@@ -10503,16 +13378,62 @@
             }
           }
 
+          // 8b. Restore Branding 2 Objects
+          if (savedState.activeBranding2Objects && Array.isArray(savedState.activeBranding2Objects) && savedState.activeBranding2Objects.length > 0) {
+            activeBranding2Objects = [];
+            for (let i = 0; i < savedState.activeBranding2Objects.length; i++) {
+              const b = savedState.activeBranding2Objects[i];
+              const obj = { ...b, isBranding2: true };
+              if (obj.type !== 'Intro' && obj.type !== 'Outro') {
+                m7CreateBranding2Display(obj);
+                if (obj.source) {
+                  m7SetBranding2ImageSource(obj, obj.source);
+                }
+              }
+              activeBranding2Objects.push(obj);
+            }
+            activeSelectedBranding2Index = (savedState.activeSelectedBranding2Index >= 0 && savedState.activeSelectedBranding2Index < activeBranding2Objects.length)
+              ? savedState.activeSelectedBranding2Index
+              : 0;
+            m7RenderBranding2List();
+            if (activeBranding2Objects[activeSelectedBranding2Index]) {
+              m7SyncInspectorToBranding2(activeBranding2Objects[activeSelectedBranding2Index]);
+            }
+          }
+
+          // 8c. Restore Branding 4 Objects
+          if (savedState.activeBranding4Objects && Array.isArray(savedState.activeBranding4Objects) && savedState.activeBranding4Objects.length > 0) {
+            activeBranding4Objects = [];
+            for (let i = 0; i < savedState.activeBranding4Objects.length; i++) {
+              const b = savedState.activeBranding4Objects[i];
+              const obj = { ...b, isBranding4: true };
+              m7CreateBranding4Display(obj);
+              if (obj.source) {
+                m7SetBranding4ImageSource(obj, obj.source);
+              }
+              activeBranding4Objects.push(obj);
+            }
+            activeSelectedBranding4Index = (savedState.activeSelectedBranding4Index >= 0 && savedState.activeSelectedBranding4Index < activeBranding4Objects.length)
+              ? savedState.activeSelectedBranding4Index
+              : 0;
+            m7RenderBranding4List();
+            if (activeBranding4Objects[activeSelectedBranding4Index]) {
+              m7SyncInspectorToBranding4(activeBranding4Objects[activeSelectedBranding4Index]);
+            }
+          }
+
           // 8b. Restore Thumbnail Studio State
           if (savedState.thumbBgState) {
             thumbBgState = { ...thumbBgState, ...savedState.thumbBgState };
             if (thumbBgState.type === 'image' && thumbBgState.src) {
+              const normalizedSrc = m7NormalizeMediaSrc(thumbBgState.src);
               const img = new Image();
+              img.crossOrigin = 'anonymous';
               img.onload = () => {
                 thumbBgState.imageElement = img;
                 if (activeCategory === 'thumbnail') m7DrawThumbnailCanvas();
               };
-              img.src = thumbBgState.src;
+              img.src = normalizedSrc;
             }
           }
           if (savedState.activeThumbnailObjects && Array.isArray(savedState.activeThumbnailObjects) && savedState.activeThumbnailObjects.length > 0) {

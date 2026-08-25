@@ -28,10 +28,8 @@ import {
   Vector3,
   AdditiveBlending,
   NormalBlending,
-  CustomBlending,
-  AddEquation,
-  SrcAlphaFactor,
-  OneFactor,
+  Scene,
+  PerspectiveCamera,
 } from 'three';
 import WebGLDisplay from 'core/WebGLDisplay';
 
@@ -213,6 +211,30 @@ export default class CandleFlameDisplay extends WebGLDisplay {
     this.group = this.mesh;
   }
 
+  addToScene({ getSize }) {
+    const size = getSize ? getSize() : { width: 1920, height: 1080 };
+    const width = size.width || 1920;
+    const height = size.height || 1080;
+
+    const scene = new Scene();
+    const camera = new PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(0, 0, 100);
+
+    if (this.mesh) {
+      scene.add(this.mesh);
+    }
+
+    this._scene = scene;
+    this.camera = camera;
+  }
+
+  setSize(width, height) {
+    if (this.camera) {
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
   update(properties = {}) {
     super.update(properties);
 
@@ -249,8 +271,9 @@ export default class CandleFlameDisplay extends WebGLDisplay {
       const scalePct = properties.scale !== undefined ? Number(properties.scale) : (this.properties.scale || 100);
       const rotDeg = properties.rotation !== undefined ? Number(properties.rotation) : (this.properties.rotation || 0);
 
-      // Astrofox standard WebGL camera coordinate scaling (1920x1080 stage mapping)
-      this.mesh.position.set(posX * 0.55, -posY * 0.55, 0);
+      // Frustum height at z=100 with FOV 45 is ~82.84
+      const to3D = 82.84 / 1080.0;
+      this.mesh.position.set(posX * to3D, -posY * to3D, 0);
       const s = (scalePct / 100.0) * 1.5;
       this.mesh.scale.set(s, s, s);
       this.mesh.rotation.z = -(rotDeg * Math.PI) / 180.0;
@@ -263,15 +286,14 @@ export default class CandleFlameDisplay extends WebGLDisplay {
 
   /**
    * Deterministic render frame callback.
-   * Uses frameData.delta for exact time tracking across preview & offline render.
+   * Uses data.delta for exact time tracking across preview & offline render.
    */
-  render(renderer) {
+  render(scene, data) {
     if (!this.mesh || !this.mesh.visible || !this.properties.enabled) {
       return;
     }
 
-    const frameData = renderer && renderer.frameData;
-    const deltaMs = (frameData && frameData.delta > 0) ? frameData.delta : 16.666;
+    const deltaMs = (data && data.delta > 0) ? data.delta : 16.666;
     const speed = this.properties.speed !== undefined ? Number(this.properties.speed) : 1.0;
 
     // Deterministic timeline accumulation
@@ -280,12 +302,19 @@ export default class CandleFlameDisplay extends WebGLDisplay {
     if (this.uniforms) {
       this.uniforms.t.value = this.time;
     }
+
+    if (scene && scene.renderToScene && this._scene && this.camera) {
+      scene.renderToScene(this._scene, this.camera);
+    }
   }
 
   dispose() {
     if (this.mesh) {
       if (this.mesh.geometry) this.mesh.geometry.dispose();
       if (this.material) this.material.dispose();
+    }
+    if (this._scene && this.mesh) {
+      this._scene.remove(this.mesh);
     }
   }
 }

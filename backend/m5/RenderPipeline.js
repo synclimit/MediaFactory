@@ -450,8 +450,8 @@ class RenderPipeline {
         let boxHeight = layout.boxHeight ? Math.round(layout.boxHeight * scale * actualBoxScale) : requiredContentHeight;
         
         // Translation calculation from UI boxPos
-        const uiBoxX = (layout.boxPos?.x || 0) * scale;
-        const uiBoxY = (layout.boxPos?.y || 0) * scale;
+        const uiBoxX = (layout.boxPos?.x || manifest.boxPos?.x || 0) * scale;
+        const uiBoxY = (layout.boxPos?.y || manifest.boxPos?.y || 0) * scale;
         
         // Base boxX centers the 85% box. 
         let boxX = Math.round((1080 - boxWidth) / 2) + uiBoxX;

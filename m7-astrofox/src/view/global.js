@@ -9,8 +9,39 @@ import SpectrumAnalyzer from 'audio/SpectrumAnalyzer';
 import VideoRenderer from 'video/VideoRenderer';
 import { SAMPLE_RATE } from './constants';
 
-export const api = window.__ASTROFOX__;
-export const env = api ? api.getEnvironment() : {};
+const defaultEnv = {
+  FFMPEG_BINARY: 'ffmpeg',
+  TEMP_PATH: 'D:\\MediaFactory\\Output\\Temp',
+  APP_NAME: 'Astrofox',
+  APP_VERSION: '1.4.0',
+  PLUGIN_PATH: ''
+};
+
+export const api = window.__ASTROFOX__ || {
+  getEnvironment: () => defaultEnv,
+  getPlugins: () => ({}),
+  on: () => {},
+  off: () => {},
+  invoke: async () => ({}),
+  spawnProcess: () => ({ stop: () => {}, push: () => {}, end: () => {} }),
+  loadConfig: async () => ({}),
+  saveConfig: async () => ({}),
+  loadAudioTags: async () => ({}),
+  readAudioFile: async () => ({}),
+  readImageFile: async () => ({}),
+  saveImageFile: async () => ({}),
+  loadProjectFile: async () => ({}),
+  saveProjectFile: async () => ({}),
+  showOpenDialog: async () => ({ filePaths: [], canceled: true }),
+  showSaveDialog: async () => ({ filePath: '', canceled: true }),
+  openDevTools: () => {},
+  minimizeWindow: () => {},
+  maximizeWindow: () => {},
+  unmaximizeWindow: () => {},
+  closeWindow: () => {},
+  getWindowState: () => ({ isMaximized: false, isMinimized: false, isFullScreen: false })
+};
+export const env = (api && typeof api.getEnvironment === 'function') ? api.getEnvironment() : defaultEnv;
 export const audioContext = new window.AudioContext({ sampleRate: SAMPLE_RATE });
 export const logger = new Logger('astrofox');
 export const events = new EventEmitter();

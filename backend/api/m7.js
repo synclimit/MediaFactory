@@ -440,10 +440,25 @@ router.get('/api/m7/audio-stream', (req, res) => {
       res.writeHead(200, head);
       fs.createReadStream(targetPath).pipe(res);
     }
+// Media File Streaming Endpoint for M7 Images/Videos
+router.get('/api/m7/media-file', (req, res) => {
+  try {
+    let targetPath = req.query.path;
+    if (!targetPath) return res.status(400).send('Missing path parameter');
+    targetPath = decodeURIComponent(targetPath).replace(/^file:\/\/\/?/, '');
+    if (process.platform === 'win32') {
+      targetPath = targetPath.replace(/\//g, '\\');
+    }
+    if (!fs.existsSync(targetPath)) {
+      return res.status(404).send('File not found: ' + targetPath);
+    }
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.resolve(targetPath));
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
+
 
 // Fetch YouTube Audio Tracks
 router.post('/api/m7/youtube-fetch', async (req, res) => {
