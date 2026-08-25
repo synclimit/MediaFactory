@@ -45,12 +45,6 @@ export default defineConfig({
   },
   build: {
     emptyOutDir: true,
-    assetsDir: 'app-assets',
-    rollupOptions: {
-      external: ['canvaskit-wasm']
-    },
-    rolldownOptions: {
-      external: ['canvaskit-wasm']
-    }
+    assetsDir: 'app-assets'
   }
 })

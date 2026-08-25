@@ -531,6 +531,41 @@ class WorkspaceService {
             }
         }
 
+        if (workspaces.length === 0) {
+            try {
+                const defaultFolder = path.join(this.basePath, 'Test 1');
+                const subDirs = ['Projects', 'Config', 'Assets', 'Output', 'Logs', 'Runtime', 'Cache'];
+                subDirs.forEach(sub => {
+                    const p = path.join(defaultFolder, sub);
+                    if (!fsSync.existsSync(p)) fsSync.mkdirSync(p, { recursive: true });
+                });
+                const manifestPath = path.join(defaultFolder, 'workspace.manifest.json');
+                if (!fsSync.existsSync(manifestPath)) {
+                    fsSync.writeFileSync(manifestPath, JSON.stringify({
+                        data: {
+                            workspaceId: require('crypto').randomUUID(),
+                            name: 'Test 1',
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        }
+                    }, null, 2));
+                }
+                workspaces.push({
+                    name: 'Test 1',
+                    folderName: 'Test 1',
+                    thumbnail: null,
+                    lastOpened: Date.now(),
+                    totalProjects: 0,
+                    lastRender: null,
+                    renderCount: 0,
+                    storageSizeGB: '0.00 GB',
+                    isActive: true
+                });
+            } catch (e) {
+                console.error('[WorkspaceService] Failed to auto-create default workspace:', e);
+            }
+        }
+
         return workspaces;
     }
 

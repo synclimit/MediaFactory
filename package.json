@@ -92,6 +92,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "adm-zip": "^0.5.16",
     "axios": "^1.18.1",
+    "canvaskit-wasm": "^0.42.0",
     "cors": "^2.8.6",
     "electron-updater": "^6.8.9",
     "express": "^5.2.1",
