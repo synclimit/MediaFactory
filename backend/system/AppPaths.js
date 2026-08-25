@@ -112,15 +112,19 @@ class AppPaths {
     getFFmpegPath() {
         const candidatePaths = [
             process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffmpeg.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin', 'ffmpeg.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'ffmpeg.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'ffmpeg.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'ffmpeg.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin', 'ffmpeg.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'ffmpeg', 'ffmpeg.exe') : '',
             path.join(__dirname, '..', 'bin', 'ffmpeg.exe'),
             path.join(__dirname, '..', 'ffmpeg', 'ffmpeg.exe'),
             path.join(__dirname, '..', '..', 'backend', 'bin', 'ffmpeg.exe'),
             path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'ffmpeg.exe'),
             path.join(process.cwd(), 'backend', 'bin', 'ffmpeg.exe'),
-            path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe')
+            path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe'),
+            path.join(process.cwd(), 'bin', 'ffmpeg.exe')
         ];
         for (const p of candidatePaths) {
             if (p && fs.existsSync(p)) return p;
@@ -131,15 +135,19 @@ class AppPaths {
     getFFprobePath() {
         const candidatePaths = [
             process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffprobe.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin', 'ffprobe.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'ffprobe.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'ffprobe.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'ffprobe.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin', 'ffprobe.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'ffmpeg', 'ffprobe.exe') : '',
             path.join(__dirname, '..', 'bin', 'ffprobe.exe'),
             path.join(__dirname, '..', 'ffmpeg', 'ffprobe.exe'),
             path.join(__dirname, '..', '..', 'backend', 'bin', 'ffprobe.exe'),
             path.join(__dirname, '..', '..', 'backend', 'ffmpeg', 'ffprobe.exe'),
             path.join(process.cwd(), 'backend', 'bin', 'ffprobe.exe'),
-            path.join(process.cwd(), 'backend', 'ffmpeg', 'ffprobe.exe')
+            path.join(process.cwd(), 'backend', 'ffmpeg', 'ffprobe.exe'),
+            path.join(process.cwd(), 'bin', 'ffprobe.exe')
         ];
         for (const p of candidatePaths) {
             if (p && fs.existsSync(p)) return p;
@@ -149,19 +157,32 @@ class AppPaths {
 
     getFFmpegDir() {
         const ffmpegPath = this.getFFmpegPath();
-        if (ffmpegPath && fs.existsSync(ffmpegPath)) {
+        if (ffmpegPath && ffmpegPath !== 'ffmpeg' && fs.existsSync(ffmpegPath)) {
             return path.dirname(ffmpegPath);
         }
-        const defaultDir = path.join(process.cwd(), 'backend', 'bin');
-        if (fs.existsSync(defaultDir)) return defaultDir;
+        const candidateDirs = [
+            process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'bin') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin') : '',
+            path.join(process.cwd(), 'backend', 'bin'),
+            path.join(process.cwd(), 'bin')
+        ];
+        for (const d of candidateDirs) {
+            if (d && fs.existsSync(d)) return d;
+        }
         return process.cwd();
     }
 
     getYtDlpPath() {
         const candidatePaths = [
             process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'yt-dlp.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin', 'yt-dlp.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'yt-dlp.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'ffmpeg', 'yt-dlp.exe') : '',
             process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'yt-dlp.exe') : '',
+            process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin', 'yt-dlp.exe') : '',
             path.join(__dirname, '..', 'bin', 'yt-dlp.exe'),
             path.join(__dirname, '..', 'ffmpeg', 'yt-dlp.exe'),
             path.join(__dirname, '..', '..', 'backend', 'bin', 'yt-dlp.exe'),

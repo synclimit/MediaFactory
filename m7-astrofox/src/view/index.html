@@ -2311,68 +2311,75 @@
           </div>
         </div>
 
-        <!-- 4b. PARTICLE 2 SECTION (CLONED FROM PARTICLE ARCHITECTURE) -->
+        <!-- 4b. PARTICLE 2 SECTION (LOGO, WATERMARK, INTRO, OUTRO, SUBSCRIBE) -->
         <div id="m7-section-particle2" style="display:none; flex-direction:column; gap:12px;">
           <div class="m7-panel-header">
             <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span>
             <span>PARTICLE 2</span>
           </div>
 
-          <div class="m7-type-tabs">
-            <button class="m7-type-tab active" id="tab-particle2-systems" onclick="m7SetParticle2SubTab('systems')">✨ PARTICLES 2</button>
-            <button class="m7-type-tab" id="tab-particle2-presets" onclick="m7SetParticle2SubTab('presets')">📄 PRESETS</button>
-          </div>
-
-          <!-- 1. SYSTEMS VIEW -->
-          <div id="m7-particle2-systems-view" style="display:flex; flex-direction:column; gap:12px;">
-            <button class="m7-folder-btn" onclick="m7AddParticle2System()" style="padding:12px; font-size:12px; font-weight:900; letter-spacing:0.6px; text-transform:uppercase; border-color:rgba(245,158,11,0.4); background:linear-gradient(135deg, rgba(245,158,11,0.15), rgba(217,119,6,0.25));">
-              <span style="color:#f59e0b;">+ ADD SYSTEM 2</span>
-            </button>
-
-            <div class="m7-section-title-badge">
-              <span>ACTIVE SYSTEMS 2</span>
-              <span class="m7-badge-num" id="m7-particle2-count" style="background:#f59e0b;">0</span>
+          <!-- 5 Presets: Logo, Watermark, Intro, Outro, Subscribe -->
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <!-- 1. Logo -->
+            <div class="m7-text-obj-card" id="card-particle2-logo" onclick="m7SelectOrAddParticle2Preset('Logo')">
+              <div class="m7-text-obj-icon" style="background:rgba(245,158,11,0.15); border-color:rgba(245,158,11,0.3); color:#f59e0b;">🛡️</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Logo</div>
+                <div class="m7-text-obj-desc">Brand logo image overlay (Corner / Center)</div>
+              </div>
+              <span class="m7-add-plus" style="color:#f59e0b;">+</span>
             </div>
 
-            <div id="m7-particle2-list" style="display:flex; flex-direction:column; gap:6px;">
-              <div id="m7-empty-particle2-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:24px 12px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
-                No particle 2 systems active.
+            <!-- 2. Watermark -->
+            <div class="m7-text-obj-card" id="card-particle2-watermark" onclick="m7SelectOrAddParticle2Preset('Watermark')">
+              <div class="m7-text-obj-icon" style="background:rgba(14,165,233,0.15); border-color:rgba(14,165,233,0.3); color:#0ea5e9;">💧</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Watermark</div>
+                <div class="m7-text-obj-desc">Semi-transparent channel protection mark</div>
               </div>
+              <span class="m7-add-plus" style="color:#0ea5e9;">+</span>
+            </div>
+
+            <!-- 3. Intro -->
+            <div class="m7-text-obj-card" id="card-particle2-intro" onclick="m7SelectOrAddParticle2Preset('Intro')">
+              <div class="m7-text-obj-icon" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.3); color:#ef4444;">🎬</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Intro Sequence</div>
+                <div class="m7-text-obj-desc">Cinematic video opening & story paragraphs</div>
+              </div>
+              <span class="m7-add-plus" style="color:#ef4444;">+</span>
+            </div>
+
+            <!-- 4. Outro -->
+            <div class="m7-text-obj-card" id="card-particle2-outro" onclick="m7SelectOrAddParticle2Preset('Outro')">
+              <div class="m7-text-obj-icon" style="background:rgba(168,85,247,0.15); border-color:rgba(168,85,247,0.3); color:#a855f7;">🔚</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Outro Sequence</div>
+                <div class="m7-text-obj-desc">Closing sequence & end screen cards</div>
+              </div>
+              <span class="m7-add-plus" style="color:#a855f7;">+</span>
+            </div>
+
+            <!-- 5. Subscribe -->
+            <div class="m7-text-obj-card" id="card-particle2-subscribe" onclick="m7SelectOrAddParticle2Preset('Subscribe')">
+              <div class="m7-text-obj-icon" style="background:rgba(234,179,8,0.15); border-color:rgba(234,179,8,0.3); color:#eab308;">🔔</div>
+              <div class="m7-text-obj-info">
+                <div class="m7-text-obj-title">Subscribe Animation</div>
+                <div class="m7-text-obj-desc">Animated social subscribe & bell widget</div>
+              </div>
+              <span class="m7-add-plus" style="color:#eab308;">+</span>
             </div>
           </div>
 
-          <!-- 2. PRESETS VIEW -->
-          <div id="m7-particle2-presets-view" style="display:none; flex-direction:column; gap:8px;">
-            <div class="m7-viz-model-grid">
-              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('floating_dust')">
-                <span class="m7-viz-model-badge">PRESET</span>
-                <div class="m7-viz-model-icon">✨</div>
-                <div class="m7-viz-model-name">Floating Dust 2</div>
-              </div>
-              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('neon_rain')">
-                <span class="m7-viz-model-badge">PRESET</span>
-                <div class="m7-viz-model-icon">🌧️</div>
-                <div class="m7-viz-model-name">Neon Rain 2</div>
-              </div>
-              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('starfield_warp')">
-                <span class="m7-viz-model-badge">PRESET</span>
-                <div class="m7-viz-model-icon">🚀</div>
-                <div class="m7-viz-model-name">Starfield Warp 2</div>
-              </div>
-              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('firefly_swarm')">
-                <span class="m7-viz-model-badge">PRESET</span>
-                <div class="m7-viz-model-icon">💡</div>
-                <div class="m7-viz-model-name">Fireflies 2</div>
-              </div>
-              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('music_notes')">
-                <span class="m7-viz-model-badge">PRESET</span>
-                <div class="m7-viz-model-icon">🎵</div>
-                <div class="m7-viz-model-name">Music Notes 2</div>
-              </div>
-              <div class="m7-viz-model-card" onclick="m7ApplyParticle2Preset('sparkling_stars')">
-                <span class="m7-viz-model-badge">PRESET</span>
-                <div class="m7-viz-model-icon">⭐</div>
-                <div class="m7-viz-model-name">Sparkle Stars 2</div>
+          <!-- ACTIVE PARTICLE 2 LAYERS LIST -->
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; font-weight:700; color:#9ca3af; letter-spacing:0.5px; text-transform:uppercase;">ACTIVE PARTICLE 2 LAYERS</span>
+              <span style="font-size:9px; background:rgba(245,158,11,0.15); color:#f59e0b; padding:1px 6px; border-radius:10px; font-weight:bold;" id="m7-particle2-count">0</span>
+            </div>
+            <div id="m7-particle2-list" style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow-y:auto;">
+              <div id="m7-empty-particle2-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+                No particle 2 layers active. Choose an item above to add to screen.
               </div>
             </div>
           </div>
@@ -3537,197 +3544,108 @@
 
         </div>
 
-        <!-- 4b. INSPECTOR: PARTICLE 2 SETTINGS -->
+        <!-- 4b. INSPECTOR: PARTICLE 2 SETTINGS (GAMBAR 1 PARITY) -->
         <div id="m7-inspector-particle2" style="display:none; flex-direction:column; gap:12px;">
-          
-          <!-- Card 1: PARTICLE 2 SETTINGS -->
-          <div class="m7-inspector-card">
-            <div class="m7-card-title">
-              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> PARTICLE 2 SETTINGS
-            </div>
-            <div class="m7-control-group">
-              <div class="m7-control-label-row">
-                <span>Shape</span>
-              </div>
-              <select class="m7-select" id="sel-part2-shape" onchange="m7UpdateParticle2Param('shape', this.value)">
-                <option value="shape_circle">shape_circle</option>
-                <option value="shape_square">shape_square</option>
-                <option value="shape_triangle">shape_triangle</option>
-                <option value="shape_diamond">shape_diamond</option>
-                <option value="shape_hexagon">shape_hexagon</option>
-                <option value="shape_star">shape_star</option>
-                <option value="shape_heart">shape_heart</option>
-                <option value="shape_music_note">shape_music_note</option>
-                <option value="shape_lightning">shape_lightning</option>
-                <option value="shape_flame">shape_flame</option>
-                <option value="shape_snowflake">shape_snowflake</option>
-                <option value="shape_leaf">shape_leaf</option>
-                <option value="shape_feather">shape_feather</option>
-                <option value="shape_bubble">shape_bubble</option>
-                <option value="shape_droplet">shape_droplet</option>
-                <option value="shape_crystal">shape_crystal</option>
-                <option value="shape_pixel">shape_pixel</option>
-                <option value="shape_ring">shape_ring</option>
-              </select>
-            </div>
-            <div class="m7-control-group">
-              <div class="m7-control-label-row">
-                <span>Flow</span>
-              </div>
-              <select class="m7-select" id="sel-part2-flow" onchange="m7UpdateParticle2Param('flow', this.value)">
-                <option value="flow_static">flow_static</option>
-                <option value="flow_drift">flow_drift</option>
-                <option value="flow_float">flow_float</option>
-                <option value="flow_rain">flow_rain</option>
-                <option value="flow_snow">flow_snow</option>
-                <option value="flow_wind_left">flow_wind_left</option>
-                <option value="flow_wind_right">flow_wind_right</option>
-                <option value="flow_swirl">flow_swirl</option>
-                <option value="flow_spiral">flow_spiral</option>
-                <option value="flow_orbit">flow_orbit</option>
-                <option value="flow_explosion">flow_explosion</option>
-                <option value="flow_implosion">flow_implosion</option>
-                <option value="flow_starfield">flow_starfield</option>
-                <option value="flow_pulse">flow_pulse</option>
-                <option value="flow_wave">flow_wave</option>
-                <option value="flow_fountain">flow_fountain</option>
-              </select>
-            </div>
-            <div class="m7-control-group">
-              <div class="m7-control-label-row">
-                <span>Trail</span>
-              </div>
-              <select class="m7-select" id="sel-part2-trail" onchange="m7UpdateParticle2Param('trail', this.value)">
-                <option value="trail_none">trail_none</option>
-                <option value="trail_fade">trail_fade</option>
-                <option value="trail_glow">trail_glow</option>
-                <option value="trail_light">trail_light</option>
-                <option value="trail_smoke">trail_smoke</option>
-                <option value="trail_fire">trail_fire</option>
-                <option value="trail_energy">trail_energy</option>
-                <option value="trail_rainbow">trail_rainbow</option>
-                <option value="trail_dotted">trail_dotted</option>
-                <option value="trail_pixel">trail_pixel</option>
-              </select>
-            </div>
-          </div>
 
-          <!-- Card 2: APPEARANCE -->
-          <div class="m7-inspector-card">
+          <!-- GAMBAR 1: 📐 TRANSFORM & SHAPE -->
+          <div class="m7-inspector-card" id="grp-particle2-transform">
             <div class="m7-card-title">
-              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> APPEARANCE
+              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> 📐 TRANSFORM & SHAPE
             </div>
+            
             <div class="m7-control-group">
               <div class="m7-control-label-row">
-                <span>Fill Color</span>
+                <span>Shape Mode</span>
               </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <input type="color" id="col-part2-fill" value="#f59e0b" onchange="m7UpdateParticle2Param('fillColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
-              </div>
+              <select class="m7-select" id="sel-part2-shapemode" onchange="m7UpdateParticle2Prop('shapeMode', this.value)">
+                <option value="Original" selected>Original</option>
+                <option value="Rounded Card">Rounded Card</option>
+                <option value="Circle Mask">Circle Mask</option>
+                <option value="Squircle">Squircle</option>
+                <option value="Hexagon">Hexagon</option>
+              </select>
             </div>
+
+            <div class="m7-toggle-row">
+              <span>Uniform Scale</span>
+              <label class="m7-switch">
+                <input type="checkbox" id="chk-part2-uniformscale" onchange="m7UpdateParticle2Prop('uniformScale', this.checked)">
+                <span class="m7-switch-slider"></span>
+              </label>
+            </div>
+
             <div class="m7-control-group">
               <div class="m7-control-label-row">
-                <span>Stroke Color</span>
+                <span>Width</span>
+                <span class="m7-control-val" id="val-part2-width">360</span>
               </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <input type="color" id="col-part2-stroke" value="#000000" onchange="m7UpdateParticle2Param('strokeColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
-              </div>
+              <input type="range" class="m7-slider" min="10" max="1920" step="2" value="360" id="slider-part2-width" oninput="m7UpdateParticle2Prop('width', parseInt(this.value))">
             </div>
+
             <div class="m7-control-group">
               <div class="m7-control-label-row">
-                <span>Stroke Width</span>
-                <span class="m7-control-val" id="val-part2-strokeWidth">0</span>
+                <span>Height</span>
+                <span class="m7-control-val" id="val-part2-height">180</span>
               </div>
-              <input type="range" class="m7-slider" min="0" max="10" step="1" value="0" id="slider-part2-strokeWidth" oninput="m7UpdateParticle2Param('strokeWidth', parseInt(this.value))">
+              <input type="range" class="m7-slider" min="10" max="1080" step="2" value="180" id="slider-part2-height" oninput="m7UpdateParticle2Prop('height', parseInt(this.value))">
             </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Manual Rotation</span>
+                <span class="m7-control-val" id="val-part2-rotation">0</span>
+              </div>
+              <input type="range" class="m7-slider" min="-180" max="180" step="1" value="0" id="slider-part2-rotation" oninput="m7UpdateParticle2Prop('rotation', parseInt(this.value))">
+            </div>
+
             <div class="m7-control-group">
               <div class="m7-control-label-row">
                 <span>Opacity</span>
                 <span class="m7-control-val" id="val-part2-opacity">100</span>
               </div>
-              <input type="range" class="m7-slider" min="0" max="100" step="1" value="100" id="slider-part2-opacity" oninput="m7UpdateParticle2Param('opacity', parseInt(this.value))">
-            </div>
-            <div class="m7-control-group">
-              <div class="m7-control-label-row">
-                <span>Blend Mode</span>
-              </div>
-              <select class="m7-select" id="sel-part2-blend" onchange="m7UpdateParticle2Param('blendMode', this.value)">
-                <option value="Normal">Normal</option>
-                <option value="Screen" selected>Screen</option>
-                <option value="Multiply">Multiply</option>
-                <option value="Add">Add</option>
-                <option value="Overlay">Overlay</option>
-              </select>
+              <input type="range" class="m7-slider" min="0" max="100" step="1" value="100" id="slider-part2-opacity" oninput="m7UpdateParticle2Prop('opacity', parseInt(this.value))">
             </div>
           </div>
 
-          <!-- Card 3: TRANSFORM & EMISSION -->
-          <div class="m7-inspector-card">
+          <!-- MEDIA & IMAGE SOURCE -->
+          <div class="m7-inspector-card" id="grp-particle2-source">
             <div class="m7-card-title">
-              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> TRANSFORM & EMISSION
+              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> 🖼️ MEDIA & IMAGE SOURCE
             </div>
-            <div class="m7-control-group">
-              <div class="m7-control-label-row">
-                <span>Count</span>
-                <span class="m7-control-val" id="val-part2-count">50</span>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <input type="file" id="file-part2-source" accept="image/*" style="display:none;" onchange="m7HandleParticle2FileUpload(this)">
+              <button class="m7-btn-secondary" style="width:100%; justify-content:center;" onclick="document.getElementById('file-part2-source').click()">
+                📁 Replace Media / Upload File
+              </button>
+              <div id="box-part2-preview" style="width:100%; height:80px; background:#0e1117; border:1px solid rgba(255,255,255,0.08); border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <img id="img-part2-preview" src="" style="max-height:100%; max-width:100%; object-fit:contain; display:none;">
+                <span id="txt-part2-preview-empty" style="font-size:10px; color:#6b7280;">No image loaded</span>
               </div>
-              <input type="range" class="m7-slider" min="10" max="500" step="5" value="50" id="slider-part2-count" oninput="m7UpdateParticle2Param('count', parseInt(this.value))">
-            </div>
-            <div class="m7-control-group">
-              <div class="m7-control-label-row">
-                <span>Scale</span>
-                <span class="m7-control-val" id="val-part2-scale">1.0</span>
-              </div>
-              <input type="range" class="m7-slider" min="0.1" max="5.0" step="0.1" value="1.0" id="slider-part2-scale" oninput="m7UpdateParticle2Param('scale', parseFloat(this.value))">
-            </div>
-            <div class="m7-toggle-row">
-              <span>Random Scale</span>
-              <label class="m7-switch">
-                <input type="checkbox" id="chk-part2-randomScale" checked onchange="m7UpdateParticle2Param('randomScale', this.checked)">
-                <span class="m7-switch-slider"></span>
-              </label>
-            </div>
-            <div class="m7-control-group">
-              <div class="m7-control-label-row">
-                <span>Rotation</span>
-                <span class="m7-control-val" id="val-part2-rotation">0</span>
-              </div>
-              <input type="range" class="m7-slider" min="0" max="360" step="1" value="0" id="slider-part2-rotation" oninput="m7UpdateParticle2Param('rotation', parseInt(this.value))">
-            </div>
-            <div class="m7-toggle-row">
-              <span>Random Rotation</span>
-              <label class="m7-switch">
-                <input type="checkbox" id="chk-part2-randomRotation" checked onchange="m7UpdateParticle2Param('randomRotation', this.checked)">
-                <span class="m7-switch-slider"></span>
-              </label>
-            </div>
-            <div class="m7-control-group">
-              <div class="m7-control-label-row">
-                <span>Speed</span>
-                <span class="m7-control-val" id="val-part2-speed">1.0</span>
-              </div>
-              <input type="range" class="m7-slider" min="0.1" max="5.0" step="0.1" value="1.0" id="slider-part2-speed" oninput="m7UpdateParticle2Param('speed', parseFloat(this.value))">
             </div>
           </div>
 
-          <!-- Card 4: REACTIVITY -->
-          <div class="m7-inspector-card">
+          <!-- ⚓ SCREEN ANCHOR MATRIX -->
+          <div class="m7-inspector-card" id="grp-particle2-matrix">
             <div class="m7-card-title">
-              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> REACTIVITY
+              <span class="m7-dot-orange" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></span> ⚓ SCREEN ANCHOR MATRIX
             </div>
-            <div class="m7-toggle-row">
-              <span>Beat Reactive</span>
-              <label class="m7-switch">
-                <input type="checkbox" id="chk-part2-beatReactive" checked onchange="m7UpdateParticle2Param('beatReactive', this.checked)">
-                <span class="m7-switch-slider"></span>
-              </label>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetParticle2Anchor('TL')">Top Left</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetParticle2Anchor('TC')">Top Mid</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetParticle2Anchor('TR')">Top Right</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetParticle2Anchor('ML')">Mid Left</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetParticle2Anchor('Center')">Center</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetParticle2Anchor('MR')">Mid Right</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetParticle2Anchor('BL')">Bot Left</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetParticle2Anchor('BC')">Bot Mid</button>
+              <button class="m7-btn-secondary" style="padding:6px 4px; font-size:10px; justify-content:center;" onclick="m7SetParticle2Anchor('BR')">Bot Right</button>
             </div>
           </div>
 
-          <!-- Card 5: DELETE -->
+          <!-- DELETE LAYER BUTTON -->
           <div class="m7-inspector-card">
             <button class="m7-folder-btn" onclick="m7DeleteActiveParticle2()" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#ef4444; width:100%; justify-content:center; font-weight:800;">
-              <span>🗑️ Delete Active Particle 2 System</span>
+              <span>🗑️ Delete Particle 2 Layer</span>
             </button>
           </div>
 
@@ -5828,8 +5746,12 @@
             if (inspParticle2) inspParticle2.style.display = 'flex';
             if (tag) tag.innerText = 'PARTICLE 2';
             m7RenderParticle2List();
-            if (activeParticle2s.length > 0 && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
-              m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index].display);
+            if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+              m7SelectParticle2Object(activeSelectedParticle2Index);
+            } else if (activeParticle2s.length > 0) {
+              m7SelectParticle2Object(0);
+            } else {
+              m7SelectOrAddParticle2Preset('Logo');
             }
           } else if (type === 'fx' || type === 'visualfx') {
             if (secFx) secFx.style.display = 'flex';
@@ -8055,107 +7977,228 @@
         m7ScheduleAutosave();
       }
 
-      /* === 4b. PARTICLE 2 MODULE FUNCTIONS === */
-      let currentParticle2SubTab = 'systems';
-      let particle2Params = {
-        shape: 'shape_circle',
-        flow: 'flow_float',
-        trail: 'trail_none',
-        fillColor: '#f59e0b',
-        strokeColor: '#000000',
-        strokeWidth: 0,
-        opacity: 100,
-        blendMode: 'Screen',
-        count: 50,
-        scale: 1.0,
-        randomScale: true,
-        rotation: 0,
-        randomRotation: true,
-        speed: 1.0,
-        beatReactive: true
-      };
+      /* === 4b. PARTICLE 2 MODULE FUNCTIONS (LOGO, WATERMARK, INTRO, OUTRO, SUBSCRIBE) === */
+      function m7SelectOrAddParticle2Preset(type) {
+        let name = type;
+        if (type === 'Logo') name = 'Brand Logo';
+        else if (type === 'Watermark') name = 'Watermark';
+        else if (type === 'Intro') name = 'Intro Sequence';
+        else if (type === 'Outro') name = 'Outro Sequence';
+        else if (type === 'Subscribe' || type === 'Subscribe Animation') {
+          type = 'Subscribe';
+          name = 'Subscribe Animation';
+        }
 
-      function m7SetParticle2SubTab(subTab) {
-        currentParticle2SubTab = subTab;
-        const tabSys = document.getElementById('tab-particle2-systems');
-        const tabPre = document.getElementById('tab-particle2-presets');
-        const viewSys = document.getElementById('m7-particle2-systems-view');
-        const viewPre = document.getElementById('m7-particle2-presets-view');
+        const existingIdx = activeParticle2s.findIndex(b => b.type === type);
+        if (existingIdx !== -1) {
+          m7SelectParticle2Object(existingIdx);
+          return;
+        }
 
-        if (tabSys) tabSys.classList.toggle('active', subTab === 'systems');
-        if (tabPre) tabPre.classList.toggle('active', subTab === 'presets');
-        if (viewSys) viewSys.style.display = (subTab === 'systems') ? 'flex' : 'none';
-        if (viewPre) viewPre.style.display = (subTab === 'presets') ? 'flex' : 'none';
-      }
-
-      function m7AddParticle2System(customProps = null) {
-        const scene = getOrCreateActiveScene();
-        if (!scene) return;
-        const core = window.__ASTROFOX_CORE__;
-        if (!core || !core.library) return;
-
-        const ParticleClass = core.library.get('displays')?.ParticleDisplay;
-        if (!ParticleClass) return;
-
-        const stage = getAstrofoxStage();
-        const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 1920, height: 1080 };
-        const stageW = stageSize.width || 1920;
-        const stageH = stageSize.height || 1080;
-
-        const config = customProps ? { ...particle2Params, ...customProps } : { ...particle2Params };
-        config.width = stageW;
-        config.height = stageH;
-
-        const display = new ParticleClass(config);
-        display.isParticle2 = true;
-        scene.addElement(display);
-        m7EnforceLayerOrder(scene);
-
-        const shapeLabel = (config.shape || 'circle').replace('shape_', '').toUpperCase();
-        const flowLabel = (config.flow || 'float').replace('flow_', '').toUpperCase();
-        const name = `Particle 2: ${shapeLabel} ${flowLabel}`;
-
-        const partItem = {
-          id: display.id || ('part2_' + Date.now()),
+        const newObj = {
+          id: 'part2_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
           name: name,
-          config: config,
-          display: display,
-          isParticle2: true
+          type: type,
+          isParticle2: true,
+          shapeMode: 'Original',
+          uniformScale: false,
+          width: 360,
+          height: 180,
+          rotation: 0,
+          opacity: type === 'Watermark' ? 50 : 100,
+          x: type === 'Watermark' ? 320 : (type === 'Logo' ? 300 : 0),
+          y: type === 'Watermark' ? 180 : (type === 'Logo' ? 160 : (type === 'Subscribe' ? 150 : 0)),
+          position: (type === 'Watermark' || type === 'Logo') ? 'Bottom Right' : (type === 'Subscribe' ? 'Bottom Center' : 'Center'),
+          source: '',
+          imageElement: null
         };
 
-        activeParticle2s.push(partItem);
+        m7CreateParticle2Display(newObj);
+
+        activeParticle2s.push(newObj);
         activeSelectedParticle2Index = activeParticle2s.length - 1;
+
         m7RenderParticle2List();
-        m7SyncInspectorToParticle2(display);
+        m7SyncInspectorToParticle2(newObj);
         m7ScheduleAutosave();
       }
 
-      function m7ApplyParticle2Preset(presetKey) {
-        const presets = {
-          floating_dust: { shape: 'shape_circle', flow: 'flow_float', trail: 'trail_none', fillColor: '#f59e0b', strokeWidth: 0, opacity: 80, count: 60, scale: 0.8, speed: 0.8, blendMode: 'Screen', beatReactive: true },
-          neon_rain: { shape: 'shape_droplet', flow: 'flow_rain', trail: 'trail_fade', fillColor: '#fbbf24', strokeWidth: 0, opacity: 90, count: 80, scale: 1.2, speed: 1.5, blendMode: 'Add', beatReactive: true },
-          starfield_warp: { shape: 'shape_star', flow: 'flow_starfield', trail: 'trail_light', fillColor: '#fcd34d', strokeWidth: 0, opacity: 100, count: 90, scale: 1.4, speed: 1.8, blendMode: 'Screen', beatReactive: true },
-          firefly_swarm: { shape: 'shape_circle', flow: 'flow_drift', trail: 'trail_glow', fillColor: '#d97706', strokeWidth: 0, opacity: 95, count: 50, scale: 1.0, speed: 0.6, blendMode: 'Screen', beatReactive: true },
-          music_notes: { shape: 'shape_music_note', flow: 'flow_fountain', trail: 'trail_fade', fillColor: '#f59e0b', strokeWidth: 0, opacity: 100, count: 40, scale: 1.5, speed: 1.2, blendMode: 'Screen', beatReactive: true },
-          sparkling_stars: { shape: 'shape_star', flow: 'flow_swirl', trail: 'trail_rainbow', fillColor: '#fef08a', strokeWidth: 0, opacity: 100, count: 60, scale: 1.2, speed: 1.0, blendMode: 'Screen', beatReactive: true }
-        };
+      function m7CreateParticle2Display(obj) {
+        const scene = getOrCreateActiveScene();
+        if (!scene) return;
 
-        const preset = presets[presetKey];
-        if (!preset) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = obj.width || 360;
+        canvas.height = obj.height || 180;
+        const ctx = canvas.getContext('2d');
 
-        if (activeParticle2s.length > 0 && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
-          const current = activeParticle2s[activeSelectedParticle2Index];
-          Object.assign(particle2Params, preset);
-          current.display.update(preset);
-          current.config = { ...current.config, ...preset };
-          const shapeLabel = (preset.shape || 'circle').replace('shape_', '').toUpperCase();
-          const flowLabel = (preset.flow || 'float').replace('flow_', '').toUpperCase();
-          current.name = `Particle 2: ${shapeLabel} ${flowLabel}`;
-          m7RenderParticle2List();
-          m7SyncInspectorToParticle2(current.display);
-          m7ScheduleAutosave();
+        obj.canvas = canvas;
+        obj.ctx = ctx;
+
+        m7DrawParticle2Canvas(obj);
+
+        if (window.__ASTROFOX_CORE__ && window.__ASTROFOX_CORE__.displays) {
+          const DisplayClass = window.__ASTROFOX_CORE__.displays.TextDisplay || window.__ASTROFOX_CORE__.displays.ImageDisplay;
+          if (DisplayClass) {
+            try {
+              const display = new DisplayClass({
+                name: obj.name,
+                x: obj.x || 0,
+                y: obj.y || 0,
+                opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+              });
+              display.canvas = canvas;
+              obj.display = display;
+              scene.addElement(display);
+              m7EnforceLayerOrder(scene);
+            } catch(e) {}
+          }
+        }
+      }
+
+      function m7DrawParticle2Canvas(obj) {
+        if (!obj || !obj.canvas) return;
+        const canvas = obj.canvas;
+        const w = (obj.width !== undefined && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
+        const h = (obj.height !== undefined && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        const ctx = obj.ctx || canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.globalAlpha = obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0;
+
+        ctx.translate(w / 2, h / 2);
+        if (obj.rotation) {
+          ctx.rotate((obj.rotation * Math.PI) / 180);
+        }
+        ctx.translate(-w / 2, -h / 2);
+
+        // Shape Mode clipping
+        const shapeMode = obj.shapeMode || 'Original';
+        if (shapeMode === 'Circle' || shapeMode === 'Circle Mask') {
+          ctx.beginPath();
+          const r = Math.min(w, h) / 2 - 4;
+          ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+          ctx.clip();
+        } else if (shapeMode === 'Rounded Card' || shapeMode === 'Rounded Rect') {
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, 20);
+          ctx.clip();
+        } else if (shapeMode === 'Squircle') {
+          ctx.beginPath();
+          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, Math.min(w, h) * 0.35);
+          ctx.clip();
+        } else if (shapeMode === 'Hexagon') {
+          ctx.beginPath();
+          const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 4;
+          for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 6;
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.clip();
+        }
+
+        if (obj.source && obj.imageElement && obj.imageElement.complete) {
+          const img = obj.imageElement;
+          const ratio = Math.min(w / img.width, h / img.height);
+          const drawW = img.width * ratio;
+          const drawH = img.height * ratio;
+          const drawX = (w - drawW) / 2;
+          const drawY = (h - drawH) / 2;
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
         } else {
-          m7AddParticle2System(preset);
+          if (obj.type === 'Logo') {
+            const col = '#f59e0b';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = col;
+            ctx.fillText('🛡️', w * 0.28, h / 2);
+
+            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('BRAND LOGO', w * 0.62, h / 2);
+          } else if (obj.type === 'Watermark') {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 10);
+            ctx.fill();
+
+            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.2)))}px "Segoe UI", Inter, monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillText('💧 © MEDIAFACTORY', w / 2, h / 2);
+          } else if (obj.type === 'Subscribe') {
+            const pillW = w - 20;
+            const pillH = h - 20;
+            const pillX = 10;
+            const pillY = 10;
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+            ctx.fill();
+
+            ctx.font = `bold ${Math.max(14, Math.min(26, Math.floor(pillH * 0.45)))}px sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('🔔', pillX + pillW * 0.1, pillY + pillH / 2);
+
+            ctx.font = `900 ${Math.max(12, Math.min(22, Math.floor(pillH * 0.38)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.fillText('SUBSCRIBE', pillX + pillW * 0.32, pillY + pillH / 2);
+          } else if (obj.type === 'Intro') {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 12);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = `800 ${Math.max(12, Math.min(20, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('🎬 INTRO SEQUENCE', w / 2, h / 2);
+          } else if (obj.type === 'Outro') {
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.2)';
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 12);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = `800 ${Math.max(12, Math.min(20, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('🔚 OUTRO SEQUENCE', w / 2, h / 2);
+          }
+        }
+
+        ctx.restore();
+
+        if (obj.display && obj.display.pass && obj.display.pass.texture) {
+          obj.display.pass.texture.needsUpdate = true;
         }
       }
 
@@ -8167,8 +8210,8 @@
 
         if (activeParticle2s.length === 0) {
           listEl.innerHTML = `
-            <div id="m7-empty-particle2-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:24px 12px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
-              No particle 2 systems active.
+            <div id="m7-empty-particle2-hint" style="font-size:11px; color:#6b7280; text-align:center; padding:16px 8px; border:1.5px dashed rgba(255,255,255,0.08); border-radius:8px;">
+              No particle 2 layers active. Choose an item above to add to screen.
             </div>
           `;
           return;
@@ -8180,34 +8223,53 @@
           const row = document.createElement('div');
           row.className = `m7-layer-item ${isSelected ? 'active' : ''}`;
           row.onclick = () => {
-            activeSelectedParticle2Index = idx;
-            m7RenderParticle2List();
-            m7SyncInspectorToParticle2(item.display);
-            m7ScheduleAutosave();
+            m7SelectParticle2Object(idx);
           };
 
           const numStr = String(idx + 1).padStart(2, '0');
+          let icon = '🛡️';
+          if (item.type === 'Watermark') icon = '💧';
+          else if (item.type === 'Intro') icon = '🎬';
+          else if (item.type === 'Outro') icon = '🔚';
+          else if (item.type === 'Subscribe') icon = '🔔';
 
           row.innerHTML = `
-            <span class="m7-layer-remove" title="Remove Particle 2 System" onclick="event.stopPropagation(); m7RemoveParticle2(${idx})">✕</span>
+            <span class="m7-layer-remove" title="Remove Particle 2 Layer" onclick="event.stopPropagation(); m7RemoveParticle2(${idx})">✕</span>
             <span style="color:#f59e0b; font-family:monospace; font-weight:800;">${numStr}</span>
-            <span>✨</span>
+            <span>${icon}</span>
             <span class="m7-layer-name">${item.name}</span>
           `;
           listEl.appendChild(row);
         });
       }
 
-      function m7RemoveParticle2(idx) {
+      function m7SelectParticle2Object(idx) {
+        if (idx < 0 || idx >= activeParticle2s.length) return;
+        activeSelectedParticle2Index = idx;
         const item = activeParticle2s[idx];
-        if (!item) return;
+
+        const presetKey = (item.type || 'logo').toLowerCase();
+        document.querySelectorAll('#m7-section-particle2 .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+        const cardEl = document.getElementById('card-particle2-' + presetKey);
+        if (cardEl) cardEl.classList.add('active');
+
+        const inspParticle2 = document.getElementById('m7-inspector-particle2');
+        if (inspParticle2) inspParticle2.style.display = 'flex';
+
+        m7RenderParticle2List();
+        m7SyncInspectorToParticle2(item);
+        m7ScheduleAutosave();
+      }
+
+      function m7RemoveParticle2(idx) {
+        if (idx < 0 || idx >= activeParticle2s.length) return;
+        const item = activeParticle2s.splice(idx, 1)[0];
 
         const scene = getOrCreateActiveScene();
-        if (scene && item.display) {
+        if (scene && item && item.display) {
           scene.removeElement(item.display);
         }
 
-        activeParticle2s.splice(idx, 1);
         if (activeParticle2s.length === 0) {
           activeSelectedParticle2Index = -1;
         } else {
@@ -8218,7 +8280,7 @@
         m7RenderParticle2List();
         if (scene) m7EnforceLayerOrder(scene);
         if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
-          m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index].display);
+          m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index]);
         }
         m7ScheduleAutosave();
       }
@@ -8229,106 +8291,162 @@
         }
       }
 
-      function m7SyncInspectorToParticle2(display) {
-        if (!display) return;
-        const props = display.properties || {};
-        Object.assign(particle2Params, props);
+      function m7SetParticle2ImageSource(obj, src) {
+        if (!obj) return;
+        obj.source = src;
+        const normalizedSrc = m7NormalizeMediaSrc(src);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          obj.imageElement = img;
+          m7DrawParticle2Canvas(obj);
+          if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index] === obj) {
+            const imgPrev = document.getElementById('img-part2-preview');
+            const txtPrevEmpty = document.getElementById('txt-part2-preview-empty');
+            if (imgPrev) { imgPrev.src = normalizedSrc; imgPrev.style.display = 'block'; }
+            if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+          }
+          if (obj.display && obj.display.update) {
+            obj.display.update({ x: obj.x, y: obj.y });
+          }
+          m7ScheduleAutosave();
+        };
+        img.src = normalizedSrc;
+      }
 
-        const selShape = document.getElementById('sel-part2-shape');
-        if (selShape && props.shape) selShape.value = props.shape;
+      function m7HandleParticle2FileUpload(input) {
+        if (!input.files || input.files.length === 0) return;
+        if (activeSelectedParticle2Index < 0 || !activeParticle2s[activeSelectedParticle2Index]) return;
+        const obj = activeParticle2s[activeSelectedParticle2Index];
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          m7SetParticle2ImageSource(obj, e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
 
-        const selFlow = document.getElementById('sel-part2-flow');
-        if (selFlow && props.flow) selFlow.value = props.flow;
+      function m7SyncInspectorToParticle2(obj) {
+        if (!obj) return;
 
-        const selTrail = document.getElementById('sel-part2-trail');
-        if (selTrail && props.trail) selTrail.value = props.trail;
+        const selShape = document.getElementById('sel-part2-shapemode');
+        if (selShape) selShape.value = obj.shapeMode || 'Original';
 
-        const colFill = document.getElementById('col-part2-fill');
-        if (colFill && props.fillColor) colFill.value = props.fillColor;
+        const chkUniform = document.getElementById('chk-part2-uniformscale');
+        if (chkUniform) chkUniform.checked = !!obj.uniformScale;
 
-        const colStroke = document.getElementById('col-part2-stroke');
-        if (colStroke && props.strokeColor) colStroke.value = props.strokeColor;
+        const sliderWidth = document.getElementById('slider-part2-width');
+        const valWidth = document.getElementById('val-part2-width');
+        const widthVal = (obj.width !== undefined && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
+        if (sliderWidth) sliderWidth.value = widthVal;
+        if (valWidth) valWidth.innerText = `${widthVal}`;
 
-        const slStroke = document.getElementById('slider-part2-strokeWidth');
-        const valStroke = document.getElementById('val-part2-strokeWidth');
-        if (slStroke && props.strokeWidth !== undefined) {
-          slStroke.value = props.strokeWidth;
-          if (valStroke) valStroke.innerText = props.strokeWidth;
-        }
+        const sliderHeight = document.getElementById('slider-part2-height');
+        const valHeight = document.getElementById('val-part2-height');
+        const heightVal = (obj.height !== undefined && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
+        if (sliderHeight) sliderHeight.value = heightVal;
+        if (valHeight) valHeight.innerText = `${heightVal}`;
 
-        const slOpacity = document.getElementById('slider-part2-opacity');
-        const valOpacity = document.getElementById('val-part2-opacity');
-        if (slOpacity && props.opacity !== undefined) {
-          slOpacity.value = props.opacity;
-          if (valOpacity) valOpacity.innerText = props.opacity;
-        }
-
-        const selBlend = document.getElementById('sel-part2-blend');
-        if (selBlend && props.blendMode) selBlend.value = props.blendMode;
-
-        const slCount = document.getElementById('slider-part2-count');
-        const valCount = document.getElementById('val-part2-count');
-        if (slCount && props.count !== undefined) {
-          slCount.value = props.count;
-          if (valCount) valCount.innerText = props.count;
-        }
-
-        const slScale = document.getElementById('slider-part2-scale');
-        const valScale = document.getElementById('val-part2-scale');
-        if (slScale && props.scale !== undefined) {
-          slScale.value = props.scale;
-          if (valScale) valScale.innerText = props.scale;
-        }
-
-        const chkRandScale = document.getElementById('chk-part2-randomScale');
-        if (chkRandScale && props.randomScale !== undefined) chkRandScale.checked = !!props.randomScale;
-
-        const slRot = document.getElementById('slider-part2-rotation');
+        const sliderRot = document.getElementById('slider-part2-rotation');
         const valRot = document.getElementById('val-part2-rotation');
-        if (slRot && props.rotation !== undefined) {
-          slRot.value = props.rotation;
-          if (valRot) valRot.innerText = props.rotation;
+        const rotVal = (obj.rotation !== undefined && !isNaN(obj.rotation)) ? Math.round(obj.rotation) : 0;
+        if (sliderRot) sliderRot.value = rotVal;
+        if (valRot) valRot.innerText = `${rotVal}`;
+
+        const sliderOpacity = document.getElementById('slider-part2-opacity');
+        const valOpacity = document.getElementById('val-part2-opacity');
+        const opVal = (obj.opacity !== undefined && !isNaN(obj.opacity)) ? (obj.opacity > 1 ? Math.round(obj.opacity) : Math.round(obj.opacity * 100)) : 100;
+        if (sliderOpacity) sliderOpacity.value = opVal;
+        if (valOpacity) valOpacity.innerText = `${opVal}`;
+
+        const imgPrev = document.getElementById('img-part2-preview');
+        const txtPrevEmpty = document.getElementById('txt-part2-preview-empty');
+        if (obj.source) {
+          if (imgPrev) { imgPrev.src = obj.source; imgPrev.style.display = 'block'; }
+          if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+        } else {
+          if (imgPrev) { imgPrev.src = ''; imgPrev.style.display = 'none'; }
+          if (txtPrevEmpty) txtPrevEmpty.style.display = 'block';
         }
-
-        const chkRandRot = document.getElementById('chk-part2-randomRotation');
-        if (chkRandRot && props.randomRotation !== undefined) chkRandRot.checked = !!props.randomRotation;
-
-        const slSpeed = document.getElementById('slider-part2-speed');
-        const valSpeed = document.getElementById('val-part2-speed');
-        if (slSpeed && props.speed !== undefined) {
-          slSpeed.value = props.speed;
-          if (valSpeed) valSpeed.innerText = props.speed;
-        }
-
-        const chkBeat = document.getElementById('chk-part2-beatReactive');
-        if (chkBeat && props.beatReactive !== undefined) chkBeat.checked = !!props.beatReactive;
 
         m7EnforceLayerOrder();
       }
 
-      function m7UpdateParticle2Param(prop, val) {
-        particle2Params[prop] = val;
-        const valEl = document.getElementById('val-part2-' + prop);
-        if (valEl) valEl.innerText = val;
+      function m7UpdateParticle2Prop(prop, val) {
+        if (activeSelectedParticle2Index < 0 || !activeParticle2s[activeSelectedParticle2Index]) return;
+        const obj = activeParticle2s[activeSelectedParticle2Index];
+        obj[prop] = val;
 
-        const scene = getOrCreateActiveScene();
-        if (!scene) return;
-
-        if (activeParticle2s.length > 0 && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
-          const currentPart = activeParticle2s[activeSelectedParticle2Index];
-          const updates = {};
-          updates[prop] = val;
-          currentPart.display.update(updates);
-          currentPart.config[prop] = val;
-
-          if (prop === 'shape' || prop === 'flow') {
-            const shapeLabel = (currentPart.config.shape || 'circle').replace('shape_', '').toUpperCase();
-            const flowLabel = (currentPart.config.flow || 'float').replace('flow_', '').toUpperCase();
-            currentPart.name = `Particle 2: ${shapeLabel} ${flowLabel}`;
-            m7RenderParticle2List();
+        if (prop === 'uniformScale') {
+          obj.uniformScale = !!val;
+        }
+        if (prop === 'width') {
+          const valEl = document.getElementById('val-part2-width');
+          if (valEl) valEl.innerText = val;
+          if (obj.uniformScale) {
+            const aspect = (obj.height && obj.width) ? (obj.height / val) : 0.5;
+            obj.height = Math.max(10, Math.round(val * aspect));
+            const sliderH = document.getElementById('slider-part2-height');
+            const valH = document.getElementById('val-part2-height');
+            if (sliderH) sliderH.value = obj.height;
+            if (valH) valH.innerText = obj.height;
           }
         }
-        m7EnforceLayerOrder(scene);
+        if (prop === 'height') {
+          const valEl = document.getElementById('val-part2-height');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'rotation') {
+          const valEl = document.getElementById('val-part2-rotation');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'opacity') {
+          const valEl = document.getElementById('val-part2-opacity');
+          if (valEl) valEl.innerText = val;
+          obj.opacity = val / 100;
+        }
+
+        if (obj.display) {
+          obj.display.update({ x: obj.x || 0, y: obj.y || 0, opacity: obj.opacity });
+        }
+        m7DrawParticle2Canvas(obj);
+        m7ScheduleAutosave();
+      }
+
+      function m7SetParticle2Anchor(anchor) {
+        if (activeSelectedParticle2Index < 0 || !activeParticle2s[activeSelectedParticle2Index]) return;
+        const obj = activeParticle2s[activeSelectedParticle2Index];
+        const stage = getAstrofoxStage();
+        const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 1920, height: 1080 };
+        const sw = stageSize.width || 1920;
+        const sh = stageSize.height || 1080;
+        const w = (obj.width && !isNaN(obj.width)) ? obj.width : 360;
+        const h = (obj.height && !isNaN(obj.height)) ? obj.height : 180;
+        const marginX = 80;
+        const marginY = 60;
+
+        let targetX = 0;
+        let targetY = 0;
+
+        switch (anchor) {
+          case 'TL': targetX = -sw / 2 + w / 2 + marginX; targetY = -sh / 2 + h / 2 + marginY; break;
+          case 'TC': targetX = 0; targetY = -sh / 2 + h / 2 + marginY; break;
+          case 'TR': targetX = sw / 2 - w / 2 - marginX; targetY = -sh / 2 + h / 2 + marginY; break;
+          case 'ML': targetX = -sw / 2 + w / 2 + marginX; targetY = 0; break;
+          case 'Center': targetX = 0; targetY = 0; break;
+          case 'MR': targetX = sw / 2 - w / 2 - marginX; targetY = 0; break;
+          case 'BL': targetX = -sw / 2 + w / 2 + marginX; targetY = sh / 2 - h / 2 - marginY; break;
+          case 'BC': targetX = 0; targetY = sh / 2 - h / 2 - marginY; break;
+          case 'BR': targetX = sw / 2 - w / 2 - marginX; targetY = sh / 2 - h / 2 - marginY; break;
+        }
+
+        obj.x = Math.round(targetX);
+        obj.y = Math.round(targetY);
+        obj.position = anchor;
+
+        if (obj.display && obj.display.update) {
+          obj.display.update({ x: obj.x, y: obj.y });
+        }
         m7ScheduleAutosave();
       }
 
@@ -13612,7 +13730,17 @@
             activeParticle2s: activeParticle2s.map(pt => ({
               id: pt.id,
               name: pt.name,
-              config: pt.config
+              type: pt.type,
+              shapeMode: pt.shapeMode,
+              uniformScale: pt.uniformScale,
+              width: pt.width,
+              height: pt.height,
+              rotation: pt.rotation,
+              opacity: pt.opacity,
+              x: pt.x,
+              y: pt.y,
+              position: pt.position,
+              source: pt.source
             })),
             activeSelectedParticle2Index: activeSelectedParticle2Index,
             activeEffects: activeEffects.map(eff => ({
@@ -13928,21 +14056,40 @@
             }
           }
 
-          // 5b. Restore Particle 2 Systems
+          // 5b. Restore Particle 2 Layers (Logo, Watermark, Intro, Outro, Subscribe)
           if (savedState.activeParticle2s && Array.isArray(savedState.activeParticle2s) && savedState.activeParticle2s.length > 0) {
             activeParticle2s = [];
             for (let i = 0; i < savedState.activeParticle2s.length; i++) {
               const pt = savedState.activeParticle2s[i];
-              if (pt.config) {
-                m7AddParticle2System(pt.config);
+              const obj = {
+                id: pt.id || ('part2_' + Date.now() + '_' + i),
+                name: pt.name || 'Particle 2',
+                type: pt.type || 'Logo',
+                isParticle2: true,
+                shapeMode: pt.shapeMode || 'Original',
+                uniformScale: !!pt.uniformScale,
+                width: pt.width || 360,
+                height: pt.height || 180,
+                rotation: pt.rotation || 0,
+                opacity: pt.opacity !== undefined ? pt.opacity : 100,
+                x: pt.x || 0,
+                y: pt.y || 0,
+                position: pt.position || 'Center',
+                source: pt.source || '',
+                imageElement: null
+              };
+              m7CreateParticle2Display(obj);
+              if (obj.source) {
+                m7SetParticle2ImageSource(obj, obj.source);
               }
+              activeParticle2s.push(obj);
             }
             if (savedState.activeSelectedParticle2Index >= 0 && savedState.activeSelectedParticle2Index < activeParticle2s.length) {
               activeSelectedParticle2Index = savedState.activeSelectedParticle2Index;
             }
             m7RenderParticle2List();
             if (activeParticle2s[activeSelectedParticle2Index]) {
-              m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index].display);
+              m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index]);
             }
           }
 

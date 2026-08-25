@@ -7,7 +7,10 @@ import path from 'path';
 function resolveYtDlpPath() {
   const candidatePaths = [
     process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'yt-dlp.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin', 'yt-dlp.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'yt-dlp.exe') : '',
     process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'yt-dlp.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin', 'yt-dlp.exe') : '',
     path.join(process.cwd(), 'backend', 'bin', 'yt-dlp.exe'),
     path.join(process.cwd(), 'bin', 'yt-dlp.exe')
   ];
@@ -20,8 +23,10 @@ function resolveYtDlpPath() {
 function resolveFFmpegPath() {
   const candidatePaths = [
     process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffmpeg.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin', 'ffmpeg.exe') : '',
     process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'ffmpeg.exe') : '',
     process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'ffmpeg.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin', 'ffmpeg.exe') : '',
     path.join(process.cwd(), 'backend', 'bin', 'ffmpeg.exe'),
     path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe'),
     path.join(process.cwd(), 'bin', 'ffmpeg.exe')
