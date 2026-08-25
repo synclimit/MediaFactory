@@ -98,12 +98,15 @@ export default class TextDisplay extends CanvasDisplay {
   }
 
   addToScene() {
+    if (this.properties.isParticle2 || this.properties.isBranding || this.properties.customCanvas) {
+      return;
+    }
     this.text = new CanvasText(this.properties, this.canvas);
     this.text.render(true);
   }
 
   update(properties) {
-    if (this.text) {
+    if (this.text && !this.properties.isParticle2 && !this.properties.isBranding && !this.properties.customCanvas) {
       this.text.update(properties);
       this.text.render(true);
     }

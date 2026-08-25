@@ -8154,35 +8154,34 @@
       function m7GetWorkspaceBrandingAsset(assetType) {
         try {
           const activeWs = localStorage.getItem('mf_active_workspace') || 'DEFAULT';
-          const keys = [
-            `mf_workspace_branding_${activeWs}`,
-            `mf_workspace_branding_${activeWs.toLowerCase()}`,
-            `mf_workspace_branding_${activeWs.toUpperCase()}`,
-            'mf_workspace_branding_DEFAULT',
-            'mf_workspace_branding_default'
-          ];
-          for (let k of keys) {
-            const raw = localStorage.getItem(k);
+          const wsList = [activeWs, activeWs.toLowerCase(), activeWs.toUpperCase(), 'DEFAULT', 'default'];
+
+          if (assetType === 'logo') {
+            for (let ws of wsList) {
+              const av = localStorage.getItem(`mf_workspace_avatar_${ws}`);
+              if (av && av.startsWith('data:image/')) return av;
+            }
+          }
+
+          for (let ws of wsList) {
+            const raw = localStorage.getItem(`mf_workspace_branding_${ws}`);
             if (raw) {
               try {
                 const parsed = JSON.parse(raw);
-                if (assetType === 'logo' && (parsed.logo || parsed.avatar || parsed.channelThumbnail)) return parsed.logo || parsed.avatar || parsed.channelThumbnail;
+                if (assetType === 'logo') {
+                  const l = parsed.logo || parsed.avatar || parsed.channelThumbnail;
+                  if (l) return l;
+                }
                 if (assetType === 'watermark' && parsed.watermark) return parsed.watermark;
                 if (assetType === 'subscribe' && (parsed.subscribeAnim || parsed.subscribe)) return parsed.subscribeAnim || parsed.subscribe;
                 if (assetType === 'overlay' && parsed.overlay) return parsed.overlay;
               } catch(e) {}
             }
           }
+
           if (assetType === 'logo') {
-            const avKeys = [
-              `mf_workspace_avatar_${activeWs}`,
-              `mf_workspace_avatar_${activeWs.toLowerCase()}`,
-              `mf_workspace_avatar_${activeWs.toUpperCase()}`,
-              'mf_workspace_avatar_DEFAULT',
-              'mf_workspace_avatar_default'
-            ];
-            for (let k of avKeys) {
-              const av = localStorage.getItem(k);
+            for (let ws of wsList) {
+              const av = localStorage.getItem(`mf_workspace_avatar_${ws}`);
               if (av) return av;
             }
           }
@@ -8228,12 +8227,12 @@
           isParticle2: true,
           shapeMode: 'Original',
           uniformScale: false,
-          width: 360,
-          height: 180,
+          width: (type === 'Logo' || type === 'Watermark') ? 220 : 360,
+          height: (type === 'Logo' || type === 'Watermark') ? 110 : 180,
           rotation: 0,
           opacity: type === 'Watermark' ? 50 : 100,
-          x: type === 'Watermark' ? 320 : (type === 'Logo' ? 300 : 0),
-          y: type === 'Watermark' ? 180 : (type === 'Logo' ? 160 : (type === 'Subscribe' ? 150 : 0)),
+          x: (type === 'Watermark' || type === 'Logo') ? 600 : 0,
+          y: (type === 'Watermark' || type === 'Logo') ? -350 : (type === 'Subscribe' ? -380 : 0),
           position: (type === 'Watermark' || type === 'Logo') ? 'Bottom Right' : (type === 'Subscribe' ? 'Bottom Center' : 'Center'),
           source: wsAsset || '',
           imageElement: null,
@@ -8280,11 +8279,11 @@
         const scene = getOrCreateActiveScene();
         if (!scene) return;
 
-        // Clean up any legacy TextDisplay objects from old versions
+        // Clean up any legacy displays from old versions
         if (scene.displays) {
           for (let i = scene.displays.length - 1; i >= 0; i--) {
             const d = scene.displays[i];
-            if (d && (d.name === obj.name || d.name === 'Particle 2 Layer' || d.name === 'Brand Logo' || d.name === 'Watermark' || d.name === 'Subscribe Animation') && d.constructor && d.constructor.name === 'TextDisplay') {
+            if (d && (d.name === obj.name || d.name === 'Particle 2 Layer')) {
               scene.removeElement(d);
             }
           }
@@ -8301,36 +8300,27 @@
         m7DrawParticle2Canvas(obj);
 
         const core = window.__ASTROFOX_CORE__;
-        const ImageClass = core?.library?.get('displays')?.ImageDisplay;
-        if (ImageClass) {
+        const TextClass = core?.library?.get('displays')?.TextDisplay;
+        if (TextClass) {
           try {
-            const dataUrl = canvas.toDataURL('image/png');
-            const display = new ImageClass({
-              name: obj.name || 'Brand Object',
-              src: dataUrl,
-              width: obj.width || 360,
-              height: obj.height || 180,
+            const display = new TextClass({
+              name: obj.name || 'Particle 2 Layer',
+              isParticle2: true,
+              isBranding: true,
+              customCanvas: true,
+              text: '',
               x: obj.x || 0,
               y: obj.y || 0,
-              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
               rotation: obj.rotation || 0,
-              fixed: false
+              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
             });
+            display.canvas = canvas;
+            display.text = null;
             obj.display = display;
             scene.addElement(display);
-            display.update({
-              src: dataUrl,
-              width: obj.width || 360,
-              height: obj.height || 180,
-              x: obj.x || 0,
-              y: obj.y || 0,
-              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
-              rotation: obj.rotation || 0,
-              fixed: false
-            });
             m7EnforceLayerOrder(scene);
           } catch(e) {
-            console.error('[M7 Particle 2] ImageDisplay creation failed:', e);
+            console.error('[M7 Particle 2] Display creation failed:', e);
           }
         }
       }
