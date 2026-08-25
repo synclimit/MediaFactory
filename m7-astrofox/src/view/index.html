@@ -3683,20 +3683,135 @@
               </div>
               <input type="range" class="m7-slider" min="0" max="100" value="75" id="slider-part2-single-intensity" oninput="m7UpdateParticle2Prop('intensity', parseInt(this.value))">
             </div>
+          </div>
 
-            <!-- Paragraph (Text) Storytelling Controls -->
-            <div id="grp-part2-paragraph-controls" style="display:none; flex-direction:column; gap:8px;">
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Message / Text</span>
-                </div>
-                <input type="text" class="m7-input" id="inp-part2-seq-text" placeholder="Enter sequence text..." value="Welcome to the Show" oninput="m7UpdateParticle2Prop('text', this.value)">
+          <!-- GAMBAR 2: PARAGRAPH / STORYTELLING INSPECTOR CARD (APPEARS BELOW WHEN PARAGRAPH (TEXT) IS SELECTED) -->
+          <div class="m7-inspector-card" id="grp-part2-paragraph-card" style="display:none; flex-direction:column; gap:10px;">
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Bg Dark Intensity</span>
+                <span class="m7-control-val" id="val-part2-bgdark">100</span>
               </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-part2-bgdark" oninput="m7UpdateParticle2Prop('darkIntensity', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Bg Blur Intensity</span>
+                <span class="m7-control-val" id="val-part2-bgblur">40</span>
+              </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-part2-bgblur" oninput="m7UpdateParticle2Prop('blurIntensity', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Text Transition</span>
+              </div>
+              <select class="m7-select" id="sel-part2-texttrans" onchange="m7UpdateParticle2Prop('textTransition', this.value)">
+                <option value="Fade In/Out" selected>Fade In/Out</option>
+                <option value="Typewriter">Typewriter</option>
+                <option value="Slide Up">Slide Up</option>
+                <option value="Zoom In">Zoom In</option>
+                <option value="Handwriting (Sweep)">Handwriting (Sweep)</option>
+                <option value="Focus Pull (Text)">Focus Pull (Text)</option>
+                <option value="Cinematic Tracking">Cinematic Tracking</option>
+              </select>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Main Video Transition</span>
+              </div>
+              <select class="m7-select" id="sel-part2-maintrans" onchange="m7UpdateParticle2Prop('mainTransition', this.value)">
+                <option value="Fade to Video" selected>Fade to Video</option>
+                <option value="Flash White">Flash White</option>
+                <option value="Blur Reveal">Blur Reveal</option>
+              </select>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Total Paragraphs</span>
+              </div>
+              <select class="m7-select" id="sel-part2-paracount" onchange="m7UpdateParticle2ParaCount(parseInt(this.value))">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Duration per Paragraph</span>
+              </div>
+              <select class="m7-select" id="sel-part2-paradur" onchange="m7UpdateParticle2Prop('paragraphDuration', this.value)">
+                <option value="3s">3s</option>
+                <option value="4s">4s</option>
+                <option value="5s" selected>5s</option>
+                <option value="6s">6s</option>
+                <option value="8s">8s</option>
+                <option value="10s">10s</option>
+              </select>
+            </div>
+
+            <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
+              <span style="font-size:10px; font-weight:800; color:#f97316; letter-spacing:0.5px; text-transform:uppercase; display:block; margin-bottom:6px;">TEXT CONTENT</span>
+              <div id="container-part2-textareas" style="display:flex; flex-direction:column; gap:6px;">
+                <textarea id="txt-part2-p1" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 1..." oninput="m7UpdateParticle2Prop('introText1', this.value)"></textarea>
+                <textarea id="txt-part2-p2" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 2..." oninput="m7UpdateParticle2Prop('introText2', this.value)"></textarea>
+                <textarea id="txt-part2-p3" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 3..." oninput="m7UpdateParticle2Prop('introText3', this.value)"></textarea>
+              </div>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Text Color</span>
+              </div>
+              <input type="color" id="col-part2-textcolor" value="#ffffff" onchange="m7UpdateParticle2Prop('introTextColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Font Family</span>
+              </div>
+              <select class="m7-select" id="sel-part2-font" onchange="m7UpdateParticle2Prop('introFontFamily', this.value)">
+                <option value="Inter" selected>Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Cinzel">Cinzel</option>
+                <option value="Playfair Display">Playfair Display</option>
+                <option value="Poppins">Poppins</option>
+                <option value="Great Vibes">Great Vibes</option>
+                <option value="Dancing Script">Dancing Script</option>
+                <option value="Pacifico">Pacifico</option>
+                <option value="Bebas Neue">Bebas Neue</option>
+                <option value="Segoe UI">Segoe UI</option>
+              </select>
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Font Size</span>
+                <span class="m7-control-val" id="val-part2-fontsize">32</span>
+              </div>
+              <input type="range" class="m7-slider" min="10" max="100" value="32" id="slider-part2-fontsize" oninput="m7UpdateParticle2Prop('introFontSize', parseInt(this.value))">
+            </div>
+
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Text Align</span>
+              </div>
+              <select class="m7-select" id="sel-part2-align" onchange="m7UpdateParticle2Prop('introTextAlign', this.value)">
+                <option value="left">left</option>
+                <option value="center" selected>center</option>
+                <option value="right">right</option>
+              </select>
             </div>
           </div>
 
           <!-- DELETE LAYER BUTTON -->
-          <div class="m7-inspector-card">
+          <div class="m7-inspector-card" id="grp-particle2-delete">
             <button class="m7-folder-btn" onclick="m7DeleteActiveParticle2()" style="background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#ef4444; width:100%; justify-content:center; font-weight:800;">
               <span>🗑️ Delete Particle 2 Layer</span>
             </button>
@@ -4387,133 +4502,138 @@
                 <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding-dark" oninput="m7UpdateBrandingProp('darkIntensity', parseInt(this.value))">
               </div>
             </div>
+          </div>
 
-            <!-- Paragraph (Text) Storytelling Controls -->
-            <div id="grp-branding-paragraph-controls" style="display:none; flex-direction:column; gap:10px;">
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Bg Dark Intensity</span>
-                  <span class="m7-control-val" id="val-branding-bgdark">100</span>
-                </div>
-                <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding-bgdark" oninput="m7UpdateBrandingProp('darkIntensity', parseInt(this.value))">
+          <!-- GAMBAR 2: PARAGRAPH (TEXT) STORYTELLING INSPECTOR CARD -->
+          <div class="m7-inspector-card" id="grp-branding-paragraph-card" style="display:none; flex-direction:column; gap:10px;">
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Bg Dark Intensity</span>
+                <span class="m7-control-val" id="val-branding-bgdark">100</span>
               </div>
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Bg Blur Intensity</span>
-                  <span class="m7-control-val" id="val-branding-bgblur">40</span>
-                </div>
-                <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-branding-bgblur" oninput="m7UpdateBrandingProp('blurIntensity', parseInt(this.value))">
+              <input type="range" class="m7-slider" min="0" max="100" value="100" id="slider-branding-bgdark" oninput="m7UpdateBrandingProp('darkIntensity', parseInt(this.value))">
+            </div>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Bg Blur Intensity</span>
+                <span class="m7-control-val" id="val-branding-bgblur">40</span>
               </div>
+              <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-branding-bgblur" oninput="m7UpdateBrandingProp('blurIntensity', parseInt(this.value))">
+            </div>
 
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Text Transition</span>
-                </div>
-                <select class="m7-select" id="sel-branding-texttrans" onchange="m7UpdateBrandingProp('textTransition', this.value)">
-                  <option value="Handwriting (Sweep)">Handwriting (Sweep)</option>
-                  <option value="Focus Pull (Text)">Focus Pull (Text)</option>
-                  <option value="Cinematic Tracking">Cinematic Tracking</option>
-                  <option value="Fade In/Out" selected>Fade In/Out</option>
-                  <option value="Typewriter">Typewriter</option>
-                  <option value="Slide Up">Slide Up</option>
-                  <option value="Zoom In">Zoom In</option>
-                </select>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Text Transition</span>
               </div>
+              <select class="m7-select" id="sel-branding-texttrans" onchange="m7UpdateBrandingProp('textTransition', this.value)">
+                <option value="Handwriting (Sweep)">Handwriting (Sweep)</option>
+                <option value="Focus Pull (Text)">Focus Pull (Text)</option>
+                <option value="Cinematic Tracking">Cinematic Tracking</option>
+                <option value="Fade In/Out" selected>Fade In/Out</option>
+                <option value="Typewriter">Typewriter</option>
+                <option value="Slide Up">Slide Up</option>
+                <option value="Zoom In">Zoom In</option>
+              </select>
+            </div>
 
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Main Video Transition</span>
-                </div>
-                <select class="m7-select" id="sel-branding-maintrans" onchange="m7UpdateBrandingProp('mainTransition', this.value)">
-                  <option value="Fade to Video" selected>Fade to Video</option>
-                  <option value="Flash White">Flash White</option>
-                  <option value="Blur Reveal">Blur Reveal</option>
-                </select>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Main Video Transition</span>
               </div>
+              <select class="m7-select" id="sel-branding-maintrans" onchange="m7UpdateBrandingProp('mainTransition', this.value)">
+                <option value="Fade to Video" selected>Fade to Video</option>
+                <option value="Flash White">Flash White</option>
+                <option value="Blur Reveal">Blur Reveal</option>
+              </select>
+            </div>
 
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Total Paragraphs</span>
-                </div>
-                <select class="m7-select" id="sel-branding-paracount" onchange="m7UpdateBrandingParaCount(parseInt(this.value))">
-                  <option value="1" selected>1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                </select>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Total Paragraphs</span>
               </div>
+              <select class="m7-select" id="sel-branding-paracount" onchange="m7UpdateBrandingParaCount(parseInt(this.value))">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
 
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Duration per Paragraph</span>
-                </div>
-                <select class="m7-select" id="sel-branding-paradur" onchange="m7UpdateBrandingProp('paragraphDuration', this.value)">
-                  <option value="3s">3s</option>
-                  <option value="4s">4s</option>
-                  <option value="5s" selected>5s</option>
-                  <option value="6s">6s</option>
-                  <option value="8s">8s</option>
-                  <option value="10s">10s</option>
-                </select>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Duration per Paragraph</span>
               </div>
+              <select class="m7-select" id="sel-branding-paradur" onchange="m7UpdateBrandingProp('paragraphDuration', this.value)">
+                <option value="3s">3s</option>
+                <option value="4s">4s</option>
+                <option value="5s" selected>5s</option>
+                <option value="6s">6s</option>
+                <option value="8s">8s</option>
+                <option value="10s">10s</option>
+              </select>
+            </div>
 
-              <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
-                <span style="font-size:10px; font-weight:800; color:#f97316; letter-spacing:0.5px; text-transform:uppercase; display:block; margin-bottom:6px;">TEXT CONTENT</span>
-                <div id="container-branding-textareas" style="display:flex; flex-direction:column; gap:6px;">
-                  <textarea id="txt-branding-p1" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 1..." oninput="m7UpdateBrandingProp('introText1', this.value)"></textarea>
-                  <textarea id="txt-branding-p2" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 2..." oninput="m7UpdateBrandingProp('introText2', this.value)"></textarea>
-                  <textarea id="txt-branding-p3" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 3..." oninput="m7UpdateBrandingProp('introText3', this.value)"></textarea>
-                </div>
+            <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
+              <span style="font-size:10px; font-weight:800; color:#f97316; letter-spacing:0.5px; text-transform:uppercase; display:block; margin-bottom:6px;">TEXT CONTENT</span>
+              <div id="container-branding-textareas" style="display:flex; flex-direction:column; gap:6px;">
+                <textarea id="txt-branding-p1" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 1..." oninput="m7UpdateBrandingProp('introText1', this.value)"></textarea>
+                <textarea id="txt-branding-p2" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 2..." oninput="m7UpdateBrandingProp('introText2', this.value)"></textarea>
+                <textarea id="txt-branding-p3" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 3..." oninput="m7UpdateBrandingProp('introText3', this.value)"></textarea>
               </div>
+            </div>
 
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Font Family</span>
-                </div>
-                <select class="m7-select" id="sel-branding-font" onchange="m7UpdateBrandingProp('introFontFamily', this.value)">
-                  <option value="Great Vibes">Great Vibes</option>
-                  <option value="Dancing Script">Dancing Script</option>
-                  <option value="Pacifico">Pacifico</option>
-                  <option value="Playball">Playball</option>
-                  <option value="Inter" selected>Inter</option>
-                  <option value="Oswald">Oswald</option>
-                  <option value="Bebas Neue">Bebas Neue</option>
-                  <option value="Segoe UI">Segoe UI</option>
-                  <option value="Roboto">Roboto</option>
-                </select>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Font Family</span>
               </div>
+              <select class="m7-select" id="sel-branding-font" onchange="m7UpdateBrandingProp('introFontFamily', this.value)">
+                <option value="Inter" selected>Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Cinzel">Cinzel</option>
+                <option value="Playfair Display">Playfair Display</option>
+                <option value="Poppins">Poppins</option>
+                <option value="Great Vibes">Great Vibes</option>
+                <option value="Dancing Script">Dancing Script</option>
+                <option value="Pacifico">Pacifico</option>
+                <option value="Bebas Neue">Bebas Neue</option>
+                <option value="Segoe UI">Segoe UI</option>
+              </select>
+            </div>
 
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Font Size</span>
-                  <span class="m7-control-val" id="val-branding-fontsize">32</span>
-                </div>
-                <input type="range" class="m7-slider" min="10" max="100" value="32" id="slider-branding-fontsize" oninput="m7UpdateBrandingProp('introFontSize', parseInt(this.value))">
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Font Size</span>
+                <span class="m7-control-val" id="val-branding-fontsize">32</span>
               </div>
+              <input type="range" class="m7-slider" min="10" max="100" value="32" id="slider-branding-fontsize" oninput="m7UpdateBrandingProp('introFontSize', parseInt(this.value))">
+            </div>
 
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Text Color</span>
-                </div>
-                <input type="color" id="col-branding-textcolor" value="#ffffff" onchange="m7UpdateBrandingProp('introTextColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Text Color</span>
               </div>
+              <input type="color" id="col-branding-textcolor" value="#ffffff" onchange="m7UpdateBrandingProp('introTextColor', this.value)" style="width:100%; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:#141722; cursor:pointer; padding:2px;">
+            </div>
 
-              <div class="m7-control-group">
-                <div class="m7-control-label-row">
-                  <span>Text Align</span>
-                </div>
-                <select class="m7-select" id="sel-branding-align" onchange="m7UpdateBrandingProp('introTextAlign', this.value)">
-                  <option value="left">Left</option>
-                  <option value="center" selected>Center</option>
-                  <option value="right">Right</option>
-                </select>
+            <div class="m7-control-group">
+              <div class="m7-control-label-row">
+                <span>Text Align</span>
               </div>
+              <select class="m7-select" id="sel-branding-align" onchange="m7UpdateBrandingProp('introTextAlign', this.value)">
+                <option value="left">left</option>
+                <option value="center" selected>center</option>
+                <option value="right">right</option>
+              </select>
             </div>
           </div>
 
           <!-- DELETE OBJECT BUTTON -->
-          <button class="m7-layer-remove" style="padding:10px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="m7DeleteActiveBranding()">
-            🗑️ Delete Branding Object
-          </button>
+          <div class="m7-inspector-card" id="grp-branding-delete">
+            <button class="m7-layer-remove" style="padding:10px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="m7DeleteActiveBranding()">
+              🗑️ Delete Branding Object
+            </button>
+          </div>
 
         </div>
 
@@ -8469,6 +8589,22 @@
         reader.readAsDataURL(file);
       }
 
+      function m7UpdateParticle2ParaCount(count, updateObj = true) {
+        if (updateObj && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+          activeParticle2s[activeSelectedParticle2Index].paragraphCount = count;
+        }
+
+        const txtP1 = document.getElementById('txt-part2-p1');
+        const txtP2 = document.getElementById('txt-part2-p2');
+        const txtP3 = document.getElementById('txt-part2-p3');
+
+        if (txtP1) txtP1.style.display = count >= 1 ? 'block' : 'none';
+        if (txtP2) txtP2.style.display = count >= 2 ? 'block' : 'none';
+        if (txtP3) txtP3.style.display = count >= 3 ? 'block' : 'none';
+
+        if (updateObj) m7ScheduleAutosave();
+      }
+
       function m7SyncInspectorToParticle2(obj) {
         if (!obj) return;
 
@@ -8484,10 +8620,14 @@
         const grpSource = document.getElementById('grp-particle2-source');
         const grpMatrix = document.getElementById('grp-particle2-matrix');
         const grpSequence = document.getElementById('grp-particle2-sequence');
+        const grpParaCard = document.getElementById('grp-part2-paragraph-card');
+        const grpDelete = document.getElementById('grp-particle2-delete');
 
+        // If Intro or Outro: completely hide Media/Image Source & Screen Anchor Matrix (Gambar 1), and show Sequence
         if (grpTransform) grpTransform.style.display = isIntroOrOutro ? 'none' : 'flex';
         if (grpSource) grpSource.style.display = isIntroOrOutro ? 'none' : 'flex';
         if (grpMatrix) grpMatrix.style.display = isIntroOrOutro ? 'none' : 'flex';
+        if (grpDelete) grpDelete.style.display = isIntroOrOutro ? 'none' : 'flex';
         if (grpSequence) grpSequence.style.display = isIntroOrOutro ? 'flex' : 'none';
 
         if (isIntroOrOutro) {
@@ -8521,12 +8661,59 @@
           if (sliderIntensity) sliderIntensity.value = intensityVal;
           if (valIntensity) valIntensity.innerText = `${intensityVal}`;
 
-          const grpPara = document.getElementById('grp-part2-paragraph-controls');
-          if (grpPara) grpPara.style.display = (currentStyle === 'Paragraph (Text)') ? 'flex' : 'none';
+          // Show Gambar 2 Paragraph Card below if Paragraph (Text) is selected
+          const isParagraph = (currentStyle === 'Paragraph (Text)');
+          if (grpParaCard) grpParaCard.style.display = isParagraph ? 'flex' : 'none';
 
-          const inpText = document.getElementById('inp-part2-seq-text');
-          if (inpText) inpText.value = obj.text || (obj.type === 'Outro' ? 'Thanks for Watching!' : 'Welcome to the Show');
+          if (isParagraph) {
+            const slBgDark = document.getElementById('slider-part2-bgdark');
+            const valBgDark = document.getElementById('val-part2-bgdark');
+            if (slBgDark) slBgDark.value = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+            if (valBgDark) valBgDark.innerText = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+
+            const slBgBlur = document.getElementById('slider-part2-bgblur');
+            const valBgBlur = document.getElementById('val-part2-bgblur');
+            if (slBgBlur) slBgBlur.value = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
+            if (valBgBlur) valBgBlur.innerText = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
+
+            const selTextTrans = document.getElementById('sel-part2-texttrans');
+            if (selTextTrans) selTextTrans.value = obj.textTransition || 'Fade In/Out';
+
+            const selMainTrans = document.getElementById('sel-part2-maintrans');
+            if (selMainTrans) selMainTrans.value = obj.mainTransition || 'Fade to Video';
+
+            const selParaCount = document.getElementById('sel-part2-paracount');
+            if (selParaCount) selParaCount.value = obj.paragraphCount || 1;
+
+            const selParaDur = document.getElementById('sel-part2-paradur');
+            if (selParaDur) selParaDur.value = obj.paragraphDuration || '5s';
+
+            const txtP1 = document.getElementById('txt-part2-p1');
+            const txtP2 = document.getElementById('txt-part2-p2');
+            const txtP3 = document.getElementById('txt-part2-p3');
+            if (txtP1) txtP1.value = obj.introText1 || '';
+            if (txtP2) txtP2.value = obj.introText2 || '';
+            if (txtP3) txtP3.value = obj.introText3 || '';
+
+            m7UpdateParticle2ParaCount(obj.paragraphCount || 1, false);
+
+            const colText = document.getElementById('col-part2-textcolor');
+            if (colText) colText.value = obj.introTextColor || '#ffffff';
+
+            const selFont = document.getElementById('sel-part2-font');
+            if (selFont) selFont.value = obj.introFontFamily || 'Inter';
+
+            const slFontSize = document.getElementById('slider-part2-fontsize');
+            const valFontSize = document.getElementById('val-part2-fontsize');
+            if (slFontSize) slFontSize.value = obj.introFontSize || 32;
+            if (valFontSize) valFontSize.innerText = obj.introFontSize || 32;
+
+            const selAlign = document.getElementById('sel-part2-align');
+            if (selAlign) selAlign.value = obj.introTextAlign || 'center';
+          }
         } else {
+          if (grpParaCard) grpParaCard.style.display = 'none';
+
           // GAMBAR 1 PARITY: Transform, Shape & Media Source
           const selShape = document.getElementById('sel-part2-shapemode');
           if (selShape) selShape.value = obj.shapeMode || 'Original';
@@ -8574,10 +8761,11 @@
 
       function m7UpdateParticle2IntroStyle(style) {
         if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
-          activeParticle2s[activeSelectedParticle2Index].introStyle = style;
-          const grpPara = document.getElementById('grp-part2-paragraph-controls');
-          if (grpPara) grpPara.style.display = (style === 'Paragraph (Text)') ? 'flex' : 'none';
-          m7DrawParticle2Canvas(activeParticle2s[activeSelectedParticle2Index]);
+          const obj = activeParticle2s[activeSelectedParticle2Index];
+          obj.introStyle = style;
+          const grpParaCard = document.getElementById('grp-part2-paragraph-card');
+          if (grpParaCard) grpParaCard.style.display = (style === 'Paragraph (Text)') ? 'flex' : 'none';
+          m7DrawParticle2Canvas(obj);
           m7ScheduleAutosave();
         }
       }
@@ -8606,8 +8794,17 @@
           const valEl = document.getElementById('val-part2-single-intensity');
           if (valEl) valEl.innerText = val;
         }
-        if (prop === 'text') {
-          obj.text = val;
+        if (prop === 'darkIntensity') {
+          const valEl = document.getElementById('val-part2-bgdark');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'blurIntensity') {
+          const valEl = document.getElementById('val-part2-bgblur');
+          if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'introFontSize') {
+          const valEl = document.getElementById('val-part2-fontsize');
+          if (valEl) valEl.innerText = val;
         }
         if (prop === 'width') {
           const valEl = document.getElementById('val-part2-width');
@@ -9916,23 +10113,23 @@
         const grpNonParaDur = document.getElementById('grp-branding-nonpara-dur');
         const grpBlurControls = document.getElementById('grp-branding-blur-controls');
         const grpSingleEffectControl = document.getElementById('grp-branding-effect-intensity-control');
-        const grpParaControls = document.getElementById('grp-branding-paragraph-controls');
+        const grpParaCard = document.getElementById('grp-branding-paragraph-card');
 
         if (style === 'Paragraph (Text)') {
           if (grpNonParaDur) grpNonParaDur.style.display = 'none';
           if (grpBlurControls) grpBlurControls.style.display = 'none';
           if (grpSingleEffectControl) grpSingleEffectControl.style.display = 'none';
-          if (grpParaControls) grpParaControls.style.display = 'flex';
+          if (grpParaCard) grpParaCard.style.display = 'flex';
         } else if (style === 'Effect Blur') {
           if (grpNonParaDur) grpNonParaDur.style.display = 'flex';
           if (grpBlurControls) grpBlurControls.style.display = 'flex';
           if (grpSingleEffectControl) grpSingleEffectControl.style.display = 'none';
-          if (grpParaControls) grpParaControls.style.display = 'none';
+          if (grpParaCard) grpParaCard.style.display = 'none';
         } else {
           if (grpNonParaDur) grpNonParaDur.style.display = 'flex';
           if (grpBlurControls) grpBlurControls.style.display = 'none';
           if (grpSingleEffectControl) grpSingleEffectControl.style.display = 'flex';
-          if (grpParaControls) grpParaControls.style.display = 'none';
+          if (grpParaCard) grpParaCard.style.display = 'none';
         }
 
         if (updateObj) m7ScheduleAutosave();
@@ -9978,7 +10175,10 @@
         const grpSubscribe = document.getElementById('grp-branding-subscribe');
         const grpTransform = document.getElementById('grp-branding-transform');
         const grpSource = document.getElementById('grp-branding-source');
+        const grpMatrix = document.getElementById('grp-branding-matrix');
         const grpSequence = document.getElementById('grp-branding-sequence');
+        const grpParaCard = document.getElementById('grp-branding-paragraph-card');
+        const grpDelete = document.getElementById('grp-branding-delete');
 
         if (!obj) {
           obj = { type: 'Logo', width: 360, height: 180, rotation: 0, opacity: 1.0, shapeMode: 'Original', uniformScale: false };
@@ -10001,7 +10201,10 @@
           if (grpSubscribe) grpSubscribe.style.display = isSubscribe ? 'flex' : 'none';
           if (grpTransform) grpTransform.style.display = isIntroOrOutro ? 'none' : 'flex';
           if (grpSource) grpSource.style.display = isIntroOrOutro ? 'none' : 'flex';
+          if (grpMatrix) grpMatrix.style.display = isIntroOrOutro ? 'none' : 'flex';
+          if (grpDelete) grpDelete.style.display = isIntroOrOutro ? 'none' : 'flex';
           if (grpSequence) grpSequence.style.display = isIntroOrOutro ? 'flex' : 'none';
+          if (grpParaCard) grpParaCard.style.display = (isIntroOrOutro && (obj.introStyle === 'Paragraph (Text)')) ? 'flex' : 'none';
 
           if (!isIntroOrOutro) {
             // GAMBAR 3: Subscribe Interval
