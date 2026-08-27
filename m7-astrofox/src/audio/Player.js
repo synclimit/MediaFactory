@@ -116,16 +116,15 @@ export default class Player extends EventEmitter {
   }
 
   seek(val) {
-    if (this.playlistTotalDuration && this.playlistTotalDuration > 0) {
-      const globalTime = Math.max(0, Math.min(this.playlistTotalDuration, val * this.playlistTotalDuration));
-      this.emit('playlist-seek', { globalTime, pos: val });
-      return;
-    }
-
     const { audio } = this;
     if (audio) {
       audio.seek(val);
       this.emit('seek');
+    }
+
+    if (this.playlistTotalDuration && this.playlistTotalDuration > 0) {
+      const globalTime = Math.max(0, Math.min(this.playlistTotalDuration, val * this.playlistTotalDuration));
+      this.emit('playlist-seek', { globalTime, pos: val });
     }
   }
 

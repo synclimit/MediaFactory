@@ -18,6 +18,19 @@ export default function Player() {
         <VolumeControl />
         <ProgressControl />
         <ToggleButtons />
+        <button
+          id="m7-add-to-queue-btn"
+          className={styles.queueBtn}
+          title="Add to Render Queue / Start Render"
+          onClick={() => {
+            if (window.m7AddToQueueDirect) window.m7AddToQueueDirect();
+          }}
+        >
+          <svg className={styles.queueIcon} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <span>Add to Queue</span>
+        </button>
       </div>
     </div>
   );

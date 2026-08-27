@@ -1,56 +1,77 @@
 .buttons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   white-space: nowrap;
 }
 
 .button {
-  color: var(--text100);
-  background-color: transparent;
-  padding: 0;
-  margin-right: 4px;
-  display: inline-block;
-  flex-wrap: nowrap;
-  border: 2px solid var(--gray300);
-  height: 40px;
-  width: 40px;
-  border-radius: 20px;
-  line-height: 36px;
-  text-align: center;
-  vertical-align: middle;
-  transition: all 0.2s;
-
-  &:last-child {
-    margin-right: 0;
-  }
+  color: #f3f4f6;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  height: 28px;
+  width: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    border: 2px solid var(--primary100);
+    border-color: #f97316;
+    background-color: rgba(249, 115, 22, 0.18);
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
   }
 
   &:active {
-    border-color: var(--text100);
+    transform: scale(0.92);
+    border-color: #ea580c;
   }
 }
 
 .playButton {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(234, 88, 12, 0.15) 100%);
+  border-color: rgba(249, 115, 22, 0.45);
+
   .icon {
-    width: 36px;
-    height: 36px;
+    width: 14px;
+    height: 14px;
     margin-left: 2px;
+    fill: #ffffff;
+  }
+
+  &:hover {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    border-color: #f97316;
   }
 }
 
 .pauseButton {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%);
+  border-color: rgba(168, 85, 247, 0.5);
+  animation: playPulse 2s infinite ease-in-out;
+
   .icon {
-    width: 24px;
-    height: 24px;
-    margin: 6px;
+    width: 12px;
+    height: 12px;
+    fill: #ffffff;
   }
 }
 
 .stopButton {
   .icon {
-    width: 24px;
-    height: 24px;
-    margin: 6px;
+    width: 10px;
+    height: 10px;
+    fill: #9ca3af;
   }
+  &:hover .icon {
+    fill: #ffffff;
+  }
+}
+
+@keyframes playPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(168, 85, 247, 0.3); }
+  50% { box-shadow: 0 0 14px rgba(168, 85, 247, 0.6); }
 }

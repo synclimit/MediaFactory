@@ -1,25 +1,39 @@
 .volume {
   display: flex;
+  align-items: center;
 }
 
 .slider {
   display: flex;
   align-items: center;
-  width: 100px;
+  width: 65px;
 }
 
 .speaker {
-  margin-right: 10px;
+  margin-right: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: scale(1.15);
+  }
 
   .icon {
-    color: var(--text100);
-    width: 20px;
-    height: 20px;
+    color: #9ca3af;
+    width: 15px;
+    height: 15px;
+    transition: color 0.15s;
+  }
+
+  &:hover .icon {
+    color: #f97316;
   }
 }
 
 .mute {
   .icon {
-    color: var(--text300);
+    color: #ef4444 !important;
   }
 }

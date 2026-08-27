@@ -1,5 +1,8 @@
-export default class Audio {
+import EventEmitter from 'core/EventEmitter';
+
+export default class Audio extends EventEmitter {
   constructor(context) {
+    super();
     this.audioContext = context;
     this.source = null;
     this.buffer = null;
@@ -80,7 +83,9 @@ export default class Audio {
     this.source.onended = () => {
       if (this.playing) {
         this.stop();
-        this.emit('ended');
+        if (typeof this.emit === 'function') {
+          this.emit('ended');
+        }
       }
     };
     if (this.pitch !== undefined && this.pitch !== 0) {

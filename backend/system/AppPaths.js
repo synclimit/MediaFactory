@@ -196,6 +196,35 @@ class AppPaths {
         }
         return 'yt-dlp';
     }
+
+    getNodeJsPath() {
+        const candidateNodes = [
+            'C:\\Program Files\\nodejs\\node.exe',
+            'C:\\Program Files (x86)\\nodejs\\node.exe',
+            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'node', 'node.exe')
+        ];
+        for (const n of candidateNodes) {
+            if (fs.existsSync(n)) return n;
+        }
+        if (process.execPath && !process.execPath.toLowerCase().includes('electron') && fs.existsSync(process.execPath)) {
+            return process.execPath;
+        }
+        return 'node';
+    }
+
+    getYtDlpStandardArgs(extra = []) {
+        const nodePath = this.getNodeJsPath();
+        const ffmpegDir = this.getFFmpegDir();
+        return [
+            '--no-check-certificates',
+            '--force-ipv4',
+            '--js-runtimes', 'node:' + nodePath,
+            '--extractor-args', 'youtube:player_client=ios,mweb,web',
+            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0',
+            '--ffmpeg-location', ffmpegDir,
+            ...extra
+        ];
+    }
 }
 
 module.exports = new AppPaths();

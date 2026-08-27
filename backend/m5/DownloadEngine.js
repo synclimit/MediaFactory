@@ -41,7 +41,13 @@ class DownloadEngine {
             
             if (isSocial) {
                 // Using yt-dlp, preferring video+audio mp4 without watermark if possible
-                const ytArgs = ['-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]', '--no-playlist', '-o', outputPath, '--', url];
+                const ytArgs = AppPaths.getYtDlpStandardArgs([
+                    '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                    '--no-playlist',
+                    '-o', outputPath,
+                    '--',
+                    url
+                ]);
                 const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs);
                 
                 ytProc.stdout.on('data', (data) => {

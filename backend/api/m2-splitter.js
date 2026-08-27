@@ -27,7 +27,7 @@ router.post('/api/m2/splitter/metadata', async (req, res) => {
 
     try {
         const ytData = await new Promise((resolve, reject) => {
-            const ytArgs = ['--dump-json', '--no-playlist', '--', url];
+            const ytArgs = AppPaths.getYtDlpStandardArgs(['--dump-json', '--no-playlist', '--', url]);
             const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs);
             let stdoutData = '';
             let stderrData = '';
@@ -229,7 +229,16 @@ async function processSplitterJob(jobId, url, outputFolder, songs, videoId, vide
         job.progress = 0;
         
         await new Promise((resolve, reject) => {
-            const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', downloadPathTemplate, '--', url];
+            const ytArgs = AppPaths.getYtDlpStandardArgs([
+                '-f', 'bestaudio/best',
+                '--no-playlist',
+                '-x',
+                '--audio-format', 'mp3',
+                '--audio-quality', '0',
+                '-o', downloadPathTemplate,
+                '--',
+                url
+            ]);
             const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs);
             
             ytProc.stdout.on('data', chunk => {

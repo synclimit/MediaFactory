@@ -5,6 +5,7 @@ import M1SectionHeader from './ui/M1SectionHeader';
 import M1Button from './ui/M1Button';
 import M1Input from './ui/M1Input';
 import { getApiUrl } from '../../utils/apiUrl';
+import { downloadYoutubeThumbnail } from '../../utils/thumbnailDownloader';
 
 // ─── CYBER TOGGLE SWITCH ───
 function CyberToggle({ label, checked, onChange, title }) {
@@ -68,6 +69,32 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
   const [rephraseStyle, setRephraseStyle] = React.useState('clean_rephrase');
   const [originalDescBackup, setOriginalDescBackup] = React.useState(null);
   const [aiNotice, setAiNotice] = React.useState('');
+  const [isDownloadingThumb, setIsDownloadingThumb] = React.useState(false);
+  const [thumbNotice, setThumbNotice] = React.useState('');
+
+  const handleDownloadThumbnail = async () => {
+    if (!activeThumbnail && !slot?.videoId && !slot?.thumbnailUrl) {
+      alert('Belum ada thumbnail untuk diunduh. Silakan fetch link YouTube terlebih dahulu.');
+      return;
+    }
+    setIsDownloadingThumb(true);
+    setThumbNotice('Mengunduh thumbnail...');
+    try {
+      const result = await downloadYoutubeThumbnail({
+        videoId: slot?.videoId,
+        thumbnailUrl: slot?.manualThumbnail || slot?.thumbnailUrl,
+        title: slot?.videoTitle || slot?.outputName,
+        outputName: slot?.outputName
+      });
+      setThumbNotice(`✓ Disimpan: ${result.filename}`);
+      setTimeout(() => setThumbNotice(''), 3500);
+    } catch (err) {
+      alert('Gagal mengunduh thumbnail: ' + err.message);
+      setThumbNotice('');
+    } finally {
+      setIsDownloadingThumb(false);
+    }
+  };
 
   const handleAiRephrase = async () => {
     const currentText = slot?.originalDesc || slot?.cleanedDesc || '';
@@ -496,10 +523,10 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
             <div className="flex flex-col flex-1 bg-[#1a1c27] border border-[#2e3347] p-5 rounded-lg shadow-inner justify-between min-h-0 gap-4 relative overflow-hidden">
               
               {/* ZONE 1: ASSET IDENTITY (Big 16:9 Thumbnail Monitor + Meta Info) */}
-              <div className="flex gap-5 shrink-0 h-[175px]">
+              <div className="flex gap-5 shrink-0 min-h-[175px]">
                 
                 {/* Large 310px 16:9 Thumbnail Monitor Frame */}
-                <div className={`w-[310px] h-full shrink-0 bg-[#0d0e14] rounded relative overflow-hidden flex items-center justify-center shadow-inner group border transition-all ${
+                <div className={`w-[310px] h-[175px] shrink-0 bg-[#0d0e14] rounded relative overflow-hidden flex items-center justify-center shadow-inner group border transition-all ${
                   isReady ? 'border-orange-500/60 shadow-[0_0_15px_rgba(249,115,22,0.2)]' : 'border-[#2d3142]'
                 }`}>
                   {activeThumbnail ? (
@@ -525,7 +552,14 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                   {/* Subtle Scanline Overlay */}
                   <div className="absolute inset-0 z-20 pointer-events-none mix-blend-overlay opacity-10" style={{backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #fff 2px, #fff 4px)'}}></div>
 
-                  {/* Replace Thumbnail Hover Button */}
+                  {/* HD Badge in Top Left */}
+                  {activeThumbnail && (
+                    <div className="absolute top-2 left-2 z-20 bg-black/80 backdrop-blur-sm border border-orange-500/40 text-orange-400 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                      HD THUMBNAIL
+                    </div>
+                  )}
+
+                  {/* Replace Thumbnail & Download Thumbnail Hover Overlay */}
                   <input
                     id={`single-thumb-upload-${idx}`}
                     type="file"
@@ -538,23 +572,53 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                       }
                     }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById(`single-thumb-upload-${idx}`)?.click()}
-                    className="absolute inset-0 z-30 bg-black/80 hover:bg-orange-600/90 text-white text-[11px] font-['Rajdhani'] font-bold tracking-widest opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer uppercase"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    <span>GANTI THUMBNAIL</span>
-                  </button>
+                  <div className="absolute inset-0 z-30 bg-black/85 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-3">
+                    {activeThumbnail && (
+                      <button
+                        type="button"
+                        onClick={handleDownloadThumbnail}
+                        disabled={isDownloadingThumb}
+                        className="w-full py-1.5 px-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-['Rajdhani'] font-bold text-[11px] uppercase tracking-wider rounded shadow-[0_0_12px_rgba(16,185,129,0.4)] border border-emerald-300/40 flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                        title="Download thumbnail resolusi tinggi ke komputer"
+                      >
+                        {isDownloadingThumb ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>DOWNLOADING...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>DOWNLOAD THUMBNAIL</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById(`single-thumb-upload-${idx}`)?.click()}
+                      className="w-full py-1.5 px-3 bg-[#222634] hover:bg-orange-600 text-white text-[11px] font-['Rajdhani'] font-bold tracking-wider rounded border border-[#3b4054] hover:border-orange-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase active:scale-95"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                      <span>GANTI THUMBNAIL</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Metadata Details */}
                 <div className="flex flex-col justify-between min-w-0 flex-1 py-1">
                   <div>
-                    <span className="font-['Rajdhani'] block text-[10px] text-orange-400 font-bold tracking-widest uppercase mb-1">
-                      {slot?.sourceType === 'Audio File' ? 'AUDIO SOURCE TITLE' : 'YOUTUBE VIDEO TITLE'}
-                    </span>
-                    <span className={`font-['Rajdhani'] font-bold text-lg leading-snug line-clamp-3 uppercase ${isReady ? 'text-white drop-shadow-sm' : 'text-gray-500'}`}>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="font-['Rajdhani'] block text-[10px] text-orange-400 font-bold tracking-widest uppercase">
+                        {slot?.sourceType === 'Audio File' ? 'AUDIO SOURCE TITLE' : 'YOUTUBE VIDEO TITLE'}
+                      </span>
+                      {thumbNotice && (
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded shadow-sm animate-pulse truncate max-w-[180px]">
+                          {thumbNotice}
+                        </span>
+                      )}
+                    </div>
+                    <span className={`font-['Rajdhani'] font-bold text-lg leading-snug line-clamp-2 uppercase ${isReady ? 'text-white drop-shadow-sm' : 'text-gray-500'}`}>
                       {isReady ? (slot?.sourceType === 'Audio File' ? slot.audio.split(/[\\/]/).pop() : (slot?.videoTitle || slot?.outputName || 'YouTube Video')) : 'WAITING FOR METADATA...'}
                     </span>
                   </div>
@@ -568,6 +632,29 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                       <span className={`w-1.5 h-1.5 rounded-sm ${isReady ? 'bg-orange-500 shadow-[0_0_6px_rgba(249,115,22,1)]' : 'bg-gray-600'}`}></span>
                       DUR: {isReady ? slot?.duration : '--:--'}
                     </span>
+
+                    {/* Direct Download Button */}
+                    {activeThumbnail && (
+                      <button
+                        type="button"
+                        onClick={handleDownloadThumbnail}
+                        disabled={isDownloadingThumb}
+                        className="mt-1 w-full py-1.5 px-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white font-['Rajdhani'] font-bold text-xs uppercase tracking-widest rounded shadow-[0_0_12px_rgba(16,185,129,0.3)] border border-emerald-400/50 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                        title="Download YouTube Thumbnail resolusi tinggi (HD / MaxRes)"
+                      >
+                        {isDownloadingThumb ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>DOWNLOADING...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>DOWNLOAD THUMBNAIL (HD)</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

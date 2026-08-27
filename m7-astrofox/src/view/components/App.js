@@ -6,8 +6,8 @@ import Preload from 'components/window/Preload';
 import StatusBar from 'components/window/StatusBar';
 import TitleBar from 'components/window/TitleBar';
 import ControlDock from 'components/panels/ControlDock';
-import ReactorPanel from 'components/panels/ReactorPanel';
 import Player from 'components/player/Player';
+import TimelinePanel from 'components/panels/TimelinePanel';
 import Stage from 'components/stage/Stage';
 import { initApp } from 'actions/app';
 
@@ -27,7 +27,7 @@ function App() {
         <Layout id="viewport" direction="column">
           <Stage />
           <Player />
-          <ReactorPanel />
+          <TimelinePanel />
         </Layout>
       </Layout>
       <StatusBar />

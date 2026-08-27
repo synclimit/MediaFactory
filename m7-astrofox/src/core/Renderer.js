@@ -66,8 +66,45 @@ export default class Renderer {
     frameData.hasUpdate = playing || id === VIDEO_RENDERING;
     frameData.audioPlaying = playing;
     frameData.gain = analyzer.gain;
-    frameData.fft = analyzer.fft;
-    frameData.td = analyzer.td;
+
+    let fft = analyzer.fft;
+    let td = analyzer.td;
+
+    // When paused in the live editor (not export rendering), supply an aesthetic live preview wave
+    // so visualizers are always visible, customizable, and draggable on the canvas!
+    if (!playing && id !== VIDEO_RENDERING) {
+      const isSilent = !fft || fft.length === 0 || !Array.from(fft).some(v => v > 1);
+      if (isSilent) {
+        const fftLen = analyzer.fft?.length || 512;
+        const tdLen = analyzer.td?.length || 1024;
+
+        if (!this.previewFFT || this.previewFFT.length !== fftLen) {
+          this.previewFFT = new Uint8Array(fftLen);
+          this.previewTD = new Float32Array(tdLen);
+        }
+
+        const now = Date.now() * 0.003;
+        for (let i = 0; i < fftLen; i++) {
+          const freq = i / fftLen;
+          const bass = Math.sin(now * 1.8 + freq * 5.0) * 0.25 + 0.65;
+          const mid = Math.sin(now * 3.2 + freq * 14.0) * 0.2 + 0.45;
+          const decay = Math.pow(Math.max(0.01, 1.0 - freq * 0.72), 1.6);
+          const val = Math.max(0.12, Math.min(1.0, (bass * 0.6 + mid * 0.4) * decay));
+          this.previewFFT[i] = Math.round(val * 240);
+        }
+
+        for (let i = 0; i < tdLen; i++) {
+          const norm = i / tdLen;
+          this.previewTD[i] = Math.sin(now * 4.0 + norm * 12.0) * 0.35 + Math.sin(now * 2.0 + norm * 4.0) * 0.2;
+        }
+
+        fft = this.previewFFT;
+        td = this.previewTD;
+      }
+    }
+
+    frameData.fft = fft;
+    frameData.td = td;
     frameData.reactors = reactors.getResults(frameData);
     frameData.delta = delta;
 

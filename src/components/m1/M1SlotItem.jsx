@@ -1,4 +1,5 @@
 import React from 'react';
+import { downloadYoutubeThumbnail } from '../../utils/thumbnailDownloader';
 
 export default function M1SlotItem({ slot, idx, updateM1Slot, isDuplicateOutput, isDuplicateSource, isQueuedOutput, isQueuedSource, openConfigureModal }) {
   const isQueuedOutputCheck = isQueuedOutput(slot?.outputName);
@@ -17,6 +18,11 @@ export default function M1SlotItem({ slot, idx, updateM1Slot, isDuplicateOutput,
   const hasOutput = Boolean(slot?.outputName && slot?.outputName.trim() !== '');
   const isReady = Boolean(hasValidSource && hasOutput && (slot?.isApproved || slot?.isFetched || slot?.status === 'CONFIGURED' || slot?.status === 'APPROVED'));
   const slotStatus = isReady ? (slot?.status && slot?.status !== 'EMPTY' ? slot.status : 'APPROVED') : 'EMPTY';
+
+  let slotThumb = null;
+  if (slot?.manualThumbnail) slotThumb = slot.manualThumbnail;
+  else if (slot?.thumbnailUrl) slotThumb = slot.thumbnailUrl;
+  else if (slot?.sourceType === 'YouTube URL' && slot?.videoId) slotThumb = `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg`;
 
   return (
     <div className={`relative p-[1px] rounded-xl overflow-hidden transition-all duration-200 group/card h-full flex flex-col ${isQueued ? 'opacity-80' : ''}`}>
@@ -81,12 +87,43 @@ export default function M1SlotItem({ slot, idx, updateM1Slot, isDuplicateOutput,
             </div>
 
             <div className="flex flex-1 p-2.5 gap-3 items-center">
-              {/* RDY Badge Box with Orange Trim */}
-              <div className="w-14 h-11 bg-orange-500/10 rounded border border-orange-500/50 flex items-center justify-center flex-shrink-0 group-hover/ready:border-orange-400 group-hover/ready:bg-orange-500/20 transition-all shadow-[inset_0_0_8px_rgba(0,0,0,0.6)]">
-                <span className="font-['Rajdhani'] font-bold text-[11px] text-orange-400 tracking-[0.2em] uppercase drop-shadow-[0_0_5px_rgba(249,115,22,0.6)]">
-                  RDY
-                </span>
-              </div>
+              {/* Thumbnail / RDY Badge Box */}
+              {slotThumb ? (
+                <div className="w-16 h-11 rounded border border-orange-500/50 relative overflow-hidden flex-shrink-0 group/thumb shadow-[inset_0_0_8px_rgba(0,0,0,0.6)] bg-black">
+                  <img 
+                    src={slotThumb} 
+                    alt="Thumb" 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      if (slot?.videoId && !e.target.src.includes('hqdefault')) {
+                        e.target.src = `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg`;
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      downloadYoutubeThumbnail({
+                        videoId: slot?.videoId,
+                        thumbnailUrl: slot?.manualThumbnail || slot?.thumbnailUrl,
+                        title: slot?.videoTitle || slot?.outputName,
+                        outputName: slot?.outputName
+                      });
+                    }}
+                    className="absolute inset-0 bg-black/80 hover:bg-emerald-600/90 text-white text-[8px] font-bold opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center gap-0.5 cursor-pointer z-20"
+                    title="Download YouTube Thumbnail (HD)"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="w-14 h-11 bg-orange-500/10 rounded border border-orange-500/50 flex items-center justify-center flex-shrink-0 group-hover/ready:border-orange-400 group-hover/ready:bg-orange-500/20 transition-all shadow-[inset_0_0_8px_rgba(0,0,0,0.6)]">
+                  <span className="font-['Rajdhani'] font-bold text-[11px] text-orange-400 tracking-[0.2em] uppercase drop-shadow-[0_0_5px_rgba(249,115,22,0.6)]">
+                    RDY
+                  </span>
+                </div>
+              )}
 
               {/* Checklist & Info */}
               <div className="flex flex-col justify-center flex-1 space-y-0.5 font-mono text-[9px] uppercase tracking-wider text-gray-300">

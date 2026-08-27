@@ -385,10 +385,19 @@
         transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      #m7-studio-dock.collapsed {
-        transform: translateX(-100%);
-        opacity: 0;
-        pointer-events: none;
+      /* Timeline Full-Width Bottom Integration (Timeline stretches across bottom, dock & preview stay visible) */
+      body.timeline-full-width #m7-studio-dock {
+        bottom: 220px !important;
+        transition: bottom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      body.timeline-full-width.timeline-expanded-height #m7-studio-dock {
+        bottom: 360px !important;
+      }
+      body.timeline-full-width #viewport {
+        padding-bottom: 220px !important;
+      }
+      body.timeline-full-width.timeline-expanded-height #viewport {
+        padding-bottom: 360px !important;
       }
 
       /* Middle Category Panel (Takes 50% of the dock) */
@@ -705,35 +714,6 @@
       }
       input:checked + .m7-switch-slider:before {
         transform: translateX(14px);
-      }
-
-      /* Custom Add to Queue Button */
-      #m7-add-to-queue-btn {
-        position: fixed;
-        bottom: 38px;
-        right: 16px;
-        z-index: 99999;
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.4px;
-        cursor: pointer;
-        box-shadow: 0 4px 18px rgba(249, 115, 22, 0.45), 0 0 10px rgba(249, 115, 22, 0.25);
-        transition: all 0.2s ease;
-        user-select: none;
-      }
-      #m7-add-to-queue-btn:hover {
-        background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
-        box-shadow: 0 6px 24px rgba(249, 115, 22, 0.65), 0 0 14px rgba(249, 115, 22, 0.4);
-        transform: translateY(-1.5px);
       }
 
       /* PLAYLIST & MODULE SPECIFIC STYLES */
@@ -1534,12 +1514,6 @@
       <button class="m7-rail-item" id="rail-btn-thumbnail" title="Static Thumbnail Studio (JPG)" onclick="m7SelectCategory('thumbnail')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         <span class="m7-rail-label">Thumbnail</span>
-      </button>
-
-      <!-- Toggle / Collapse Sidebar Button to Shift Editor Fully Left -->
-      <button class="m7-rail-item" id="rail-btn-collapse" title="Collapse / Expand Sidebar (Shift Editor Left)" onclick="m7ToggleSidebar()" style="margin-top:auto; border-top:1px solid rgba(255,255,255,0.08); padding-top:4px;">
-        <svg id="rail-collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
-        <span class="m7-rail-label" id="rail-collapse-label">Hide</span>
       </button>
     </nav>
 
@@ -3671,17 +3645,25 @@
             <div class="m7-control-group" id="grp-part2-seq-dur-wrap">
               <div class="m7-control-label-row">
                 <span id="lbl-part2-seq-dur-label">Intro Duration</span>
-                <span class="m7-control-val" id="val-part2-seq-dur">3.0s</span>
               </div>
-              <input type="range" class="m7-slider" min="0.5" max="15.0" step="0.5" value="3.0" id="slider-part2-seq-dur" oninput="m7UpdateParticle2Prop('duration', parseFloat(this.value))">
+              <select class="m7-select" id="sel-part2-seq-dur" onchange="m7UpdateParticle2Prop('introDuration', this.value)">
+                <option value="1s">1s</option>
+                <option value="2s">2s</option>
+                <option value="3s" selected>3s</option>
+                <option value="4s">4s</option>
+                <option value="5s">5s</option>
+                <option value="6s">6s</option>
+                <option value="8s">8s</option>
+                <option value="10s">10s</option>
+              </select>
             </div>
 
             <div class="m7-control-group" id="grp-part2-effect-intensity-control">
               <div class="m7-control-label-row">
                 <span>Effect Intensity</span>
-                <span class="m7-control-val" id="val-part2-single-intensity">75</span>
+                <span class="m7-control-val" id="val-part2-single-intensity">40</span>
               </div>
-              <input type="range" class="m7-slider" min="0" max="100" value="75" id="slider-part2-single-intensity" oninput="m7UpdateParticle2Prop('intensity', parseInt(this.value))">
+              <input type="range" class="m7-slider" min="0" max="100" value="40" id="slider-part2-single-intensity" oninput="m7UpdateParticle2Prop('intensity', parseInt(this.value))">
             </div>
           </div>
 
@@ -3755,11 +3737,20 @@
             </div>
 
             <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
-              <span style="font-size:10px; font-weight:800; color:#f97316; letter-spacing:0.5px; text-transform:uppercase; display:block; margin-bottom:6px;">TEXT CONTENT</span>
-              <div id="container-part2-textareas" style="display:flex; flex-direction:column; gap:6px;">
-                <textarea id="txt-part2-p1" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 1..." oninput="m7UpdateParticle2Prop('introText1', this.value)"></textarea>
-                <textarea id="txt-part2-p2" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 2..." oninput="m7UpdateParticle2Prop('introText2', this.value)"></textarea>
-                <textarea id="txt-part2-p3" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 3..." oninput="m7UpdateParticle2Prop('introText3', this.value)"></textarea>
+              <span style="font-size:10px; font-weight:800; color:#f97316; letter-spacing:0.5px; text-transform:uppercase; display:block; margin-bottom:6px;">TEXT CONTENT (SEQUENTIAL SLIDES)</span>
+              <div id="container-part2-textareas" style="display:flex; flex-direction:column; gap:8px;">
+                <div id="box-part2-p1" style="display:flex; flex-direction:column; gap:3px;">
+                  <span id="lbl-part2-p1-time" style="font-size:9px; font-weight:800; color:#38bdf8; letter-spacing:0.4px;">PARAGRAPH 1 (0s - 5s)</span>
+                  <textarea id="txt-part2-p1" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 1..." onfocus="m7SetActivePreviewParagraph(0)" oninput="m7UpdateParticle2Prop('introText1', this.value)"></textarea>
+                </div>
+                <div id="box-part2-p2" style="display:none; flex-direction:column; gap:3px;">
+                  <span id="lbl-part2-p2-time" style="font-size:9px; font-weight:800; color:#38bdf8; letter-spacing:0.4px;">PARAGRAPH 2 (5s - 10s)</span>
+                  <textarea id="txt-part2-p2" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 2..." onfocus="m7SetActivePreviewParagraph(1)" oninput="m7UpdateParticle2Prop('introText2', this.value)"></textarea>
+                </div>
+                <div id="box-part2-p3" style="display:none; flex-direction:column; gap:3px;">
+                  <span id="lbl-part2-p3-time" style="font-size:9px; font-weight:800; color:#38bdf8; letter-spacing:0.4px;">PARAGRAPH 3 (10s - 15s)</span>
+                  <textarea id="txt-part2-p3" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 3..." onfocus="m7SetActivePreviewParagraph(2)" oninput="m7UpdateParticle2Prop('introText3', this.value)"></textarea>
+                </div>
               </div>
             </div>
 
@@ -4573,11 +4564,20 @@
             </div>
 
             <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
-              <span style="font-size:10px; font-weight:800; color:#f97316; letter-spacing:0.5px; text-transform:uppercase; display:block; margin-bottom:6px;">TEXT CONTENT</span>
-              <div id="container-branding-textareas" style="display:flex; flex-direction:column; gap:6px;">
-                <textarea id="txt-branding-p1" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 1..." oninput="m7UpdateBrandingProp('introText1', this.value)"></textarea>
-                <textarea id="txt-branding-p2" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 2..." oninput="m7UpdateBrandingProp('introText2', this.value)"></textarea>
-                <textarea id="txt-branding-p3" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px; display:none;" placeholder="Paragraf 3..." oninput="m7UpdateBrandingProp('introText3', this.value)"></textarea>
+              <span style="font-size:10px; font-weight:800; color:#f97316; letter-spacing:0.5px; text-transform:uppercase; display:block; margin-bottom:6px;">TEXT CONTENT (SEQUENTIAL SLIDES)</span>
+              <div id="container-branding-textareas" style="display:flex; flex-direction:column; gap:8px;">
+                <div id="box-branding-p1" style="display:flex; flex-direction:column; gap:3px;">
+                  <span id="lbl-branding-p1-time" style="font-size:9px; font-weight:800; color:#38bdf8; letter-spacing:0.4px;">PARAGRAPH 1 (0s - 5s)</span>
+                  <textarea id="txt-branding-p1" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 1..." onfocus="m7SetActivePreviewParagraph(0)" oninput="m7UpdateBrandingProp('introText1', this.value)"></textarea>
+                </div>
+                <div id="box-branding-p2" style="display:none; flex-direction:column; gap:3px;">
+                  <span id="lbl-branding-p2-time" style="font-size:9px; font-weight:800; color:#38bdf8; letter-spacing:0.4px;">PARAGRAPH 2 (5s - 10s)</span>
+                  <textarea id="txt-branding-p2" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 2..." onfocus="m7SetActivePreviewParagraph(1)" oninput="m7UpdateBrandingProp('introText2', this.value)"></textarea>
+                </div>
+                <div id="box-branding-p3" style="display:none; flex-direction:column; gap:3px;">
+                  <span id="lbl-branding-p3-time" style="font-size:9px; font-weight:800; color:#38bdf8; letter-spacing:0.4px;">PARAGRAPH 3 (10s - 15s)</span>
+                  <textarea id="txt-branding-p3" class="m7-select" style="height:54px; resize:vertical; font-family:sans-serif; padding:6px;" placeholder="Paragraf 3..." onfocus="m7SetActivePreviewParagraph(2)" oninput="m7UpdateBrandingProp('introText3', this.value)"></textarea>
+                </div>
               </div>
             </div>
 
@@ -5656,14 +5656,6 @@
       </div>
     </div>
 
-    <!-- ADD TO QUEUE BUTTON -->
-    <button id="m7-add-to-queue-btn" title="Add to Render Queue / Start Render" onclick="m7AddToQueueDirect()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M8 5v14l11-7z"/>
-      </svg>
-      <span>Add to Queue</span>
-    </button>
-
     <script src="app.js"></script>
 
     <!-- LIVE INTERACTIVE CONTROLLER SCRIPT -->
@@ -5788,6 +5780,352 @@
         }
       }
 
+      // Expose active state arrays to window for TimelinePanel
+      window.m7GetTracksState = function() {
+        return {
+          playlistTracks: (typeof playlistTracks !== 'undefined') ? playlistTracks : [],
+          activeVisualizers: (typeof activeVisualizers !== 'undefined') ? activeVisualizers : [],
+          activeBackgrounds: (typeof activeBackgrounds !== 'undefined') ? activeBackgrounds : [],
+          activeParticles: (typeof activeParticles !== 'undefined') ? activeParticles : [],
+          activeParticle2s: (typeof activeParticle2s !== 'undefined') ? activeParticle2s : [],
+          activeBrandingObjects: (typeof activeBrandingObjects !== 'undefined') ? activeBrandingObjects : [],
+          activeEffects: (typeof activeEffects !== 'undefined') ? activeEffects : [],
+          activeOverlayObjects: (typeof activeOverlayObjects !== 'undefined') ? activeOverlayObjects : [],
+          activeTextObjects: (typeof activeTextObjects !== 'undefined') ? activeTextObjects : [],
+          activeSelectedTrackIndex: (typeof activeSelectedTrackIndex !== 'undefined') ? activeSelectedTrackIndex : 0,
+          activeSelectedVizIndex: (typeof activeSelectedVizIndex !== 'undefined') ? activeSelectedVizIndex : 0,
+          activeSelectedBgIndex: (typeof activeSelectedBgIndex !== 'undefined') ? activeSelectedBgIndex : 0,
+          activeSelectedParticleIndex: (typeof activeSelectedParticleIndex !== 'undefined') ? activeSelectedParticleIndex : 0,
+          activeSelectedParticle2Index: (typeof activeSelectedParticle2Index !== 'undefined') ? activeSelectedParticle2Index : 0,
+          activeSelectedEffectIndex: (typeof activeSelectedEffectIndex !== 'undefined') ? activeSelectedEffectIndex : -1,
+          activeSelectedOverlayIndex: (typeof activeSelectedOverlayIndex !== 'undefined') ? activeSelectedOverlayIndex : -1,
+          activeSelectedTextIndex: (typeof activeSelectedTextIndex !== 'undefined') ? activeSelectedTextIndex : -1,
+          audioSettings: (typeof audioSettings !== 'undefined') ? audioSettings : {}
+        };
+      };
+
+      // Toggle track visibility from Timeline
+      window.m7ToggleTrackVisibility = function(trackKey, isVisible) {
+        const scene = getOrCreateActiveScene();
+        if (trackKey === 'intro' || trackKey === 'outro') {
+          activeParticle2s.filter(p => p.type === 'Intro' || p.type === 'Outro').forEach(p => { p.visible = isVisible; if (p.display) p.display.enabled = isVisible; });
+          activeBrandingObjects.filter(b => b.type === 'Intro' || b.type === 'Outro').forEach(b => { b.visible = isVisible; if (b.display) b.display.enabled = isVisible; });
+        } else if (trackKey === 'bg') {
+          activeBackgrounds.forEach(b => {
+            b.visible = isVisible;
+            if (b.display) {
+              b.display.enabled = isVisible;
+              if (b.display.properties) b.display.properties.hidden = !isVisible;
+            }
+          });
+        } else if (trackKey === 'viz' || trackKey.startsWith('viz_')) {
+          const match = trackKey.match(/^viz_(.+)$/);
+          if (match) {
+            const target = activeVisualizers.find((v, idx) => v.id === match[1] || String(idx) === match[1]);
+            if (target) {
+              target.visible = isVisible;
+              if (target.display) {
+                target.display.enabled = isVisible;
+                if (target.display.properties) target.display.properties.hidden = !isVisible;
+              }
+            }
+          } else {
+            activeVisualizers.forEach(v => {
+              v.visible = isVisible;
+              if (v.display) {
+                v.display.enabled = isVisible;
+                if (v.display.properties) v.display.properties.hidden = !isVisible;
+              }
+            });
+          }
+        } else if (trackKey === 'particle' || trackKey.startsWith('part_')) {
+          const match = trackKey.match(/^part_(.+)$/);
+          if (match) {
+            const target = activeParticles.find((p, idx) => p.id === match[1] || String(idx) === match[1]);
+            if (target) {
+              target.visible = isVisible;
+              if (target.display) {
+                target.display.enabled = isVisible;
+                if (target.display.properties) target.display.properties.hidden = !isVisible;
+              }
+            }
+          } else {
+            activeParticles.forEach(p => {
+              p.visible = isVisible;
+              if (p.display) {
+                p.display.enabled = isVisible;
+                if (p.display.properties) p.display.properties.hidden = !isVisible;
+              }
+            });
+          }
+        } else if (trackKey === 'vfx' || trackKey.startsWith('vfx_')) {
+          const match = trackKey.match(/^vfx_(.+)$/);
+          if (match && typeof activeEffects !== 'undefined') {
+            const target = activeEffects.find((e, idx) => e.id === match[1] || String(idx) === match[1]);
+            if (target) {
+              target.enabled = isVisible;
+            }
+          } else if (typeof activeEffects !== 'undefined') {
+            activeEffects.forEach(e => { e.enabled = isVisible; });
+          }
+          if (typeof m7EnsureVisualFXDisplay === 'function') m7EnsureVisualFXDisplay();
+        } else if (trackKey === 'overlay' || trackKey.startsWith('overlay_')) {
+          const match = trackKey.match(/^overlay_(.+)$/);
+          if (match && typeof activeOverlayObjects !== 'undefined') {
+            const target = activeOverlayObjects.find((o, idx) => o.id === match[1] || String(idx) === match[1]);
+            if (target) {
+              target.visible = isVisible;
+              if (target.display) target.display.enabled = isVisible;
+            }
+          } else if (typeof activeOverlayObjects !== 'undefined') {
+            activeOverlayObjects.forEach(o => {
+              o.visible = isVisible;
+              if (o.display) o.display.enabled = isVisible;
+            });
+          }
+        } else if (trackKey === 'text' || trackKey.startsWith('text_')) {
+          const match = trackKey.match(/^text_(.+)$/);
+          if (match && typeof activeTextObjects !== 'undefined') {
+            const target = activeTextObjects.find((t, idx) => t.id === match[1] || String(idx) === match[1]);
+            if (target) {
+              target.visible = isVisible;
+              if (target.display) target.display.enabled = isVisible;
+            }
+          } else if (typeof activeTextObjects !== 'undefined') {
+            activeTextObjects.forEach(t => {
+              t.visible = isVisible;
+              if (t.display) t.display.enabled = isVisible;
+            });
+          }
+        } else if (trackKey === 'particle2' || trackKey.startsWith('p2_')) {
+          const match = trackKey.match(/^p2_(.+)$/);
+          if (match) {
+            const target = activeParticle2s.find((p, idx) => p.id === match[1] || String(idx) === match[1]);
+            if (target) {
+              target.visible = isVisible;
+              if (target.display) target.display.enabled = isVisible;
+            }
+          } else {
+            activeParticle2s.filter(p => p.type !== 'Intro' && p.type !== 'Outro').forEach(p => {
+              p.visible = isVisible;
+              if (p.display) p.display.enabled = isVisible;
+            });
+          }
+        } else if (trackKey === 'audio') {
+          const core = window.__ASTROFOX_CORE__;
+          if (core && core.player && core.player.setVolume) {
+            core.player.setVolume(isVisible ? (audioSettings.masterVolume / 100) : 0);
+          }
+        }
+
+        const events = window.__ASTROFOX_CORE__?.events;
+        if (events && events.emit) {
+          events.emit('render');
+        }
+      };
+
+      // Delete active element from selected timeline track
+      window.m7DeleteTrackElement = function(trackKey) {
+        const scene = getOrCreateActiveScene();
+        if (trackKey === 'viz' || trackKey.startsWith('viz_')) {
+          const match = trackKey.match(/^viz_(.+)$/);
+          let targetIdx = activeSelectedVizIndex;
+          if (match) {
+            const found = activeVisualizers.findIndex((v, idx) => v.id === match[1] || String(idx) === match[1]);
+            if (found !== -1) targetIdx = found;
+          }
+          if (activeVisualizers.length > 0 && activeVisualizers[targetIdx]) {
+            const viz = activeVisualizers[targetIdx];
+            if (viz.display && scene) scene.removeElement(viz.display);
+            activeVisualizers.splice(targetIdx, 1);
+            activeSelectedVizIndex = Math.max(0, activeVisualizers.length - 1);
+            if (typeof m7RenderVisualizerList === 'function') m7RenderVisualizerList();
+          }
+        } else if (trackKey === 'particle' || trackKey.startsWith('part_')) {
+          const match = trackKey.match(/^part_(.+)$/);
+          let targetIdx = activeSelectedParticleIndex;
+          if (match) {
+            const found = activeParticles.findIndex((p, idx) => p.id === match[1] || String(idx) === match[1]);
+            if (found !== -1) targetIdx = found;
+          }
+          if (activeParticles.length > 0 && activeParticles[targetIdx]) {
+            const p = activeParticles[targetIdx];
+            if (p.display && scene) scene.removeElement(p.display);
+            activeParticles.splice(targetIdx, 1);
+            activeSelectedParticleIndex = Math.max(0, activeParticles.length - 1);
+            if (typeof m7RenderParticleList === 'function') m7RenderParticleList();
+          }
+        } else if (trackKey === 'intro') {
+          activeParticle2s = activeParticle2s.filter(p => p.type !== 'Intro');
+          activeBrandingObjects = activeBrandingObjects.filter(b => b.type !== 'Intro');
+          if (typeof m7RenderParticle2List === 'function') m7RenderParticle2List();
+          if (typeof m7RenderBrandingList === 'function') m7RenderBrandingList();
+        } else if (trackKey === 'outro') {
+          activeParticle2s = activeParticle2s.filter(p => p.type !== 'Outro');
+          activeBrandingObjects = activeBrandingObjects.filter(b => b.type !== 'Outro');
+          if (typeof m7RenderParticle2List === 'function') m7RenderParticle2List();
+          if (typeof m7RenderBrandingList === 'function') m7RenderBrandingList();
+        } else if (trackKey === 'bg') {
+          activeBackgrounds = [];
+          if (scene) {
+            const bgs = scene.displays.filter(d => 
+              d.name === 'ImageDisplay' || d.displayName === 'Image' || 
+              d.name === 'ShaderBackgroundDisplay' || d.name === 'CaYaturBackgroundDisplay'
+            );
+            bgs.forEach(d => scene.removeElement(d));
+          }
+          if (typeof m7RenderBackgroundList === 'function') m7RenderBackgroundList();
+        } else if (trackKey === 'vfx' || trackKey.startsWith('vfx_')) {
+          const match = trackKey.match(/^vfx_(.+)$/);
+          let targetIdx = activeSelectedEffectIndex;
+          if (match && typeof activeEffects !== 'undefined') {
+            const found = activeEffects.findIndex((e, idx) => e.id === match[1] || String(idx) === match[1]);
+            if (found !== -1) targetIdx = found;
+          }
+          if (typeof activeEffects !== 'undefined' && targetIdx >= 0 && targetIdx < activeEffects.length) {
+            if (typeof m7RemoveEffect === 'function') {
+              m7RemoveEffect(targetIdx);
+            } else {
+              activeEffects.splice(targetIdx, 1);
+              if (typeof m7EnsureVisualFXDisplay === 'function') m7EnsureVisualFXDisplay();
+              if (typeof m7RenderEffectList === 'function') m7RenderEffectList();
+            }
+          }
+        } else if (trackKey === 'overlay' || trackKey.startsWith('overlay_')) {
+          const match = trackKey.match(/^overlay_(.+)$/);
+          let targetIdx = activeSelectedOverlayIndex;
+          if (match && typeof activeOverlayObjects !== 'undefined') {
+            const found = activeOverlayObjects.findIndex((o, idx) => o.id === match[1] || String(idx) === match[1]);
+            if (found !== -1) targetIdx = found;
+          }
+          if (typeof activeOverlayObjects !== 'undefined' && targetIdx >= 0 && targetIdx < activeOverlayObjects.length) {
+            if (typeof m7RemoveOverlayObject === 'function') {
+              m7RemoveOverlayObject(targetIdx);
+            } else {
+              activeOverlayObjects.splice(targetIdx, 1);
+              if (typeof m7RenderOverlayList === 'function') m7RenderOverlayList();
+            }
+          }
+        } else if (trackKey === 'text' || trackKey.startsWith('text_')) {
+          const match = trackKey.match(/^text_(.+)$/);
+          let targetIdx = activeSelectedTextIndex;
+          if (match && typeof activeTextObjects !== 'undefined') {
+            const found = activeTextObjects.findIndex((t, idx) => t.id === match[1] || String(idx) === match[1]);
+            if (found !== -1) targetIdx = found;
+          }
+          if (typeof activeTextObjects !== 'undefined' && targetIdx >= 0 && targetIdx < activeTextObjects.length) {
+            if (typeof m7RemoveTextObject === 'function') {
+              m7RemoveTextObject(targetIdx);
+            } else {
+              activeTextObjects.splice(targetIdx, 1);
+              if (typeof m7RenderTextList === 'function') m7RenderTextList();
+            }
+          }
+        } else if (trackKey === 'particle2' || trackKey.startsWith('p2_')) {
+          const match = trackKey.match(/^p2_(.+)$/);
+          let targetIdx = activeSelectedParticle2Index;
+          if (match) {
+            const found = activeParticle2s.findIndex((p, idx) => p.id === match[1] || String(idx) === match[1]);
+            if (found !== -1) targetIdx = found;
+          }
+          if (targetIdx >= 0 && targetIdx < activeParticle2s.length) {
+            if (typeof m7RemoveParticle2 === 'function') {
+              m7RemoveParticle2(targetIdx);
+            }
+          }
+        }
+
+        const events = window.__ASTROFOX_CORE__?.events;
+        if (events && events.emit) events.emit('render');
+        if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
+        window.dispatchEvent(new CustomEvent('m7-workspace-change'));
+      };
+
+      // Item selection helpers from Timeline
+      window.m7SelectEffectById = function(id) {
+        if (typeof activeEffects === 'undefined') return;
+        const idx = activeEffects.findIndex((e, i) => e.id === id || String(i) === id);
+        if (idx !== -1) {
+          activeSelectedEffectIndex = idx;
+          if (typeof m7RenderEffectList === 'function') m7RenderEffectList();
+          if (typeof m7SyncInspectorToEffect === 'function' && activeEffects[idx]) {
+            m7SyncInspectorToEffect(activeEffects[idx]);
+          }
+        }
+      };
+
+      window.m7SelectTextByIndex = function(idx) {
+        if (typeof activeTextObjects === 'undefined') return;
+        if (idx >= 0 && idx < activeTextObjects.length) {
+          activeSelectedTextIndex = idx;
+          activeCategory = 'text';
+          if (typeof m7RenderTextList === 'function') m7RenderTextList();
+          if (typeof m7SyncInspectorToText === 'function') {
+            m7SyncInspectorToText(activeTextObjects[idx]);
+          }
+          m7IsGizmoSelected = true;
+          if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
+        }
+      };
+
+      window.m7SelectOverlayByIndex = function(idx) {
+        if (typeof activeOverlayObjects === 'undefined') return;
+        if (idx >= 0 && idx < activeOverlayObjects.length) {
+          activeSelectedOverlayIndex = idx;
+          activeCategory = 'overlay';
+          if (typeof m7RenderOverlayList === 'function') m7RenderOverlayList();
+          if (typeof m7SyncInspectorToOverlay === 'function') {
+            m7SyncInspectorToOverlay(activeOverlayObjects[idx]);
+          }
+          m7IsGizmoSelected = true;
+          if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
+        }
+      };
+
+      window.m7SelectVizByIndex = function(idx) {
+        if (typeof activeVisualizers === 'undefined') return;
+        if (idx >= 0 && idx < activeVisualizers.length) {
+          activeSelectedVizIndex = idx;
+          activeCategory = 'visualizer';
+          if (typeof m7RenderVisualizerList === 'function') m7RenderVisualizerList();
+          if (typeof m7SyncInspectorToViz === 'function' && activeVisualizers[idx].display) {
+            m7SyncInspectorToViz(activeVisualizers[idx].display);
+          }
+          m7IsGizmoSelected = true;
+          if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
+        }
+      };
+
+      window.m7SelectParticleByIndex = function(idx) {
+        if (typeof activeParticles === 'undefined') return;
+        if (idx >= 0 && idx < activeParticles.length) {
+          activeSelectedParticleIndex = idx;
+          activeCategory = 'particle';
+          if (typeof m7RenderParticleList === 'function') m7RenderParticleList();
+          if (typeof m7SyncInspectorToParticle === 'function' && activeParticles[idx].display) {
+            m7SyncInspectorToParticle(activeParticles[idx].display);
+          }
+        }
+      };
+
+      // Duplicate active element from selected timeline track
+      window.m7DuplicateTrackElement = function(trackKey) {
+        if (trackKey === 'viz') {
+          if (activeVisualizers.length > 0 && activeVisualizers[activeSelectedVizIndex]) {
+            const orig = activeVisualizers[activeSelectedVizIndex];
+            if (typeof m7SelectVizModel === 'function') {
+              m7SelectVizModel(orig.preset || 'stereo glow', true);
+            }
+          }
+        } else if (trackKey === 'particle') {
+          if (typeof m7AddParticleSystem === 'function') {
+            m7AddParticleSystem();
+          }
+        }
+        const events = window.__ASTROFOX_CORE__?.events;
+        if (events && events.emit) events.emit('render');
+      };
+
       function m7FormatTime(seconds) {
         if (!seconds || isNaN(seconds)) return '00:00';
         const mins = Math.floor(seconds / 60);
@@ -5801,35 +6139,38 @@
         const dock = document.getElementById('m7-studio-dock');
         const app = document.getElementById('app');
         const thumbViewport = document.getElementById('m7-thumbnail-viewport');
-        const collapseIcon = document.getElementById('rail-collapse-icon');
-        const collapseLabel = document.getElementById('rail-collapse-label');
+        const arrow = document.getElementById('m7-drawer-arrow');
+
+        document.body.classList.toggle('m7-dock-collapsed', m7SidebarCollapsed);
 
         if (m7SidebarCollapsed) {
           if (dock) dock.classList.add('collapsed');
           if (app) app.classList.add('dock-collapsed');
           if (thumbViewport) thumbViewport.classList.add('dock-collapsed');
-          if (collapseIcon) collapseIcon.innerHTML = '<polyline points="9 18 15 12 9 6"></polyline>';
-          if (collapseLabel) collapseLabel.textContent = 'Show';
+          if (arrow) arrow.innerText = '▶';
         } else {
           if (dock) dock.classList.remove('collapsed');
           if (app) app.classList.remove('dock-collapsed');
           if (thumbViewport) thumbViewport.classList.remove('dock-collapsed');
-          if (collapseIcon) collapseIcon.innerHTML = '<polyline points="15 18 9 12 15 6"></polyline>';
-          if (collapseLabel) collapseLabel.textContent = 'Hide';
+          if (arrow) arrow.innerText = '◀';
         }
 
         setTimeout(() => {
           window.dispatchEvent(new Event('resize'));
+          const events = window.__ASTROFOX_CORE__?.events;
+          if (events && events.emit) events.emit('render');
           if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
           if (typeof m7UpdateThumbnailGizmo === 'function') m7UpdateThumbnailGizmo();
-        }, 300);
+        }, 150);
       }
+      window.m7ToggleSidebar = m7ToggleSidebar;
 
       function m7SelectCategory(type) {
         if (m7SidebarCollapsed) {
           m7ToggleSidebar();
         }
         activeCategory = type;
+        window.activeCategory = type;
         document.querySelectorAll('.m7-rail-item:not(#rail-btn-collapse)').forEach(el => el.classList.remove('active'));
         const activeBtn = document.getElementById('rail-btn-' + (type === 'visualizer' ? 'viz' : (type === 'background' ? 'bg' : type)));
         if (activeBtn) activeBtn.classList.add('active');
@@ -5918,13 +6259,14 @@
             if (secParticle2) secParticle2.style.display = 'flex';
             if (inspParticle2) inspParticle2.style.display = 'flex';
             if (tag) tag.innerText = 'PARTICLE 2';
+            m7SyncParticle2DisplaysWithScene();
             m7RenderParticle2List();
             if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
               m7SelectParticle2Object(activeSelectedParticle2Index);
             } else if (activeParticle2s.length > 0) {
               m7SelectParticle2Object(0);
             } else {
-              m7SelectOrAddParticle2Preset('Logo');
+              m7SyncInspectorToParticle2(null);
             }
           } else if (type === 'fx' || type === 'visualfx') {
             if (secFx) secFx.style.display = 'flex';
@@ -5938,12 +6280,13 @@
               inspOverlay.style.setProperty('display', 'flex', 'important');
             }
             if (tag) tag.innerText = 'OVERLAY';
+            m7RenderOverlayList();
             if (activeSelectedOverlayIndex >= 0 && activeOverlayObjects[activeSelectedOverlayIndex]) {
               m7SelectOverlayObject(activeSelectedOverlayIndex);
             } else if (activeOverlayObjects.length > 0) {
               m7SelectOverlayObject(0);
             } else {
-              m7SelectOrAddOverlayPreset('Candle Flame');
+              m7SyncInspectorToOverlay(null);
             }
           } else if (type === 'text' || type === 'lyrics') {
             if (secText) secText.style.display = 'flex';
@@ -5959,12 +6302,13 @@
               inspBranding.style.setProperty('display', 'flex', 'important');
             }
             if (tag) tag.innerText = 'BRANDING';
+            m7RenderBrandingList();
             if (activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex]) {
               m7SelectBrandingObject(activeSelectedBrandingIndex);
             } else if (activeBrandingObjects.length > 0) {
               m7SelectBrandingObject(0);
             } else {
-              m7SelectOrAddBrandingPreset('Logo');
+              m7SyncInspectorToBranding(null);
             }
           } else if (type === 'branding2') {
             if (secBranding2) secBranding2.style.display = 'flex';
@@ -5973,12 +6317,13 @@
               inspBranding2.style.setProperty('display', 'flex', 'important');
             }
             if (tag) tag.innerText = 'BRANDING 2';
+            m7RenderBranding2List();
             if (activeSelectedBranding2Index >= 0 && activeBranding2Objects[activeSelectedBranding2Index]) {
               m7SelectBranding2Object(activeSelectedBranding2Index);
             } else if (activeBranding2Objects.length > 0) {
               m7SelectBranding2Object(0);
             } else {
-              m7SelectOrAddBranding2Preset('Logo');
+              m7SyncInspectorToBranding2(null);
             }
           } else if (type === 'branding3') {
             if (secBranding3) secBranding3.style.display = 'flex';
@@ -5987,12 +6332,13 @@
               inspBranding3.style.setProperty('display', 'flex', 'important');
             }
             if (tag) tag.innerText = 'BRANDING 3';
+            m7RenderBranding3List();
             if (activeSelectedBranding3Index >= 0 && activeBranding3Objects[activeSelectedBranding3Index]) {
               m7SelectBranding3Object(activeSelectedBranding3Index);
             } else if (activeBranding3Objects.length > 0) {
               m7SelectBranding3Object(0);
             } else {
-              m7SelectOrAddBranding3Preset('Logo');
+              m7SyncInspectorToBranding3(null);
             }
           } else if (type === 'branding4') {
             if (secBranding4) secBranding4.style.display = 'flex';
@@ -6004,7 +6350,7 @@
             } else if (activeBranding4Objects.length > 0) {
               m7SelectBranding4Object(0);
             } else {
-              m7SelectOrAddBranding4Preset('Logo');
+              m7SyncInspectorToBranding4(null);
             }
           }
 
@@ -8190,25 +8536,814 @@
       }
 
       /* === 4b. PARTICLE 2 MODULE FUNCTIONS (LOGO, WATERMARK, INTRO, OUTRO, SUBSCRIBE) === */
+      function m7DrawVectorBell(ctx, cx, cy, size, color = '#ffffff') {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(1.5, size * 0.08);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        const r = size * 0.42;
+
+        // Bell Top Handle
+        ctx.beginPath();
+        ctx.arc(cx, cy - r * 0.85, r * 0.22, Math.PI, 0);
+        ctx.stroke();
+
+        // Bell Main Body
+        ctx.beginPath();
+        ctx.moveTo(cx - r * 0.2, cy - r * 0.65);
+        ctx.bezierCurveTo(cx - r * 0.65, cy - r * 0.35, cx - r * 0.75, cy + r * 0.4, cx - r * 1.0, cy + r * 0.65);
+        ctx.lineTo(cx + r * 1.0, cy + r * 0.65);
+        ctx.bezierCurveTo(cx + r * 0.75, cy + r * 0.4, cx + r * 0.65, cy - r * 0.35, cx + r * 0.2, cy - r * 0.65);
+        ctx.closePath();
+        ctx.fill();
+
+        // Bell Clapper at bottom
+        ctx.beginPath();
+        ctx.arc(cx, cy + r * 0.88, r * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ring ripples / sound waves
+        ctx.beginPath();
+        ctx.arc(cx - r * 1.3, cy + r * 0.1, r * 0.32, Math.PI * 0.7, Math.PI * 1.3);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx + r * 1.3, cy + r * 0.1, r * 0.32, -Math.PI * 0.3, Math.PI * 0.3);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function m7DrawVectorShield(ctx, cx, cy, size, col = '#f59e0b') {
+        ctx.save();
+        const w = size * 0.45;
+        const h = size * 0.55;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - h);
+        ctx.lineTo(cx + w, cy - h * 0.7);
+        ctx.lineTo(cx + w, cy + h * 0.1);
+        ctx.bezierCurveTo(cx + w, cy + h * 0.6, cx, cy + h * 0.95, cx, cy + h);
+        ctx.bezierCurveTo(cx, cy + h * 0.95, cx - w, cy + h * 0.6, cx - w, cy + h * 0.1);
+        ctx.lineTo(cx - w, cy - h * 0.7);
+        ctx.closePath();
+
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
+        ctx.fill();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = Math.max(2, size * 0.08);
+        ctx.stroke();
+
+        // Inner emblem
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * 0.16, 0, Math.PI * 2);
+        ctx.fillStyle = col;
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function m7DrawVectorWatermarkIcon(ctx, cx, cy, size, col = '#38bdf8') {
+        ctx.save();
+        const r = size * 0.42;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r * 1.1);
+        ctx.bezierCurveTo(cx + r * 0.9, cy - r * 0.1, cx + r * 0.9, cy + r * 0.8, cx, cy + r * 0.95);
+        ctx.bezierCurveTo(cx - r * 0.9, cy + r * 0.8, cx - r * 0.9, cy - r * 0.1, cx, cy - r * 1.1);
+        ctx.closePath();
+
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+        ctx.fill();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = Math.max(1.5, size * 0.08);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function m7DrawSubscribeWidget(ctx, w, h, obj) {
+        const pad = 4;
+        const pillW = w - pad * 2;
+        const pillH = h - pad * 2;
+        const pillX = pad;
+        const pillY = pad;
+        const radius = pillH / 2;
+
+        // Modern YouTube subscribe gradient pill
+        const grad = ctx.createLinearGradient(pillX, pillY, pillX + pillW, pillY + pillH);
+        grad.addColorStop(0, '#ef4444');
+        grad.addColorStop(1, '#dc2626');
+
+        ctx.fillStyle = grad;
+        ctx.shadowColor = 'rgba(239, 68, 68, 0.45)';
+        ctx.shadowBlur = 14;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 3;
+
+        ctx.beginPath();
+        m7SafeRoundRect(ctx, pillX, pillY, pillW, pillH, radius);
+        ctx.fill();
+
+        // Glossy outline
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // Bell icon position
+        const bellSize = Math.min(26, pillH * 0.52);
+        const bellX = pillX + radius * 0.95;
+        const bellY = pillY + pillH / 2;
+        m7DrawVectorBell(ctx, bellX, bellY, bellSize, '#ffffff');
+
+        // Text "SUBSCRIBE"
+        const fontSize = Math.max(12, Math.min(20, Math.floor(pillH * 0.38)));
+        ctx.font = `900 ${fontSize}px "Segoe UI", Inter, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('SUBSCRIBE', bellX + bellSize * 0.95, bellY);
+      }
+
+      function m7DrawWatermarkWidget(ctx, w, h, obj) {
+        ctx.clearRect(0, 0, w, h);
+        const cx = w / 2;
+        const cy = h / 2;
+        const size = Math.min(w, h);
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(14, 165, 233, 0.25)';
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+        ctx.lineWidth = Math.max(1.5, size * 0.03);
+
+        const rw = w * 0.9;
+        const rh = h * 0.6;
+        const rx = cx - rw / 2;
+        const ry = cy - rh / 2;
+
+        ctx.beginPath();
+        if (typeof m7SafeRoundRect === 'function') {
+          m7SafeRoundRect(ctx, rx, ry, rw, rh, Math.min(10, rh * 0.3));
+        } else {
+          ctx.rect(rx, ry, rw, rh);
+        }
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = `bold ${Math.round(rh * 0.42)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(obj?.watermarkText || obj?.text || 'WATERMARK', cx, cy);
+        ctx.restore();
+      }
+
+      function m7DrawLogoPlaceholderWidget(ctx, w, h, obj) {
+        ctx.clearRect(0, 0, w, h);
+        const cx = w / 2;
+        const cy = h / 2;
+        const size = Math.min(w, h);
+
+        ctx.save();
+        // Shield / Emblem Logo Graphic
+        const r = size * 0.42;
+        const grad = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+        grad.addColorStop(0, '#f97316');
+        grad.addColorStop(0.5, '#ea580c');
+        grad.addColorStop(1, '#9a3412');
+
+        ctx.fillStyle = grad;
+        ctx.shadowColor = 'rgba(249, 115, 22, 0.5)';
+        ctx.shadowBlur = Math.round(size * 0.12);
+
+        // Draw shield path
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r);
+        ctx.lineTo(cx + r, cy - r * 0.4);
+        ctx.lineTo(cx + r * 0.85, cy + r * 0.4);
+        ctx.lineTo(cx, cy + r);
+        ctx.lineTo(cx - r * 0.85, cy + r * 0.4);
+        ctx.lineTo(cx - r, cy - r * 0.4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Glowing border
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.lineWidth = Math.max(2, size * 0.035);
+        ctx.stroke();
+
+        // Star / Crown / Icon Text
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 ${Math.round(size * 0.22)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('LOGO', cx, cy);
+
+        ctx.restore();
+      }
+
+      let activePreviewParagraphIndex = 0;
+      function m7SetActivePreviewParagraph(idx) {
+        activePreviewParagraphIndex = idx;
+        if (activeCategory === 'particle2' && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+          m7DrawParticle2Canvas(activeParticle2s[activeSelectedParticle2Index]);
+        } else if (activeCategory === 'branding' && activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex]) {
+          m7DrawBrandingCanvas(activeBrandingObjects[activeSelectedBrandingIndex]);
+        }
+      }
+
+      function m7UpdateParagraphTimeLabels(obj) {
+        if (!obj) return;
+        const dur = Math.max(1, parseFloat(obj.paragraphDuration) || 5.0);
+        for (let i = 1; i <= 3; i++) {
+          const startSec = (i - 1) * dur;
+          const endSec = i * dur;
+          ['lbl-part2-p' + i + '-time', 'lbl-branding-p' + i + '-time', 'lbl-branding2-p' + i + '-time'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = `PARAGRAPH ${i} (${startSec}s - ${endSec}s)`;
+          });
+        }
+      }
+
+      function m7DrawIntroOutroWidget(ctx, w, h, obj, progressOverride = null, curTimeParam = null) {
+        if (!obj || obj.visible === false) {
+          ctx.clearRect(0, 0, w, h);
+          return;
+        }
+
+        const isOutro = (obj.type === 'Outro');
+        const style = obj.introStyle || (isOutro ? 'Fade from Black' : 'Focus Pull (Blur)');
+        const rawIntensity = obj.intensity !== undefined ? obj.intensity : (isOutro ? 80 : 100);
+        const intensity = Math.max(0.0, Math.min(1.0, rawIntensity / 100));
+
+        let activeEase = 1.0;
+        if (progressOverride !== null) {
+          activeEase = Math.max(0.0, Math.min(1.0, progressOverride));
+        }
+
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.save();
+
+        if (style === 'Fade from Black') {
+          if (activeEase <= 0.001) { ctx.restore(); return; }
+          const alpha = Math.min(1.0, activeEase * intensity);
+          ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+          ctx.fillRect(0, 0, w, h);
+        } else if (style === 'Fade from White') {
+          if (activeEase <= 0.001) { ctx.restore(); return; }
+          const alpha = Math.min(1.0, activeEase * intensity);
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+          ctx.fillRect(0, 0, w, h);
+        } else if (style === 'Focus Pull (Blur)') {
+          if (activeEase <= 0.001) { ctx.restore(); return; }
+          const darkAlpha = Math.min(0.98, activeEase * intensity);
+
+          // Deep Frosted Dark Base
+          ctx.fillStyle = `rgba(2, 4, 10, ${darkAlpha * 0.85})`;
+          ctx.fillRect(0, 0, w, h);
+
+          const innerR = Math.max(20, (w * 0.18) * (1.0 - activeEase));
+          const outerR = Math.max(w, h) * 0.78;
+          const rad = ctx.createRadialGradient(w / 2, h / 2, innerR, w / 2, h / 2, outerR);
+          rad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+          rad.addColorStop(0.3, `rgba(0, 0, 0, ${activeEase * 0.45 * intensity})`);
+          rad.addColorStop(0.65, `rgba(1, 3, 10, ${activeEase * 0.85 * intensity})`);
+          rad.addColorStop(1, `rgba(0, 0, 0, ${activeEase * 0.99 * intensity})`);
+          ctx.fillStyle = rad;
+          ctx.fillRect(0, 0, w, h);
+        } else if (style === 'Effect Blur') {
+          if (activeEase <= 0.001) { ctx.restore(); return; }
+          const baseAlpha = Math.min(0.98, activeEase * intensity);
+
+          // Deep Frosted Dark Base
+          ctx.fillStyle = `rgba(2, 5, 14, ${baseAlpha * 0.88})`;
+          ctx.fillRect(0, 0, w, h);
+
+          // Multi-Tier Defocused Shadow Dispersion
+          const blurRad = ctx.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, Math.max(w, h) * 0.7);
+          blurRad.addColorStop(0, `rgba(0, 0, 0, ${baseAlpha * 0.45})`);
+          blurRad.addColorStop(0.35, `rgba(15, 23, 42, ${baseAlpha * 0.7})`);
+          blurRad.addColorStop(0.7, `rgba(2, 6, 23, ${baseAlpha * 0.92})`);
+          blurRad.addColorStop(1, `rgba(0, 0, 0, ${baseAlpha * 0.99})`);
+          ctx.fillStyle = blurRad;
+          ctx.fillRect(0, 0, w, h);
+        } else if (style === 'Cinematic Vignette') {
+          if (activeEase <= 0.001) { ctx.restore(); return; }
+          const innerR = Math.max(10, (w * 0.2) * (1.0 - activeEase));
+          const outerR = Math.max(w, h) * 0.82;
+          const vig = ctx.createRadialGradient(w / 2, h / 2, innerR, w / 2, h / 2, outerR);
+          vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
+          vig.addColorStop(0.45, `rgba(0, 0, 0, ${activeEase * 0.65 * intensity})`);
+          vig.addColorStop(1, `rgba(0, 0, 0, ${activeEase * 0.98 * intensity})`);
+          ctx.fillStyle = vig;
+          ctx.fillRect(0, 0, w, h);
+        } else if (style === 'Paragraph (Text)') {
+          // Multi-Slide Sequential Paragraph Storytelling System
+          const count = Math.max(1, Math.min(3, parseInt(obj.paragraphCount) || 1));
+          const paraDur = Math.max(1.0, parseFloat(obj.paragraphDuration) || 5.0);
+          const totalSeqDur = count * paraDur;
+
+          const player = window.__ASTROFOX_CORE__?.player;
+          const isPlaying = player?.isPlaying ? player.isPlaying() : false;
+          const curTime = (curTimeParam !== null) ? curTimeParam : (player?.getCurrentTime ? player.getCurrentTime() : 0);
+
+          const trackDur = playlistTracks[activeSelectedTrackIndex]?.duration || 0;
+          const totalDuration = (trackDur > 0) ? trackDur : (player?.getDuration ? player.getDuration() : 60) || 60;
+
+          let isInsideSeq = false;
+          let seqTime = 0.0;
+          let activeParaIdx = 0;
+          let paraEase = 1.0;
+          let phase = 'holding';
+          let transProgress = 1.0;
+
+          if (!isPlaying && progressOverride === 1.0) {
+            // Live Editor Preview mode: preview currently selected/focused paragraph!
+            isInsideSeq = true;
+            activeParaIdx = Math.min(count - 1, Math.max(0, activePreviewParagraphIndex || 0));
+            paraEase = 1.0;
+            phase = 'holding';
+            transProgress = 1.0;
+          } else if (!isOutro) {
+            // Intro sequence: 0 <= curTime <= totalSeqDur
+            if (curTime <= totalSeqDur) {
+              isInsideSeq = true;
+              seqTime = Math.max(0, Math.min(totalSeqDur, curTime));
+              activeParaIdx = Math.min(count - 1, Math.floor(seqTime / paraDur));
+              const paraStart = activeParaIdx * paraDur;
+              const tau = Math.max(0, Math.min(paraDur, seqTime - paraStart));
+              const transDur = Math.min(0.8, paraDur * 0.25);
+
+              if (tau < transDur) {
+                phase = 'entering';
+                transProgress = tau / transDur;
+                paraEase = 0.5 * (1.0 - Math.cos(transProgress * Math.PI));
+              } else if (tau > (paraDur - transDur)) {
+                phase = 'exiting';
+                transProgress = (tau - (paraDur - transDur)) / transDur;
+                paraEase = 0.5 * (1.0 + Math.cos(transProgress * Math.PI));
+              } else {
+                phase = 'holding';
+                transProgress = 1.0;
+                paraEase = 1.0;
+              }
+            }
+          } else {
+            // Outro sequence: (totalDuration - totalSeqDur) <= curTime <= totalDuration
+            const startOutro = Math.max(0, totalDuration - totalSeqDur);
+            if (curTime >= startOutro && curTime <= totalDuration) {
+              isInsideSeq = true;
+              seqTime = Math.max(0, Math.min(totalSeqDur, curTime - startOutro));
+              activeParaIdx = Math.min(count - 1, Math.floor(seqTime / paraDur));
+              const paraStart = activeParaIdx * paraDur;
+              const tau = Math.max(0, Math.min(paraDur, seqTime - paraStart));
+              const transDur = Math.min(0.8, paraDur * 0.25);
+
+              if (tau < transDur) {
+                phase = 'entering';
+                transProgress = tau / transDur;
+                paraEase = 0.5 * (1.0 - Math.cos(transProgress * Math.PI));
+              } else if (tau > (paraDur - transDur)) {
+                phase = 'exiting';
+                transProgress = (tau - (paraDur - transDur)) / transDur;
+                paraEase = 0.5 * (1.0 + Math.cos(transProgress * Math.PI));
+              } else {
+                phase = 'holding';
+                transProgress = 1.0;
+                paraEase = 1.0;
+              }
+            }
+          }
+
+          if (!isInsideSeq) {
+            ctx.restore();
+            return;
+          }
+
+          // 1. Cinematic Frosted Shadow Backdrop
+          const darkPct = (obj.darkIntensity !== undefined ? obj.darkIntensity : 100) / 100;
+          const blurPct = (obj.blurIntensity !== undefined ? obj.blurIntensity : 40) / 100;
+
+          let backdropAlpha = darkPct * intensity;
+          const endTransDur = Math.min(0.8, paraDur * 0.3);
+
+          if (!isOutro && isPlaying && curTime > (totalSeqDur - endTransDur)) {
+            const endProgress = (curTime - (totalSeqDur - endTransDur)) / endTransDur;
+            backdropAlpha = darkPct * intensity * 0.5 * (1.0 + Math.cos(endProgress * Math.PI));
+          } else if (isOutro && isPlaying) {
+            const startOutro = Math.max(0, totalDuration - totalSeqDur);
+            if (curTime < startOutro + endTransDur) {
+              const startProgress = Math.min(1.0, (curTime - startOutro) / endTransDur);
+              backdropAlpha = darkPct * intensity * 0.5 * (1.0 - Math.cos(startProgress * Math.PI));
+            }
+          }
+
+          const darkAlpha = Math.min(1.0, backdropAlpha);
+
+          // Layer A: Base Ambient Dark Veil
+          ctx.fillStyle = `rgba(3, 5, 12, ${darkAlpha * 0.85})`;
+          ctx.fillRect(0, 0, w, h);
+
+          // Layer B: Deep Radial Shadow Vignette (Bayangan Menyelubung dari Tepi ke Tengah)
+          const radShadow = ctx.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, Math.max(w, h) * 0.75);
+          radShadow.addColorStop(0, `rgba(0, 0, 0, ${darkAlpha * (0.2 + blurPct * 0.4)})`);
+          radShadow.addColorStop(0.4, `rgba(2, 6, 18, ${darkAlpha * (0.5 + blurPct * 0.45)})`);
+          radShadow.addColorStop(1, `rgba(0, 0, 0, ${darkAlpha * 0.98})`);
+          ctx.fillStyle = radShadow;
+          ctx.fillRect(0, 0, w, h);
+
+          // Layer C: Soft Frosted Shadow Halo / Diffuse Center Bokeh Band
+          if (blurPct > 0) {
+            // Horizontal Letterbox Frosted Shadow Ribbon
+            const bandH = Math.max(160, h * 0.55);
+            const bandGrad = ctx.createLinearGradient(0, (h - bandH) / 2, 0, (h + bandH) / 2);
+            bandGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            bandGrad.addColorStop(0.2, `rgba(1, 3, 10, ${darkAlpha * blurPct * 0.75})`);
+            bandGrad.addColorStop(0.5, `rgba(0, 0, 0, ${darkAlpha * blurPct * 0.92})`);
+            bandGrad.addColorStop(0.8, `rgba(1, 3, 10, ${darkAlpha * blurPct * 0.75})`);
+            bandGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = bandGrad;
+            ctx.fillRect(0, (h - bandH) / 2, w, bandH);
+
+            // Elliptical Frosted Glass Ambient Glow
+            const glowRad = ctx.createRadialGradient(w / 2, h / 2, 30, w / 2, h / 2, Math.max(w, h) * 0.6);
+            glowRad.addColorStop(0, `rgba(30, 41, 59, ${darkAlpha * blurPct * 0.35})`);
+            glowRad.addColorStop(0.6, `rgba(15, 23, 42, ${darkAlpha * blurPct * 0.6})`);
+            glowRad.addColorStop(1, `rgba(0, 0, 0, ${darkAlpha * blurPct * 0.85})`);
+            ctx.fillStyle = glowRad;
+            ctx.fillRect(0, 0, w, h);
+          }
+
+          // 2. Resolve Active Paragraph Text
+          let rawText = '';
+          if (activeParaIdx === 0) {
+            rawText = obj.introText1 || (isOutro ? 'THANKS FOR WATCHING' : (playlistTracks[activeSelectedTrackIndex]?.name || 'NOW PLAYING'));
+          } else if (activeParaIdx === 1) {
+            rawText = obj.introText2 || (isOutro ? 'Subscribe for More Videos' : 'Official Visualizer');
+          } else if (activeParaIdx === 2) {
+            rawText = obj.introText3 || (isOutro ? 'See you in the next video!' : 'Enjoy the Music');
+          }
+
+          if (rawText && rawText.trim().length > 0) {
+            ctx.save();
+
+            // 3. Apply Text Transition
+            const textTrans = obj.textTransition || 'Fade In/Out';
+
+            if (textTrans === 'Slide Up') {
+              let offsetY = 0;
+              if (phase === 'entering') offsetY = (1.0 - paraEase) * 45;
+              else if (phase === 'exiting') offsetY = -(1.0 - paraEase) * 45;
+              ctx.translate(0, offsetY);
+              ctx.globalAlpha = Math.max(0.0, Math.min(1.0, paraEase));
+            } else if (textTrans === 'Zoom In') {
+              let scale = 1.0;
+              if (phase === 'entering') scale = 0.85 + 0.15 * paraEase;
+              else if (phase === 'exiting') scale = 1.0 + 0.15 * (1.0 - paraEase);
+              ctx.translate(w / 2, h / 2);
+              ctx.scale(scale, scale);
+              ctx.translate(-w / 2, -h / 2);
+              ctx.globalAlpha = Math.max(0.0, Math.min(1.0, paraEase));
+            } else if (textTrans === 'Typewriter') {
+              if (phase === 'entering') {
+                const charCount = Math.floor(rawText.length * transProgress);
+                rawText = rawText.substring(0, charCount) + (charCount < rawText.length ? '▍' : '');
+                ctx.globalAlpha = 1.0;
+              } else {
+                ctx.globalAlpha = Math.max(0.0, Math.min(1.0, paraEase));
+              }
+            } else if (textTrans === 'Focus Pull (Text)') {
+              const blurVal = Math.round((1.0 - paraEase) * 20);
+              ctx.shadowColor = obj.introTextColor || '#ffffff';
+              ctx.shadowBlur = blurVal;
+              ctx.globalAlpha = Math.max(0.0, Math.min(1.0, paraEase));
+            } else if (textTrans === 'Cinematic Tracking') {
+              const drift = 0.97 + 0.06 * (phase === 'entering' ? transProgress : (1.0 - transProgress));
+              ctx.translate(w / 2, h / 2);
+              ctx.scale(drift, drift);
+              ctx.translate(-w / 2, -h / 2);
+              ctx.globalAlpha = Math.max(0.0, Math.min(1.0, paraEase));
+            } else {
+              // Fade In/Out default
+              ctx.globalAlpha = Math.max(0.0, Math.min(1.0, paraEase));
+            }
+
+            // 4. Render Multi-Line Paragraph Text with Multi-Layered Drop Shadows
+            const fontFam = obj.introFontFamily || 'Outfit, "Segoe UI", Inter, sans-serif';
+            const baseSize = obj.introFontSize || 36;
+            const align = obj.introTextAlign || 'center';
+            const textColor = obj.introTextColor || '#ffffff';
+
+            const lines = rawText.split('\n');
+            const lineHeight = baseSize * 1.35;
+            const totalTextH = lines.length * lineHeight;
+            const startY = (h / 2) - (totalTextH / 2) + (lineHeight / 2);
+            const startX = (align === 'center') ? (w / 2) : ((align === 'left') ? (w * 0.15) : (w * 0.85));
+
+            ctx.font = `900 ${baseSize}px ${fontFam}`;
+            ctx.textAlign = align;
+            ctx.textBaseline = 'middle';
+
+            // Pass 1: Wide Deep Ambient Shadow Dispersion (Bayangan Lembut Menyebar Luas)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.98)';
+            ctx.shadowBlur = Math.round(36 + blurPct * 35);
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 8;
+            lines.forEach((line, lineIdx) => {
+              ctx.fillText(line, startX, startY + (lineIdx * lineHeight));
+            });
+
+            // Pass 2: Medium Directional Drop Shadow (Bayangan Jatuh Menengah)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.92)';
+            ctx.shadowBlur = 18;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 4;
+            lines.forEach((line, lineIdx) => {
+              ctx.fillText(line, startX, startY + (lineIdx * lineHeight));
+            });
+
+            // Pass 3: Crisp Foreground Typography (Teks Utama Bersih Tajam)
+            ctx.fillStyle = textColor;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 1;
+            lines.forEach((line, lineIdx) => {
+              ctx.fillText(line, startX, startY + (lineIdx * lineHeight));
+            });
+
+            ctx.restore();
+          }
+        }
+
+        ctx.restore();
+      }
+
+      function m7GetWorkspaceBrandingAsset(key) {
+        try {
+          const activeWs = localStorage.getItem('mf_active_workspace') || 'DEFAULT';
+          const candidates = [activeWs, 'DEFAULT', 'default', 'Test 1', 'test 1'];
+
+          // 1. Direct candidates from localStorage
+          for (const ws of candidates) {
+            if (key === 'logo' || key === 'avatar') {
+              const avatar = localStorage.getItem(`mf_workspace_avatar_${ws}`);
+              if (avatar) return avatar;
+            }
+
+            const brandingStr = localStorage.getItem(`mf_workspace_branding_${ws}`);
+            if (brandingStr) {
+              try {
+                const branding = JSON.parse(brandingStr);
+                if (branding) {
+                  if ((key === 'logo' || key === 'avatar') && (branding.logo || branding.avatar)) return branding.logo || branding.avatar;
+                  if (key === 'watermark' && branding.watermark) return branding.watermark;
+                  if ((key === 'subscribe' || key === 'subscribeAnim') && (branding.subscribeAnim || branding.subscribe)) {
+                    return branding.subscribeAnim || branding.subscribe;
+                  }
+                  if (key === 'overlay' && branding.overlay) return branding.overlay;
+                }
+              } catch(e) {}
+            }
+          }
+
+          // 2. Scan all localStorage keys for any avatar or branding
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (!k) continue;
+            if ((key === 'logo' || key === 'avatar') && k.startsWith('mf_workspace_avatar_')) {
+              const val = localStorage.getItem(k);
+              if (val) return val;
+            }
+            if (k.startsWith('mf_workspace_branding_')) {
+              try {
+                const b = JSON.parse(localStorage.getItem(k) || '{}');
+                if ((key === 'logo' || key === 'avatar') && (b.logo || b.avatar)) return b.logo || b.avatar;
+                if (key === 'watermark' && b.watermark) return b.watermark;
+                if ((key === 'subscribe' || key === 'subscribeAnim') && (b.subscribeAnim || b.subscribe)) return b.subscribeAnim || b.subscribe;
+              } catch(e) {}
+            }
+          }
+
+          // 3. Scan .mediafactory/assets/branding directories for logo, watermark, subscribe, overlay files
+          try {
+            let fsMod = (typeof require !== 'undefined' ? require('fs') : (window.require ? window.require('fs') : null));
+            let pathMod = (typeof require !== 'undefined' ? require('path') : (window.require ? window.require('path') : null));
+            if (fsMod) {
+              const brandingBaseDirs = [
+                'D:/MediaFactory/.mediafactory/assets/branding',
+                'D:\\MediaFactory\\.mediafactory\\assets\\branding',
+                './.mediafactory/assets/branding',
+                '../.mediafactory/assets/branding',
+                '.mediafactory/assets/branding'
+              ];
+              for (const bBase of brandingBaseDirs) {
+                if (fsMod.existsSync(bBase)) {
+                  const subDirs = fsMod.readdirSync(bBase);
+                  const targetSubDirs = [activeWs, 'default', 'DEFAULT', ...subDirs];
+                  for (const sDir of targetSubDirs) {
+                    const fullSub = pathMod ? pathMod.join(bBase, sDir) : `${bBase}/${sDir}`;
+                    if (fsMod.existsSync(fullSub) && fsMod.statSync(fullSub).isDirectory()) {
+                      const files = fsMod.readdirSync(fullSub);
+                      let matchingFiles = [];
+                      for (const f of files) {
+                        const low = f.toLowerCase();
+                        if ((key === 'logo' || key === 'avatar') && low.startsWith('logo_')) matchingFiles.push(f);
+                        else if (key === 'watermark' && low.startsWith('watermark_')) matchingFiles.push(f);
+                        else if ((key === 'subscribe' || key === 'subscribeAnim') && low.startsWith('subscribeanim_')) matchingFiles.push(f);
+                        else if (key === 'overlay' && low.startsWith('overlay_')) matchingFiles.push(f);
+                      }
+                      if (matchingFiles.length > 0) {
+                        matchingFiles.sort((a, b) => {
+                          const timeA = fsMod.statSync(pathMod ? pathMod.join(fullSub, a) : `${fullSub}/${a}`).mtimeMs || 0;
+                          const timeB = fsMod.statSync(pathMod ? pathMod.join(fullSub, b) : `${fullSub}/${b}`).mtimeMs || 0;
+                          return timeB - timeA;
+                        });
+                        const chosenPath = pathMod ? pathMod.join(fullSub, matchingFiles[0]) : `${fullSub}/${matchingFiles[0]}`;
+                        try {
+                          const buf = fsMod.readFileSync(chosenPath);
+                          const isPng = chosenPath.endsWith('.png');
+                          const isMp4 = chosenPath.endsWith('.mp4');
+                          const mime = isPng ? 'image/png' : (isMp4 ? 'video/mp4' : 'image/jpeg');
+                          return `data:${mime};base64,${buf.toString('base64')}`;
+                        } catch(rErr) {
+                          return chosenPath;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } catch(fsErr) {}
+        } catch(e) {
+          console.warn('[M7 Branding] Error reading workspace branding asset:', e);
+        }
+        return null;
+      }
+
+      function m7GetWorkspaceBrandingPosition(key) {
+        try {
+          const activeWs = localStorage.getItem('mf_active_workspace') || 'DEFAULT';
+          const candidates = [activeWs, 'DEFAULT', 'default', 'Test 1', 'test 1'];
+
+          for (const ws of candidates) {
+            const brandingStr = localStorage.getItem(`mf_workspace_branding_${ws}`);
+            if (brandingStr) {
+              try {
+                const branding = JSON.parse(brandingStr);
+                if (branding) {
+                  let posId = null;
+                  if (key === 'logo') posId = branding.logoPosition;
+                  else if (key === 'watermark') posId = branding.watermarkPosition;
+                  else if (key === 'subscribe' || key === 'subscribeAnim') posId = branding.subscribePosition;
+
+                  if (posId) {
+                    const map = {
+                      'top_left': 'Top Left',
+                      'top_center': 'Top Mid',
+                      'top_right': 'Top Right',
+                      'middle_left': 'Mid Left',
+                      'center': 'Center',
+                      'middle_right': 'Mid Right',
+                      'bottom_left': 'Bot Left',
+                      'bottom_center': 'Bot Mid',
+                      'bottom_right': 'Bot Right'
+                    };
+                    return map[posId] || posId;
+                  }
+                }
+              } catch(e) {}
+            }
+          }
+        } catch(e) {}
+        return null;
+      }
+
+      function m7GetStageDimensions() {
+        const scene = getOrCreateActiveScene();
+        if (scene && scene.getSize) {
+          const s = scene.getSize();
+          if (s && s.width && s.height) return s;
+        }
+        const stage = window.__ASTROFOX_STAGE__ || (window.__ASTROFOX_SCENES__ && window.__ASTROFOX_SCENES__.stage);
+        if (stage && stage.getSize) {
+          const s = stage.getSize();
+          if (s && s.width && s.height) return s;
+        }
+        return { width: 854, height: 480 };
+      }
+
+      function m7CalculateAnchorPosition(anchor, w, h) {
+        const size = m7GetStageDimensions();
+        const sw = size.width || 854;
+        const sh = size.height || 480;
+        const marginX = Math.round(sw * 0.05); // 5% margin
+        const marginY = Math.round(sh * 0.06); // 6% margin
+
+        let targetX = 0;
+        let targetY = 0;
+
+        switch (anchor) {
+          case 'TL':
+          case 'Top Left':
+            targetX = -sw / 2 + w / 2 + marginX;
+            targetY = sh / 2 - h / 2 - marginY;
+            break;
+          case 'TC':
+          case 'Top Mid':
+          case 'Top Center':
+            targetX = 0;
+            targetY = sh / 2 - h / 2 - marginY;
+            break;
+          case 'TR':
+          case 'Top Right':
+            targetX = sw / 2 - w / 2 - marginX;
+            targetY = sh / 2 - h / 2 - marginY;
+            break;
+          case 'ML':
+          case 'Mid Left':
+            targetX = -sw / 2 + w / 2 + marginX;
+            targetY = 0;
+            break;
+          case 'Center':
+          case 'Mid Center':
+            targetX = 0;
+            targetY = 0;
+            break;
+          case 'MR':
+          case 'Mid Right':
+            targetX = sw / 2 - w / 2 - marginX;
+            targetY = 0;
+            break;
+          case 'BL':
+          case 'Bot Left':
+          case 'Bottom Left':
+            targetX = -sw / 2 + w / 2 + marginX;
+            targetY = -sh / 2 + h / 2 + marginY;
+            break;
+          case 'BC':
+          case 'Bot Mid':
+          case 'Bottom Center':
+            targetX = 0;
+            targetY = -sh / 2 + h / 2 + marginY;
+            break;
+          case 'BR':
+          case 'Bot Right':
+          case 'Bottom Right':
+            targetX = sw / 2 - w / 2 - marginX;
+            targetY = -sh / 2 + h / 2 + marginY;
+            break;
+          default:
+            targetX = 0;
+            targetY = 0;
+            break;
+        }
+
+        return { x: Math.round(targetX), y: Math.round(targetY) };
+      }
+
       function m7SelectOrAddParticle2Preset(type) {
         let name = type;
         let assetKey = 'logo';
+        let anchor = 'Top Left';
+        let defW = 120, defH = 120, defOp = 100;
+
         if (type === 'Logo') {
           name = 'Brand Logo';
           assetKey = 'logo';
+          anchor = m7GetWorkspaceBrandingPosition('logo') || 'Top Left';
+          defW = 120; defH = 120; defOp = 100;
         } else if (type === 'Watermark') {
           name = 'Watermark';
           assetKey = 'watermark';
+          anchor = m7GetWorkspaceBrandingPosition('watermark') || 'Bottom Right';
+          defW = 160; defH = 36; defOp = 45;
         } else if (type === 'Intro') {
           name = 'Intro Sequence';
           assetKey = 'intro';
+          anchor = 'Center';
+          defW = 360; defH = 80; defOp = 100;
         } else if (type === 'Outro') {
           name = 'Outro Sequence';
           assetKey = 'outro';
+          anchor = 'Center';
+          defW = 360; defH = 80; defOp = 100;
         } else if (type === 'Subscribe' || type === 'Subscribe Animation') {
           type = 'Subscribe';
           name = 'Subscribe Animation';
           assetKey = 'subscribe';
+          anchor = m7GetWorkspaceBrandingPosition('subscribe') || 'Bottom Center';
+          defW = 200; defH = 42; defOp = 100;
         }
 
         const existingIdx = activeParticle2s.findIndex(b => b.type === type);
@@ -8217,8 +9352,8 @@
           return;
         }
 
-        // Fetch asset from Workspace branding
         const wsAsset = (type === 'Logo' || type === 'Watermark' || type === 'Subscribe') ? m7GetWorkspaceBrandingAsset(assetKey) : null;
+        const pos = m7CalculateAnchorPosition(anchor, defW, defH);
 
         const newObj = {
           id: 'part2_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
@@ -8227,16 +9362,16 @@
           isParticle2: true,
           shapeMode: 'Original',
           uniformScale: false,
-          width: (type === 'Logo' || type === 'Watermark') ? 220 : 360,
-          height: (type === 'Logo' || type === 'Watermark') ? 110 : 180,
+          width: defW,
+          height: defH,
           rotation: 0,
-          opacity: type === 'Watermark' ? 50 : 100,
-          x: (type === 'Watermark' || type === 'Logo') ? 600 : 0,
-          y: (type === 'Watermark' || type === 'Logo') ? -350 : (type === 'Subscribe' ? -380 : 0),
-          position: (type === 'Watermark' || type === 'Logo') ? 'Bottom Right' : (type === 'Subscribe' ? 'Bottom Center' : 'Center'),
+          opacity: defOp,
+          x: pos.x,
+          y: pos.y,
+          position: anchor,
           source: wsAsset || '',
+          dataUrl: '',
           imageElement: null,
-          // Intro / Outro sequence properties (Gambar 2 parity)
           introStyle: (type === 'Outro' ? 'Fade from Black' : 'Focus Pull (Blur)'),
           introDuration: (type === 'Outro' ? 5.0 : 3.0),
           intensity: (type === 'Outro' ? 80 : 75),
@@ -8244,11 +9379,14 @@
           text: (type === 'Outro' ? 'Thanks for Watching!' : 'Welcome to the Show')
         };
 
-        m7CreateParticle2Display(newObj);
+        activeParticle2s.push(newObj);
+        activeSelectedParticle2Index = activeParticle2s.length - 1;
+
+        m7SyncParticle2DisplaysWithScene();
+
         if (wsAsset) {
           m7SetParticle2ImageSource(newObj, wsAsset);
         } else if (type === 'Logo' || type === 'Watermark' || type === 'Subscribe') {
-          // Asynchronously query backend workspace settings in case local storage is cold
           const activeWs = localStorage.getItem('mf_active_workspace') || 'DEFAULT';
           fetch(`/api/v1/system/workspace/${encodeURIComponent(activeWs)}/settings`)
             .then(res => res.json())
@@ -8267,78 +9405,215 @@
             .catch(() => {});
         }
 
-        activeParticle2s.push(newObj);
-        activeSelectedParticle2Index = activeParticle2s.length - 1;
-
         m7RenderParticle2List();
         m7SyncInspectorToParticle2(newObj);
         m7ScheduleAutosave();
       }
 
-      function m7CreateParticle2Display(obj) {
+      function m7SyncParticle2DisplaysWithScene() {
         const scene = getOrCreateActiveScene();
-        if (!scene) return;
+        if (!scene || !scene.displays) return;
 
-        // Clean up any legacy displays from old versions
-        if (scene.displays) {
-          for (let i = scene.displays.length - 1; i >= 0; i--) {
-            const d = scene.displays[i];
-            if (d && (d.name === obj.name || d.name === 'Particle 2 Layer')) {
-              scene.removeElement(d);
-            }
+        // 1. Collect valid active displays attached to activeParticle2s
+        const validDisplayIds = new Set(activeParticle2s.map(pt => pt.display?.id).filter(Boolean));
+        const toRemove = [];
+
+        for (let i = scene.displays.length - 1; i >= 0; i--) {
+          const d = scene.displays[i];
+          if (!d) continue;
+          const props = d.properties || {};
+          const isP2Display = props.isParticle2 || props.isBranding || props.name === 'Brand Logo' || props.name === 'Watermark' || props.name === 'Subscribe Animation' || props.name === 'Particle 2 Layer' || (props.name && (props.name.includes('Particle 2') || props.name.includes('Branding') || props.name.includes('Intro Sequence') || props.name.includes('Outro Sequence')));
+          if (isP2Display && !validDisplayIds.has(d.id)) {
+            toRemove.push(d);
           }
         }
 
-        const canvas = document.createElement('canvas');
-        canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
-        canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
-        const ctx = canvas.getContext('2d');
+        toRemove.forEach(d => {
+          scene.removeElement(d);
+        });
 
-        obj.canvas = canvas;
-        obj.ctx = ctx;
-
-        m7DrawParticle2Canvas(obj);
-
+        // 2. Ensure each active item has a valid Canvas/Display in scene
         const core = window.__ASTROFOX_CORE__;
         const TextClass = core?.library?.get('displays')?.TextDisplay;
-        if (TextClass) {
-          try {
-            const display = new TextClass({
-              name: obj.name || 'Particle 2 Layer',
-              isParticle2: true,
-              isBranding: true,
-              customCanvas: true,
-              text: '',
-              x: obj.x || 0,
-              y: obj.y || 0,
-              rotation: obj.rotation || 0,
-              opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
-            });
-            display.canvas = canvas;
-            display.text = null;
-            obj.display = display;
-            scene.addElement(display);
-            m7EnforceLayerOrder(scene);
-          } catch(e) {
-            console.error('[M7 Particle 2] Display creation failed:', e);
+        const stage = getAstrofoxStage();
+        const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 854, height: 480 };
+        const stageW = stageSize.width || 854;
+        const stageH = stageSize.height || 480;
+
+        activeParticle2s.forEach(obj => {
+          if (!obj.source) {
+            const wsKey = obj.type === 'Logo' ? 'logo' : (obj.type === 'Watermark' ? 'watermark' : ((obj.type === 'Subscribe' || obj.type === 'Subscribe Animation') ? 'subscribe' : null));
+            if (wsKey) {
+              const wsAsset = m7GetWorkspaceBrandingAsset(wsKey);
+              if (wsAsset) {
+                m7SetParticle2ImageSource(obj, wsAsset);
+              }
+            }
           }
+
+          if (obj.type === 'Intro' || obj.type === 'Outro') {
+            if (!obj.canvas) obj.canvas = document.createElement('canvas');
+            obj.canvas.width = stageW;
+            obj.canvas.height = stageH;
+            obj.ctx = obj.canvas.getContext('2d');
+            obj.x = 0;
+            obj.y = 0;
+            obj.width = stageW;
+            obj.height = stageH;
+          } else if (!obj.canvas) {
+            const canvas = document.createElement('canvas');
+            canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 120;
+            canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 120;
+            obj.canvas = canvas;
+            obj.ctx = canvas.getContext('2d');
+          }
+
+          m7DrawParticle2Canvas(obj);
+
+          if (!obj.display || !scene.displays.hasElement(obj.display)) {
+            if (TextClass) {
+              try {
+                const display = new TextClass({
+                  name: obj.name || 'Particle 2 Layer',
+                  isParticle2: true,
+                  isBranding: true,
+                  customCanvas: true,
+                  text: '',
+                  x: obj.x || 0,
+                  y: obj.y || 0,
+                  rotation: obj.rotation || 0,
+                  opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+                });
+                display.canvas = obj.canvas;
+                display.text = null;
+                obj.display = display;
+                scene.addElement(display);
+              } catch(e) {
+                console.error('[M7 Particle 2] Display creation failed:', e);
+              }
+            }
+          } else {
+            obj.display.canvas = obj.canvas;
+            if (obj.display.update) {
+              obj.display.update({
+                x: obj.x || 0,
+                y: obj.y || 0,
+                rotation: obj.rotation || 0,
+                opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0)
+              });
+            }
+          }
+
+          if (obj.display && (obj.type === 'Intro' || obj.type === 'Outro')) {
+            obj.display.render = function(sc, data) {
+              const player = window.__ASTROFOX_CORE__?.player;
+              const isPlaying = player?.isPlaying ? player.isPlaying() : false;
+              const curTime = (data && data.currentTime !== undefined)
+                ? data.currentTime
+                : (player?.getCurrentTime ? player.getCurrentTime() : 0);
+
+              const isOutro = (obj.type === 'Outro');
+              const isPara = (obj.introStyle === 'Paragraph (Text)');
+              const paraCount = Math.max(1, Math.min(3, parseInt(obj.paragraphCount) || 1));
+              const paraDur = Math.max(1.0, parseFloat(obj.paragraphDuration) || 5.0);
+              const rawDur = typeof obj.introDuration === 'string' ? parseFloat(obj.introDuration) : (obj.introDuration || (isOutro ? 5.0 : 3.0));
+              const duration = isPara ? (paraCount * paraDur) : Math.max(1, rawDur || (isOutro ? 5.0 : 3.0));
+              
+              const trackDur = playlistTracks[activeSelectedTrackIndex]?.duration || 0;
+              const totalDuration = (trackDur > 0) ? trackDur : (player?.getDuration ? player.getDuration() : 60) || 60;
+
+              let activeEase = 0.0;
+              if (!isOutro) {
+                // Intro Sequence: Active from 0s to duration seconds
+                if (curTime <= duration) {
+                  const progress = Math.min(1.0, Math.max(0.0, curTime / duration));
+                  activeEase = 0.5 * (1.0 + Math.cos(progress * Math.PI));
+                }
+              } else {
+                // Outro Sequence: Active in the last duration seconds before video ends
+                const startOutro = Math.max(0, totalDuration - duration);
+                if (curTime >= startOutro) {
+                  const progress = Math.min(1.0, Math.max(0.0, (curTime - startOutro) / duration));
+                  activeEase = 0.5 * (1.0 - Math.cos(progress * Math.PI));
+                }
+              }
+
+              // Editor Live WYSIWYG preview when paused and inspecting this layer
+              const isInspected = (
+                (activeCategory === 'particle2' && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index] === obj) ||
+                (activeCategory === 'branding' && activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex] === obj)
+              );
+
+              if (!isPlaying && isInspected) {
+                if (!isOutro && curTime <= duration) {
+                  activeEase = Math.max(activeEase, 1.0);
+                } else if (isOutro && (curTime >= (totalDuration - duration) || curTime === 0)) {
+                  activeEase = Math.max(activeEase, 1.0);
+                }
+              }
+
+              m7DrawIntroOutroWidget(obj.ctx, obj.canvas.width, obj.canvas.height, obj, activeEase, curTime);
+
+              const origin = { x: obj.canvas.width / 2, y: obj.canvas.height / 2 };
+              sc.renderToCanvas(obj.canvas, this.properties, origin);
+            };
+          }
+        });
+
+        m7EnforceLayerOrder(scene);
+      }
+
+      function m7CreateParticle2Display(obj) {
+        if (!obj) return;
+        if (!obj.canvas) {
+          const canvas = document.createElement('canvas');
+          canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 120;
+          canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 120;
+          obj.canvas = canvas;
+          obj.ctx = canvas.getContext('2d');
         }
+        m7SyncParticle2DisplaysWithScene();
       }
 
       function m7DrawParticle2Canvas(obj) {
-        if (!obj || !obj.canvas) return;
-        const canvas = obj.canvas;
-        const w = (obj.width !== undefined && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
-        const h = (obj.height !== undefined && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
-        if (canvas.width !== w || canvas.height !== h) {
-          canvas.width = w;
-          canvas.height = h;
+        if (!obj) return;
+        if (!obj.canvas) {
+          obj.canvas = document.createElement('canvas');
         }
-        const ctx = obj.ctx || canvas.getContext('2d');
+        const stage = getAstrofoxStage();
+        const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 854, height: 480 };
+        const isIntroOrOutro = (obj.type === 'Intro' || obj.type === 'Outro');
+
+        const w = isIntroOrOutro ? (stageSize.width || 854) : ((obj.width !== undefined && !isNaN(obj.width)) ? Math.max(16, Math.round(obj.width)) : 120);
+        const h = isIntroOrOutro ? (stageSize.height || 480) : ((obj.height !== undefined && !isNaN(obj.height)) ? Math.max(16, Math.round(obj.height)) : 120);
+        
+        if (obj.canvas.width !== w || obj.canvas.height !== h) {
+          obj.canvas.width = w;
+          obj.canvas.height = h;
+        }
+        const ctx = obj.canvas.getContext('2d');
+        obj.ctx = ctx;
         ctx.clearRect(0, 0, w, h);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        if (isIntroOrOutro) {
+          m7DrawIntroOutroWidget(ctx, w, h, obj, 1.0);
+          if (obj.display) {
+            obj.display.canvas = obj.canvas;
+            if (obj.display.properties) {
+              obj.display.properties.x = 0;
+              obj.display.properties.y = 0;
+              obj.display.properties.opacity = 1.0;
+              obj.display.properties.rotation = 0;
+            }
+          }
+          return;
+        }
 
         ctx.save();
-        ctx.globalAlpha = 1.0;
+        const alpha = (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0);
+        ctx.globalAlpha = alpha;
 
         ctx.translate(w / 2, h / 2);
         if (obj.rotation) {
@@ -8346,24 +9621,23 @@
         }
         ctx.translate(-w / 2, -h / 2);
 
-        // Shape Mode clipping (Circle, Rounded Card, Squircle, Hexagon)
         const shapeMode = obj.shapeMode || 'Original';
         if (shapeMode === 'Circle' || shapeMode === 'Circle Mask') {
           ctx.beginPath();
-          const r = Math.min(w, h) / 2 - 4;
+          const r = Math.min(w, h) / 2 - 2;
           ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
           ctx.clip();
         } else if (shapeMode === 'Rounded Card' || shapeMode === 'Rounded Rect') {
           ctx.beginPath();
-          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, 20);
+          m7SafeRoundRect(ctx, 2, 2, w - 4, h - 4, Math.min(24, Math.min(w, h) * 0.25));
           ctx.clip();
         } else if (shapeMode === 'Squircle') {
           ctx.beginPath();
-          m7SafeRoundRect(ctx, 4, 4, w - 8, h - 8, Math.min(w, h) * 0.35);
+          m7SafeRoundRect(ctx, 2, 2, w - 4, h - 4, Math.min(w, h) * 0.35);
           ctx.clip();
         } else if (shapeMode === 'Hexagon') {
           ctx.beginPath();
-          const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 4;
+          const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 2;
           for (let i = 0; i < 6; i++) {
             const angle = (Math.PI / 3) * i - Math.PI / 6;
             const x = cx + r * Math.cos(angle);
@@ -8383,114 +9657,46 @@
           const drawX = (w - drawW) / 2;
           const drawY = (h - drawH) / 2;
           ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        } else if (obj.source && (!obj.imageElement || !obj.imageElement.complete)) {
+          if (!obj._isLoadingImage) {
+            obj._isLoadingImage = true;
+            m7SetParticle2ImageSource(obj, obj.source);
+          }
+          if (obj.type === 'Logo') {
+            m7DrawLogoPlaceholderWidget(ctx, w, h, obj);
+          } else if (obj.type === 'Watermark') {
+            m7DrawWatermarkWidget(ctx, w, h, obj);
+          } else if (obj.type === 'Subscribe' || obj.type === 'Subscribe Animation') {
+            m7DrawSubscribeWidget(ctx, w, h, obj);
+          }
         } else {
           if (obj.type === 'Logo') {
-            const col = '#f59e0b';
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-            ctx.strokeStyle = col;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 6, 6, w - 12, h - 12, 14);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.32)))}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = col;
-            ctx.fillText('🛡️', w * 0.28, h / 2);
-
-            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.22)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('DEFAULT LOGO', w * 0.62, h / 2);
+            m7DrawLogoPlaceholderWidget(ctx, w, h, obj);
           } else if (obj.type === 'Watermark') {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 6, 6, w - 12, h - 12, 10);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
-            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.22)))}px "Segoe UI", Inter, monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-            ctx.fillText('💧 © MEDIAFACTORY', w / 2, h / 2);
-          } else if (obj.type === 'Subscribe') {
-            const pillW = w - 12;
-            const pillH = h - 12;
-            const pillX = 6;
-            const pillY = 6;
-
-            ctx.fillStyle = '#ef4444';
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
-            ctx.fill();
-
-            ctx.font = `bold ${Math.max(14, Math.min(26, Math.floor(pillH * 0.45)))}px sans-serif`;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('🔔', pillX + pillW * 0.1, pillY + pillH / 2);
-
-            ctx.font = `900 ${Math.max(12, Math.min(22, Math.floor(pillH * 0.38)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillText('SUBSCRIBE', pillX + pillW * 0.32, pillY + pillH / 2);
-          } else if (obj.type === 'Intro') {
-            const style = obj.introStyle || 'Focus Pull (Blur)';
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-            ctx.strokeStyle = '#f59e0b';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 6, 6, w - 12, h - 12, 12);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.font = `800 ${Math.max(12, Math.min(20, Math.floor(h * 0.22)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#f59e0b';
-            ctx.fillText('🎬 INTRO: ' + style.toUpperCase(), w / 2, h * 0.4);
-
-            ctx.font = `600 ${Math.max(10, Math.min(14, Math.floor(h * 0.15)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillStyle = '#9ca3af';
-            ctx.fillText(obj.introText1 || 'Welcome to the Show', w / 2, h * 0.65);
-          } else if (obj.type === 'Outro') {
-            const style = obj.introStyle || 'Fade from Black';
-            ctx.fillStyle = 'rgba(24, 16, 38, 0.85)';
-            ctx.strokeStyle = '#a855f7';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 6, 6, w - 12, h - 12, 12);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.font = `800 ${Math.max(12, Math.min(20, Math.floor(h * 0.22)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#a855f7';
-            ctx.fillText('🔚 OUTRO: ' + style.toUpperCase(), w / 2, h * 0.4);
-
-            ctx.font = `600 ${Math.max(10, Math.min(14, Math.floor(h * 0.15)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillStyle = '#9ca3af';
-            ctx.fillText(obj.introText1 || 'Thanks for Watching!', w / 2, h * 0.65);
+            m7DrawWatermarkWidget(ctx, w, h, obj);
+          } else if (obj.type === 'Subscribe' || obj.type === 'Subscribe Animation') {
+            m7DrawSubscribeWidget(ctx, w, h, obj);
           }
         }
 
         ctx.restore();
 
-        if (obj.display && obj.display.update) {
-          const dataUrl = canvas.toDataURL('image/png');
-          obj.display.update({
-            src: dataUrl,
-            width: obj.width || 360,
-            height: obj.height || 180,
-            x: obj.x || 0,
-            y: obj.y || 0,
-            opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0),
-            rotation: obj.rotation || 0,
-            fixed: false
-          });
+        if (obj.display) {
+          obj.display.canvas = obj.canvas;
+          if (obj.display.properties) {
+            obj.display.properties.x = obj.x || 0;
+            obj.display.properties.y = obj.y || 0;
+            obj.display.properties.opacity = alpha;
+            obj.display.properties.rotation = obj.rotation || 0;
+          }
+          if (obj.display.update) {
+            obj.display.update({
+              x: obj.x || 0,
+              y: obj.y || 0,
+              opacity: alpha,
+              rotation: obj.rotation || 0
+            });
+          }
         }
       }
 
@@ -8523,7 +9729,7 @@
           if (item.type === 'Watermark') icon = '💧';
           else if (item.type === 'Intro') icon = '🎬';
           else if (item.type === 'Outro') icon = '🔚';
-          else if (item.type === 'Subscribe') icon = '🔔';
+          else if (item.type === 'Subscribe' || item.type === 'Subscribe Animation') icon = '🔔';
 
           row.innerHTML = `
             <span class="m7-layer-remove" title="Remove Particle 2 Layer" onclick="event.stopPropagation(); m7RemoveParticle2(${idx})">✕</span>
@@ -8538,7 +9744,18 @@
       function m7SelectParticle2Object(idx) {
         if (idx < 0 || idx >= activeParticle2s.length) return;
         activeSelectedParticle2Index = idx;
+        activeCategory = 'particle2';
         const item = activeParticle2s[idx];
+
+        if (!item.source) {
+          const wsKey = item.type === 'Logo' ? 'logo' : (item.type === 'Watermark' ? 'watermark' : ((item.type === 'Subscribe' || item.type === 'Subscribe Animation') ? 'subscribe' : null));
+          if (wsKey) {
+            const wsAsset = m7GetWorkspaceBrandingAsset(wsKey);
+            if (wsAsset) {
+              m7SetParticle2ImageSource(item, wsAsset);
+            }
+          }
+        }
 
         const presetKey = (item.type || 'logo').toLowerCase();
         document.querySelectorAll('#m7-section-particle2 .m7-text-obj-card').forEach(c => c.classList.remove('active'));
@@ -8550,8 +9767,11 @@
 
         m7RenderParticle2List();
         m7SyncInspectorToParticle2(item);
+        m7IsGizmoSelected = (item.type !== 'Intro' && item.type !== 'Outro');
+        m7UpdateGizmo();
         m7ScheduleAutosave();
       }
+      window.m7SelectParticle2Object = m7SelectParticle2Object;
 
       function m7RemoveParticle2(idx) {
         if (idx < 0 || idx >= activeParticle2s.length) return;
@@ -8562,18 +9782,18 @@
           scene.removeElement(item.display);
         }
 
+        m7SyncParticle2DisplaysWithScene();
+
         if (activeParticle2s.length === 0) {
           activeSelectedParticle2Index = -1;
+          m7SyncInspectorToParticle2(null);
         } else {
           activeSelectedParticle2Index = Math.min(activeSelectedParticle2Index, activeParticle2s.length - 1);
           if (activeSelectedParticle2Index < 0) activeSelectedParticle2Index = 0;
+          m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index]);
         }
 
         m7RenderParticle2List();
-        if (scene) m7EnforceLayerOrder(scene);
-        if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
-          m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index]);
-        }
         m7ScheduleAutosave();
       }
 
@@ -8583,26 +9803,106 @@
         }
       }
 
-      function m7SetParticle2ImageSource(obj, src) {
-        if (!obj) return;
+      async function m7SetParticle2ImageSource(obj, src) {
+        if (!obj || !src) return;
         obj.source = src;
-        const normalizedSrc = m7NormalizeMediaSrc(src);
+        obj._isLoadingImage = false;
+
+        let dataUrl = src;
+        if (typeof src === 'string' && (src.includes(':\\') || src.startsWith('file:///') || (!src.startsWith('data:') && !src.startsWith('blob:') && !src.startsWith('http')))) {
+          if (window.__ASTROFOX__ && window.__ASTROFOX__.readImageFile) {
+            try {
+              const res = await window.__ASTROFOX__.readImageFile(src.replace(/^file:\/\/\//, ''));
+              if (res) dataUrl = res;
+            } catch(e) {}
+          }
+        }
+
+        const normalizedSrc = (dataUrl && (dataUrl.startsWith('data:') || dataUrl.startsWith('blob:') || dataUrl.startsWith('http'))) ? dataUrl : m7NormalizeMediaSrc(dataUrl);
+
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        if (normalizedSrc.startsWith('http://') || normalizedSrc.startsWith('https://')) {
+          img.crossOrigin = 'anonymous';
+        }
         img.onload = () => {
           obj.imageElement = img;
-          m7DrawParticle2Canvas(obj);
-          if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index] === obj) {
-            const imgPrev = document.getElementById('img-part2-preview');
-            const txtPrevEmpty = document.getElementById('txt-part2-preview-empty');
-            if (imgPrev) { imgPrev.src = normalizedSrc; imgPrev.style.display = 'block'; }
-            if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+          obj.dataUrl = normalizedSrc;
+
+          if (img.naturalWidth && img.naturalHeight) {
+            const aspect = img.naturalWidth / img.naturalHeight;
+            if (!obj.customDimensionsSet) {
+              if (aspect >= 1) {
+                obj.width = Math.min(360, Math.max(80, Math.round(120 * aspect)));
+                obj.height = 120;
+              } else {
+                obj.width = 120;
+                obj.height = Math.min(360, Math.max(80, Math.round(120 / aspect)));
+              }
+            }
           }
+
+          if (obj.position) {
+            const pos = m7CalculateAnchorPosition(obj.position, obj.width, obj.height);
+            obj.x = pos.x;
+            obj.y = pos.y;
+          }
+
+          if (obj.canvas) {
+            obj.canvas.width = Math.round(obj.width);
+            obj.canvas.height = Math.round(obj.height);
+          }
+
+          m7DrawParticle2Canvas(obj);
+
+          if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index] === obj) {
+            ['img-branding-preview', 'img-branding2-preview', 'img-part2-preview'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) { el.src = normalizedSrc; el.style.display = 'block'; }
+            });
+            ['txt-branding-preview-empty', 'txt-branding2-preview-empty', 'txt-part2-preview-empty'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.style.display = 'none';
+            });
+
+            ['slider-branding-width', 'slider-branding2-width', 'slider-part2-width'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.width;
+            });
+            ['val-branding-width', 'val-branding2-width', 'val-part2-width'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.innerText = obj.width;
+            });
+
+            ['slider-branding-height', 'slider-branding2-height', 'slider-part2-height'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.height;
+            });
+            ['val-branding-height', 'val-branding2-height', 'val-part2-height'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.innerText = obj.height;
+            });
+          }
+
           if (obj.display && obj.display.update) {
-            obj.display.update({ x: obj.x, y: obj.y });
+            obj.display.update({ x: obj.x, y: obj.y, opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0) });
           }
           m7ScheduleAutosave();
         };
+
+        img.onerror = () => {
+          console.warn('[M7 Particle 2] Failed to load image from source:', normalizedSrc);
+          if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index] === obj) {
+            ['img-branding2-preview', 'img-part2-preview'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) { el.src = ''; el.style.display = 'none'; }
+            });
+            ['txt-branding2-preview-empty', 'txt-part2-preview-empty'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.style.display = 'block';
+            });
+          }
+        };
+
         img.src = normalizedSrc;
       }
 
@@ -8621,167 +9921,292 @@
       function m7UpdateParticle2ParaCount(count, updateObj = true) {
         if (updateObj && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
           activeParticle2s[activeSelectedParticle2Index].paragraphCount = count;
+          m7UpdateParagraphTimeLabels(activeParticle2s[activeSelectedParticle2Index]);
+          m7DrawParticle2Canvas(activeParticle2s[activeSelectedParticle2Index]);
         }
 
-        const txtP1 = document.getElementById('txt-part2-p1');
-        const txtP2 = document.getElementById('txt-part2-p2');
-        const txtP3 = document.getElementById('txt-part2-p3');
-
-        if (txtP1) txtP1.style.display = count >= 1 ? 'block' : 'none';
-        if (txtP2) txtP2.style.display = count >= 2 ? 'block' : 'none';
-        if (txtP3) txtP3.style.display = count >= 3 ? 'block' : 'none';
+        for (let i = 1; i <= 3; i++) {
+          ['box-part2-p' + i, 'box-branding-p' + i, 'box-branding2-p' + i].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = count >= i ? 'flex' : 'none';
+          });
+          ['txt-part2-p' + i, 'txt-branding-p' + i, 'txt-branding2-p' + i].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = count >= i ? 'block' : 'none';
+          });
+        }
 
         if (updateObj) m7ScheduleAutosave();
       }
 
       function m7SyncInspectorToParticle2(obj) {
-        if (!obj) return;
+        const inspParticle2 = document.getElementById('m7-inspector-particle2') || document.getElementById('m7-inspector-branding2');
+        if (!obj) {
+          ['img-branding2-preview', 'img-part2-preview'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.src = ''; el.style.display = 'none'; }
+          });
+          ['txt-branding2-preview-empty', 'txt-part2-preview-empty'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'block';
+          });
+          if (inspParticle2) inspParticle2.style.display = 'none';
+          document.querySelectorAll('#m7-section-particle2 .m7-text-obj-card').forEach(c => c.classList.remove('active'));
+          return;
+        }
+
+        if (inspParticle2) inspParticle2.style.display = 'flex';
 
         const isIntroOrOutro = (obj.type === 'Intro' || obj.type === 'Outro');
-        const tag = document.getElementById('m7-inspector-tag');
+        const tag = document.getElementById('m7-inspector-tag') || document.getElementById('m7-inspector-tag-branding2');
         if (tag) {
           if (obj.type === 'Intro') tag.innerText = 'INTRO SEQUENCE';
           else if (obj.type === 'Outro') tag.innerText = 'OUTRO SEQUENCE';
           else tag.innerText = 'PARTICLE 2';
         }
 
-        const grpTransform = document.getElementById('grp-particle2-transform');
-        const grpSource = document.getElementById('grp-particle2-source');
-        const grpMatrix = document.getElementById('grp-particle2-matrix');
-        const grpSequence = document.getElementById('grp-particle2-sequence');
-        const grpParaCard = document.getElementById('grp-part2-paragraph-card');
-        const grpDelete = document.getElementById('grp-particle2-delete');
-
-        // If Intro or Outro: completely hide Media/Image Source & Screen Anchor Matrix (Gambar 1), and show Sequence
-        if (grpTransform) grpTransform.style.display = isIntroOrOutro ? 'none' : 'flex';
-        if (grpSource) grpSource.style.display = isIntroOrOutro ? 'none' : 'flex';
-        if (grpMatrix) grpMatrix.style.display = isIntroOrOutro ? 'none' : 'flex';
-        if (grpDelete) grpDelete.style.display = isIntroOrOutro ? 'none' : 'flex';
-        if (grpSequence) grpSequence.style.display = isIntroOrOutro ? 'flex' : 'none';
+        ['grp-particle2-transform', 'grp-branding2-transform'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = isIntroOrOutro ? 'none' : 'flex';
+        });
+        ['grp-particle2-source', 'grp-branding2-source'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = isIntroOrOutro ? 'none' : 'flex';
+        });
+        ['grp-particle2-matrix', 'grp-branding2-matrix'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = isIntroOrOutro ? 'none' : 'flex';
+        });
+        ['grp-particle2-delete', 'grp-branding2-delete'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = isIntroOrOutro ? 'none' : 'flex';
+        });
+        ['grp-particle2-sequence', 'grp-branding2-sequence'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = isIntroOrOutro ? 'flex' : 'none';
+        });
 
         if (isIntroOrOutro) {
-          // GAMBAR 2 PARITY: Intro / Outro Sequence Controls
-          const lblTitle = document.getElementById('lbl-part2-seq-title');
-          const lblEnable = document.getElementById('lbl-part2-seq-enable');
-          const lblStyle = document.getElementById('lbl-part2-seq-style');
-          const lblDur = document.getElementById('lbl-part2-seq-dur-label');
+          ['lbl-branding2-seq-title', 'lbl-part2-seq-title'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = obj.type === 'Outro' ? 'OUTRO SEQUENCE SETTINGS' : 'INTRO SEQUENCE SETTINGS';
+          });
+          ['lbl-branding2-seq-enable', 'lbl-part2-seq-enable'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = obj.type === 'Outro' ? 'Enable Outro' : 'Enable Intro';
+          });
+          ['lbl-branding2-seq-style', 'lbl-part2-seq-style'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = obj.type === 'Outro' ? 'Outro Style' : 'Intro Style';
+          });
+          ['lbl-branding2-seq-dur-label', 'lbl-part2-seq-dur-label'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = obj.type === 'Outro' ? 'Outro Duration' : 'Intro Duration';
+          });
 
-          if (lblTitle) lblTitle.innerText = obj.type === 'Outro' ? 'OUTRO SEQUENCE SETTINGS' : 'INTRO SEQUENCE SETTINGS';
-          if (lblEnable) lblEnable.innerText = obj.type === 'Outro' ? 'Enable Outro' : 'Enable Intro';
-          if (lblStyle) lblStyle.innerText = obj.type === 'Outro' ? 'Outro Style' : 'Intro Style';
-          if (lblDur) lblDur.innerText = obj.type === 'Outro' ? 'Outro Duration' : 'Intro Duration';
-
-          const chkEnable = document.getElementById('chk-part2-seq-enable');
-          if (chkEnable) chkEnable.checked = obj.visible !== false;
+          ['chk-branding2-seq-enable', 'chk-part2-seq-enable'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.checked = obj.visible !== false;
+          });
 
           const currentStyle = obj.introStyle || (obj.type === 'Outro' ? 'Fade from Black' : 'Focus Pull (Blur)');
-          const selIntroStyle = document.getElementById('sel-part2-introstyle');
-          if (selIntroStyle) selIntroStyle.value = currentStyle;
+          ['sel-branding2-introstyle', 'sel-part2-introstyle'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = currentStyle;
+          });
 
-          const sliderDur = document.getElementById('slider-part2-seq-dur');
-          const valDur = document.getElementById('val-part2-seq-dur');
-          const durVal = obj.introDuration !== undefined ? obj.introDuration : (obj.type === 'Outro' ? 5.0 : 3.0);
-          if (sliderDur) sliderDur.value = durVal;
-          if (valDur) valDur.innerText = `${durVal}s`;
+          const durVal = obj.introDuration !== undefined ? obj.introDuration : (obj.type === 'Outro' ? '5s' : '3s');
+          ['sel-branding2-seq-dur', 'sel-part2-seq-dur'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = String(durVal).endsWith('s') ? durVal : `${durVal}s`;
+          });
+          ['slider-branding2-seq-dur', 'slider-part2-seq-dur'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = parseFloat(durVal) || 3.0;
+          });
+          ['val-branding2-seq-dur', 'val-part2-seq-dur'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = String(durVal).endsWith('s') ? durVal : `${durVal}s`;
+          });
 
-          const sliderIntensity = document.getElementById('slider-part2-single-intensity');
-          const valIntensity = document.getElementById('val-part2-single-intensity');
-          const intensityVal = obj.intensity !== undefined ? obj.intensity : (obj.type === 'Outro' ? 80 : 75);
-          if (sliderIntensity) sliderIntensity.value = intensityVal;
-          if (valIntensity) valIntensity.innerText = `${intensityVal}`;
+          const intensityVal = obj.intensity !== undefined ? obj.intensity : (obj.type === 'Outro' ? 80 : 40);
+          ['slider-branding2-single-intensity', 'slider-part2-single-intensity'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = intensityVal;
+          });
+          ['val-branding2-single-intensity', 'val-part2-single-intensity'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = `${intensityVal}`;
+          });
 
-          // Show Gambar 2 Paragraph Card below if Paragraph (Text) is selected
           const isParagraph = (currentStyle === 'Paragraph (Text)');
-          if (grpParaCard) grpParaCard.style.display = isParagraph ? 'flex' : 'none';
+          ['grp-particle2-paragraph-card', 'grp-part2-paragraph-card', 'grp-branding2-paragraph-card'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = isParagraph ? 'flex' : 'none';
+          });
 
           if (isParagraph) {
-            const slBgDark = document.getElementById('slider-part2-bgdark');
-            const valBgDark = document.getElementById('val-part2-bgdark');
-            if (slBgDark) slBgDark.value = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
-            if (valBgDark) valBgDark.innerText = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+            ['slider-branding2-bgdark', 'slider-part2-bgdark'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+            });
+            ['val-branding2-bgdark', 'val-part2-bgdark'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.innerText = obj.darkIntensity !== undefined ? obj.darkIntensity : 100;
+            });
 
-            const slBgBlur = document.getElementById('slider-part2-bgblur');
-            const valBgBlur = document.getElementById('val-part2-bgblur');
-            if (slBgBlur) slBgBlur.value = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
-            if (valBgBlur) valBgBlur.innerText = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
+            ['slider-branding2-bgblur', 'slider-part2-bgblur'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
+            });
+            ['val-branding2-bgblur', 'val-part2-bgblur'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.innerText = obj.blurIntensity !== undefined ? obj.blurIntensity : 40;
+            });
 
-            const selTextTrans = document.getElementById('sel-part2-texttrans');
-            if (selTextTrans) selTextTrans.value = obj.textTransition || 'Fade In/Out';
+            ['sel-branding2-texttrans', 'sel-part2-texttrans'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.textTransition || 'Fade In/Out';
+            });
+            ['sel-branding2-maintrans', 'sel-part2-maintrans'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.mainTransition || 'Fade to Video';
+            });
+            ['sel-branding2-paracount', 'sel-part2-paracount'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.paragraphCount || 1;
+            });
+            ['sel-branding2-paradur', 'sel-part2-paradur'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.paragraphDuration || '5s';
+            });
 
-            const selMainTrans = document.getElementById('sel-part2-maintrans');
-            if (selMainTrans) selMainTrans.value = obj.mainTransition || 'Fade to Video';
-
-            const selParaCount = document.getElementById('sel-part2-paracount');
-            if (selParaCount) selParaCount.value = obj.paragraphCount || 1;
-
-            const selParaDur = document.getElementById('sel-part2-paradur');
-            if (selParaDur) selParaDur.value = obj.paragraphDuration || '5s';
-
-            const txtP1 = document.getElementById('txt-part2-p1');
-            const txtP2 = document.getElementById('txt-part2-p2');
-            const txtP3 = document.getElementById('txt-part2-p3');
-            if (txtP1) txtP1.value = obj.introText1 || '';
-            if (txtP2) txtP2.value = obj.introText2 || '';
-            if (txtP3) txtP3.value = obj.introText3 || '';
+            ['txt-branding2-p1', 'txt-part2-p1'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.introText1 || '';
+            });
+            ['txt-branding2-p2', 'txt-part2-p2'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.introText2 || '';
+            });
+            ['txt-branding2-p3', 'txt-part2-p3'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.introText3 || '';
+            });
 
             m7UpdateParticle2ParaCount(obj.paragraphCount || 1, false);
 
-            const colText = document.getElementById('col-part2-textcolor');
-            if (colText) colText.value = obj.introTextColor || '#ffffff';
-
-            const selFont = document.getElementById('sel-part2-font');
-            if (selFont) selFont.value = obj.introFontFamily || 'Inter';
-
-            const slFontSize = document.getElementById('slider-part2-fontsize');
-            const valFontSize = document.getElementById('val-part2-fontsize');
-            if (slFontSize) slFontSize.value = obj.introFontSize || 32;
-            if (valFontSize) valFontSize.innerText = obj.introFontSize || 32;
-
-            const selAlign = document.getElementById('sel-part2-align');
-            if (selAlign) selAlign.value = obj.introTextAlign || 'center';
+            ['col-branding2-textcolor', 'col-part2-textcolor'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.introTextColor || '#ffffff';
+            });
+            ['sel-branding2-font', 'sel-part2-font'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.introFontFamily || 'Inter';
+            });
+            ['slider-branding2-fontsize', 'slider-part2-fontsize'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.introFontSize || 32;
+            });
+            ['val-branding2-fontsize', 'val-part2-fontsize'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.innerText = obj.introFontSize || 32;
+            });
+            ['sel-branding2-align', 'sel-part2-align'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.introTextAlign || 'center';
+            });
           }
         } else {
-          if (grpParaCard) grpParaCard.style.display = 'none';
+          ['grp-particle2-paragraph-card', 'grp-part2-paragraph-card', 'grp-branding2-paragraph-card'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+          });
 
-          // GAMBAR 1 PARITY: Transform, Shape & Media Source
-          const selShape = document.getElementById('sel-part2-shapemode');
-          if (selShape) selShape.value = obj.shapeMode || 'Original';
+          const shapeVal = obj.shapeMode || 'Original';
+          ['sel-branding2-shapemode', 'sel-part2-shapemode'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = shapeVal;
+          });
 
-          const chkUniform = document.getElementById('chk-part2-uniformscale');
-          if (chkUniform) chkUniform.checked = !!obj.uniformScale;
+          const unif = !!obj.uniformScale;
+          ['chk-branding2-uniformscale', 'chk-part2-uniformscale'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.checked = unif;
+          });
 
-          const sliderWidth = document.getElementById('slider-part2-width');
-          const valWidth = document.getElementById('val-part2-width');
-          const widthVal = (obj.width !== undefined && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
-          if (sliderWidth) sliderWidth.value = widthVal;
-          if (valWidth) valWidth.innerText = `${widthVal}`;
+          const widthVal = (obj.width !== undefined && !isNaN(obj.width)) ? Math.round(obj.width) : 120;
+          ['slider-branding2-width', 'slider-part2-width'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = widthVal;
+          });
+          ['val-branding2-width', 'val-part2-width'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = `${widthVal}`;
+          });
 
-          const sliderHeight = document.getElementById('slider-part2-height');
-          const valHeight = document.getElementById('val-part2-height');
-          const heightVal = (obj.height !== undefined && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
-          if (sliderHeight) sliderHeight.value = heightVal;
-          if (valHeight) valHeight.innerText = `${heightVal}`;
+          const heightVal = (obj.height !== undefined && !isNaN(obj.height)) ? Math.round(obj.height) : 120;
+          ['slider-branding2-height', 'slider-part2-height'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = heightVal;
+          });
+          ['val-branding2-height', 'val-part2-height'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = `${heightVal}`;
+          });
 
-          const sliderRot = document.getElementById('slider-part2-rotation');
-          const valRot = document.getElementById('val-part2-rotation');
           const rotVal = (obj.rotation !== undefined && !isNaN(obj.rotation)) ? Math.round(obj.rotation) : 0;
-          if (sliderRot) sliderRot.value = rotVal;
-          if (valRot) valRot.innerText = `${rotVal}`;
+          ['slider-branding2-rotation', 'slider-part2-rotation'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = rotVal;
+          });
+          ['val-branding2-rotation', 'val-part2-rotation'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = `${rotVal}`;
+          });
 
-          const sliderOpacity = document.getElementById('slider-part2-opacity');
-          const valOpacity = document.getElementById('val-part2-opacity');
           const opVal = (obj.opacity !== undefined && !isNaN(obj.opacity)) ? (obj.opacity > 1 ? Math.round(obj.opacity) : Math.round(obj.opacity * 100)) : 100;
-          if (sliderOpacity) sliderOpacity.value = opVal;
-          if (valOpacity) valOpacity.innerText = `${opVal}`;
+          ['slider-branding2-opacity', 'slider-part2-opacity'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = opVal;
+          });
+          ['val-branding2-opacity', 'val-part2-opacity'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = `${opVal}`;
+          });
 
-          const imgPrev = document.getElementById('img-part2-preview');
-          const txtPrevEmpty = document.getElementById('txt-part2-preview-empty');
-          if (obj.source) {
-            if (imgPrev) { imgPrev.src = obj.source; imgPrev.style.display = 'block'; }
-            if (txtPrevEmpty) txtPrevEmpty.style.display = 'none';
+          const showSrc = obj.dataUrl || (obj.source && (obj.source.startsWith('data:') || obj.source.startsWith('http') || obj.source.startsWith('blob:')) ? obj.source : null);
+
+          if (showSrc) {
+            ['img-branding2-preview', 'img-part2-preview'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) { el.src = showSrc; el.style.display = 'block'; }
+            });
+            ['txt-branding2-preview-empty', 'txt-part2-preview-empty'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.style.display = 'none';
+            });
+          } else if (obj.source) {
+            if (!obj.imageElement || !obj.imageElement.complete) {
+              m7SetParticle2ImageSource(obj, obj.source);
+            }
+            ['img-branding2-preview', 'img-part2-preview'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.style.display = 'none';
+            });
+            ['txt-branding2-preview-empty', 'txt-part2-preview-empty'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.style.display = 'block';
+            });
           } else {
-            if (imgPrev) { imgPrev.src = ''; imgPrev.style.display = 'none'; }
-            if (txtPrevEmpty) txtPrevEmpty.style.display = 'block';
+            ['img-branding2-preview', 'img-part2-preview'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) { el.src = ''; el.style.display = 'none'; }
+            });
+            ['txt-branding2-preview-empty', 'txt-part2-preview-empty'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.style.display = 'block';
+            });
           }
         }
 
@@ -8792,7 +10217,7 @@
         if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
           const obj = activeParticle2s[activeSelectedParticle2Index];
           obj.introStyle = style;
-          const grpParaCard = document.getElementById('grp-part2-paragraph-card');
+          const grpParaCard = document.getElementById('grp-branding2-paragraph-card') || document.getElementById('grp-part2-paragraph-card');
           if (grpParaCard) grpParaCard.style.display = (style === 'Paragraph (Text)') ? 'flex' : 'none';
           m7DrawParticle2Canvas(obj);
           m7ScheduleAutosave();
@@ -8813,51 +10238,76 @@
             obj.display.visible = !!val;
           }
         }
-        if (prop === 'duration') {
+        if (prop === 'duration' || prop === 'introDuration') {
           obj.introDuration = val;
-          const valEl = document.getElementById('val-part2-seq-dur');
-          if (valEl) valEl.innerText = `${val}s`;
+          ['val-branding2-seq-dur', 'val-part2-seq-dur'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = `${val}s`;
+          });
         }
         if (prop === 'intensity') {
           obj.intensity = val;
-          const valEl = document.getElementById('val-part2-single-intensity');
-          if (valEl) valEl.innerText = val;
+          ['val-branding2-single-intensity', 'val-part2-single-intensity'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+          });
         }
         if (prop === 'darkIntensity') {
-          const valEl = document.getElementById('val-part2-bgdark');
-          if (valEl) valEl.innerText = val;
+          ['val-branding2-bgdark', 'val-part2-bgdark'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+          });
         }
         if (prop === 'blurIntensity') {
-          const valEl = document.getElementById('val-part2-bgblur');
-          if (valEl) valEl.innerText = val;
+          ['val-branding2-bgblur', 'val-part2-bgblur'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+          });
         }
         if (prop === 'introFontSize') {
-          const valEl = document.getElementById('val-part2-fontsize');
-          if (valEl) valEl.innerText = val;
+          ['val-branding2-fontsize', 'val-part2-fontsize'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+          });
+        }
+        if (prop === 'paragraphDuration' || prop === 'paragraphCount') {
+          m7UpdateParagraphTimeLabels(obj);
         }
         if (prop === 'width') {
-          const valEl = document.getElementById('val-part2-width');
-          if (valEl) valEl.innerText = val;
+          ['val-branding2-width', 'val-part2-width'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+          });
           if (obj.uniformScale) {
             const aspect = (obj.height && obj.width) ? (obj.height / val) : 0.5;
             obj.height = Math.max(10, Math.round(val * aspect));
-            const sliderH = document.getElementById('slider-part2-height');
-            const valH = document.getElementById('val-part2-height');
-            if (sliderH) sliderH.value = obj.height;
-            if (valH) valH.innerText = obj.height;
+            ['slider-branding2-height', 'slider-part2-height'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = obj.height;
+            });
+            ['val-branding2-height', 'val-part2-height'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.innerText = obj.height;
+            });
           }
         }
         if (prop === 'height') {
-          const valEl = document.getElementById('val-part2-height');
-          if (valEl) valEl.innerText = val;
+          ['val-branding2-height', 'val-part2-height'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+          });
         }
         if (prop === 'rotation') {
-          const valEl = document.getElementById('val-part2-rotation');
-          if (valEl) valEl.innerText = val;
+          ['val-branding2-rotation', 'val-part2-rotation'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+          });
         }
         if (prop === 'opacity') {
-          const valEl = document.getElementById('val-part2-opacity');
-          if (valEl) valEl.innerText = val;
+          ['val-branding2-opacity', 'val-part2-opacity'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+          });
           obj.opacity = val / 100;
         }
 
@@ -8871,39 +10321,32 @@
       function m7SetParticle2Anchor(anchor) {
         if (activeSelectedParticle2Index < 0 || !activeParticle2s[activeSelectedParticle2Index]) return;
         const obj = activeParticle2s[activeSelectedParticle2Index];
-        const stage = getAstrofoxStage();
-        const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 1920, height: 1080 };
-        const sw = stageSize.width || 1920;
-        const sh = stageSize.height || 1080;
-        const w = (obj.width && !isNaN(obj.width)) ? obj.width : 360;
-        const h = (obj.height && !isNaN(obj.height)) ? obj.height : 180;
-        const marginX = 80;
-        const marginY = 60;
+        const w = (obj.width && !isNaN(obj.width)) ? obj.width : 120;
+        const h = (obj.height && !isNaN(obj.height)) ? obj.height : 120;
 
-        let targetX = 0;
-        let targetY = 0;
-
-        switch (anchor) {
-          case 'TL': targetX = -sw / 2 + w / 2 + marginX; targetY = -sh / 2 + h / 2 + marginY; break;
-          case 'TC': targetX = 0; targetY = -sh / 2 + h / 2 + marginY; break;
-          case 'TR': targetX = sw / 2 - w / 2 - marginX; targetY = -sh / 2 + h / 2 + marginY; break;
-          case 'ML': targetX = -sw / 2 + w / 2 + marginX; targetY = 0; break;
-          case 'Center': targetX = 0; targetY = 0; break;
-          case 'MR': targetX = sw / 2 - w / 2 - marginX; targetY = 0; break;
-          case 'BL': targetX = -sw / 2 + w / 2 + marginX; targetY = sh / 2 - h / 2 - marginY; break;
-          case 'BC': targetX = 0; targetY = sh / 2 - h / 2 - marginY; break;
-          case 'BR': targetX = sw / 2 - w / 2 - marginX; targetY = sh / 2 - h / 2 - marginY; break;
-        }
-
-        obj.x = Math.round(targetX);
-        obj.y = Math.round(targetY);
+        const pos = m7CalculateAnchorPosition(anchor, w, h);
+        obj.x = pos.x;
+        obj.y = pos.y;
         obj.position = anchor;
 
         if (obj.display && obj.display.update) {
           obj.display.update({ x: obj.x, y: obj.y });
         }
+        m7DrawParticle2Canvas(obj);
         m7ScheduleAutosave();
       }
+
+      // Global window aliases for backward compatibility and HTML events
+      window.m7UpdateBranding2Prop = m7UpdateParticle2Prop;
+      window.m7UpdateBranding2IntroStyle = m7UpdateParticle2IntroStyle;
+      window.m7HandleBranding2FileUpload = m7HandleParticle2FileUpload;
+      window.m7SyncInspectorToBranding2 = m7SyncInspectorToParticle2;
+      window.m7UpdateParticle2Prop = m7UpdateParticle2Prop;
+      window.m7UpdateParticle2IntroStyle = m7UpdateParticle2IntroStyle;
+      window.m7HandleParticle2FileUpload = m7HandleParticle2FileUpload;
+      window.m7SyncInspectorToParticle2 = m7SyncInspectorToParticle2;
+      window.m7SetParticle2Anchor = m7SetParticle2Anchor;
+      window.m7SelectOrAddParticle2Preset = m7SelectOrAddParticle2Preset;
 
       /* === 5. VISUAL FX MODULE FUNCTIONS (M3 PARITY) === */
       let activeEffects = []; // [{ id, name, presetId, category, enabled, props: {} }]
@@ -9046,6 +10489,7 @@
         m7RenderEffectList();
         m7SyncInspectorToEffect(newEff);
         m7ScheduleAutosave();
+        window.dispatchEvent(new CustomEvent('m7-workspace-change'));
       }
 
       function m7ApplyGenrePreset(presetName) {
@@ -9075,6 +10519,7 @@
           m7SyncInspectorToEffect(activeEffects[0]);
         }
         m7ScheduleAutosave();
+        window.dispatchEvent(new CustomEvent('m7-workspace-change'));
       }
 
       function m7RenderEffectList() {
@@ -9132,6 +10577,7 @@
           m7SyncInspectorToEffect(activeEffects[activeSelectedEffectIndex]);
         }
         m7ScheduleAutosave();
+        window.dispatchEvent(new CustomEvent('m7-workspace-change'));
       }
 
       function m7SyncInspectorToEffect(effectItem) {
@@ -9624,6 +11070,7 @@
       }
 
       function m7AddBrandingDirect(type) {
+        const isIntroOrOutro = (type === 'Intro' || type === 'Outro');
         let name = type;
         if (type === 'Logo') name = 'Brand Logo';
         else if (type === 'Watermark') name = 'Watermark';
@@ -9640,6 +11087,17 @@
 
         const wsAsset = (type === 'Logo' || type === 'Watermark' || type === 'Subscribe Animation' || type === 'Subscribe') ? m7GetWorkspaceBrandingAsset(assetKey) : null;
 
+        let defW = 160, defH = 160, defX = -780, defY = 380, defAnchor = 'Top Left', defOp = 1.0;
+        if (type === 'Logo') {
+          defW = 160; defH = 160; defX = -780; defY = 380; defAnchor = 'Top Left'; defOp = 1.0;
+        } else if (type === 'Watermark') {
+          defW = 220; defH = 48; defX = 760; defY = -440; defAnchor = 'Bottom Right'; defOp = 0.45;
+        } else if (type === 'Subscribe Animation' || type === 'Subscribe') {
+          defW = 280; defH = 54; defX = 0; defY = -430; defAnchor = 'Bottom Center'; defOp = 1.0;
+        } else if (type === 'Intro' || type === 'Outro') {
+          defW = 480; defH = 100; defX = 0; defY = 0; defAnchor = 'Center'; defOp = 1.0;
+        }
+
         // Create default branding object
         const newObj = {
           id: 'branding_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
@@ -9649,14 +11107,14 @@
           // Transform & Appearance
           shapeMode: 'Original',
           uniformScale: false,
-          width: 360,
-          height: 180,
+          width: defW,
+          height: defH,
           rotation: 0,
-          x: type === 'Watermark' ? 320 : (type === 'Logo' ? 300 : 0),
-          y: type === 'Watermark' ? 180 : (type === 'Logo' ? 160 : (type === 'Subscribe Animation' ? 150 : 0)),
-          position: (type === 'Watermark' || type === 'Logo') ? 'Bottom Right' : (type === 'Subscribe Animation' ? 'Bottom Center' : 'Center'),
+          x: defX,
+          y: defY,
+          position: defAnchor,
           scale: type === 'Watermark' ? 80 : 100,
-          opacity: type === 'Watermark' ? 0.5 : 1.0,
+          opacity: defOp,
           shadow: type === 'Watermark' ? 30 : 50,
           tiltX: 0,
           tiltY: 0,
@@ -9714,10 +11172,8 @@
           } catch(e) {}
         }
 
-        // Add visual display to Astrofox scene if visual element
-        if (!isIntroOrOutro) {
-          m7CreateBrandingDisplay(newObj);
-        }
+        // Add visual display to Astrofox scene
+        m7CreateBrandingDisplay(newObj);
 
         activeBrandingObjects.push(newObj);
         activeSelectedBrandingIndex = activeBrandingObjects.length - 1;
@@ -9730,35 +11186,112 @@
       }
 
       function m7CreateBrandingDisplay(obj) {
-        if (obj.type === 'Intro' || obj.type === 'Outro') return;
         const scene = getOrCreateActiveScene();
         if (!scene) return;
 
-        // Clean up legacy TextDisplay objects
-        if (scene.displays) {
-          for (let i = scene.displays.length - 1; i >= 0; i--) {
-            const d = scene.displays[i];
-            if (d && (d.name === obj.name || d.name === 'Branding Layer' || d.name === 'Brand Logo' || d.name === 'Watermark' || d.name === 'Subscribe Animation') && d.constructor && d.constructor.name === 'TextDisplay') {
-              scene.removeElement(d);
-            }
-          }
+        const stage = getAstrofoxStage();
+        const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 854, height: 480 };
+        const stageW = stageSize.width || 854;
+        const stageH = stageSize.height || 480;
+
+        const isIntroOrOutro = (obj.type === 'Intro' || obj.type === 'Outro');
+        const w = isIntroOrOutro ? stageW : ((obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360);
+        const h = isIntroOrOutro ? stageH : ((obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180);
+
+        if (!obj.canvas) {
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          obj.canvas = canvas;
+          obj.ctx = canvas.getContext('2d');
+        } else {
+          obj.canvas.width = w;
+          obj.canvas.height = h;
         }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = (obj.width && !isNaN(obj.width)) ? Math.round(obj.width) : 360;
-        canvas.height = (obj.height && !isNaN(obj.height)) ? Math.round(obj.height) : 180;
-        const ctx = canvas.getContext('2d');
-
-        obj.canvas = canvas;
-        obj.ctx = ctx;
 
         m7DrawBrandingCanvas(obj);
 
         const core = window.__ASTROFOX_CORE__;
+        const TextClass = core?.library?.get('displays')?.TextDisplay;
+
+        if (isIntroOrOutro && TextClass) {
+          try {
+            const display = new TextClass({
+              name: obj.name || 'Intro Sequence',
+              isBranding: true,
+              customCanvas: true,
+              text: '',
+              x: 0,
+              y: 0,
+              rotation: 0,
+              opacity: 1.0
+            });
+            display.canvas = obj.canvas;
+            display.text = null;
+
+            display.render = function(sc, data) {
+              const player = window.__ASTROFOX_CORE__?.player;
+              const isPlaying = player?.isPlaying ? player.isPlaying() : false;
+              const curTime = (data && data.currentTime !== undefined)
+                ? data.currentTime
+                : (player?.getCurrentTime ? player.getCurrentTime() : 0);
+
+              const isOutro = (obj.type === 'Outro');
+              const isPara = (obj.introStyle === 'Paragraph (Text)');
+              const paraCount = Math.max(1, Math.min(3, parseInt(obj.paragraphCount) || 1));
+              const paraDur = Math.max(1.0, parseFloat(obj.paragraphDuration) || 5.0);
+              const rawDur = typeof obj.introDuration === 'string' ? parseFloat(obj.introDuration) : (obj.introDuration || (isOutro ? 5.0 : 3.0));
+              const duration = isPara ? (paraCount * paraDur) : Math.max(1, rawDur || (isOutro ? 5.0 : 3.0));
+              
+              const trackDur = playlistTracks[activeSelectedTrackIndex]?.duration || 0;
+              const totalDuration = (trackDur > 0) ? trackDur : (player?.getDuration ? player.getDuration() : 60) || 60;
+
+              let activeEase = 0.0;
+              if (!isOutro) {
+                if (curTime <= duration) {
+                  const progress = Math.min(1.0, Math.max(0.0, curTime / duration));
+                  activeEase = 0.5 * (1.0 + Math.cos(progress * Math.PI));
+                }
+              } else {
+                const startOutro = Math.max(0, totalDuration - duration);
+                if (curTime >= startOutro) {
+                  const progress = Math.min(1.0, Math.max(0.0, (curTime - startOutro) / duration));
+                  activeEase = 0.5 * (1.0 - Math.cos(progress * Math.PI));
+                }
+              }
+
+              const isInspected = (
+                (activeCategory === 'particle2' && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index] === obj) ||
+                (activeCategory === 'branding' && activeSelectedBrandingIndex >= 0 && activeBrandingObjects[activeSelectedBrandingIndex] === obj)
+              );
+
+              if (!isPlaying && isInspected) {
+                if (!isOutro && curTime <= duration) {
+                  activeEase = Math.max(activeEase, 1.0);
+                } else if (isOutro && (curTime >= (totalDuration - duration) || curTime === 0)) {
+                  activeEase = Math.max(activeEase, 1.0);
+                }
+              }
+
+              m7DrawIntroOutroWidget(obj.ctx, obj.canvas.width, obj.canvas.height, obj, activeEase, curTime);
+
+              const origin = { x: obj.canvas.width / 2, y: obj.canvas.height / 2 };
+              sc.renderToCanvas(obj.canvas, this.properties, origin);
+            };
+
+            obj.display = display;
+            scene.addElement(display);
+            m7EnforceLayerOrder(scene);
+          } catch(e) {
+            console.error('[M7 Branding] Intro/Outro display creation failed:', e);
+          }
+          return;
+        }
+
         const ImageClass = core?.library?.get('displays')?.ImageDisplay;
         if (ImageClass) {
           try {
-            const dataUrl = canvas.toDataURL('image/png');
+            const dataUrl = obj.canvas.toDataURL('image/png');
             const display = new ImageClass({
               name: obj.name || 'Branding Layer',
               src: dataUrl,
@@ -9927,54 +11460,13 @@
           ctx.drawImage(img, drawX, drawY, drawW, drawH);
         } else {
           if (obj.type === 'Logo') {
-            const col = '#ec4899';
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            ctx.strokeStyle = col;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = col;
-            ctx.fillText('🛡️', w * 0.28, h / 2);
-
-            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('BRAND LOGO', w * 0.62, h / 2);
+            m7DrawLogoPlaceholderWidget(ctx, w, h, obj);
           } else if (obj.type === 'Watermark') {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 10);
-            ctx.fill();
-
-            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.2)))}px "Segoe UI", Inter, monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.fillText('💧 © MEDIAFACTORY', w / 2, h / 2);
-          } else if (obj.type === 'Subscribe Animation') {
-            const pillW = w - 20;
-            const pillH = h - 20;
-            const pillX = 10;
-            const pillY = 10;
-
-            ctx.fillStyle = '#ef4444';
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
-            ctx.fill();
-
-            ctx.font = `bold ${Math.max(14, Math.min(26, Math.floor(pillH * 0.45)))}px sans-serif`;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('🔔', pillX + pillW * 0.1, pillY + pillH / 2);
-
-            ctx.font = `900 ${Math.max(12, Math.min(22, Math.floor(pillH * 0.38)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillText('SUBSCRIBE', pillX + pillW * 0.32, pillY + pillH / 2);
+            m7DrawWatermarkWidget(ctx, w, h, obj);
+          } else if (obj.type === 'Subscribe Animation' || obj.type === 'Subscribe') {
+            m7DrawSubscribeWidget(ctx, w, h, obj);
+          } else if (obj.type === 'Intro' || obj.type === 'Outro') {
+            m7DrawIntroOutroWidget(ctx, w, h, obj);
           }
         }
 
@@ -10049,6 +11541,30 @@
         m7ScheduleAutosave();
       }
 
+      function m7SyncBrandingDisplaysWithScene() {
+        const scene = getOrCreateActiveScene();
+        if (!scene || !scene.displays) return;
+
+        const validDisplayIds = new Set(activeBrandingObjects.map(b => b.display?.id).filter(Boolean));
+        const toRemove = [];
+
+        for (let i = scene.displays.length - 1; i >= 0; i--) {
+          const d = scene.displays[i];
+          if (!d) continue;
+          const props = d.properties || {};
+          const isBrandingDisplay = (props.isBranding && !props.isParticle2) || (d.name === 'ImageDisplay' && (props.name === 'Branding Layer' || props.name === 'Brand Logo' || props.name === 'Watermark' || props.name === 'Subscribe Animation'));
+          if (isBrandingDisplay && !validDisplayIds.has(d.id)) {
+            toRemove.push(d);
+          }
+        }
+
+        toRemove.forEach(d => {
+          scene.removeElement(d);
+        });
+
+        m7EnforceLayerOrder(scene);
+      }
+
       function m7RemoveBrandingObject(idx) {
         if (idx < 0 || idx >= activeBrandingObjects.length) return;
         const removed = activeBrandingObjects.splice(idx, 1)[0];
@@ -10056,6 +11572,8 @@
         if (scene && removed && removed.display) {
           scene.removeElement(removed.display);
         }
+
+        m7SyncBrandingDisplaysWithScene();
 
         if (activeBrandingObjects.length === 0) {
           activeSelectedBrandingIndex = -1;
@@ -10133,6 +11651,9 @@
         if (prop === 'introFontSize') {
           const valEl = document.getElementById('val-branding-fontsize');
           if (valEl) valEl.innerText = val;
+        }
+        if (prop === 'paragraphDuration' || prop === 'paragraphCount') {
+          m7UpdateParagraphTimeLabels(obj);
         }
 
         if (obj.display) {
@@ -10654,59 +12175,7 @@
           const drawY = (h - drawH) / 2;
           ctx.drawImage(img, drawX, drawY, drawW, drawH);
         } else {
-          if (obj.type === 'Logo') {
-            const col = '#a855f7';
-            ctx.fillStyle = 'rgba(17, 24, 39, 0.92)';
-            ctx.strokeStyle = col;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = col;
-            ctx.fillText('🛡️', w * 0.28, h / 2);
-
-            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('BRANDING 2', w * 0.64, h / 2);
-          } else if (obj.type === 'Watermark') {
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 10);
-            ctx.fill();
-
-            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.2)))}px "Segoe UI", Inter, monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillText('💧 BRANDING 2 MARK', w / 2, h / 2);
-          } else if (obj.type === 'Subscribe Animation') {
-            const pillW = w - 20;
-            const pillH = h - 20;
-            const pillX = 10;
-            const pillY = 10;
-
-            const grad = ctx.createLinearGradient(pillX, pillY, pillX + pillW, pillY);
-            grad.addColorStop(0, '#ef4444');
-            grad.addColorStop(1, '#dc2626');
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
-            ctx.fill();
-
-            ctx.font = `bold ${Math.max(14, Math.min(26, Math.floor(pillH * 0.45)))}px sans-serif`;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('🔔', pillX + pillW * 0.1, pillY + pillH / 2);
-
-            ctx.font = `900 ${Math.max(12, Math.min(22, Math.floor(pillH * 0.38)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillText('SUBSCRIBE 2', pillX + pillW * 0.3, pillY + pillH / 2);
-          }
+          ctx.clearRect(0, 0, w, h);
         }
 
         ctx.restore();
@@ -11361,56 +12830,7 @@
           }
           ctx.drawImage(img, drawX, drawY, drawW, drawH);
         } else {
-          if (obj.type === 'Logo') {
-            const col = '#10b981';
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            ctx.strokeStyle = col;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = col;
-            ctx.fillText('🛡️', w * 0.28, h / 2);
-
-            ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('BRAND LOGO 3', w * 0.62, h / 2);
-          } else if (obj.type === 'Watermark') {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 10);
-            ctx.fill();
-
-            ctx.font = `800 ${Math.max(12, Math.min(18, Math.floor(h * 0.2)))}px "Segoe UI", Inter, monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.fillText('💧 © BRANDING 3', w / 2, h / 2);
-          } else if (obj.type === 'Subscribe Animation') {
-            const pillW = w - 20;
-            const pillH = h - 20;
-            const pillX = 10;
-            const pillY = 10;
-
-            ctx.fillStyle = '#ef4444';
-            ctx.beginPath();
-            m7SafeRoundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
-            ctx.fill();
-
-            ctx.font = `bold ${Math.max(14, Math.min(26, Math.floor(pillH * 0.45)))}px sans-serif`;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('🔔', pillX + pillW * 0.1, pillY + pillH / 2);
-
-            ctx.font = `900 ${Math.max(12, Math.min(22, Math.floor(pillH * 0.38)))}px "Segoe UI", Inter, sans-serif`;
-            ctx.fillText(obj.subLabel || 'SUBSCRIBE 3', pillX + pillW * 0.3, pillY + pillH / 2);
-          }
+          ctx.clearRect(0, 0, w, h);
         }
 
         ctx.restore();
@@ -12187,29 +13607,7 @@
           }
           ctx.drawImage(img, drawX, drawY, drawW, drawH);
         } else {
-          const col = '#38bdf8';
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-          ctx.strokeStyle = col;
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          m7SafeRoundRect(ctx, 10, 10, w - 20, h - 20, 14);
-          ctx.fill();
-          ctx.stroke();
-
-          ctx.font = `bold ${Math.max(16, Math.min(36, Math.floor(h * 0.3)))}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = col;
-          let icon = '🛡️';
-          if (obj.type === 'Watermark') icon = '💧';
-          else if (obj.type === 'Intro') icon = '🎬';
-          else if (obj.type === 'Outro') icon = '🔚';
-          else if (obj.type === 'Subscribe Animation') icon = '🔔';
-          ctx.fillText(icon, w * 0.28, h / 2);
-
-          ctx.font = `800 ${Math.max(12, Math.min(22, Math.floor(h * 0.2)))}px "Segoe UI", Inter, sans-serif`;
-          ctx.fillStyle = '#ffffff';
-          ctx.fillText(obj.name.toUpperCase(), w * 0.62, h / 2);
+          ctx.clearRect(0, 0, w, h);
         }
 
         ctx.restore();
@@ -13432,7 +14830,9 @@
       let m7GizmoActionData = null;
 
       function m7DeleteActiveGizmoLayer() {
-        if (activeCategory === 'visualizer' && activeSelectedVizIndex >= 0 && activeVisualizers[activeSelectedVizIndex]) {
+        if ((activeCategory === 'particle2' || activeCategory === 'particle 2') && activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index]) {
+          m7RemoveParticle2(activeSelectedParticle2Index);
+        } else if (activeCategory === 'visualizer' && activeSelectedVizIndex >= 0 && activeVisualizers[activeSelectedVizIndex]) {
           m7RemoveVisualizer(activeSelectedVizIndex);
         } else if ((activeCategory === 'text' || activeCategory === 'lyrics') && activeSelectedTextIndex >= 0 && activeTextObjects[activeSelectedTextIndex]) {
           m7RemoveTextObject(activeSelectedTextIndex);
@@ -13440,6 +14840,10 @@
           m7RemoveBrandingObject(activeSelectedBrandingIndex);
         } else if (activeCategory === 'branding2' && activeSelectedBranding2Index >= 0 && activeBranding2Objects[activeSelectedBranding2Index]) {
           m7RemoveBranding2Object(activeSelectedBranding2Index);
+        } else if (activeCategory === 'branding3' && activeSelectedBranding3Index >= 0 && activeBranding3Objects[activeSelectedBranding3Index]) {
+          m7RemoveBranding3Object(activeSelectedBranding3Index);
+        } else if (activeCategory === 'branding4' && activeSelectedBranding4Index >= 0 && activeBranding4Objects[activeSelectedBranding4Index]) {
+          m7RemoveBranding4Object(activeSelectedBranding4Index);
         }
       }
 
@@ -13450,6 +14854,98 @@
         const stageSize = (stage && stage.getSize) ? stage.getSize() : { width: 854, height: 480 };
         const stageW = stageSize.width || 854;
         const stageH = stageSize.height || 480;
+
+        if ((activeCategory === 'particle2' || activeCategory === 'particle 2') && activeParticle2s[activeSelectedParticle2Index]) {
+          const item = activeParticle2s[activeSelectedParticle2Index];
+          if (item.type === 'Intro' || item.type === 'Outro') return null;
+          const disp = item.display;
+
+          return {
+            type: 'particle2',
+            item: item,
+            display: disp,
+            name: item.name || 'Particle 2',
+            getX: () => (item.x || 0),
+            getY: () => (item.y || 0),
+            getW: () => Math.round(item.width || 120),
+            getH: () => Math.round(item.height || 120),
+            getShadowH: () => 0,
+            getFontSize: () => Math.round(item.width || 120),
+            setPos: (x, y) => {
+              item.x = Math.round(x);
+              item.y = Math.round(y);
+              if (disp && disp.update) disp.update({ x: item.x, y: item.y });
+              if (disp && disp.properties) {
+                disp.properties.x = item.x;
+                disp.properties.y = item.y;
+              }
+              const inX = document.getElementById('slider-part2-posx');
+              const inY = document.getElementById('slider-part2-posy');
+              const valX = document.getElementById('val-part2-posx');
+              const valY = document.getElementById('val-part2-posy');
+              if (inX) inX.value = item.x;
+              if (inY) inY.value = item.y;
+              if (valX) valX.innerText = item.x;
+              if (valY) valY.innerText = item.y;
+            },
+            setSize: (w, h) => {
+              const newW = Math.max(16, Math.min(1920, Math.round(w)));
+              const newH = Math.max(16, Math.min(1080, Math.round(h)));
+              item.width = newW;
+              item.height = newH;
+              item.customDimensionsSet = true;
+              if (item.canvas) {
+                item.canvas.width = newW;
+                item.canvas.height = newH;
+              }
+              m7DrawParticle2Canvas(item);
+              ['slider-branding2-width', 'slider-part2-width'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = newW;
+              });
+              ['val-branding2-width', 'val-part2-width'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = newW;
+              });
+              ['slider-branding2-height', 'slider-part2-height'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = newH;
+              });
+              ['val-branding2-height', 'val-part2-height'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = newH;
+              });
+            },
+            setFontSize: (newW) => {
+              const newSize = Math.max(16, Math.min(1920, Math.round(newW)));
+              const ratio = (item.height && item.width) ? (item.height / item.width) : 1.0;
+              item.width = newSize;
+              item.height = Math.round(newSize * ratio);
+              item.customDimensionsSet = true;
+              if (item.canvas) {
+                item.canvas.width = item.width;
+                item.canvas.height = item.height;
+              }
+              m7DrawParticle2Canvas(item);
+              ['slider-branding2-width', 'slider-part2-width'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = item.width;
+              });
+              ['val-branding2-width', 'val-part2-width'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = item.width;
+              });
+              ['slider-branding2-height', 'slider-part2-height'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = item.height;
+              });
+              ['val-branding2-height', 'val-part2-height'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = item.height;
+              });
+            }
+          };
+        }
 
         if (activeCategory === 'branding' && activeBrandingObjects[activeSelectedBrandingIndex]) {
           const item = activeBrandingObjects[activeSelectedBrandingIndex];
@@ -13844,7 +15340,85 @@
           const clickStageX = (relX * stageW) - (stageW / 2);
           const clickStageY = (stageH / 2) - (relY * stageH);
 
-          // 1. CANVA HIT-TEST: Check Text Objects (Top Layer)
+          // 1. CANVA HIT-TEST: Check Particle 2 Layers (Logo, Watermark, Subscribe, etc.)
+          let hitP2Index = -1;
+          for (let i = activeParticle2s.length - 1; i >= 0; i--) {
+            const p = activeParticle2s[i];
+            if (!p || p.type === 'Intro' || p.type === 'Outro' || p.visible === false) continue;
+            const px = p.x || 0;
+            const py = p.y || 0;
+            const pw = Math.max(20, p.width || 120);
+            const ph = Math.max(20, p.height || 120);
+
+            if (clickStageX >= px - (pw / 2) && clickStageX <= px + (pw / 2) &&
+                clickStageY >= py - (ph / 2) && clickStageY <= py + (ph / 2)) {
+              hitP2Index = i;
+              break;
+            }
+          }
+
+          if (hitP2Index >= 0) {
+            m7SelectCategory('particle2');
+            activeSelectedParticle2Index = hitP2Index;
+            m7RenderParticle2List();
+            m7SyncInspectorToParticle2(activeParticle2s[hitP2Index]);
+            m7IsGizmoSelected = true;
+            m7UpdateGizmo();
+
+            const target = m7GetActiveTarget();
+            if (target) {
+              m7IsDraggingGizmo = true;
+              m7GizmoActionData = {
+                startX: e.clientX,
+                startY: e.clientY,
+                origItemX: target.getX(),
+                origItemY: target.getY(),
+                target
+              };
+            }
+            return;
+          }
+
+          // 2. CANVA HIT-TEST: Check Branding Layers (Branding, Branding 2, Branding 3, Branding 4)
+          let hitBrandingIndex = -1;
+          for (let i = activeBrandingObjects.length - 1; i >= 0; i--) {
+            const b = activeBrandingObjects[i];
+            if (!b || b.type === 'Intro' || b.type === 'Outro' || b.visible === false) continue;
+            const bx = b.x || 0;
+            const by = b.y || 0;
+            const bw = Math.max(20, (b.width || 360) * ((b.scale || 100) / 100));
+            const bh = Math.max(20, (b.height || 180) * ((b.scale || 100) / 100));
+
+            if (clickStageX >= bx - (bw / 2) && clickStageX <= bx + (bw / 2) &&
+                clickStageY >= by - (bh / 2) && clickStageY <= by + (bh / 2)) {
+              hitBrandingIndex = i;
+              break;
+            }
+          }
+
+          if (hitBrandingIndex >= 0) {
+            m7SelectCategory('branding');
+            activeSelectedBrandingIndex = hitBrandingIndex;
+            m7RenderBrandingList();
+            m7SyncInspectorToBranding(activeBrandingObjects[hitBrandingIndex]);
+            m7IsGizmoSelected = true;
+            m7UpdateGizmo();
+
+            const target = m7GetActiveTarget();
+            if (target) {
+              m7IsDraggingGizmo = true;
+              m7GizmoActionData = {
+                startX: e.clientX,
+                startY: e.clientY,
+                origItemX: target.getX(),
+                origItemY: target.getY(),
+                target
+              };
+            }
+            return;
+          }
+
+          // 3. CANVA HIT-TEST: Check Text Objects (Top Layer)
           let hitTextIndex = -1;
           for (let i = activeTextObjects.length - 1; i >= 0; i--) {
             const t = activeTextObjects[i];
@@ -13883,7 +15457,7 @@
             return;
           }
 
-          // 2. CANVA HIT-TEST: Check Spectrum Visualizers (Middle Layer)
+          // 4. CANVA HIT-TEST: Check Spectrum Visualizers (Middle Layer)
           let hitVizIndex = -1;
           for (let i = activeVisualizers.length - 1; i >= 0; i--) {
             const v = activeVisualizers[i];
@@ -13923,7 +15497,7 @@
             return;
           }
 
-          // 3. If clicked anywhere else (e.g. background or empty space): Deselect Gizmo
+          // 5. If clicked anywhere else (e.g. background or empty space): Deselect Gizmo
           m7IsGizmoSelected = false;
           m7UpdateGizmo();
         });
@@ -13991,9 +15565,9 @@
               const ratioH = newH / origH;
               let scaleRatio = 1.0;
 
-              if (hType === 'ml' || hType === 'mr') {
+              if (hType === 'ml' || hType === 'mr' || hType === 'l' || hType === 'r') {
                 scaleRatio = ratioW;
-              } else if (hType === 'tm' || hType === 'bm') {
+              } else if (hType === 'tm' || hType === 'bm' || hType === 't' || hType === 'b') {
                 scaleRatio = ratioH;
               } else {
                 scaleRatio = (ratioW + ratioH) / 2;
@@ -14004,8 +15578,22 @@
               if (target.setFontSize) {
                 target.setFontSize(newFontSize);
               }
+            } else if (target.type === 'particle2') {
+              const origW = Math.max(16, m7GizmoActionData.origItemW || 120);
+              const origH = Math.max(16, m7GizmoActionData.origItemH || 120);
+              const ratioW = newW / origW;
+              const ratioH = newH / origH;
+              let scaleRatio = (ratioW + ratioH) / 2;
+
+              if (hType === 'ml' || hType === 'mr' || hType === 'l' || hType === 'r') {
+                target.setSize(Math.max(16, newW), origH);
+              } else if (hType === 't' || hType === 'b' || hType === 'tm' || hType === 'bm') {
+                target.setSize(origW, Math.max(16, newH));
+              } else {
+                target.setSize(Math.max(16, Math.round(origW * scaleRatio)), Math.max(16, Math.round(origH * scaleRatio)));
+              }
             } else {
-              target.setSize(Math.max(50, newW), Math.max(20, newH));
+              target.setSize(Math.max(20, newW), Math.max(20, newH));
             }
             m7UpdateGizmo();
           }
@@ -14659,6 +16247,20 @@
             activeParticle2s = [];
             for (let i = 0; i < savedState.activeParticle2s.length; i++) {
               const pt = savedState.activeParticle2s[i];
+              let defW = 160, defH = 160, defX = -780, defY = 380, defAnchor = 'Top Left', defOp = 100;
+              if (pt.type === 'Logo') {
+                defW = 160; defH = 160; defX = -780; defY = 380; defAnchor = 'Top Left'; defOp = 100;
+              } else if (pt.type === 'Watermark') {
+                defW = 220; defH = 48; defX = 760; defY = -440; defAnchor = 'Bottom Right'; defOp = 45;
+              } else if (pt.type === 'Subscribe' || pt.type === 'Subscribe Animation') {
+                defW = 280; defH = 54; defX = 0; defY = -430; defAnchor = 'Bottom Center'; defOp = 100;
+              } else if (pt.type === 'Intro' || pt.type === 'Outro') {
+                defW = 480; defH = 100; defX = 0; defY = 0; defAnchor = 'Center'; defOp = 100;
+              }
+
+              const isLegacyDim = (!pt.width || !pt.height || (pt.width === 360 && pt.height === 180));
+              const isLegacyPos = (pt.x === 0 && pt.y === 0 && pt.type !== 'Intro' && pt.type !== 'Outro');
+
               const obj = {
                 id: pt.id || ('part2_' + Date.now() + '_' + i),
                 name: pt.name || 'Particle 2',
@@ -14666,29 +16268,41 @@
                 isParticle2: true,
                 shapeMode: pt.shapeMode || 'Original',
                 uniformScale: !!pt.uniformScale,
-                width: pt.width || 360,
-                height: pt.height || 180,
+                width: isLegacyDim ? defW : pt.width,
+                height: isLegacyDim ? defH : pt.height,
                 rotation: pt.rotation || 0,
-                opacity: pt.opacity !== undefined ? pt.opacity : 100,
-                x: pt.x || 0,
-                y: pt.y || 0,
-                position: pt.position || 'Center',
+                opacity: pt.opacity !== undefined ? pt.opacity : defOp,
+                x: isLegacyPos ? defX : (pt.x !== undefined ? pt.x : defX),
+                y: isLegacyPos ? defY : (pt.y !== undefined ? pt.y : defY),
+                position: pt.position || defAnchor,
                 source: pt.source || '',
-                imageElement: null
+                imageElement: null,
+                introStyle: pt.introStyle,
+                introDuration: pt.introDuration,
+                intensity: pt.intensity,
+                visible: pt.visible !== false,
+                text: pt.text
               };
-              m7CreateParticle2Display(obj);
+              activeParticle2s.push(obj);
               if (obj.source) {
                 m7SetParticle2ImageSource(obj, obj.source);
               }
-              activeParticle2s.push(obj);
             }
+            m7SyncParticle2DisplaysWithScene();
             if (savedState.activeSelectedParticle2Index >= 0 && savedState.activeSelectedParticle2Index < activeParticle2s.length) {
               activeSelectedParticle2Index = savedState.activeSelectedParticle2Index;
+            } else if (activeParticle2s.length > 0) {
+              activeSelectedParticle2Index = 0;
             }
             m7RenderParticle2List();
             if (activeParticle2s[activeSelectedParticle2Index]) {
               m7SyncInspectorToParticle2(activeParticle2s[activeSelectedParticle2Index]);
             }
+          } else {
+            activeParticle2s = [];
+            m7SyncParticle2DisplaysWithScene();
+            m7RenderParticle2List();
+            m7SyncInspectorToParticle2(null);
           }
 
           // 6. Restore Visual FX
@@ -14966,10 +16580,19 @@
           if (scene) {
             if (activeVisualizers.length === 0) {
               const remainingSpectrum = scene.displays.filter(d => 
-                d.name === 'BarSpectrumDisplay' || d.name === 'TextDisplay' || d.name === 'WaveSpectrumDisplay' || d.name === 'SoundWaveDisplay' || d.name === 'HarmonicsSpectrumDisplay'
+                d.name === 'BarSpectrumDisplay' || (d.name === 'TextDisplay' && !activeTextObjects.some(t => t.display === d)) || d.name === 'WaveSpectrumDisplay' || d.name === 'SoundWaveDisplay' || d.name === 'HarmonicsSpectrumDisplay'
               );
               remainingSpectrum.forEach(d => scene.removeElement(d));
             }
+            if (activeBrandingObjects.length === 0 && activeBranding2Objects.length === 0 && activeParticle2s.length === 0) {
+              const remainingBranding = scene.displays.filter(d => 
+                (d.properties && (d.properties.isBranding || d.properties.isParticle2)) ||
+                d.name === 'Branding Layer' || d.name === 'Branding 2 Layer' || d.name === 'Brand Logo' || d.name === 'Watermark' || d.name === 'Subscribe Animation'
+              );
+              remainingBranding.forEach(d => scene.removeElement(d));
+            }
+            m7SyncBrandingDisplaysWithScene();
+            m7SyncParticle2DisplaysWithScene();
             m7EnforceLayerOrder(scene);
           }
         }, 150);

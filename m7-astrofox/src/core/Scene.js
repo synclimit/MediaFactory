@@ -237,14 +237,122 @@ export default class Scene extends Display {
       const bgPasses = [];
       const fgPasses = [];
 
+      // Check for active Intro / Outro sequence
+      let introDisplay = null;
+      let outroDisplay = null;
+
+      for (let i = 0; i < displays.length; i++) {
+        const d = displays[i];
+        if (!d || !d.enabled) continue;
+        const name = (d.name || d.displayName || d.constructor?.name || '').toLowerCase();
+        if (name.includes('intro')) {
+          introDisplay = d;
+        } else if (name.includes('outro')) {
+          outroDisplay = d;
+        }
+      }
+
+      const player = window.__ASTROFOX_CORE__?.player;
+      const curTime = (data && data.currentTime !== undefined)
+        ? data.currentTime
+        : (player?.getCurrentTime ? player.getCurrentTime() : 0);
+
+      const trackDur = (window.playlistTracks && window.activeSelectedTrackIndex !== undefined)
+        ? (window.playlistTracks[window.activeSelectedTrackIndex]?.duration || 0)
+        : 0;
+      const totalDuration = (trackDur > 0) ? trackDur : (player?.getDuration ? player.getDuration() : 60) || 60;
+
+      let introGateAlpha = 1.0;
+      if (introDisplay) {
+        const props = introDisplay.properties || {};
+        const isPara = (props.introStyle === 'Paragraph (Text)');
+        const paraCount = Math.max(1, Math.min(3, parseInt(props.paragraphCount) || 1));
+        const paraDur = Math.max(1.0, parseFloat(props.paragraphDuration) || 5.0);
+        const rawDur = typeof props.introDuration === 'string' ? parseFloat(props.introDuration) : (props.introDuration || 3.0);
+        const introDuration = isPara ? (paraCount * paraDur) : Math.max(1, rawDur || 3.0);
+
+        if (curTime <= introDuration) {
+          const transDur = Math.min(0.8, introDuration * 0.25);
+          if (curTime < (introDuration - transDur)) {
+            introGateAlpha = 0.0;
+          } else {
+            const transProg = (curTime - (introDuration - transDur)) / transDur;
+            introGateAlpha = 0.5 * (1.0 - Math.cos(transProg * Math.PI));
+          }
+        }
+      }
+
+      let outroGateAlpha = 1.0;
+      if (outroDisplay) {
+        const props = outroDisplay.properties || {};
+        const isPara = (props.introStyle === 'Paragraph (Text)');
+        const paraCount = Math.max(1, Math.min(3, parseInt(props.paragraphCount) || 1));
+        const paraDur = Math.max(1.0, parseFloat(props.paragraphDuration) || 5.0);
+        const rawDur = typeof props.introDuration === 'string' ? parseFloat(props.introDuration) : (props.introDuration || 5.0);
+        const outroDuration = isPara ? (paraCount * paraDur) : Math.max(1, rawDur || 5.0);
+        const startOutro = Math.max(0, totalDuration - outroDuration);
+
+        if (curTime >= startOutro) {
+          const transDur = Math.min(0.8, outroDuration * 0.25);
+          if (curTime < startOutro + transDur) {
+            const transProg = (curTime - startOutro) / transDur;
+            outroGateAlpha = 0.5 * (1.0 + Math.cos(transProg * Math.PI));
+          } else {
+            outroGateAlpha = 0.0;
+          }
+        }
+      }
+
+      const isPlaying = player?.isPlaying ? player.isPlaying() : false;
+      const isEditorInspectingViz = (typeof window !== 'undefined' && window.activeCategory === 'visualizer');
+      const isEditorInspectingParticle = (typeof window !== 'undefined' && window.activeCategory === 'particle');
+      const isEditorInspectingOverlay = (typeof window !== 'undefined' && window.activeCategory === 'overlay');
+
+      const gateAlpha = Math.min(introGateAlpha, outroGateAlpha);
+
       displays.forEach(display => {
         if (display.enabled) {
+          const name = (display.name || display.displayName || display.constructor?.name || '').toLowerCase();
+          const isBg = (name === 'imagedisplay' || name === 'image' || name === 'shaderbackgrounddisplay' || name === 'cayaturbackgrounddisplay');
+          const isIntroOrOutro = name.includes('intro') || name.includes('outro');
+          const isViz = name.includes('spectrum') || name.includes('soundwave') || name.includes('wave') || name.includes('visualizer') || name.includes('harmonics');
+          const isParticle = name.includes('particle') || name.includes('geometry') || name.includes('candle');
+          const isOverlay = name.includes('overlay');
+
+          const isInspected = (
+            (isViz && isEditorInspectingViz) ||
+            (isParticle && isEditorInspectingParticle) ||
+            (isOverlay && isEditorInspectingOverlay)
+          );
+
+          // For foreground visualizers, particles, lyrics, text, overlays:
+          // Suppress during intro/outro when playing or not actively inspected in editor
+          let effGateAlpha = gateAlpha;
+          if (!isBg && !isIntroOrOutro) {
+            if (!isPlaying && isInspected) {
+              effGateAlpha = 1.0;
+            } else if (effGateAlpha <= 0.001) {
+              return;
+            }
+          }
+
+          let origOpacity = undefined;
+          if (!isBg && !isIntroOrOutro && effGateAlpha < 0.999) {
+            if (display.properties && display.properties.opacity !== undefined) {
+              origOpacity = display.properties.opacity;
+              display.properties.opacity = origOpacity * effGateAlpha;
+            }
+          }
+
           display.updateReactors(data);
           display.render(scene, data);
 
+          if (origOpacity !== undefined && display.properties) {
+            display.properties.opacity = origOpacity;
+          }
+
           if (display.pass) {
-            const name = display.name || (display.constructor ? display.constructor.name : '') || '';
-            if (name === 'ImageDisplay' || name === 'Image' || name === 'ShaderBackgroundDisplay' || name === 'CaYaturBackgroundDisplay') {
+            if (isBg) {
               bgPasses.push(display.pass);
             } else {
               fgPasses.push(display.pass);

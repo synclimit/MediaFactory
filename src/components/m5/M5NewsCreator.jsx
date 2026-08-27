@@ -29,9 +29,6 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
   const [globalLang, setGlobalLang] = useWorkspaceState('lang', "Indonesia");
   const [globalRes, setGlobalRes] = useWorkspaceState('res', "1080x1920 (9:16)");
   const [globalFPS, setGlobalFPS] = useWorkspaceState('fps', "30 FPS");
-  const [bgmVolume, setBgmVolume] = useWorkspaceState('bgmVolume', 25);
-  const [voiceSpeed, setVoiceSpeed] = useWorkspaceState('voiceSpeed', "1.0x");
-  const [voiceGender, setVoiceGender] = useWorkspaceState('voiceGender', "Female");
   
   const [bgFolder, setBgFolder] = useWorkspaceState('bgFolder', "");
   const [audioFolder, setAudioFolder] = useWorkspaceState('audioFolder', "");
@@ -167,13 +164,14 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
 
   const [boxScale, setBoxScale] = useWorkspaceState('boxScale', 100);
   const [boxWidth, setBoxWidth] = useWorkspaceState('boxWidth', 100);
-  const [boxHeight] = useState(0);
+  const [boxHeight, setBoxHeight] = useWorkspaceState('boxHeight', 0);
   const [isDraggingBox, setIsDraggingBox] = useState(false);
   const [boxDragStart, setBoxDragStart] = useState({ x: 0, y: 0 });
   
   const [isResizingScale, setIsResizingScale] = useState(false);
   const [isResizingWidth, setIsResizingWidth] = useState(false);
-  const [resizeStart, setResizeStart] = useState({ x: 0, scale: 100, width: 100 });
+  const [isResizingHeight, setIsResizingHeight] = useState(false);
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, scale: 100, width: 100, height: 0 });
   
   const [source, setSource] = useWorkspaceState('source', 'cnnindonesia.com');
   const [category, setCategory] = useWorkspaceState('category', 'INTERNASIONAL');
@@ -396,8 +394,8 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
           )}
         </div>
 
-        {/* GLOBAL SETTINGS (STRUCTURED NO-DEAD-SPACE CARD) */}
-        <div className="bg-[#14161f] border border-[#2e3346] hover:border-orange-500/40 rounded-xl p-3 shadow-lg flex-1 flex flex-col gap-2 min-h-0 relative overflow-hidden transition-colors">
+        {/* GLOBAL SETTINGS (CLEAN 2-SECTION BALANCED LAYOUT) */}
+        <div className="bg-[#14161f] border border-[#2e3346] hover:border-orange-500/40 rounded-xl p-3 shadow-lg flex-1 flex flex-col justify-between min-h-0 relative overflow-hidden transition-colors">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-orange-500/70 to-transparent"></div>
 
           <div className="flex items-center justify-between border-b border-[#252838] pb-1.5 shrink-0">
@@ -408,17 +406,17 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
             <span className="text-[8.5px] text-orange-400 font-mono font-bold bg-orange-950/40 px-1.5 py-0.5 rounded border border-orange-500/30">BATCH PRESETS</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto m5-scroll pr-0.5 space-y-2">
+          <div className="flex-1 flex flex-col justify-around py-1 space-y-2">
             
             {/* Section 1: Video Engine Specs */}
-            <div className="bg-[#0f1017]/70 border border-[#232635] p-2 rounded-lg space-y-1.5">
-              <span className="text-[8.5px] text-orange-400 uppercase font-black font-['Rajdhani'] tracking-wider flex items-center gap-1">
-                <Sliders size={10}/> Video Specs & Dimensions
+            <div className="bg-[#0f1017]/70 border border-[#232635] p-2.5 rounded-lg space-y-2">
+              <span className="text-[9px] text-orange-400 uppercase font-black font-['Rajdhani'] tracking-wider flex items-center gap-1 border-b border-[#232635] pb-1">
+                <Sliders size={11}/> Video Specs & Dimensions
               </span>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[8px] text-gray-400 uppercase font-bold font-['Rajdhani'] block">Duration</label>
-                  <select value={globalDuration} onChange={e => setGlobalDuration(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded px-1.5 py-0.5 text-[9.5px] text-gray-200 focus:border-orange-500/70 outline-none h-[24px]">
+                  <select value={globalDuration} onChange={e => setGlobalDuration(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded-md px-2 py-1 text-[10px] text-gray-200 focus:border-orange-500/70 outline-none h-[27px] cursor-pointer">
                     <option value="Auto">Auto (Audio length)</option>
                     <option value="15s">15s</option>
                     <option value="20s">20s</option>
@@ -429,7 +427,7 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                 </div>
                 <div>
                   <label className="text-[8px] text-gray-400 uppercase font-bold font-['Rajdhani'] block">Language</label>
-                  <select value={globalLang} onChange={e => setGlobalLang(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded px-1.5 py-0.5 text-[9.5px] text-gray-200 focus:border-orange-500/70 outline-none h-[24px]">
+                  <select value={globalLang} onChange={e => setGlobalLang(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded-md px-2 py-1 text-[10px] text-gray-200 focus:border-orange-500/70 outline-none h-[27px] cursor-pointer">
                     <option value="Indonesia">Indonesia</option>
                     <option value="English">English</option>
                     <option value="Japanese">Japanese</option>
@@ -437,14 +435,14 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                 </div>
                 <div>
                   <label className="text-[8px] text-gray-400 uppercase font-bold font-['Rajdhani'] block">Resolution</label>
-                  <select value={globalRes} onChange={e => setGlobalRes(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded px-1.5 py-0.5 text-[9.5px] text-gray-200 focus:border-orange-500/70 outline-none h-[24px]">
+                  <select value={globalRes} onChange={e => setGlobalRes(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded-md px-2 py-1 text-[10px] text-gray-200 focus:border-orange-500/70 outline-none h-[27px] cursor-pointer">
                     <option value="1080x1920 (9:16)">1080x1920 (9:16)</option>
                     <option value="720x1280 (9:16)">720x1280 (9:16)</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-[8px] text-gray-400 uppercase font-bold font-['Rajdhani'] block">FPS</label>
-                  <select value={globalFPS} onChange={e => setGlobalFPS(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded px-1.5 py-0.5 text-[9.5px] text-gray-200 focus:border-orange-500/70 outline-none h-[24px]">
+                  <select value={globalFPS} onChange={e => setGlobalFPS(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded-md px-2 py-1 text-[10px] text-gray-200 focus:border-orange-500/70 outline-none h-[27px] cursor-pointer">
                     <option value="30 FPS">30 FPS</option>
                     <option value="60 FPS">60 FPS</option>
                   </select>
@@ -452,62 +450,30 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
               </div>
             </div>
 
-            {/* Section 2: Audio & Voice Mixer */}
-            <div className="bg-[#0f1017]/70 border border-[#232635] p-2 rounded-lg space-y-1.5">
-              <span className="text-[8.5px] text-orange-400 uppercase font-black font-['Rajdhani'] tracking-wider flex items-center gap-1">
-                <Mic size={10}/> Voice & Audio Mixer
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                <div>
-                  <label className="text-[8px] text-gray-400 uppercase font-bold font-['Rajdhani'] block">Voice Speed</label>
-                  <select value={voiceSpeed} onChange={e => setVoiceSpeed(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded px-1.5 py-0.5 text-[9.5px] text-gray-200 focus:border-orange-500/70 outline-none h-[24px]">
-                    <option value="0.9x">0.9x (Slow)</option>
-                    <option value="1.0x">1.0x (Normal)</option>
-                    <option value="1.1x">1.1x (Fast)</option>
-                    <option value="1.2x">1.2x (Ultra)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[8px] text-gray-400 uppercase font-bold font-['Rajdhani'] block">Voice Type</label>
-                  <select value={voiceGender} onChange={e => setVoiceGender(e.target.value)} className="w-full mt-0.5 bg-[#0f1017] border border-[#2d3142] rounded px-1.5 py-0.5 text-[9.5px] text-gray-200 focus:border-orange-500/70 outline-none h-[24px]">
-                    <option value="Female">Female (Natural)</option>
-                    <option value="Male">Male (Deep)</option>
-                  </select>
-                </div>
-              </div>
-              <div className="pt-0.5">
-                <label className="text-[8px] text-gray-400 flex justify-between uppercase font-bold font-['Rajdhani']">
-                  <span className="flex items-center gap-1"><Volume2 size={9} className="text-orange-400"/> BGM Gain</span>
-                  <span className="text-orange-400 font-mono">{bgmVolume}%</span>
-                </label>
-                <input type="range" min="0" max="100" value={bgmVolume} onChange={e => setBgmVolume(Number(e.target.value))} className="w-full accent-orange-500 mt-0.5 h-1 cursor-pointer"/>
-              </div>
-            </div>
-
-            {/* Section 3: Asset Storage Directories */}
-            <div className="bg-[#0f1017]/70 border border-[#232635] p-2 rounded-lg space-y-1.5">
-              <span className="text-[8.5px] text-orange-400 uppercase font-black font-['Rajdhani'] tracking-wider flex items-center gap-1">
-                <Layers size={10}/> Automation Asset Folders
+            {/* Section 2: Asset Storage Directories */}
+            <div className="bg-[#0f1017]/70 border border-[#232635] p-2.5 rounded-lg space-y-2">
+              <span className="text-[9px] text-orange-400 uppercase font-black font-['Rajdhani'] tracking-wider flex items-center gap-1 border-b border-[#232635] pb-1">
+                <Layers size={11}/> Automation Asset Folders
               </span>
               <div>
                 <label className="text-[8px] text-gray-400 uppercase font-bold flex items-center gap-1"><Video size={9} className="text-orange-400"/> Background Folder (Optional)</label>
-                <div className="flex border border-[#2d3142] rounded overflow-hidden mt-0.5 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner h-[22px]">
-                  <input type="text" readOnly value={bgFolder} placeholder="Random video file if empty" className="bg-transparent px-1.5 text-[8.5px] w-full border-none outline-none text-gray-300 font-mono"/>
-                  <button onClick={() => handleBrowseFolder(setBgFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-2 text-[8.5px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer flex items-center">Browse</button>
+                <div className="flex border border-[#2d3142] rounded-md overflow-hidden mt-0.5 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner h-[26px]">
+                  <input type="text" readOnly value={bgFolder} placeholder="Random video file if empty" className="bg-transparent px-2 text-[9px] w-full border-none outline-none text-gray-300 font-mono"/>
+                  <button onClick={() => handleBrowseFolder(setBgFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-2.5 text-[9px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer flex items-center">Browse</button>
                 </div>
               </div>
               <div>
                 <label className="text-[8px] text-gray-400 uppercase font-bold flex items-center gap-1"><Music size={9} className="text-orange-400"/> Audio / Voice Folder (Optional)</label>
-                <div className="flex border border-[#2d3142] rounded overflow-hidden mt-0.5 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner h-[22px]">
-                  <input type="text" readOnly value={audioFolder} placeholder="Random audio file if empty" className="bg-transparent px-1.5 text-[8.5px] w-full border-none outline-none text-gray-300 font-mono"/>
-                  <button onClick={() => handleBrowseFolder(setAudioFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-2 text-[8.5px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer flex items-center">Browse</button>
+                <div className="flex border border-[#2d3142] rounded-md overflow-hidden mt-0.5 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner h-[26px]">
+                  <input type="text" readOnly value={audioFolder} placeholder="Random audio file if empty" className="bg-transparent px-2 text-[9px] w-full border-none outline-none text-gray-300 font-mono"/>
+                  <button onClick={() => handleBrowseFolder(setAudioFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-2.5 text-[9px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer flex items-center">Browse</button>
                 </div>
               </div>
               <div>
                 <label className="text-[8px] text-gray-400 uppercase font-bold flex items-center gap-1"><ImageIcon size={9} className="text-orange-400"/> Overlay Folder (Optional)</label>
-                <div className="flex border border-[#2d3142] rounded overflow-hidden mt-0.5 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner h-[22px]">
-                  <input type="text" readOnly value={overlayFolder} placeholder="Random overlay file if empty" className="bg-transparent px-1.5 text-[8.5px] w-full border-none outline-none text-gray-300 font-mono"/>
-                  <button onClick={() => handleBrowseFolder(setOverlayFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-2 text-[8.5px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer flex items-center">Browse</button>
+                <div className="flex border border-[#2d3142] rounded-md overflow-hidden mt-0.5 bg-[#0f1017] focus-within:border-orange-500/60 shadow-inner h-[26px]">
+                  <input type="text" readOnly value={overlayFolder} placeholder="Random overlay file if empty" className="bg-transparent px-2 text-[9px] w-full border-none outline-none text-gray-300 font-mono"/>
+                  <button onClick={() => handleBrowseFolder(setOverlayFolder)} className="bg-[#1e212f] hover:bg-orange-600 hover:text-white px-2.5 text-[9px] text-orange-400 font-bold border-l border-[#2d3142] transition-colors cursor-pointer flex items-center">Browse</button>
                 </div>
               </div>
             </div>
@@ -533,6 +499,11 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
             setBoxWidth(Math.max(40, Math.min(100, resizeStart.width + dx * 0.5)));
             return;
           }
+          if (isResizingHeight) {
+            const dy = resizeStart.y - e.clientY;
+            setBoxHeight(Math.max(0, Math.min(500, Math.round(resizeStart.height + dy))));
+            return;
+          }
           if (isDraggingBox) {
             const newX = Math.max(-100, Math.min(100, e.clientX - boxDragStart.x));
             const newY = Math.max(-300, Math.min(30, e.clientY - boxDragStart.y));
@@ -540,8 +511,8 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
             return;
           }
         }}
-        onMouseUp={() => { setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsDraggingImage(false); }}
-        onMouseLeave={() => { setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsDraggingImage(false); }}
+        onMouseUp={() => { setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsResizingHeight(false); setIsDraggingImage(false); }}
+        onMouseLeave={() => { setIsDraggingBox(false); setIsResizingScale(false); setIsResizingWidth(false); setIsResizingHeight(false); setIsDraggingImage(false); }}
       >
         {/* THE 9:16 CANVAS WITH SLICK DEVICE FRAME */}
         <div 
@@ -692,11 +663,20 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
 
                 {/* On-Canvas Resize Handles */}
                 <div 
+                  className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-orange-500 rounded-full cursor-ns-resize border border-white shadow-md z-50 opacity-0 group-hover/box:opacity-100 transition-opacity"
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    setIsResizingHeight(true);
+                    setResizeStart({ x: e.clientX, y: e.clientY, scale: boxScale, width: boxWidth, height: boxHeight || (e.currentTarget.parentElement ? e.currentTarget.parentElement.offsetHeight : 120) });
+                  }}
+                  title="Adjust Box Height"
+                />
+                <div 
                   className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-orange-500 rounded-full cursor-nwse-resize border-2 border-white shadow-md z-50 opacity-0 group-hover/box:opacity-100 transition-opacity"
                   onMouseDown={(e) => {
                     e.stopPropagation();
                     setIsResizingScale(true);
-                    setResizeStart({ x: e.clientX, scale: boxScale, width: boxWidth });
+                    setResizeStart({ x: e.clientX, y: e.clientY, scale: boxScale, width: boxWidth, height: boxHeight });
                   }}
                   title="Scale Box Size"
                 />
@@ -705,7 +685,7 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                   onMouseDown={(e) => {
                     e.stopPropagation();
                     setIsResizingWidth(true);
-                    setResizeStart({ x: e.clientX, scale: boxScale, width: boxWidth });
+                    setResizeStart({ x: e.clientX, y: e.clientY, scale: boxScale, width: boxWidth, height: boxHeight });
                   }}
                   title="Adjust Box Width"
                 />
@@ -862,19 +842,23 @@ export default function M5NewsCreator({ m5Queue = [], setM5Queue, activeWorkspac
                    </div>
                  </div>
 
-                 {/* Card Dimensions (Scale & Width Side by Side) */}
+                 {/* Card Dimensions (Scale, Width, Height) */}
                  <div className="bg-[#0f1017]/60 p-2 rounded-lg border border-[#232635]">
                    <span className="text-[9px] text-orange-400 uppercase font-black font-['Rajdhani'] tracking-wider border-b border-[#232635] pb-0.5 block mb-1">
                      Card Size & Scale
                    </span>
-                   <div className="grid grid-cols-2 gap-2 pt-0.5">
+                   <div className="grid grid-cols-3 gap-1.5 pt-0.5">
                      <div>
-                       <label className="text-[8px] text-gray-400 flex justify-between uppercase font-bold font-['Rajdhani']"><span>Scale</span> <span className="text-orange-400 font-mono">{boxScale}%</span></label>
+                       <label className="text-[7.5px] text-gray-400 flex justify-between uppercase font-bold font-['Rajdhani']"><span>Scale</span> <span className="text-orange-400 font-mono">{boxScale}%</span></label>
                        <input type="range" min="40" max="160" value={boxScale} onChange={e=>setBoxScale(Number(e.target.value))} className="w-full accent-orange-500 mt-0.5 h-1 cursor-pointer"/>
                      </div>
                      <div>
-                       <label className="text-[8px] text-gray-400 flex justify-between uppercase font-bold font-['Rajdhani']"><span>Width</span> <span className="text-orange-400 font-mono">{boxWidth}%</span></label>
+                       <label className="text-[7.5px] text-gray-400 flex justify-between uppercase font-bold font-['Rajdhani']"><span>Width</span> <span className="text-orange-400 font-mono">{boxWidth}%</span></label>
                        <input type="range" min="40" max="100" value={boxWidth} onChange={e=>setBoxWidth(Number(e.target.value))} className="w-full accent-orange-500 mt-0.5 h-1 cursor-pointer"/>
+                     </div>
+                     <div>
+                       <label className="text-[7.5px] text-gray-400 flex justify-between uppercase font-bold font-['Rajdhani']"><span>Height</span> <span className="text-orange-400 font-mono">{boxHeight === 0 ? 'Auto' : `${boxHeight}px`}</span></label>
+                       <input type="range" min="0" max="450" step="5" value={boxHeight} onChange={e=>setBoxHeight(Number(e.target.value))} className="w-full accent-orange-500 mt-0.5 h-1 cursor-pointer"/>
                      </div>
                    </div>
                  </div>

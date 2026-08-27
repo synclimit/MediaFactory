@@ -56,6 +56,21 @@ function resolveFFmpegDir() {
   return process.cwd();
 }
 
+function resolveNodeJsPath() {
+  const candidateNodes = [
+    'C:\\Program Files\\nodejs\\node.exe',
+    'C:\\Program Files (x86)\\nodejs\\node.exe',
+    path.join(process.env.USERPROFILE || '', 'AppData', 'Local', 'Programs', 'node', 'node.exe')
+  ];
+  for (const n of candidateNodes) {
+    if (n && existsSync(n)) return n;
+  }
+  if (process.execPath && !process.execPath.toLowerCase().includes('electron') && existsSync(process.execPath)) {
+    return process.execPath;
+  }
+  return 'node';
+}
+
 export async function processM1Job(job, updateProgress, onComplete, onError) {
   const cacheDir = path.resolve('Workspace/Cache/M1');
   const jobIdClean = (job.id || 'temp').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -128,17 +143,32 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
         await new Promise((resolve, reject) => {
           const ytBin = resolveYtDlpPath();
           const ffmpegDir = resolveFFmpegDir();
-          const targetUrl = (audioIn.includes('http://') || audioIn.includes('https://')) 
-            ? audioIn 
-            : `https://www.youtube.com/watch?v=${audioIn}`;
+          const nodePath = resolveNodeJsPath();
+
+          let targetUrl = String(audioIn).trim();
+          const idMatch = targetUrl.match(/(?:v=|\/embed\/|youtu\.be\/|\/v\/|\/shorts\/|^)([a-zA-Z0-9_-]{11})(?:\b|&|$)/);
+          if (idMatch && idMatch[1] && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+            targetUrl = `https://www.youtube.com/watch?v=${idMatch[1]}`;
+          } else if (targetUrl.includes('youtube.com') || targetUrl.includes('youtu.be')) {
+            if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+              targetUrl = `https://${targetUrl.replace(/^https?:\/\//, '')}`;
+            }
+            if (idMatch && idMatch[1]) {
+              targetUrl = `https://www.youtube.com/watch?v=${idMatch[1]}`;
+            }
+          } else if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+            targetUrl = `https://www.youtube.com/watch?v=${targetUrl}`;
+          }
 
           const ytArgs = [
             '--no-check-certificates',
             '--force-ipv4',
-            '--extractor-args', 'youtube:player_client=android,web',
+            '--js-runtimes', 'node:' + nodePath,
+            '--extractor-args', 'youtube:player_client=ios,mweb,web',
             '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0',
             '--no-warnings',
             '--no-playlist',
+            '-f', 'bestaudio/best',
             '-x',
             '--audio-format', 'mp3',
             '--ffmpeg-location', ffmpegDir,

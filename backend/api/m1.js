@@ -174,8 +174,8 @@ router.post('/api/m1/audio/probe', (req, res) => {
 function extractVideoId(input) {
     if (!input) return null;
     const str = String(input).trim();
-    const match = str.match(/(?:v=|\/vi\/|youtu\.be\/|\/embed\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
-    if (match) return match[1];
+    const match = str.match(/(?:v=|\/vi\/|youtu\.be\/|\/embed\/|\/shorts\/|^)([a-zA-Z0-9_-]{11})(?:\b|&|$)/);
+    if (match && match[1]) return match[1];
     if (/^[a-zA-Z0-9_-]{11}$/.test(str)) return str;
     return null;
 }
@@ -185,17 +185,11 @@ function cleanYoutubeUrl(url) {
     const vId = extractVideoId(url);
     if (vId) return `https://www.youtube.com/watch?v=${vId}`;
     let trimmed = String(url).trim();
-    try {
-        const parsed = new URL(trimmed);
-        if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
-            parsed.searchParams.delete('list');
-            parsed.searchParams.delete('start_radio');
-            parsed.searchParams.delete('index');
-            parsed.searchParams.delete('pp');
-            parsed.searchParams.delete('si');
-            return parsed.toString();
+    if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+        if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+            trimmed = `https://${trimmed.replace(/^https?:\/\//, '')}`;
         }
-    } catch(e) {}
+    }
     return trimmed;
 }
 
@@ -204,43 +198,9 @@ async function fetchMetadataWithFallback(targetUrl) {
     const cleanUrl = vId ? `https://www.youtube.com/watch?v=${vId}` : cleanYoutubeUrl(targetUrl);
 
     const attempts = [
-        [
-            '--no-check-certificates',
-            '--force-ipv4',
-            '--extractor-args', 'youtube:player_client=android,web',
-            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0',
-            '--dump-json',
-            '--no-playlist',
-            '--',
-            cleanUrl
-        ],
-        [
-            '--no-check-certificates',
-            '--extractor-args', 'youtube:player_client=mweb,web',
-            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0',
-            '--dump-json',
-            '--no-playlist',
-            '--',
-            cleanUrl
-        ],
-        [
-            '--no-check-certificates',
-            '--dump-json',
-            '--no-playlist',
-            '--',
-            cleanUrl
-        ]
+        AppPaths.getYtDlpStandardArgs(['--dump-json', '--no-playlist', '--', cleanUrl]),
+        AppPaths.getYtDlpStandardArgs(['--dump-json', '--no-playlist', '--', vId ? `ytsearch1:${vId}` : `ytsearch1:${cleanUrl}`])
     ];
-
-    if (vId) {
-        attempts.push([
-            '--no-check-certificates',
-            '--dump-json',
-            '--no-playlist',
-            '--',
-            `ytsearch1:${vId}`
-        ]);
-    }
 
     let lastError = null;
     for (let i = 0; i < attempts.length; i++) {
@@ -338,22 +298,17 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
         const outTemplate = path.join(cacheDir, `${videoId}.%(ext)s`);
         const audioPath = path.join(cacheDir, `${videoId}.mp3`).replace(/\\/g, '/');
 
-        const ffmpegDir = AppPaths.getFFmpegDir();
-        const ytArgs = [
-            '--no-check-certificates',
-            '--force-ipv4',
-            '--extractor-args', 'youtube:player_client=android,web',
-            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0',
+        const ytArgs = AppPaths.getYtDlpStandardArgs([
             '--no-warnings',
             '--no-playlist',
+            '-f', 'bestaudio/best',
             '-x',
             '--audio-format', 'mp3',
-            '--ffmpeg-location', ffmpegDir,
             '--write-thumbnail',
             '-o', outTemplate,
             '--',
             `https://www.youtube.com/watch?v=${videoId}`
-        ];
+        ]);
         const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs);
 
         ytProc.stdout.on('data', (data) => {
@@ -400,4 +355,110 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
     }
 });
 
+// ─── THUMBNAIL DOWNLOAD ROUTE ───
+const handleThumbnailDownload = async (req, res) => {
+    try {
+        const videoId = req.query.videoId || req.body?.videoId;
+        const url = req.query.url || req.body?.url;
+        const title = req.query.title || req.body?.title;
+        const filename = req.query.filename || req.body?.filename;
+
+        let vId = videoId || extractVideoId(url);
+
+        let candidateUrls = [];
+        if (vId) {
+            candidateUrls.push(`https://i.ytimg.com/vi/${vId}/maxresdefault.jpg`);
+            candidateUrls.push(`https://i.ytimg.com/vi/${vId}/sddefault.jpg`);
+            candidateUrls.push(`https://i.ytimg.com/vi/${vId}/hqdefault.jpg`);
+            candidateUrls.push(`https://i.ytimg.com/vi/${vId}/default.jpg`);
+        }
+        if (url && String(url).startsWith('http')) {
+            candidateUrls.unshift(url);
+        }
+
+        // Clean filename for download
+        const rawName = filename || (title ? `${title.replace(/[/\\?%*:|"<>]/g, '_').trim()}_thumbnail` : (vId ? `${vId}_thumbnail` : 'youtube_thumbnail'));
+        let outName = rawName;
+        if (!/\.(jpg|jpeg|png|webp)$/i.test(outName)) {
+            outName += '.jpg';
+        }
+
+        // Check if there's a cached thumbnail on local disk in cache/m1/
+        if (vId) {
+            try {
+                const cacheDir = path.join(AppPaths.getCacheBase(), 'm1');
+                const cachedJpg = path.join(cacheDir, `${vId}.jpg`);
+                const cachedWebp = path.join(cacheDir, `${vId}.webp`);
+
+                const statJpg = await fs.stat(cachedJpg).catch(() => null);
+                if (statJpg && statJpg.size > 1000) {
+                    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(outName)}"`);
+                    res.setHeader('Content-Type', 'image/jpeg');
+                    const fileData = await fs.readFile(cachedJpg);
+                    return res.send(fileData);
+                }
+
+                const statWebp = await fs.stat(cachedWebp).catch(() => null);
+                if (statWebp && statWebp.size > 1000) {
+                    const extName = outName.replace(/\.jpg$/i, '.webp');
+                    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(extName)}"`);
+                    res.setHeader('Content-Type', 'image/webp');
+                    const fileData = await fs.readFile(cachedWebp);
+                    return res.send(fileData);
+                }
+            } catch (e) {}
+        }
+
+        // Fetch from candidate URLs with quality waterfall
+        for (const targetUrl of candidateUrls) {
+            try {
+                const response = await fetch(targetUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0'
+                    }
+                });
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type') || 'image/jpeg';
+                    const arrayBuffer = await response.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+                    // YouTube returns a 1097-byte 404 placeholder image for nonexistent maxresdefault
+                    if (buffer.length > 2000) {
+                        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(outName)}"`);
+                        res.setHeader('Content-Type', contentType);
+                        return res.send(buffer);
+                    }
+                }
+            } catch (err) {
+                // Try next candidate
+            }
+        }
+
+        // Last fallback: if we have any thumbnail even if small
+        if (candidateUrls.length > 0) {
+            try {
+                const lastUrl = candidateUrls[candidateUrls.length - 1];
+                const response = await fetch(lastUrl);
+                if (response.ok) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+                    if (buffer.length > 200) {
+                        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(outName)}"`);
+                        res.setHeader('Content-Type', 'image/jpeg');
+                        return res.send(buffer);
+                    }
+                }
+            } catch (e) {}
+        }
+
+        return res.status(404).json({ error: 'Thumbnail image not found.' });
+    } catch (err) {
+        console.error('[M1 Thumbnail Download] Error:', err);
+        return res.status(500).json({ error: err.message || 'Failed to download thumbnail.' });
+    }
+};
+
+router.get('/api/m1/thumbnail/download', handleThumbnailDownload);
+router.post('/api/m1/thumbnail/download', handleThumbnailDownload);
+
 module.exports = { router, jobs };
+

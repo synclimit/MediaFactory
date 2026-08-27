@@ -454,7 +454,15 @@ async function buildPlaylistAudio(job, cacheDir, payload) {
             logRuntimeEvent(job, 'ffmpeg spawn TRY (yt-dlp)');
             console.log(`[M3] Downloading YouTube audio: ${sp}`);
             await new Promise((resolve, reject) => {
-              const ytArgs = ['-f', 'bestaudio', '--no-playlist', '-x', '--audio-format', 'mp3', '-o', ytOut, '--', sp];
+              const ytArgs = AppPaths.getYtDlpStandardArgs([
+                '-f', 'bestaudio/best',
+                '--no-playlist',
+                '-x',
+                '--audio-format', 'mp3',
+                '-o', ytOut,
+                '--',
+                sp
+              ]);
               const ytProc = spawn(AppPaths.getYtDlpPath(), ytArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
               ytProc.stdout.on('data', () => {});
               ytProc.stderr.on('data', () => {});

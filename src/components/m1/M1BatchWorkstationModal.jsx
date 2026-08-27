@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import M1WindowFrame from './ui/M1WindowFrame';
 import { getApiUrl } from '../../utils/apiUrl';
+import { downloadYoutubeThumbnail } from '../../utils/thumbnailDownloader';
 
 // ─── CYBER TOGGLE SWITCH COMPONENT ───
 function CyberToggle({ label, checked, onChange, title }) {
@@ -48,6 +49,28 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
   const [descModalIdx, setDescModalIdx] = useState(null);
   const [tempDesc, setTempDesc] = useState('');
   const [batchRephrasing, setBatchRephrasing] = useState(false);
+  const [downloadingSlotIdx, setDownloadingSlotIdx] = useState(null);
+
+  const handleDownloadSingleThumb = async (idx) => {
+    const slot = m1Slots[idx];
+    if (!slot?.videoId && !slot?.thumbnailUrl && !slot?.manualThumbnail) {
+      alert('Belum ada thumbnail untuk diunduh. Silakan fetch link YouTube terlebih dahulu.');
+      return;
+    }
+    setDownloadingSlotIdx(idx);
+    try {
+      await downloadYoutubeThumbnail({
+        videoId: slot?.videoId,
+        thumbnailUrl: slot?.manualThumbnail || slot?.thumbnailUrl,
+        title: slot?.videoTitle || slot?.outputName,
+        outputName: slot?.outputName
+      });
+    } catch (e) {
+      alert('Gagal mengunduh thumbnail: ' + e.message);
+    } finally {
+      setDownloadingSlotIdx(null);
+    }
+  };
 
   // ─── SYNCED MASTER OVERLAYS STATE (4 Workspace Default Overlays) ───
   const allSubscribe = m1Slots.length > 0 && m1Slots.every(s => s?.useSubscribe);
@@ -464,14 +487,35 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
                             }
                           }}
                         />
-                        <button
-                          type="button"
-                          onClick={() => document.getElementById(`col2-thumb-${idx}`)?.click()}
-                          className="absolute inset-0 bg-black/80 hover:bg-orange-600/90 text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 cursor-pointer"
-                        >
-                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                          <span>GANTI</span>
-                        </button>
+                        <div className="absolute inset-0 bg-black/85 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
+                          {activeThumbnail && (
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadSingleThumb(idx)}
+                              disabled={downloadingSlotIdx === idx}
+                              className="w-full py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[8px] font-bold rounded flex items-center justify-center gap-0.5 cursor-pointer disabled:opacity-50"
+                              title="Download thumbnail resolusi tinggi"
+                            >
+                              {downloadingSlotIdx === idx ? (
+                                <div className="w-2 h-2 border border-white border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <>
+                                  <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                  <span>UNDUH</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById(`col2-thumb-${idx}`)?.click()}
+                            className="w-full py-0.5 bg-[#252838] hover:bg-orange-600 text-white text-[8px] font-bold rounded flex items-center justify-center gap-0.5 cursor-pointer"
+                            title="Ganti thumbnail manual"
+                          >
+                            <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            <span>GANTI</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Output Name Input & Deskripsi Button */}
