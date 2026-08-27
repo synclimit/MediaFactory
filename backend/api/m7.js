@@ -44,6 +44,82 @@ router.get('/api/m7/status', (req, res) => {
   });
 });
 
+// Serve local media file for M7 Webview/Iframe
+router.get('/api/m7/media-file', (req, res) => {
+  try {
+    const filePath = req.query.path;
+    if (!filePath) return res.status(400).send('Path required');
+    const resolved = path.resolve(filePath);
+    if (!fs.existsSync(resolved)) {
+      console.warn('[M7 API] Media file not found:', resolved);
+      return res.status(404).send('File not found');
+    }
+    res.sendFile(resolved);
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
+});
+
+// Get workspace branding assets automatically (Logo, Watermark, Subscribe, etc.)
+router.get('/api/m7/workspace-branding', (req, res) => {
+  try {
+    const wsName = req.query.workspace || 'default';
+    const brandingDir = path.resolve(process.cwd(), '.mediafactory', 'assets', 'branding', wsName);
+    
+    let result = {
+      logo: null,
+      watermark: null,
+      subscribe: null,
+      overlay: null
+    };
+
+    if (fs.existsSync(brandingDir)) {
+      const files = fs.readdirSync(brandingDir);
+      
+      // Preferred matches:
+      // Logo: logo_nobg.png or logo_dangdut_viral_id_nobg.png or newest logo_*
+      const logoFiles = files.filter(f => f.toLowerCase().startsWith('logo_')).sort((a, b) => {
+        const aNobg = a.toLowerCase().includes('nobg');
+        const bNobg = b.toLowerCase().includes('nobg');
+        if (aNobg && !bNobg) return -1;
+        if (!aNobg && bNobg) return 1;
+        const mtimeA = fs.statSync(path.join(brandingDir, a)).mtimeMs;
+        const mtimeB = fs.statSync(path.join(brandingDir, b)).mtimeMs;
+        return mtimeB - mtimeA;
+      });
+      if (logoFiles.length > 0) {
+        result.logo = path.join(brandingDir, logoFiles[0]);
+      }
+
+      const wmFiles = files.filter(f => f.toLowerCase().startsWith('watermark_')).sort((a, b) => {
+        const aNobg = a.toLowerCase().includes('nobg');
+        const bNobg = b.toLowerCase().includes('nobg');
+        if (aNobg && !bNobg) return -1;
+        if (!aNobg && bNobg) return 1;
+        const mtimeA = fs.statSync(path.join(brandingDir, a)).mtimeMs;
+        const mtimeB = fs.statSync(path.join(brandingDir, b)).mtimeMs;
+        return mtimeB - mtimeA;
+      });
+      if (wmFiles.length > 0) {
+        result.watermark = path.join(brandingDir, wmFiles[0]);
+      }
+
+      const subFiles = files.filter(f => f.toLowerCase().startsWith('subscribe')).sort((a, b) => {
+        const mtimeA = fs.statSync(path.join(brandingDir, a)).mtimeMs;
+        const mtimeB = fs.statSync(path.join(brandingDir, b)).mtimeMs;
+        return mtimeB - mtimeA;
+      });
+      if (subFiles.length > 0) {
+        result.subscribe = path.join(brandingDir, subFiles[0]);
+      }
+    }
+
+    res.json({ success: true, branding: result });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // Save Temp Media File from Frontend
 router.post('/api/m7/save-temp-file', (req, res) => {
   try {

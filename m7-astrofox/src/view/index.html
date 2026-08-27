@@ -8672,6 +8672,11 @@
 
       function m7DrawWatermarkWidget(ctx, w, h, obj) {
         ctx.clearRect(0, 0, w, h);
+        if (window.__M7_WORKSPACE_BRANDING__ && window.__M7_WORKSPACE_BRANDING__.watermark && obj && !obj._isLoadingImage) {
+          obj._isLoadingImage = true;
+          m7SetParticle2ImageSource(obj, window.__M7_WORKSPACE_BRANDING__.watermark);
+          return;
+        }
         const cx = w / 2;
         const cy = h / 2;
         const size = Math.min(w, h);
@@ -8705,6 +8710,11 @@
 
       function m7DrawLogoPlaceholderWidget(ctx, w, h, obj) {
         ctx.clearRect(0, 0, w, h);
+        if (window.__M7_WORKSPACE_BRANDING__ && window.__M7_WORKSPACE_BRANDING__.logo && obj && !obj._isLoadingImage) {
+          obj._isLoadingImage = true;
+          m7SetParticle2ImageSource(obj, window.__M7_WORKSPACE_BRANDING__.logo);
+          return;
+        }
         const cx = w / 2;
         const cy = h / 2;
         const size = Math.min(w, h);
@@ -9088,8 +9098,58 @@
         ctx.restore();
       }
 
+      window.__M7_WORKSPACE_BRANDING__ = null;
+      async function m7FetchWorkspaceBranding() {
+        try {
+          const res = await fetch('/api/m7/workspace-branding');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.success && data.branding) {
+              window.__M7_WORKSPACE_BRANDING__ = data.branding;
+              console.log('[M7] Workspace branding loaded from backend:', data.branding);
+
+              if (typeof activeParticle2s !== 'undefined' && Array.isArray(activeParticle2s)) {
+                activeParticle2s.forEach(obj => {
+                  if (obj.type === 'Logo') {
+                    if (data.branding.logo && (!obj.source || !obj.imageElement || obj.source.includes('logo_1787670904943'))) {
+                      m7SetParticle2ImageSource(obj, data.branding.logo);
+                    } else if (obj.source && !obj.imageElement) {
+                      m7SetParticle2ImageSource(obj, obj.source);
+                    }
+                  } else if (obj.type === 'Watermark') {
+                    if (data.branding.watermark && (!obj.source || !obj.imageElement)) {
+                      m7SetParticle2ImageSource(obj, data.branding.watermark);
+                    } else if (obj.source && !obj.imageElement) {
+                      m7SetParticle2ImageSource(obj, obj.source);
+                    }
+                  }
+                });
+              }
+            }
+          }
+        } catch(e) {
+          console.warn('[M7] Failed to fetch workspace branding:', e);
+        }
+      }
+      setTimeout(m7FetchWorkspaceBranding, 150);
+
       function m7GetWorkspaceBrandingAsset(key) {
         try {
+          if (window.__M7_WORKSPACE_BRANDING__) {
+            if ((key === 'logo' || key === 'avatar') && window.__M7_WORKSPACE_BRANDING__.logo) {
+              return window.__M7_WORKSPACE_BRANDING__.logo;
+            }
+            if (key === 'watermark' && window.__M7_WORKSPACE_BRANDING__.watermark) {
+              return window.__M7_WORKSPACE_BRANDING__.watermark;
+            }
+            if ((key === 'subscribe' || key === 'subscribeAnim') && window.__M7_WORKSPACE_BRANDING__.subscribe) {
+              return window.__M7_WORKSPACE_BRANDING__.subscribe;
+            }
+            if (key === 'overlay' && window.__M7_WORKSPACE_BRANDING__.overlay) {
+              return window.__M7_WORKSPACE_BRANDING__.overlay;
+            }
+          }
+
           const activeWs = localStorage.getItem('mf_active_workspace') || 'DEFAULT';
           const candidates = [activeWs, 'DEFAULT', 'default', 'Test 1', 'test 1'];
 
