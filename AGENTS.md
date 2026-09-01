@@ -21,3 +21,4 @@
 - Always run `npm run build-dev` in `d:\MediaFactory\m7-astrofox` whenever modifying M7 engine code.
 - Always run `npm run build` in `d:\MediaFactory` to update the production bundle.
 - Always verify changes against live editor and native output.
+- **NEVER PUSH TO GITHUB (`git push`)** unless the user explicitly gives a direct command to do so.

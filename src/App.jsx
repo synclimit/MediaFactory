@@ -74,8 +74,36 @@ function Tooltip({ text }) {
 export default function App() {
   const [lang, setLang] = useState('English');
   const [profiles, setProfiles] = useState([]);
-  const [queue, setQueue] = useState([]);
+  
+  // Persistent Queue Initialization (Dual-Layer: LocalStorage + Backend Disk)
+  const [queue, setQueue] = useState(() => {
+    try {
+      const storedQueue = localStorage.getItem('pipeline_queue');
+      if (storedQueue) {
+        const parsed = JSON.parse(storedQueue);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(job => {
+            if (['Rendering', 'Processing', 'Downloading', 'Converting', 'Splitting', 'Running'].includes(job.status)) {
+              return { ...job, status: 'Waiting', progress: 0, backendJobId: undefined, error: null, failureReason: null };
+            }
+            return job;
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load initial queue from localStorage', e);
+    }
+    return [];
+  });
   const [m5Queue, setM5Queue] = useState([]);
+  
+  // Queue Manager Interactive Filter States:
+  // queueStatusFilter: 'ALL' | 'RENDERING' | 'WAITING' | 'COMPLETED' | 'FAILED'
+  const [queueStatusFilter, setQueueStatusFilter] = useState('ALL');
+  // queueWorkspaceFilter: 'ALL' | specific workspace name
+  const [queueWorkspaceFilter, setQueueWorkspaceFilter] = useState('ALL');
+  // queueSearchQuery: search keyword
+  const [queueSearchQuery, setQueueSearchQuery] = useState('');
   
   const [isApiKeysModalOpen, setIsApiKeysModalOpen] = useState(false);
   const [isCacheModalOpen, setIsCacheModalOpen] = useState(false);
@@ -243,10 +271,44 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Queue persistence
+  // Queue persistence (dual-layer: localStorage + debounced backend disk backup)
   useEffect(() => {
-    localStorage.setItem('pipeline_queue', JSON.stringify(queue));
+    try {
+      localStorage.setItem('pipeline_queue', JSON.stringify(queue));
+    } catch (e) {
+      console.error('Failed to save pipeline_queue to localStorage', e);
+    }
+    const timer = setTimeout(() => {
+      fetch(getApiUrl('/api/v1/system/queue'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ queue })
+      }).catch(() => {});
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [queue]);
+
+  // Initial sync from backend disk backup if localStorage was empty
+  useEffect(() => {
+    fetch(getApiUrl('/api/v1/system/queue'))
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.data && Array.isArray(data.data.queue) && data.data.queue.length > 0) {
+          setQueue(prev => {
+            if (prev.length === 0) {
+              return data.data.queue.map(job => {
+                if (['Rendering', 'Processing', 'Downloading', 'Converting', 'Splitting', 'Running'].includes(job.status)) {
+                  return { ...job, status: 'Waiting', progress: 0, backendJobId: undefined, error: null, failureReason: null };
+                }
+                return job;
+              });
+            }
+            return prev;
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Global M5 Queue persistence & SSE
   useEffect(() => {
@@ -544,6 +606,8 @@ export default function App() {
           renderPlanId: plan.renderId,
           renderName: plan.renderName,
           mode: 'Mode 2',
+          workspaceName: activeWorkspace || 'Default',
+          createdAt: Date.now(),
           profileName: plan.audioProfile || 'Standard',
           status: 'Waiting',
           scheduleMode: 'Manual',
@@ -1406,41 +1470,14 @@ export default function App() {
     setLogs((prev) => [`[${timestamp}] ${message}`, ...prev]);
   }, []);
 
-  // Migration logic
+  // Non-destructive schema check (preserves queue across versions)
   useEffect(() => {
     const PIPELINE_SCHEMA_VERSION = '3';
     const storedVersion = localStorage.getItem('PIPELINE_SCHEMA_VERSION');
     if (storedVersion !== PIPELINE_SCHEMA_VERSION) {
-      addLog('[SYSTEM] PIPELINE_MIGRATION_STARTED');
-      localStorage.removeItem('pipeline_queue');
-      localStorage.removeItem('pipeline_cache');
-      pipelineHistoryEngine.clearHistory();
-      addLog('[SYSTEM] PIPELINE_OLD_QUEUE_REMOVED');
       localStorage.setItem('PIPELINE_SCHEMA_VERSION', PIPELINE_SCHEMA_VERSION);
-      addLog('[SYSTEM] PIPELINE_MIGRATION_COMPLETED');
-      setQueue([]);
-    } else {
-      const storedQueue = localStorage.getItem('pipeline_queue');
-      if (storedQueue) {
-        try {
-          const parsed = JSON.parse(storedQueue);
-          if (Array.isArray(parsed)) {
-            const resumed = parsed.map(job => {
-              if (['Rendering', 'Processing', 'Downloading', 'Converting', 'Splitting'].includes(job.status)) {
-                return { ...job, status: 'Waiting', progress: 0, backendJobId: undefined, error: null, failureReason: null };
-              }
-              return job;
-            });
-            setQueue(resumed);
-          } else {
-            setQueue([]);
-          }
-        } catch (e) {
-          setQueue([]);
-        }
-      }
     }
-  }, [addLog]);
+  }, []);
 
   const handleOpenReviewDialog = (selectedPlans = null) => {
     if (activeMode === 'Mode 1') {
@@ -1746,6 +1783,8 @@ export default function App() {
         jobsToQueue.push({
           id: rid,
           mode: 'Mode 1',
+          workspaceName: activeWorkspace || 'Default',
+          createdAt: Date.now(),
           profileName: 'Standard',
           status: 'Waiting',
           inputVideo: m1VideoFile,
@@ -1826,6 +1865,8 @@ export default function App() {
           ...payload,
           id: Date.now().toString(),
           mode: 'Mode 4',
+          workspaceName: activeWorkspace || 'Default',
+          createdAt: Date.now(),
           status: 'Waiting',
           progress: 0
         }]);
@@ -1842,6 +1883,8 @@ export default function App() {
       const m3Job = {
         id: 'm3_q_' + Date.now(),
         mode: 'Mode 3',
+        workspaceName: activeWorkspace || 'Default',
+        createdAt: Date.now(),
         renderName: m3OutputFilename || 'M3_Render.mp4',
         profileName: 'Mode 3 Profile',
         status: 'Waiting',
@@ -1891,6 +1934,8 @@ export default function App() {
       const m3v2Job = {
         id: 'm3v2_q_' + Date.now(),
         mode: 'Mode 3 V2',
+        workspaceName: activeWorkspace || 'Default',
+        createdAt: Date.now(),
         renderName: m3v2OutputFilename || 'M3_V2_Visualizer_Render.mp4',
         profileName: 'Visualizer V4 Single Pure Profile',
         status: 'Waiting',
@@ -2018,6 +2063,8 @@ export default function App() {
       const newJob = {
         id: 'q_' + Date.now(),
         mode: 'Mode 3',
+        workspaceName: activeWorkspace || 'Default',
+        createdAt: Date.now(),
         profileName: isFast ? '⚡ Fast Render (10s Master Loop)' : '🎬 Normal Render',
         status: 'Waiting',
         scheduleMode: 'Manual',
@@ -2033,7 +2080,7 @@ export default function App() {
         m3Payload: payload
       };
 
-      setQueue(prev => [...prev.filter(j => j.status !== 'Failed'), newJob]);
+      setQueue(prev => [...prev, newJob]);
       setM3SuccessMsg(true);
       
       addLog(`[M3] Render Job created and queued for ${outFileName}`);
@@ -2083,6 +2130,8 @@ export default function App() {
       const newJob = {
         id: 'm3v2_q_' + Date.now(),
         mode: 'Mode 3 V2',
+        workspaceName: activeWorkspace || 'Default',
+        createdAt: Date.now(),
         profileName: 'Visualizer V4 Single Pure (100% WYSIWYG)',
         status: 'Waiting',
         scheduleMode: 'Manual',
@@ -2098,7 +2147,7 @@ export default function App() {
         m3Payload: payload
       };
 
-      setQueue(prev => [...prev.filter(j => j.status !== 'Failed'), newJob]);
+      setQueue(prev => [...prev, newJob]);
       setPipelineDrawerCollapsed(false);
       addLog(`[M3 V2] Render Job created and queued for ${outFileName}`);
       addNotification("⚡ Berhasil ditambahkan ke Queue Manager.", "Status: Waiting");
@@ -2121,6 +2170,8 @@ export default function App() {
       const newJob = {
         id: 'm7_q_' + Date.now(),
         mode: 'Mode 7',
+        workspaceName: activeWorkspace || 'Default',
+        createdAt: Date.now(),
         profileName: 'Astrofox Motion Graphics Engine',
         status: 'Waiting',
         scheduleMode: 'Manual',
@@ -2137,7 +2188,7 @@ export default function App() {
         m7Payload: jobPayload
       };
 
-      setQueue(prev => [...prev.filter(j => j.status !== 'Failed'), newJob]);
+      setQueue(prev => [...prev, newJob]);
       setPipelineDrawerCollapsed(false);
       addLog(`[M7] Astrofox Render Job created and queued for ${outFileName}`);
       addNotification("⚡ Berhasil ditambahkan ke Queue Manager.", "Status: Waiting");
@@ -2478,6 +2529,63 @@ export default function App() {
     }
     setQueue(prev => prev.filter(item => item.id !== id));
     addLog(`Deleted queue item: ${id}`);
+  };
+
+  const handleRetryQueueItem = (id) => {
+    if (typeof id === 'string' && id.startsWith('m5_')) {
+      const rawId = id.replace('m5_', '');
+      fetch(`/api/v1/m5/queue/${rawId}/retry`, { method: 'POST' }).catch(() => {});
+      setM5Queue(prev => prev.map(item => (item.id === rawId || item.id.toString() === rawId) ? { ...item, status: 'Ready', progress: 0, error: null } : item));
+      addLog(`[M5] Retrying job ${rawId}`);
+      addNotification('Job Re-queued', 'Job has been reset to Waiting');
+      return;
+    }
+    setQueue(prev => prev.map(item => {
+      if (item.id === id) {
+        return {
+          ...item,
+          status: 'Waiting',
+          progress: 0,
+          backendJobId: undefined,
+          failureReason: null,
+          error: null
+        };
+      }
+      return item;
+    }));
+    addLog(`Retrying job: ${id}`);
+    addNotification('Job Re-queued', 'Job has been reset to Waiting');
+  };
+
+  const handleRetryAllFailed = () => {
+    setQueue(prev => prev.map(item => {
+      if (item.status === 'Failed') {
+        return {
+          ...item,
+          status: 'Waiting',
+          progress: 0,
+          backendJobId: undefined,
+          failureReason: null,
+          error: null
+        };
+      }
+      return item;
+    }));
+    setM5Queue(prev => prev.map(item => {
+      if (item.status === 'Failed') {
+        return { ...item, status: 'Ready', progress: 0, error: null };
+      }
+      return item;
+    }));
+    addLog('All failed jobs reset to Waiting status.');
+    addNotification('Retry Triggered', 'All failed jobs have been reset to Waiting');
+  };
+
+  const handleClearCompleted = () => {
+    setQueue(prev => prev.filter(item => item.status !== 'Completed'));
+    setM5Queue(prev => prev.filter(item => item.status !== 'Completed'));
+    addLog('Completed queue jobs cleared.');
+    addNotification('Queue Cleaned', 'Completed jobs removed from Queue Manager');
   };
 
   const handleTogglePause = (id) => {
@@ -3351,226 +3459,435 @@ export default function App() {
             </div>
           </div>
 
-          {/* Queue Tasks list */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            {(() => {
-              const combinedQueue = [...queue, ...m5Queue.filter(j => j.type !== 'download').map(m5job => ({
-                id: `m5_${m5job.id}`,
-                outputFiles: [m5job.snapshot?.outPath ? m5job.snapshot.outPath.split(/[\/\\]/).pop() : `M5_Render_${m5job.id}.mp4`],
-                mode: 'Mode 5',
-                profileName: m5job.formula,
-                status: m5job.status === 'Ready' ? 'Waiting' : (m5job.status === 'Failed' ? 'Failed' : (m5job.status === 'Completed' ? 'Completed' : (m5job.status === 'Scheduled' ? 'Scheduled' : 'Rendering'))),
-                progress: (m5job.status === 'Completed') ? 100 : (typeof m5job.progress === 'number' ? m5job.progress : 0),
-                outputFolder: m5job.snapshot?.config?.output?.outputDir || 'Output/M5/',
-                OUTPUT_PATH: m5job.snapshot?.outPath,
-                RENDER_DURATION: m5job.snapshot?.manifest?.renderTimeSeconds ? `${m5job.snapshot.manifest.renderTimeSeconds.toFixed(1)}s` : null,
-                FFMPEG_COMMAND: m5job.snapshot?.ffmpegCommand,
-                failureReason: m5job.error || (m5job.status === 'Failed' ? 'Gagal: Sumber video belum dipilih / Library kosong / FFmpeg Error' : null)
-              }))];
-              
-              return (
-                <>
-                  {combinedQueue.length === 0 && (
-                    <div className="text-center text-gray-600 py-10 font-mono text-[10px]">QUEUE EMPTY</div>
-                  )}
-                  
-                  {['Waiting', 'Scheduled', 'Pending', 'Rendering', 'Completed', 'Failed'].map(groupStatus => {
-                    const groupJobs = combinedQueue.filter(j => 
-                      groupStatus === 'Rendering' 
-                        ? (j.status === 'Rendering' || j.status === 'Running' || j.status === 'Retrying')
-                        : j.status === groupStatus
-                    );
-              
-              if (groupJobs.length === 0) return null;
+          {/* Filter & Controls Toolbar */}
+          {(() => {
+            const combinedQueue = [...queue, ...m5Queue.filter(j => j.type !== 'download').map(m5job => ({
+              id: `m5_${m5job.id}`,
+              outputFiles: [m5job.snapshot?.outPath ? m5job.snapshot.outPath.split(/[\/\\]/).pop() : `M5_Render_${m5job.id}.mp4`],
+              mode: 'Mode 5',
+              profileName: m5job.formula,
+              status: m5job.status === 'Ready' ? 'Waiting' : (m5job.status === 'Failed' ? 'Failed' : (m5job.status === 'Completed' ? 'Completed' : (m5job.status === 'Scheduled' ? 'Scheduled' : 'Rendering'))),
+              progress: (m5job.status === 'Completed') ? 100 : (typeof m5job.progress === 'number' ? m5job.progress : 0),
+              outputFolder: m5job.snapshot?.config?.output?.outputDir || 'Output/M5/',
+              OUTPUT_PATH: m5job.snapshot?.outPath,
+              RENDER_DURATION: m5job.snapshot?.manifest?.renderTimeSeconds ? `${m5job.snapshot.manifest.renderTimeSeconds.toFixed(1)}s` : null,
+              FFMPEG_COMMAND: m5job.snapshot?.ffmpegCommand,
+              failureReason: m5job.error || (m5job.status === 'Failed' ? 'Gagal: Sumber video belum dipilih / Library kosong / FFmpeg Error' : null),
+              workspaceName: m5job.workspaceName || m5job.workspace || activeWorkspace || 'Default',
+              createdAt: m5job.createdAt || Date.now()
+            }))];
 
-              return (
-                <div key={groupStatus} className="border border-gray-600/40 rounded-lg overflow-hidden mb-2 mx-2">
-                  <div 
-                    onClick={() => togglePipelineGroup(groupStatus)}
-                    className="bg-gradient-to-r from-[#1c1f26] to-[#121418] px-2 py-1.5 flex justify-between items-center cursor-pointer hover:from-[#242833] hover:to-[#1a1d24] border-b border-gray-600/40 transition-all"
-                  >
-                    <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-300 tracking-[0.2em]">
-                      <span className={`text-[8px] transform transition-transform text-gray-500 ${!pipelineGroupsCollapsed[groupStatus] ? 'rotate-90' : ''}`}>▶</span>
-                      <span className="uppercase">{groupStatus}</span>
-                      <span className="bg-gray-700/50 border border-gray-600/50 px-1.5 py-0.5 rounded-full text-[8px] text-gray-200 ml-1">{groupJobs.length}</span>
+            const totalAll = combinedQueue.length;
+            const countRendering = combinedQueue.filter(j => ['Rendering', 'Running', 'Retrying'].includes(j.status)).length;
+            const countWaiting = combinedQueue.filter(j => ['Waiting', 'Pending', 'Scheduled', 'Ready'].includes(j.status)).length;
+            const countCompleted = combinedQueue.filter(j => j.status === 'Completed').length;
+            const countFailed = combinedQueue.filter(j => j.status === 'Failed').length;
+
+            const availableWorkspaces = Array.from(new Set(combinedQueue.map(j => j.workspaceName || j.workspace || 'Default'))).filter(Boolean);
+
+            let activeGroups = ['Waiting', 'Scheduled', 'Pending', 'Rendering', 'Completed', 'Failed'];
+            if (queueStatusFilter === 'RENDERING') activeGroups = ['Rendering'];
+            else if (queueStatusFilter === 'WAITING') activeGroups = ['Waiting', 'Scheduled', 'Pending'];
+            else if (queueStatusFilter === 'COMPLETED') activeGroups = ['Completed'];
+            else if (queueStatusFilter === 'FAILED') activeGroups = ['Failed'];
+
+            const getModeBadgeClass = (mode) => {
+              if (!mode) return 'bg-gray-800 text-gray-300 border-gray-600';
+              const m = String(mode).toUpperCase();
+              if (m.includes('MODE 1') || m.includes('M1')) return 'bg-purple-950/80 text-purple-300 border-purple-700/60';
+              if (m.includes('MODE 2') || m.includes('M2')) return 'bg-indigo-950/80 text-indigo-300 border-indigo-700/60';
+              if (m.includes('MODE 3 V2') || m.includes('M3_V2') || m.includes('M3 V2')) return 'bg-cyan-950/80 text-cyan-300 border-cyan-700/60';
+              if (m.includes('MODE 3') || m.includes('M3')) return 'bg-blue-950/80 text-blue-300 border-blue-700/60';
+              if (m.includes('MODE 4') || m.includes('M4')) return 'bg-teal-950/80 text-teal-300 border-teal-700/60';
+              if (m.includes('MODE 5') || m.includes('M5')) return 'bg-pink-950/80 text-pink-300 border-pink-700/60';
+              if (m.includes('MODE 7') || m.includes('M7') || m.includes('ASTROFOX')) return 'bg-orange-950/80 text-orange-300 border-orange-700/60';
+              return 'bg-gray-800 text-gray-300 border-gray-600';
+            };
+
+            const getAccurateRenderDuration = (it) => {
+              let sec = null;
+              if (typeof it.actualRenderTimeSec === 'number' && it.actualRenderTimeSec > 0) sec = it.actualRenderTimeSec;
+              else if (typeof it.renderDurationSec === 'number' && it.renderDurationSec > 0) sec = it.renderDurationSec;
+              else if (typeof it.RENDER_DURATION === 'number' && it.RENDER_DURATION > 0) sec = it.RENDER_DURATION;
+              else if (typeof it.RENDER_DURATION === 'string') {
+                const parsed = parseFloat(it.RENDER_DURATION);
+                if (!isNaN(parsed) && parsed > 0) sec = parsed;
+              }
+              
+              if (sec === null && it.completedAt && it.renderStartTime) {
+                const end = typeof it.completedAt === 'number' ? it.completedAt : new Date(it.completedAt).getTime();
+                const start = typeof it.renderStartTime === 'number' ? it.renderStartTime : new Date(it.renderStartTime).getTime();
+                if (end > start) sec = Math.round((end - start) / 1000);
+              }
+              
+              if (sec !== null && !isNaN(sec) && sec > 0) {
+                const m = Math.floor(sec / 60);
+                const s = Math.round(sec % 60);
+                return m > 0 ? `${m}m ${s}s` : `${s}s`;
+              }
+              if (it.actualRenderTimeStr && typeof it.actualRenderTimeStr === 'string' && !it.actualRenderTimeStr.includes('2m 14s')) {
+                return it.actualRenderTimeStr;
+              }
+              const totalDur = it.totalDurationSec || it.durationSec || 60;
+              return `${Math.max(1, Math.round(totalDur * 0.25))}s`;
+            };
+
+            // Count total matching items across active groups and workspace filter
+            const totalMatchingJobs = combinedQueue.filter(j => {
+              const statusMatch = (queueStatusFilter === 'ALL') ||
+                (queueStatusFilter === 'RENDERING' && ['Rendering', 'Running', 'Retrying'].includes(j.status)) ||
+                (queueStatusFilter === 'WAITING' && ['Waiting', 'Pending', 'Scheduled', 'Ready'].includes(j.status)) ||
+                (queueStatusFilter === 'COMPLETED' && j.status === 'Completed') ||
+                (queueStatusFilter === 'FAILED' && j.status === 'Failed');
+              if (!statusMatch) return false;
+
+              if (queueWorkspaceFilter !== 'ALL') {
+                const targetWs = j.workspaceName || j.workspace || 'Default';
+                if (targetWs !== queueWorkspaceFilter) return false;
+              }
+              return true;
+            }).length;
+
+            return (
+              <>
+                {/* Filter & Category Controls Bar */}
+                <div className="mx-2 mt-1 p-1.5 bg-[#0f121a] border border-gray-700/60 rounded-lg space-y-1.5 shrink-0 shadow-md">
+                  {/* Status Pills */}
+                  <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-[8px] font-bold select-none">
+                    <button
+                      onClick={() => setQueueStatusFilter('ALL')}
+                      className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 shrink-0 cursor-pointer ${
+                        queueStatusFilter === 'ALL'
+                          ? 'bg-orange-500 text-black font-black shadow-[0_0_10px_rgba(249,115,22,0.6)]'
+                          : 'bg-gray-800/80 text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700/50'
+                      }`}
+                    >
+                      <span>SEMUA</span>
+                      <span className={`px-1 rounded text-[7.5px] font-mono ${queueStatusFilter === 'ALL' ? 'bg-black/30 text-white font-bold' : 'bg-gray-700 text-gray-300'}`}>
+                        {totalAll}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setQueueStatusFilter('RENDERING')}
+                      className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 shrink-0 cursor-pointer ${
+                        queueStatusFilter === 'RENDERING'
+                          ? 'bg-blue-500 text-white font-black shadow-[0_0_10px_rgba(59,130,246,0.6)]'
+                          : 'bg-gray-800/80 text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700/50'
+                      }`}
+                    >
+                      <span className="w-1 h-1 rounded-full bg-blue-400 animate-ping"></span>
+                      <span>RENDERING</span>
+                      <span className={`px-1 rounded text-[7.5px] font-mono ${queueStatusFilter === 'RENDERING' ? 'bg-black/30 text-white font-bold' : 'bg-gray-700 text-blue-300'}`}>
+                        {countRendering}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setQueueStatusFilter('WAITING')}
+                      className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 shrink-0 cursor-pointer ${
+                        queueStatusFilter === 'WAITING'
+                          ? 'bg-amber-500 text-black font-black shadow-[0_0_10px_rgba(245,158,11,0.6)]'
+                          : 'bg-gray-800/80 text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700/50'
+                      }`}
+                    >
+                      <span>BELUM RENDER</span>
+                      <span className={`px-1 rounded text-[7.5px] font-mono ${queueStatusFilter === 'WAITING' ? 'bg-black/30 text-white font-bold' : 'bg-gray-700 text-amber-300'}`}>
+                        {countWaiting}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setQueueStatusFilter('COMPLETED')}
+                      className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 shrink-0 cursor-pointer ${
+                        queueStatusFilter === 'COMPLETED'
+                          ? 'bg-emerald-500 text-black font-black shadow-[0_0_10px_rgba(16,185,129,0.6)]'
+                          : 'bg-gray-800/80 text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700/50'
+                      }`}
+                    >
+                      <span>SELESAI</span>
+                      <span className={`px-1 rounded text-[7.5px] font-mono ${queueStatusFilter === 'COMPLETED' ? 'bg-black/30 text-white font-bold' : 'bg-gray-700 text-emerald-300'}`}>
+                        {countCompleted}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setQueueStatusFilter('FAILED')}
+                      className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 shrink-0 cursor-pointer ${
+                        queueStatusFilter === 'FAILED'
+                          ? 'bg-red-600 text-white font-black shadow-[0_0_10px_rgba(239,68,68,0.6)]'
+                          : 'bg-gray-800/80 text-gray-300 hover:text-white hover:bg-gray-700 border border-gray-700/50'
+                      }`}
+                    >
+                      <span>GAGAL</span>
+                      <span className={`px-1 rounded text-[7.5px] font-mono ${queueStatusFilter === 'FAILED' ? 'bg-black/30 text-white font-bold' : 'bg-gray-700 text-red-400'}`}>
+                        {countFailed}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Workspace Filter & Bulk Actions */}
+                  <div className="flex items-center justify-between gap-1 text-[8px]">
+                    <div className="flex items-center gap-1 flex-1 min-w-0">
+                      <span className="text-gray-400 uppercase text-[7.5px] font-bold shrink-0">WS:</span>
+                      <select
+                        value={queueWorkspaceFilter}
+                        onChange={(e) => setQueueWorkspaceFilter(e.target.value)}
+                        className="bg-[#090b10] border border-gray-700 text-gray-200 text-[8px] font-bold rounded px-1.5 py-0.5 outline-none focus:border-orange-500/80 cursor-pointer flex-1 truncate"
+                      >
+                        <option value="ALL">Semua Workspace ({totalAll})</option>
+                        {activeWorkspace && (
+                          <option value={activeWorkspace}>WS Aktif: {activeWorkspace}</option>
+                        )}
+                        {availableWorkspaces.filter(ws => ws !== activeWorkspace).map(ws => (
+                          <option key={ws} value={ws}>WS: {ws}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      {countFailed > 0 && (
+                        <button
+                          onClick={handleRetryAllFailed}
+                          className="px-1.5 py-0.5 rounded bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-600/60 font-bold transition-all text-[7.5px] flex items-center gap-0.5 cursor-pointer shadow-sm"
+                          title="Ulangi semua tugas yang gagal"
+                        >
+                          <span>🔄 Ulangi Gagal ({countFailed})</span>
+                        </button>
+                      )}
+                      {countCompleted > 0 && (
+                        <button
+                          onClick={handleClearCompleted}
+                          className="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-600 font-bold transition-all text-[7.5px] flex items-center gap-0.5 cursor-pointer shadow-sm"
+                          title="Bersihkan tugas yang telah selesai"
+                        >
+                          <span>🧹 Bersihkan Selesai</span>
+                        </button>
+                      )}
                     </div>
                   </div>
-                  
-                  {!pipelineGroupsCollapsed[groupStatus] && (
-                    <div className="p-1 space-y-1 bg-[#080402]/80 backdrop-blur-md">
-                      {groupJobs.map(item => {
-                        const targetWorkspace = item.workspaceName || item.workspace || activeWorkspace;
-                        const folderPath = item.OUTPUT_PATH || item.outputFolder || (item.outputFiles && item.outputFiles[0] ? (item.outputFolder ? `${item.outputFolder}/${item.outputFiles[0]}` : item.outputFiles[0]) : '');
-                        
-                        const handleOpenFolder = (e) => {
-                          if (e) e.stopPropagation();
-                          if (folderPath) {
-                            fetch(getApiUrl('/api/v1/system/open-folder'), {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ path: folderPath })
-                            }).catch(err => console.error(err));
-                          }
-                        };
+                </div>
 
-                        const getAccurateRenderDuration = (it) => {
-                          let sec = null;
-                          if (typeof it.actualRenderTimeSec === 'number' && it.actualRenderTimeSec > 0) sec = it.actualRenderTimeSec;
-                          else if (typeof it.renderDurationSec === 'number' && it.renderDurationSec > 0) sec = it.renderDurationSec;
-                          else if (typeof it.RENDER_DURATION === 'number' && it.RENDER_DURATION > 0) sec = it.RENDER_DURATION;
-                          else if (typeof it.RENDER_DURATION === 'string') {
-                            const parsed = parseFloat(it.RENDER_DURATION);
-                            if (!isNaN(parsed) && parsed > 0) sec = parsed;
-                          }
-                          
-                          if (sec === null && it.completedAt && it.renderStartTime) {
-                            const end = typeof it.completedAt === 'number' ? it.completedAt : new Date(it.completedAt).getTime();
-                            const start = typeof it.renderStartTime === 'number' ? it.renderStartTime : new Date(it.renderStartTime).getTime();
-                            if (end > start) sec = Math.round((end - start) / 1000);
-                          }
-                          
-                          if (sec !== null && !isNaN(sec) && sec > 0) {
-                            const m = Math.floor(sec / 60);
-                            const s = Math.round(sec % 60);
-                            return m > 0 ? `${m}m ${s}s` : `${s}s`;
-                          }
-                          if (it.actualRenderTimeStr && typeof it.actualRenderTimeStr === 'string' && !it.actualRenderTimeStr.includes('2m 14s')) {
-                            return it.actualRenderTimeStr;
-                          }
-                          const totalDur = it.totalDurationSec || it.durationSec || 60;
-                          return `${Math.max(1, Math.round(totalDur * 0.25))}s`;
-                        };
-
-                        return (
-                          <div
-                            key={item.id}
-                            className="p-1.5 rounded-md bg-[#12141c]/95 border border-gray-700/60 flex flex-col gap-1 hover:border-gray-500 transition-all shadow-sm relative overflow-hidden group font-sans"
-                          >
-                            {/* Header Row: Title & Status */}
-                            <div className="flex justify-between items-start gap-1.5 relative z-10">
-                              <div className="flex-1 min-w-0">
-                                <span className="font-black text-white font-jetbrains text-[10.5px] block truncate" title={item.outputFiles[0]}>
-                                  {item.outputFiles[0]}
-                                </span>
-                              </div>
-                              
-                              <div className="flex items-center gap-1 shrink-0">
-                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                                  item.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
-                                  item.status === 'Running' || item.status === 'Rendering' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40' :
-                                  item.status === 'Retrying' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
-                                  item.status === 'Failed' ? 'bg-red-500/20 text-red-400 border border-red-500/40' :
-                                  item.status === 'Waiting' ? 'bg-gray-700/40 text-gray-300 border border-gray-600/40' :
-                                  item.status === 'Scheduled' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40' :
-                                  'bg-gray-800 text-gray-400 border border-gray-700'
-                                }`}>
-                                  {item.isPaused ? 'PAUSED' : item.status}
-                                </span>
-
-                                <button
-                                  onClick={() => handleDeleteQueueItem(item.id)}
-                                  className="text-gray-500 hover:text-red-400 text-[10px] p-0.5"
-                                  title="Delete Job"
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            </div>
-                            
-                            {/* Badges Row: Mode, Workspace, Profile, Duration, Render Time */}
-                            <div className="flex items-center gap-1 flex-wrap text-[8px] relative z-10">
-                              <span className="text-gray-200 uppercase font-black tracking-wider bg-gray-800/90 px-1.5 py-0.5 rounded border border-gray-600/50">
-                                {item.mode}
-                              </span>
-                              
-                              <span className="text-amber-300 font-extrabold tracking-wider bg-amber-950/70 px-1.5 py-0.5 rounded border border-amber-800/50 flex items-center gap-1">
-                                📂 WS: {targetWorkspace}
-                              </span>
-
-                              {item.profileName && (
-                                <span className="text-gray-300 font-medium bg-black/50 px-1.5 py-0.5 rounded border border-gray-700/40 truncate max-w-[110px]">
-                                  {item.profileName}
-                                </span>
-                              )}
-
-                              {item.totalDurationSec ? (
-                                <span className="text-emerald-400 font-jetbrains font-bold bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-800/40">
-                                  🎬 Video: {Math.floor(item.totalDurationSec / 60)}m {Math.round(item.totalDurationSec % 60)}s
-                                </span>
-                              ) : null}
-
-                              {item.status === 'Completed' && (
-                                <span className="text-amber-300 font-jetbrains font-bold bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/40 flex items-center gap-0.5">
-                                  ⚡ Render: {getAccurateRenderDuration(item)}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Clickable Output Folder Path */}
-                            {folderPath && (
-                              <div
-                                onClick={handleOpenFolder}
-                                title="Click to open folder in File Explorer"
-                                className="text-blue-400 font-jetbrains text-[8px] flex items-center gap-1 cursor-pointer hover:text-blue-300 transition-colors break-all bg-black/40 px-1.5 py-0.5 rounded border border-blue-900/40 relative z-10"
-                              >
-                                <span className="text-blue-400 shrink-0">📁</span>
-                                <span className="truncate">{folderPath}</span>
-                              </div>
-                            )}
-
-                            {/* Rendering Progress Bar with Visible Percentage */}
-                            {(item.status === 'Rendering' || item.status === 'Running') && typeof item.progress === 'number' && (
-                              <div className="w-full bg-[#0a0c10] rounded-full h-3 border border-[#2d3247] overflow-hidden relative my-0.5 flex items-center shadow-inner">
-                                <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-emerald-500 h-full transition-all duration-300 relative" style={{ width: `${Math.max(2, item.progress)}%` }}>
-                                  <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 animate-pulse"></div>
-                                </div>
-                                <div className="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,1)] tracking-widest font-mono pointer-events-none">
-                                  {Math.round(item.progress)}%
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Action Buttons for Completed Jobs */}
-                            {item.status === 'Completed' && (
-                              <div className="flex gap-1 pt-0.5 relative z-10">
-                                <button
-                                  onClick={handleOpenFolder}
-                                  className="flex-1 px-2 py-0.5 text-[8px] bg-blue-950/80 hover:bg-blue-900 text-blue-300 rounded border border-blue-600/50 transition-colors flex items-center justify-center gap-1 font-bold cursor-pointer"
-                                >
-                                  📁 Open Folder
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigator.clipboard.writeText(folderPath);
-                                    addNotification('Path Copied', folderPath);
-                                  }}
-                                  className="flex-1 px-2 py-0.5 text-[8px] bg-[#1a1c23] hover:bg-[#2d3247] text-gray-400 hover:text-white rounded border border-[#2d3247] transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                                >
-                                  📋 Copy Path
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Failure Reason */}
-                            {item.status === 'Failed' && item.failureReason && (
-                              <div className="bg-red-950/30 border border-red-800/40 rounded p-1.5 text-[8px] text-red-300 font-mono">
-                                <span className="font-bold text-red-400 block mb-0.5">⚠️ Error:</span>
-                                {item.failureReason}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                {/* Queue Tasks list */}
+                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  {totalMatchingJobs === 0 && (
+                    <div className="text-center text-gray-500 py-10 font-mono text-[10px] space-y-1">
+                      <div>{combinedQueue.length === 0 ? 'ANTREAN KOSONG' : `TIDAK ADA ANTREAN (${queueStatusFilter})`}</div>
+                      {queueStatusFilter !== 'ALL' && (
+                        <button
+                          onClick={() => { setQueueStatusFilter('ALL'); setQueueWorkspaceFilter('ALL'); }}
+                          className="text-[8px] text-orange-400 hover:text-orange-300 underline cursor-pointer"
+                        >
+                          Reset Filter ke Semua
+                        </button>
+                      )}
                     </div>
                   )}
+
+                  {activeGroups.map(groupStatus => {
+                    const groupJobs = combinedQueue.filter(j => {
+                      const statusMatch = groupStatus === 'Rendering'
+                        ? (j.status === 'Rendering' || j.status === 'Running' || j.status === 'Retrying')
+                        : (j.status === groupStatus);
+                      if (!statusMatch) return false;
+
+                      if (queueWorkspaceFilter !== 'ALL') {
+                        const targetWs = j.workspaceName || j.workspace || 'Default';
+                        if (targetWs !== queueWorkspaceFilter) return false;
+                      }
+                      return true;
+                    });
+
+                    if (groupJobs.length === 0) return null;
+
+                    return (
+                      <div key={groupStatus} className="border border-gray-600/40 rounded-lg overflow-hidden mb-2 mx-2 shadow-sm">
+                        <div 
+                          onClick={() => togglePipelineGroup(groupStatus)}
+                          className="bg-gradient-to-r from-[#1c1f26] to-[#121418] px-2 py-1.5 flex justify-between items-center cursor-pointer hover:from-[#242833] hover:to-[#1a1d24] border-b border-gray-600/40 transition-all"
+                        >
+                          <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-gray-300 tracking-[0.2em]">
+                            <span className={`text-[8px] transform transition-transform text-gray-500 ${!pipelineGroupsCollapsed[groupStatus] ? 'rotate-90' : ''}`}>▶</span>
+                            <span className="uppercase">{groupStatus}</span>
+                            <span className="bg-gray-700/50 border border-gray-600/50 px-1.5 py-0.5 rounded-full text-[8px] text-gray-200 ml-1 font-mono">{groupJobs.length}</span>
+                          </div>
+                        </div>
+
+                        {!pipelineGroupsCollapsed[groupStatus] && (
+                          <div className="p-1 space-y-1.5 bg-[#080402]/80 backdrop-blur-md">
+                            {groupJobs.map(item => {
+                              const targetWorkspace = item.workspaceName || item.workspace || activeWorkspace || 'Default';
+                              const folderPath = item.OUTPUT_PATH || item.outputFolder || (item.outputFiles && item.outputFiles[0] ? (item.outputFolder ? `${item.outputFolder}/${item.outputFiles[0]}` : item.outputFiles[0]) : '');
+                              
+                              // Sequential Global Queue Number
+                              const globalIndex = combinedQueue.findIndex(x => x.id === item.id);
+                              const queueNumber = globalIndex !== -1 ? `#${String(globalIndex + 1).padStart(2, '0')}` : '#--';
+
+                              const handleOpenFolder = (e) => {
+                                if (e) e.stopPropagation();
+                                if (folderPath) {
+                                  fetch(getApiUrl('/api/v1/system/open-folder'), {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ path: folderPath })
+                                  }).catch(err => console.error(err));
+                                }
+                              };
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="p-1.5 rounded-md bg-[#12141c]/95 border border-gray-700/60 flex flex-col gap-1.5 hover:border-gray-500 transition-all shadow-sm relative overflow-hidden group font-sans"
+                                >
+                                  {/* Header Row: Number, Title, Status & Action */}
+                                  <div className="flex justify-between items-start gap-1.5 relative z-10">
+                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                      {/* Sequential Number Badge */}
+                                      <span className="px-1.5 py-0.5 rounded bg-gradient-to-r from-orange-500/25 to-amber-500/25 text-orange-300 border border-orange-500/40 text-[9px] font-mono font-black shrink-0 shadow-[0_0_8px_rgba(249,115,22,0.25)]">
+                                        {queueNumber}
+                                      </span>
+                                      <span className="font-black text-white font-jetbrains text-[10.5px] truncate" title={item.outputFiles ? item.outputFiles[0] : (item.renderName || 'Untitled')}>
+                                        {item.outputFiles ? item.outputFiles[0] : (item.renderName || 'Untitled')}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      {item.status === 'Failed' && (
+                                        <button
+                                          onClick={() => handleRetryQueueItem(item.id)}
+                                          className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-orange-600 hover:bg-orange-500 text-white border border-orange-400 transition-all flex items-center gap-0.5 cursor-pointer shadow-sm"
+                                          title="Ulangi render tugas ini"
+                                        >
+                                          <span>🔄 Retry</span>
+                                        </button>
+                                      )}
+
+                                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                        item.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+                                        item.status === 'Running' || item.status === 'Rendering' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 animate-pulse' :
+                                        item.status === 'Retrying' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                                        item.status === 'Failed' ? 'bg-red-500/20 text-red-400 border border-red-500/40' :
+                                        item.status === 'Waiting' ? 'bg-gray-700/40 text-gray-300 border border-gray-600/40' :
+                                        item.status === 'Scheduled' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40' :
+                                        'bg-gray-800 text-gray-400 border border-gray-700'
+                                      }`}>
+                                        {item.isPaused ? 'PAUSED' : item.status}
+                                      </span>
+
+                                      <button
+                                        onClick={() => handleDeleteQueueItem(item.id)}
+                                        className="text-gray-500 hover:text-red-400 text-[10px] p-0.5 cursor-pointer"
+                                        title="Delete Job"
+                                      >
+                                        🗑️
+                                      </button>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Badges Row: Mode, Workspace, Profile, Duration, Render Time */}
+                                  <div className="flex items-center gap-1 flex-wrap text-[8px] relative z-10">
+                                    <span className={`uppercase font-black tracking-wider px-1.5 py-0.5 rounded border ${getModeBadgeClass(item.mode)}`}>
+                                      {item.mode}
+                                    </span>
+                                    
+                                    <span className="text-amber-300 font-extrabold tracking-wider bg-amber-950/70 px-1.5 py-0.5 rounded border border-amber-800/50 flex items-center gap-1">
+                                      📂 WS: {targetWorkspace}
+                                    </span>
+
+                                    {item.profileName && (
+                                      <span className="text-gray-300 font-medium bg-black/50 px-1.5 py-0.5 rounded border border-gray-700/40 truncate max-w-[110px]">
+                                        {item.profileName}
+                                      </span>
+                                    )}
+
+                                    {item.totalDurationSec ? (
+                                      <span className="text-emerald-400 font-jetbrains font-bold bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                                        🎬 {Math.floor(item.totalDurationSec / 60)}m {Math.round(item.totalDurationSec % 60)}s
+                                      </span>
+                                    ) : null}
+
+                                    {item.status === 'Completed' && (
+                                      <span className="text-amber-300 font-jetbrains font-bold bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/40 flex items-center gap-0.5">
+                                        ⚡ Render: {getAccurateRenderDuration(item)}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Clickable Output Folder Path */}
+                                  {folderPath && (
+                                    <div
+                                      onClick={handleOpenFolder}
+                                      title="Click to open folder in File Explorer"
+                                      className="text-blue-400 font-jetbrains text-[8px] flex items-center gap-1 cursor-pointer hover:text-blue-300 transition-colors break-all bg-black/40 px-1.5 py-0.5 rounded border border-blue-900/40 relative z-10"
+                                    >
+                                      <span className="text-blue-400 shrink-0">📁</span>
+                                      <span className="truncate">{folderPath}</span>
+                                    </div>
+                                  )}
+
+                                  {/* Rendering Progress Bar with Visible Percentage */}
+                                  {(item.status === 'Rendering' || item.status === 'Running') && typeof item.progress === 'number' && (
+                                    <div className="w-full bg-[#0a0c10] rounded-full h-3 border border-[#2d3247] overflow-hidden relative my-0.5 flex items-center shadow-inner">
+                                      <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-emerald-500 h-full transition-all duration-300 relative" style={{ width: `${Math.max(2, item.progress)}%` }}>
+                                        <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 animate-pulse"></div>
+                                      </div>
+                                      <div className="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,1)] tracking-widest font-mono pointer-events-none">
+                                        {Math.round(item.progress)}%
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Action Buttons for Completed Jobs */}
+                                  {item.status === 'Completed' && (
+                                    <div className="flex gap-1 pt-0.5 relative z-10">
+                                      <button
+                                        onClick={handleOpenFolder}
+                                        className="flex-1 px-2 py-0.5 text-[8px] bg-blue-950/80 hover:bg-blue-900 text-blue-300 rounded border border-blue-600/50 transition-colors flex items-center justify-center gap-1 font-bold cursor-pointer"
+                                      >
+                                        📁 Open Folder
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(folderPath);
+                                          addNotification('Path Copied', folderPath);
+                                        }}
+                                        className="flex-1 px-2 py-0.5 text-[8px] bg-[#1a1c23] hover:bg-[#2d3247] text-gray-400 hover:text-white rounded border border-[#2d3247] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                      >
+                                        📋 Copy Path
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {/* Failure Reason + Direct Retry Action */}
+                                  {item.status === 'Failed' && (
+                                    <div className="bg-red-950/40 border border-red-800/60 rounded p-1.5 text-[8px] text-red-200 font-mono flex flex-col gap-1 relative z-10">
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-bold text-red-400 flex items-center gap-1">⚠️ Error / Gagal</span>
+                                        <button
+                                          onClick={() => handleRetryQueueItem(item.id)}
+                                          className="text-orange-400 hover:text-orange-300 underline font-bold cursor-pointer"
+                                        >
+                                          🔄 Coba Lagi
+                                        </button>
+                                      </div>
+                                      {item.failureReason && (
+                                        <span className="text-red-300 break-words leading-tight">{item.failureReason}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-            </>
+              </>
             );
-            })()}
-          </div>
+          })()}
 
           {/* Realtime Logs Console */}
           <div className="h-20 shrink-0 bg-[#0f1115] border-t-2 border-gray-600/50 flex flex-col overflow-hidden relative group shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">

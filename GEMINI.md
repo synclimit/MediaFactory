@@ -11,3 +11,4 @@
    - Layer 4: Effects
 4. **LIVE EDITOR NEVER LOCKED**: Keep live player and controls active; always release state upon render finish.
 5. **AUDIO INTEGRATION**: Audio tracks must be stored locally on disk and compiled with `-c:a aac -b:a 192k`.
+6. **NO GIT PUSH WITHOUT EXPLICIT COMMAND**: Never run `git push` to GitHub unless the user explicitly commands it.

@@ -168,6 +168,41 @@ router.post('/api/v1/system/clean-cache/immediate', (req, res) => {
     res.standardResponse({ status: "ok" });
 });
 
+// --- Persistent Queue Endpoints ---
+router.get('/api/v1/system/queue', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const installDir = AppPaths.getAppInstallDir ? AppPaths.getAppInstallDir() : process.cwd();
+        const queueFile = path.join(installDir, '.mediafactory_data', 'pipeline_queue.json');
+        if (fs.existsSync(queueFile)) {
+            const raw = fs.readFileSync(queueFile, 'utf8');
+            return res.standardResponse({ queue: JSON.parse(raw) });
+        }
+        return res.standardResponse({ queue: [] });
+    } catch (e) {
+        console.error('[Backend Queue Get Error]', e);
+        return res.standardResponse({ queue: [] });
+    }
+});
+
+router.post('/api/v1/system/queue', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const installDir = AppPaths.getAppInstallDir ? AppPaths.getAppInstallDir() : process.cwd();
+        const dataDir = path.join(installDir, '.mediafactory_data');
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        const queueFile = path.join(dataDir, 'pipeline_queue.json');
+        const queueData = req.body.queue || [];
+        fs.writeFileSync(queueFile, JSON.stringify(queueData, null, 2), 'utf8');
+        return res.standardResponse({ saved: true, count: queueData.length });
+    } catch (e) {
+        console.error('[Backend Queue Post Error]', e);
+        return res.standardResponse(null, { status: "error", message: e.message }, false);
+    }
+});
+
 // --- Workspace Endpoints ---
 router.post('/api/v1/system/workspace/active', (req, res) => {
     const wsService = ServiceRegistry.resolve('WorkspaceService');

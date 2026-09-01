@@ -6047,10 +6047,16 @@
         const idx = activeEffects.findIndex((e, i) => e.id === id || String(i) === id);
         if (idx !== -1) {
           activeSelectedEffectIndex = idx;
+          if (typeof m7SelectCategory === 'function' && activeCategory !== 'fx') {
+            m7SelectCategory('fx');
+          } else {
+            activeCategory = 'fx';
+          }
           if (typeof m7RenderEffectList === 'function') m7RenderEffectList();
           if (typeof m7SyncInspectorToEffect === 'function' && activeEffects[idx]) {
             m7SyncInspectorToEffect(activeEffects[idx]);
           }
+          window.dispatchEvent(new CustomEvent('m7-timeline-select-track', { detail: { trackKey: `vfx_${id}` } }));
         }
       };
 
@@ -6058,13 +6064,21 @@
         if (typeof activeTextObjects === 'undefined') return;
         if (idx >= 0 && idx < activeTextObjects.length) {
           activeSelectedTextIndex = idx;
-          activeCategory = 'text';
+          if (typeof m7SelectCategory === 'function' && activeCategory !== 'text') {
+            m7SelectCategory('text');
+          } else {
+            activeCategory = 'text';
+          }
           if (typeof m7RenderTextList === 'function') m7RenderTextList();
           if (typeof m7SyncInspectorToText === 'function') {
             m7SyncInspectorToText(activeTextObjects[idx]);
           }
           m7IsGizmoSelected = true;
           if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
+          const t = activeTextObjects[idx];
+          if (t) {
+            window.dispatchEvent(new CustomEvent('m7-timeline-select-track', { detail: { trackKey: `text_${t.id || idx}` } }));
+          }
         }
       };
 
@@ -6072,13 +6086,21 @@
         if (typeof activeOverlayObjects === 'undefined') return;
         if (idx >= 0 && idx < activeOverlayObjects.length) {
           activeSelectedOverlayIndex = idx;
-          activeCategory = 'overlay';
+          if (typeof m7SelectCategory === 'function' && activeCategory !== 'overlay') {
+            m7SelectCategory('overlay');
+          } else {
+            activeCategory = 'overlay';
+          }
           if (typeof m7RenderOverlayList === 'function') m7RenderOverlayList();
           if (typeof m7SyncInspectorToOverlay === 'function') {
             m7SyncInspectorToOverlay(activeOverlayObjects[idx]);
           }
           m7IsGizmoSelected = true;
           if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
+          const o = activeOverlayObjects[idx];
+          if (o) {
+            window.dispatchEvent(new CustomEvent('m7-timeline-select-track', { detail: { trackKey: `overlay_${o.id || idx}` } }));
+          }
         }
       };
 
@@ -6086,13 +6108,21 @@
         if (typeof activeVisualizers === 'undefined') return;
         if (idx >= 0 && idx < activeVisualizers.length) {
           activeSelectedVizIndex = idx;
-          activeCategory = 'visualizer';
+          if (typeof m7SelectCategory === 'function' && activeCategory !== 'visualizer') {
+            m7SelectCategory('visualizer');
+          } else {
+            activeCategory = 'visualizer';
+          }
           if (typeof m7RenderVisualizerList === 'function') m7RenderVisualizerList();
           if (typeof m7SyncInspectorToViz === 'function' && activeVisualizers[idx].display) {
             m7SyncInspectorToViz(activeVisualizers[idx].display);
           }
           m7IsGizmoSelected = true;
           if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
+          const v = activeVisualizers[idx];
+          if (v) {
+            window.dispatchEvent(new CustomEvent('m7-timeline-select-track', { detail: { trackKey: `viz_${v.id || idx}` } }));
+          }
         }
       };
 
@@ -6100,10 +6130,18 @@
         if (typeof activeParticles === 'undefined') return;
         if (idx >= 0 && idx < activeParticles.length) {
           activeSelectedParticleIndex = idx;
-          activeCategory = 'particle';
+          if (typeof m7SelectCategory === 'function' && activeCategory !== 'particle') {
+            m7SelectCategory('particle');
+          } else {
+            activeCategory = 'particle';
+          }
           if (typeof m7RenderParticleList === 'function') m7RenderParticleList();
           if (typeof m7SyncInspectorToParticle === 'function' && activeParticles[idx].display) {
             m7SyncInspectorToParticle(activeParticles[idx].display);
+          }
+          const p = activeParticles[idx];
+          if (p) {
+            window.dispatchEvent(new CustomEvent('m7-timeline-select-track', { detail: { trackKey: `part_${p.id || idx}` } }));
           }
         }
       };
@@ -8671,10 +8709,10 @@
       }
 
       function m7DrawWatermarkWidget(ctx, w, h, obj) {
-        ctx.clearRect(0, 0, w, h);
-        if (window.__M7_WORKSPACE_BRANDING__ && window.__M7_WORKSPACE_BRANDING__.watermark && obj && !obj._isLoadingImage) {
+        const wsWm = (window.__M7_WORKSPACE_BRANDING__ && window.__M7_WORKSPACE_BRANDING__.watermark) || (typeof m7GetWorkspaceBrandingAsset === 'function' ? m7GetWorkspaceBrandingAsset('watermark') : null);
+        if (wsWm && obj && !obj._isLoadingImage) {
           obj._isLoadingImage = true;
-          m7SetParticle2ImageSource(obj, window.__M7_WORKSPACE_BRANDING__.watermark);
+          m7SetParticle2ImageSource(obj, wsWm);
           return;
         }
         const cx = w / 2;
@@ -8710,9 +8748,10 @@
 
       function m7DrawLogoPlaceholderWidget(ctx, w, h, obj) {
         ctx.clearRect(0, 0, w, h);
-        if (window.__M7_WORKSPACE_BRANDING__ && window.__M7_WORKSPACE_BRANDING__.logo && obj && !obj._isLoadingImage) {
+        const wsLogo = (window.__M7_WORKSPACE_BRANDING__ && window.__M7_WORKSPACE_BRANDING__.logo) || (typeof m7GetWorkspaceBrandingAsset === 'function' ? m7GetWorkspaceBrandingAsset('logo') : null);
+        if (wsLogo && obj && !obj._isLoadingImage) {
           obj._isLoadingImage = true;
-          m7SetParticle2ImageSource(obj, window.__M7_WORKSPACE_BRANDING__.logo);
+          m7SetParticle2ImageSource(obj, wsLogo);
           return;
         }
         const cx = w / 2;
@@ -9099,6 +9138,59 @@
       }
 
       window.__M7_WORKSPACE_BRANDING__ = null;
+
+      // Listen for workspace branding relay from parent MediaFactory React container
+      window.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'M7_SET_WORKSPACE_BRANDING' && e.data.payload) {
+          console.log('[M7 Runtime] Received M7_SET_WORKSPACE_BRANDING from parent:', e.data.payload);
+          window.__M7_WORKSPACE_BRANDING__ = {
+            ...(window.__M7_WORKSPACE_BRANDING__ || {}),
+            ...e.data.payload
+          };
+
+          if (typeof activeParticle2s !== 'undefined' && Array.isArray(activeParticle2s)) {
+            activeParticle2s.forEach(obj => {
+              if (obj.type === 'Logo' && e.data.payload.logo) {
+                if (!obj.imageElement || !obj.imageElement.complete || !obj.source || obj.source.startsWith('assets/')) {
+                  m7SetParticle2ImageSource(obj, e.data.payload.logo);
+                }
+              } else if (obj.type === 'Watermark' && e.data.payload.watermark) {
+                if (!obj.imageElement || !obj.imageElement.complete || !obj.source || obj.source.startsWith('assets/')) {
+                  m7SetParticle2ImageSource(obj, e.data.payload.watermark);
+                }
+              } else if ((obj.type === 'Subscribe' || obj.type === 'Subscribe Animation') && e.data.payload.subscribe) {
+                if (!obj.imageElement || !obj.imageElement.complete || !obj.source) {
+                  m7SetParticle2ImageSource(obj, e.data.payload.subscribe);
+                }
+              }
+            });
+          }
+          if (typeof activeBrandingObjects !== 'undefined' && Array.isArray(activeBrandingObjects)) {
+            activeBrandingObjects.forEach(obj => {
+              if (obj.type === 'Logo' && e.data.payload.logo) {
+                if (!obj.imageElement || !obj.imageElement.complete || !obj.source) {
+                  m7SetBrandingImageSource(obj, e.data.payload.logo);
+                }
+              } else if (obj.type === 'Watermark' && e.data.payload.watermark) {
+                if (!obj.imageElement || !obj.imageElement.complete || !obj.source) {
+                  m7SetBrandingImageSource(obj, e.data.payload.watermark);
+                }
+              }
+            });
+          }
+        }
+      });
+
+      // Request workspace branding from parent immediately and after short delay
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'M7_REQUEST_WORKSPACE_BRANDING' }, '*');
+          setTimeout(() => {
+            try { window.parent.postMessage({ type: 'M7_REQUEST_WORKSPACE_BRANDING' }, '*'); } catch(e) {}
+          }, 600);
+        }
+      } catch(e) {}
+
       async function m7FetchWorkspaceBranding() {
         try {
           const res = await fetch('/api/m7/workspace-branding');
@@ -9111,7 +9203,7 @@
               if (typeof activeParticle2s !== 'undefined' && Array.isArray(activeParticle2s)) {
                 activeParticle2s.forEach(obj => {
                   if (obj.type === 'Logo') {
-                    if (data.branding.logo && (!obj.source || !obj.imageElement || obj.source.includes('logo_1787670904943'))) {
+                    if (data.branding.logo && (!obj.source || !obj.imageElement)) {
                       m7SetParticle2ImageSource(obj, data.branding.logo);
                     } else if (obj.source && !obj.imageElement) {
                       m7SetParticle2ImageSource(obj, obj.source);
@@ -9133,20 +9225,74 @@
       }
       setTimeout(m7FetchWorkspaceBranding, 150);
 
+      function m7GetNodeFs() {
+        try {
+          if (typeof require !== 'undefined' && typeof require === 'function') return require('fs');
+          if (window.require && typeof window.require === 'function') return window.require('fs');
+          if (window.parent && window.parent.require && typeof window.parent.require === 'function') return window.parent.require('fs');
+          if (window.top && window.top.require && typeof window.top.require === 'function') return window.top.require('fs');
+        } catch(e) {}
+        return null;
+      }
+
+      function m7GetNodePath() {
+        try {
+          if (typeof require !== 'undefined' && typeof require === 'function') return require('path');
+          if (window.require && typeof window.require === 'function') return window.require('path');
+          if (window.parent && window.parent.require && typeof window.parent.require === 'function') return window.parent.require('path');
+          if (window.top && window.top.require && typeof window.top.require === 'function') return window.top.require('path');
+        } catch(e) {}
+        return null;
+      }
+
+      function m7EnsureBase64(pathOrData) {
+        if (!pathOrData || typeof pathOrData !== 'string') return pathOrData;
+        if (pathOrData.startsWith('data:') || pathOrData.startsWith('blob:')) {
+          return pathOrData;
+        }
+        const fsMod = m7GetNodeFs();
+        const pathMod = m7GetNodePath();
+        if (fsMod) {
+          try {
+            let cleanPath = pathOrData.replace(/^file:\/\/\//, '').replace(/^file:\/\//, '');
+            try { cleanPath = decodeURIComponent(cleanPath); } catch(e) {}
+            cleanPath = cleanPath.replace(/\//g, '\\');
+            const candidatePaths = [
+              cleanPath,
+              pathMod ? pathMod.resolve('D:/MediaFactory', cleanPath) : `D:/MediaFactory/${cleanPath}`,
+              pathMod ? pathMod.resolve('D:/MediaFactory/.mediafactory', cleanPath) : `D:/MediaFactory/.mediafactory/${cleanPath}`,
+              `D:\\MediaFactory\\.mediafactory\\assets\\branding\\default\\${cleanPath.split(/[\\/]/).pop()}`,
+              `D:/MediaFactory/.mediafactory/assets/branding/default/${cleanPath.split(/[\\/]/).pop()}`
+            ];
+            for (const p of candidatePaths) {
+              if (fsMod.existsSync(p) && !fsMod.statSync(p).isDirectory()) {
+                const buf = fsMod.readFileSync(p);
+                const isPng = p.toLowerCase().endsWith('.png');
+                const isMp4 = p.toLowerCase().endsWith('.mp4');
+                const isSvg = p.toLowerCase().endsWith('.svg');
+                const mime = isPng ? 'image/png' : (isMp4 ? 'video/mp4' : (isSvg ? 'image/svg+xml' : 'image/jpeg'));
+                return `data:${mime};base64,${buf.toString('base64')}`;
+              }
+            }
+          } catch(e) {}
+        }
+        return pathOrData;
+      }
+
       function m7GetWorkspaceBrandingAsset(key) {
         try {
           if (window.__M7_WORKSPACE_BRANDING__) {
             if ((key === 'logo' || key === 'avatar') && window.__M7_WORKSPACE_BRANDING__.logo) {
-              return window.__M7_WORKSPACE_BRANDING__.logo;
+              return m7EnsureBase64(window.__M7_WORKSPACE_BRANDING__.logo);
             }
             if (key === 'watermark' && window.__M7_WORKSPACE_BRANDING__.watermark) {
-              return window.__M7_WORKSPACE_BRANDING__.watermark;
+              return m7EnsureBase64(window.__M7_WORKSPACE_BRANDING__.watermark);
             }
             if ((key === 'subscribe' || key === 'subscribeAnim') && window.__M7_WORKSPACE_BRANDING__.subscribe) {
-              return window.__M7_WORKSPACE_BRANDING__.subscribe;
+              return m7EnsureBase64(window.__M7_WORKSPACE_BRANDING__.subscribe);
             }
             if (key === 'overlay' && window.__M7_WORKSPACE_BRANDING__.overlay) {
-              return window.__M7_WORKSPACE_BRANDING__.overlay;
+              return m7EnsureBase64(window.__M7_WORKSPACE_BRANDING__.overlay);
             }
           }
 
@@ -9156,8 +9302,10 @@
           // 1. Direct candidates from localStorage
           for (const ws of candidates) {
             if (key === 'logo' || key === 'avatar') {
+              const avatarData = localStorage.getItem(`mf_workspace_avatar_data_${ws}`);
+              if (avatarData) return avatarData;
               const avatar = localStorage.getItem(`mf_workspace_avatar_${ws}`);
-              if (avatar) return avatar;
+              if (avatar) return m7EnsureBase64(avatar);
             }
 
             const brandingStr = localStorage.getItem(`mf_workspace_branding_${ws}`);
@@ -9165,12 +9313,22 @@
               try {
                 const branding = JSON.parse(brandingStr);
                 if (branding) {
-                  if ((key === 'logo' || key === 'avatar') && (branding.logo || branding.avatar)) return branding.logo || branding.avatar;
-                  if (key === 'watermark' && branding.watermark) return branding.watermark;
-                  if ((key === 'subscribe' || key === 'subscribeAnim') && (branding.subscribeAnim || branding.subscribe)) {
-                    return branding.subscribeAnim || branding.subscribe;
+                  if ((key === 'logo' || key === 'avatar')) {
+                    if (branding.logo_data) return branding.logo_data;
+                    if (branding.logo || branding.avatar) return m7EnsureBase64(branding.logo || branding.avatar);
                   }
-                  if (key === 'overlay' && branding.overlay) return branding.overlay;
+                  if (key === 'watermark') {
+                    if (branding.watermark_data) return branding.watermark_data;
+                    if (branding.watermark) return m7EnsureBase64(branding.watermark);
+                  }
+                  if ((key === 'subscribe' || key === 'subscribeAnim')) {
+                    if (branding.subscribeAnim_data) return branding.subscribeAnim_data;
+                    if (branding.subscribeAnim || branding.subscribe) return m7EnsureBase64(branding.subscribeAnim || branding.subscribe);
+                  }
+                  if (key === 'overlay') {
+                    if (branding.overlay_data) return branding.overlay_data;
+                    if (branding.overlay) return m7EnsureBase64(branding.overlay);
+                  }
                 }
               } catch(e) {}
             }
@@ -9182,22 +9340,22 @@
             if (!k) continue;
             if ((key === 'logo' || key === 'avatar') && k.startsWith('mf_workspace_avatar_')) {
               const val = localStorage.getItem(k);
-              if (val) return val;
+              if (val) return m7EnsureBase64(val);
             }
             if (k.startsWith('mf_workspace_branding_')) {
               try {
                 const b = JSON.parse(localStorage.getItem(k) || '{}');
-                if ((key === 'logo' || key === 'avatar') && (b.logo || b.avatar)) return b.logo || b.avatar;
-                if (key === 'watermark' && b.watermark) return b.watermark;
-                if ((key === 'subscribe' || key === 'subscribeAnim') && (b.subscribeAnim || b.subscribe)) return b.subscribeAnim || b.subscribe;
+                if ((key === 'logo' || key === 'avatar') && (b.logo || b.avatar)) return m7EnsureBase64(b.logo || b.avatar);
+                if (key === 'watermark' && b.watermark) return m7EnsureBase64(b.watermark);
+                if ((key === 'subscribe' || key === 'subscribeAnim') && (b.subscribeAnim || b.subscribe)) return m7EnsureBase64(b.subscribeAnim || b.subscribe);
               } catch(e) {}
             }
           }
 
           // 3. Scan .mediafactory/assets/branding directories for logo, watermark, subscribe, overlay files
           try {
-            let fsMod = (typeof require !== 'undefined' ? require('fs') : (window.require ? window.require('fs') : null));
-            let pathMod = (typeof require !== 'undefined' ? require('path') : (window.require ? window.require('path') : null));
+            let fsMod = m7GetNodeFs();
+            let pathMod = m7GetNodePath();
             if (fsMod) {
               const brandingBaseDirs = [
                 'D:/MediaFactory/.mediafactory/assets/branding',
@@ -9223,21 +9381,18 @@
                         else if (key === 'overlay' && low.startsWith('overlay_')) matchingFiles.push(f);
                       }
                       if (matchingFiles.length > 0) {
+                        // Prioritize transparent / no-bg user uploads and recent files
                         matchingFiles.sort((a, b) => {
+                          const aNobg = a.toLowerCase().includes('nobg') || a.toLowerCase().includes('transparent');
+                          const bNobg = b.toLowerCase().includes('nobg') || b.toLowerCase().includes('transparent');
+                          if (aNobg && !bNobg) return -1;
+                          if (!aNobg && bNobg) return 1;
                           const timeA = fsMod.statSync(pathMod ? pathMod.join(fullSub, a) : `${fullSub}/${a}`).mtimeMs || 0;
                           const timeB = fsMod.statSync(pathMod ? pathMod.join(fullSub, b) : `${fullSub}/${b}`).mtimeMs || 0;
                           return timeB - timeA;
                         });
                         const chosenPath = pathMod ? pathMod.join(fullSub, matchingFiles[0]) : `${fullSub}/${matchingFiles[0]}`;
-                        try {
-                          const buf = fsMod.readFileSync(chosenPath);
-                          const isPng = chosenPath.endsWith('.png');
-                          const isMp4 = chosenPath.endsWith('.mp4');
-                          const mime = isPng ? 'image/png' : (isMp4 ? 'video/mp4' : 'image/jpeg');
-                          return `data:${mime};base64,${buf.toString('base64')}`;
-                        } catch(rErr) {
-                          return chosenPath;
-                        }
+                        return m7EnsureBase64(chosenPath);
                       }
                     }
                   }
@@ -9723,16 +9878,40 @@
             m7SetParticle2ImageSource(obj, obj.source);
           }
           if (obj.type === 'Logo') {
+            const wsLogo = (typeof m7GetWorkspaceBrandingAsset === 'function') ? m7GetWorkspaceBrandingAsset('logo') : null;
+            if (wsLogo && wsLogo !== obj.source && !wsLogo.startsWith('assets/')) {
+              obj._isLoadingImage = true;
+              m7SetParticle2ImageSource(obj, wsLogo);
+            }
             m7DrawLogoPlaceholderWidget(ctx, w, h, obj);
           } else if (obj.type === 'Watermark') {
+            const wsWm = (typeof m7GetWorkspaceBrandingAsset === 'function') ? m7GetWorkspaceBrandingAsset('watermark') : null;
+            if (wsWm && wsWm !== obj.source && !wsWm.startsWith('assets/')) {
+              obj._isLoadingImage = true;
+              m7SetParticle2ImageSource(obj, wsWm);
+            }
             m7DrawWatermarkWidget(ctx, w, h, obj);
           } else if (obj.type === 'Subscribe' || obj.type === 'Subscribe Animation') {
             m7DrawSubscribeWidget(ctx, w, h, obj);
           }
         } else {
           if (obj.type === 'Logo') {
+            if (!obj._isLoadingImage) {
+              const wsLogo = (typeof m7GetWorkspaceBrandingAsset === 'function') ? m7GetWorkspaceBrandingAsset('logo') : null;
+              if (wsLogo) {
+                obj._isLoadingImage = true;
+                m7SetParticle2ImageSource(obj, wsLogo);
+              }
+            }
             m7DrawLogoPlaceholderWidget(ctx, w, h, obj);
           } else if (obj.type === 'Watermark') {
+            if (!obj._isLoadingImage) {
+              const wsWm = (typeof m7GetWorkspaceBrandingAsset === 'function') ? m7GetWorkspaceBrandingAsset('watermark') : null;
+              if (wsWm) {
+                obj._isLoadingImage = true;
+                m7SetParticle2ImageSource(obj, wsWm);
+              }
+            }
             m7DrawWatermarkWidget(ctx, w, h, obj);
           } else if (obj.type === 'Subscribe' || obj.type === 'Subscribe Animation') {
             m7DrawSubscribeWidget(ctx, w, h, obj);
@@ -9804,13 +9983,17 @@
       function m7SelectParticle2Object(idx) {
         if (idx < 0 || idx >= activeParticle2s.length) return;
         activeSelectedParticle2Index = idx;
-        activeCategory = 'particle2';
+        if (typeof m7SelectCategory === 'function' && activeCategory !== 'particle2') {
+          m7SelectCategory('particle2');
+        } else {
+          activeCategory = 'particle2';
+        }
         const item = activeParticle2s[idx];
 
-        if (!item.source) {
+        if ((!item.source || !item.imageElement) && !item._isLoadingImage) {
           const wsKey = item.type === 'Logo' ? 'logo' : (item.type === 'Watermark' ? 'watermark' : ((item.type === 'Subscribe' || item.type === 'Subscribe Animation') ? 'subscribe' : null));
           if (wsKey) {
-            const wsAsset = m7GetWorkspaceBrandingAsset(wsKey);
+            const wsAsset = (typeof m7GetWorkspaceBrandingAsset === 'function') ? m7GetWorkspaceBrandingAsset(wsKey) : null;
             if (wsAsset) {
               m7SetParticle2ImageSource(item, wsAsset);
             }
@@ -9830,6 +10013,9 @@
         m7IsGizmoSelected = (item.type !== 'Intro' && item.type !== 'Outro');
         m7UpdateGizmo();
         m7ScheduleAutosave();
+        if (item) {
+          window.dispatchEvent(new CustomEvent('m7-timeline-select-track', { detail: { trackKey: `p2_${item.id || idx}` } }));
+        }
       }
       window.m7SelectParticle2Object = m7SelectParticle2Object;
 
@@ -9865,18 +10051,23 @@
 
       async function m7SetParticle2ImageSource(obj, src) {
         if (!obj || !src) return;
-        obj.source = src;
-        obj._isLoadingImage = false;
-
-        let dataUrl = src;
-        if (typeof src === 'string' && (src.includes(':\\') || src.startsWith('file:///') || (!src.startsWith('data:') && !src.startsWith('blob:') && !src.startsWith('http')))) {
-          if (window.__ASTROFOX__ && window.__ASTROFOX__.readImageFile) {
-            try {
-              const res = await window.__ASTROFOX__.readImageFile(src.replace(/^file:\/\/\//, ''));
-              if (res) dataUrl = res;
-            } catch(e) {}
-          }
+        let dataUrl = (typeof m7EnsureBase64 === 'function') ? m7EnsureBase64(src) : src;
+        if (dataUrl && typeof dataUrl === 'string' && !dataUrl.startsWith('data:') && !dataUrl.startsWith('blob:') && !dataUrl.startsWith('http')) {
+          try {
+            const fetchUrl = `/api/m7/media-file?path=${encodeURIComponent(dataUrl)}`;
+            const resp = await fetch(fetchUrl);
+            if (resp.ok) {
+              const blob = await resp.blob();
+              dataUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+              });
+            }
+          } catch(e) {}
         }
+        obj.source = dataUrl;
+        obj._isLoadingImage = false;
 
         const normalizedSrc = (dataUrl && (dataUrl.startsWith('data:') || dataUrl.startsWith('blob:') || dataUrl.startsWith('http'))) ? dataUrl : m7NormalizeMediaSrc(dataUrl);
 
@@ -9946,17 +10137,30 @@
           if (obj.display && obj.display.update) {
             obj.display.update({ x: obj.x, y: obj.y, opacity: (obj.opacity !== undefined ? (obj.opacity > 1 ? obj.opacity / 100 : obj.opacity) : 1.0) });
           }
+          const events = window.__ASTROFOX_CORE__?.events;
+          if (events && events.emit) events.emit('render');
+          if (typeof m7UpdateGizmo === 'function') m7UpdateGizmo();
           m7ScheduleAutosave();
         };
 
         img.onerror = () => {
           console.warn('[M7 Particle 2] Failed to load image from source:', normalizedSrc);
+          obj._isLoadingImage = false;
+          const wsKey = obj.type === 'Logo' ? 'logo' : (obj.type === 'Watermark' ? 'watermark' : null);
+          if (wsKey && !obj._triedFallback) {
+            obj._triedFallback = true;
+            const wsAsset = (typeof m7GetWorkspaceBrandingAsset === 'function') ? m7GetWorkspaceBrandingAsset(wsKey) : null;
+            if (wsAsset && wsAsset !== normalizedSrc) {
+              m7SetParticle2ImageSource(obj, wsAsset);
+              return;
+            }
+          }
           if (activeSelectedParticle2Index >= 0 && activeParticle2s[activeSelectedParticle2Index] === obj) {
-            ['img-branding2-preview', 'img-part2-preview'].forEach(id => {
+            ['img-branding-preview', 'img-branding2-preview', 'img-part2-preview'].forEach(id => {
               const el = document.getElementById(id);
               if (el) { el.src = ''; el.style.display = 'none'; }
             });
-            ['txt-branding2-preview-empty', 'txt-part2-preview-empty'].forEach(id => {
+            ['txt-branding-preview-empty', 'txt-branding2-preview-empty', 'txt-part2-preview-empty'].forEach(id => {
               const el = document.getElementById(id);
               if (el) el.style.display = 'block';
             });
@@ -10235,7 +10439,26 @@
             if (el) el.innerText = `${opVal}`;
           });
 
-          const showSrc = obj.dataUrl || (obj.source && (obj.source.startsWith('data:') || obj.source.startsWith('http') || obj.source.startsWith('blob:')) ? obj.source : null);
+          let showSrc = obj.dataUrl || (obj.source && (obj.source.startsWith('data:') || obj.source.startsWith('http') || obj.source.startsWith('blob:')) ? obj.source : null);
+
+          if (!showSrc && obj.source && typeof m7EnsureBase64 === 'function') {
+            const converted = m7EnsureBase64(obj.source);
+            if (converted && converted.startsWith('data:')) {
+              showSrc = converted;
+              obj.source = converted;
+              obj.dataUrl = converted;
+            }
+          }
+
+          if (!showSrc) {
+            const asset = (obj.type === 'Logo') ? m7GetWorkspaceBrandingAsset('logo') : (obj.type === 'Watermark' ? m7GetWorkspaceBrandingAsset('watermark') : null);
+            if (asset) {
+              showSrc = asset;
+              obj.source = asset;
+              obj.dataUrl = asset;
+              m7SetParticle2ImageSource(obj, asset);
+            }
+          }
 
           if (showSrc) {
             ['img-branding2-preview', 'img-part2-preview'].forEach(id => {
@@ -10246,18 +10469,9 @@
               const el = document.getElementById(id);
               if (el) el.style.display = 'none';
             });
-          } else if (obj.source) {
             if (!obj.imageElement || !obj.imageElement.complete) {
-              m7SetParticle2ImageSource(obj, obj.source);
+              m7SetParticle2ImageSource(obj, showSrc);
             }
-            ['img-branding2-preview', 'img-part2-preview'].forEach(id => {
-              const el = document.getElementById(id);
-              if (el) el.style.display = 'none';
-            });
-            ['txt-branding2-preview-empty', 'txt-part2-preview-empty'].forEach(id => {
-              const el = document.getElementById(id);
-              if (el) el.style.display = 'block';
-            });
           } else {
             ['img-branding2-preview', 'img-part2-preview'].forEach(id => {
               const el = document.getElementById(id);
@@ -15302,7 +15516,11 @@
 
         const canvasLeft = (stageW / 2) + itemX - (itemW / 2);
         let canvasTop;
-        if (target.type === 'visualizer' && target.item && target.item.type === 'BarSpectrumDisplay') {
+        const isBarViz = (target.type === 'visualizer' && target.item && (
+          ((target.item.type || '') + ' ' + (target.item.name || '')).toLowerCase().includes('bar') ||
+          (target.display && target.display.constructor && target.display.constructor.name === 'BarSpectrumDisplay')
+        ));
+        if (isBarViz) {
           canvasTop = (stageH / 2) - itemY - itemH;
         } else {
           canvasTop = (stageH / 2) - itemY - (itemH / 2);
@@ -15370,23 +15588,30 @@
           });
         });
 
-        const stageContainer = document.getElementById('viewport') || document.body;
-        stageContainer.addEventListener('mousedown', (e) => {
-          const clickedOnSidebar = e.target.closest('#m7-studio-dock') || e.target.closest('#m7-nav-rail') || e.target.closest('.Player__player') || e.target.closest('#m7-add-to-queue-btn');
-          const clickedOnGizmo = e.target.closest('#m7-gizmo-box');
+        window.addEventListener('mousedown', (e) => {
+          // Ignore clicks on sidebar dock, rail, player, topbar, modal overlays, timeline controls, or the gizmo handles / del-btn
+          const clickedOnUI = e.target.closest('#m7-studio-dock') || 
+                              e.target.closest('#m7-nav-rail') || 
+                              e.target.closest('#m7-track-timeline') || 
+                              e.target.closest('#m7-add-to-queue-btn') || 
+                              e.target.closest('#m7-timeline-container') || 
+                              e.target.closest('.m7-modal-overlay') || 
+                              e.target.closest('#m7-export-modal') ||
+                              e.target.closest('.m7-handle') ||
+                              e.target.closest('.m7-gizmo-del-btn') ||
+                              e.target.closest('.m7-topbar');
+          if (clickedOnUI) return;
 
-          if (clickedOnSidebar || clickedOnGizmo) {
-            return;
-          }
-
-          const canvas = document.querySelector('#viewport canvas') || document.querySelector('.Stage__stage canvas');
+          const canvas = document.querySelector('#viewport canvas') || document.querySelector('.Stage__stage canvas') || document.querySelector('#app canvas');
           if (!canvas) return;
           const cRect = canvas.getBoundingClientRect();
 
           // If clicked outside canvas bounds
           if (e.clientX < cRect.left || e.clientX > cRect.right || e.clientY < cRect.top || e.clientY > cRect.bottom) {
-            m7IsGizmoSelected = false;
-            m7UpdateGizmo();
+            if (!e.target.closest('#m7-track-timeline') && !e.target.closest('.m7-topbar')) {
+              m7IsGizmoSelected = false;
+              m7UpdateGizmo();
+            }
             return;
           }
 
@@ -15395,172 +15620,185 @@
           const stageW = stageSize.width || 854;
           const stageH = stageSize.height || 480;
 
-          const relX = (e.clientX - cRect.left) / cRect.width;
-          const relY = (e.clientY - cRect.top) / cRect.height;
-          const clickStageX = (relX * stageW) - (stageW / 2);
-          const clickStageY = (stageH / 2) - (relY * stageH);
+          const pad = 12;
+          const testHit = (itemType, item) => {
+            const scaleX = cRect.width / stageW;
+            const scaleY = cRect.height / stageH;
+            let itemX = 0, itemY = 0, itemW = 100, itemH = 100;
+            let isBottomBaseline = false;
 
-          // 1. CANVA HIT-TEST: Check Particle 2 Layers (Logo, Watermark, Subscribe, etc.)
-          let hitP2Index = -1;
-          for (let i = activeParticle2s.length - 1; i >= 0; i--) {
-            const p = activeParticle2s[i];
-            if (!p || p.type === 'Intro' || p.type === 'Outro' || p.visible === false) continue;
-            const px = p.x || 0;
-            const py = p.y || 0;
-            const pw = Math.max(20, p.width || 120);
-            const ph = Math.max(20, p.height || 120);
+            if (itemType === 'text') {
+              const disp = item.display;
+              itemX = disp?.properties?.x || item.properties?.x || 0;
+              itemY = disp?.properties?.y || item.properties?.y || 0;
+              itemW = ((disp?.canvas && disp.canvas.width > 1) ? disp.canvas.width : (disp?.properties?.width || 360));
+              itemH = ((disp?.canvas && disp.canvas.height > 1) ? disp.canvas.height : (disp?.properties?.height || 90));
+            } else if (itemType === 'particle2') {
+              itemX = item.x || 0;
+              itemY = item.y || 0;
+              itemW = Math.max(16, item.width || 120);
+              itemH = Math.max(16, item.height || 120);
+            } else if (itemType === 'overlay') {
+              itemX = item.properties?.x || item.x || 0;
+              itemY = item.properties?.y || item.y || 0;
+              itemW = 140 * ((item.scale || 100) / 100);
+              itemH = 200 * ((item.scale || 100) / 100);
+            } else if (itemType === 'visualizer') {
+              const disp = item.display;
+              itemX = disp?.properties?.x || 0;
+              itemY = disp?.properties?.y || 0;
+              itemW = (disp?.properties && disp.properties.width !== undefined) ? disp.properties.width : 480;
+              itemH = (disp?.properties && disp.properties.height !== undefined) ? disp.properties.height : 160;
+              const typeStr = ((item.type || '') + ' ' + (item.name || '') + ' ' + (disp?.constructor?.name || '')).toLowerCase();
+              isBottomBaseline = typeStr.includes('bar');
+              if (isBottomBaseline && disp?.properties?.shadowHeight) {
+                itemH += (disp.properties.shadowHeight || 0);
+              }
+            }
 
-            if (clickStageX >= px - (pw / 2) && clickStageX <= px + (pw / 2) &&
-                clickStageY >= py - (ph / 2) && clickStageY <= py + (ph / 2)) {
-              hitP2Index = i;
-              break;
+            const canvasLeft = (stageW / 2) + itemX - (itemW / 2);
+            const canvasTop = isBottomBaseline 
+              ? ((stageH / 2) - itemY - (disp?.properties?.height || itemH))
+              : ((stageH / 2) - itemY - (itemH / 2));
+
+            const left = cRect.left + (canvasLeft * scaleX);
+            const top = cRect.top + (canvasTop * scaleY);
+            const width = itemW * scaleX;
+            const height = itemH * scaleY;
+
+            return (e.clientX >= left - pad && e.clientX <= left + width + pad &&
+                    e.clientY >= top - pad && e.clientY <= top + height + pad);
+          };
+
+          // 1. CANVA HIT-TEST: Text Objects (Foreground / subtitles / title)
+          if (typeof activeTextObjects !== 'undefined') {
+            for (let i = activeTextObjects.length - 1; i >= 0; i--) {
+              const t = activeTextObjects[i];
+              if (!t || !t.display) continue;
+              if (testHit('text', t)) {
+                if (typeof window.m7SelectTextByIndex === 'function') {
+                  window.m7SelectTextByIndex(i);
+                }
+                const target = m7GetActiveTarget();
+                if (target) {
+                  m7IsDraggingGizmo = true;
+                  m7GizmoActionData = {
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    origItemX: target.getX(),
+                    origItemY: target.getY(),
+                    target
+                  };
+                }
+                return;
+              }
             }
           }
 
-          if (hitP2Index >= 0) {
-            m7SelectCategory('particle2');
-            activeSelectedParticle2Index = hitP2Index;
-            m7RenderParticle2List();
-            m7SyncInspectorToParticle2(activeParticle2s[hitP2Index]);
-            m7IsGizmoSelected = true;
-            m7UpdateGizmo();
-
-            const target = m7GetActiveTarget();
-            if (target) {
-              m7IsDraggingGizmo = true;
-              m7GizmoActionData = {
-                startX: e.clientX,
-                startY: e.clientY,
-                origItemX: target.getX(),
-                origItemY: target.getY(),
-                target
-              };
-            }
-            return;
-          }
-
-          // 2. CANVA HIT-TEST: Check Branding Layers (Branding, Branding 2, Branding 3, Branding 4)
-          let hitBrandingIndex = -1;
-          for (let i = activeBrandingObjects.length - 1; i >= 0; i--) {
-            const b = activeBrandingObjects[i];
-            if (!b || b.type === 'Intro' || b.type === 'Outro' || b.visible === false) continue;
-            const bx = b.x || 0;
-            const by = b.y || 0;
-            const bw = Math.max(20, (b.width || 360) * ((b.scale || 100) / 100));
-            const bh = Math.max(20, (b.height || 180) * ((b.scale || 100) / 100));
-
-            if (clickStageX >= bx - (bw / 2) && clickStageX <= bx + (bw / 2) &&
-                clickStageY >= by - (bh / 2) && clickStageY <= by + (bh / 2)) {
-              hitBrandingIndex = i;
-              break;
+          // 2. CANVA HIT-TEST: Particle 2 Objects (Brand Logo, Watermark, Subscribe badge)
+          if (typeof activeParticle2s !== 'undefined') {
+            for (let i = activeParticle2s.length - 1; i >= 0; i--) {
+              const p = activeParticle2s[i];
+              if (!p || p.type === 'Intro' || p.type === 'Outro' || p.visible === false) continue;
+              if (testHit('particle2', p)) {
+                if (typeof window.m7SelectParticle2Object === 'function') {
+                  window.m7SelectParticle2Object(i);
+                }
+                const target = m7GetActiveTarget();
+                if (target) {
+                  m7IsDraggingGizmo = true;
+                  m7GizmoActionData = {
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    origItemX: target.getX(),
+                    origItemY: target.getY(),
+                    target
+                  };
+                }
+                return;
+              }
             }
           }
 
-          if (hitBrandingIndex >= 0) {
-            m7SelectCategory('branding');
-            activeSelectedBrandingIndex = hitBrandingIndex;
-            m7RenderBrandingList();
-            m7SyncInspectorToBranding(activeBrandingObjects[hitBrandingIndex]);
-            m7IsGizmoSelected = true;
-            m7UpdateGizmo();
-
-            const target = m7GetActiveTarget();
-            if (target) {
-              m7IsDraggingGizmo = true;
-              m7GizmoActionData = {
-                startX: e.clientX,
-                startY: e.clientY,
-                origItemX: target.getX(),
-                origItemY: target.getY(),
-                target
-              };
-            }
-            return;
-          }
-
-          // 3. CANVA HIT-TEST: Check Text Objects (Top Layer)
-          let hitTextIndex = -1;
-          for (let i = activeTextObjects.length - 1; i >= 0; i--) {
-            const t = activeTextObjects[i];
-            if (!t || !t.display) continue;
-            const tx = t.properties?.x || 0;
-            const ty = t.properties?.y || 0;
-            const tw = t.display.canvas?.width || 360;
-            const th = t.display.canvas?.height || 90;
-
-            if (clickStageX >= tx - (tw / 2) && clickStageX <= tx + (tw / 2) &&
-                clickStageY >= ty - (th / 2) && clickStageY <= ty + (th / 2)) {
-              hitTextIndex = i;
-              break;
+          // 3. CANVA HIT-TEST: Overlays (Stickers, frames, effects)
+          if (typeof activeOverlayObjects !== 'undefined') {
+            for (let i = activeOverlayObjects.length - 1; i >= 0; i--) {
+              const o = activeOverlayObjects[i];
+              if (!o || o.visible === false) continue;
+              if (testHit('overlay', o)) {
+                if (typeof window.m7SelectOverlayByIndex === 'function') {
+                  window.m7SelectOverlayByIndex(i);
+                }
+                const target = m7GetActiveTarget();
+                if (target) {
+                  m7IsDraggingGizmo = true;
+                  m7GizmoActionData = {
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    origItemX: target.getX(),
+                    origItemY: target.getY(),
+                    target
+                  };
+                }
+                return;
+              }
             }
           }
 
-          if (hitTextIndex >= 0) {
-            m7SelectCategory('text');
-            activeSelectedTextIndex = hitTextIndex;
-            m7RenderTextList();
-            m7SyncInspectorToText(activeTextObjects[hitTextIndex]);
-            m7IsGizmoSelected = true;
-            m7UpdateGizmo();
-
-            const target = m7GetActiveTarget();
-            if (target) {
-              m7IsDraggingGizmo = true;
-              m7GizmoActionData = {
-                startX: e.clientX,
-                startY: e.clientY,
-                origItemX: target.getX(),
-                origItemY: target.getY(),
-                target
-              };
-            }
-            return;
-          }
-
-          // 4. CANVA HIT-TEST: Check Spectrum Visualizers (Middle Layer)
-          let hitVizIndex = -1;
-          for (let i = activeVisualizers.length - 1; i >= 0; i--) {
-            const v = activeVisualizers[i];
-            if (!v || !v.display) continue;
-            const p = v.display.properties || {};
-            const vx = p.x || 0;
-            const vy = p.y || 0;
-            const vw = p.width || 800;
-            const vh = p.height || 280;
-
-            if (clickStageX >= vx - (vw / 2) && clickStageX <= vx + (vw / 2) &&
-                clickStageY >= vy - (vh / 2) && clickStageY <= vy + (vh / 2)) {
-              hitVizIndex = i;
-              break;
+          // 3b. CANVA HIT-TEST: Active Branding Objects (Logo, Watermark)
+          if (typeof activeBrandingObjects !== 'undefined') {
+            for (let i = activeBrandingObjects.length - 1; i >= 0; i--) {
+              const b = activeBrandingObjects[i];
+              if (!b || b.visible === false) continue;
+              if (testHit('particle2', b)) {
+                if (typeof window.m7SelectBrandingObject === 'function') {
+                  window.m7SelectBrandingObject(i);
+                }
+                const target = m7GetActiveTarget();
+                if (target) {
+                  m7IsDraggingGizmo = true;
+                  m7GizmoActionData = {
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    origItemX: target.getX(),
+                    origItemY: target.getY(),
+                    target
+                  };
+                }
+                return;
+              }
             }
           }
 
-          if (hitVizIndex >= 0) {
-            m7SelectCategory('visualizer');
-            activeSelectedVizIndex = hitVizIndex;
-            m7RenderVisualizerList();
-            m7SyncInspectorToDisplay(activeVisualizers[hitVizIndex].display);
-            m7IsGizmoSelected = true;
-            m7UpdateGizmo();
-
-            const target = m7GetActiveTarget();
-            if (target) {
-              m7IsDraggingGizmo = true;
-              m7GizmoActionData = {
-                startX: e.clientX,
-                startY: e.clientY,
-                origItemX: target.getX(),
-                origItemY: target.getY(),
-                target
-              };
+          // 4. CANVA HIT-TEST: Spectrum Visualizers (FFT Bars, Waves, Glow)
+          if (typeof activeVisualizers !== 'undefined') {
+            for (let i = activeVisualizers.length - 1; i >= 0; i--) {
+              const v = activeVisualizers[i];
+              if (!v || !v.display) continue;
+              if (testHit('visualizer', v)) {
+                if (typeof window.m7SelectVizByIndex === 'function') {
+                  window.m7SelectVizByIndex(i);
+                }
+                const target = m7GetActiveTarget();
+                if (target) {
+                  m7IsDraggingGizmo = true;
+                  m7GizmoActionData = {
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    origItemX: target.getX(),
+                    origItemY: target.getY(),
+                    target
+                  };
+                }
+                return;
+              }
             }
-            return;
           }
 
-          // 5. If clicked anywhere else (e.g. background or empty space): Deselect Gizmo
+          // 5. Empty space click: Deselect Gizmo
           m7IsGizmoSelected = false;
           m7UpdateGizmo();
-        });
+        }, true);
 
         window.addEventListener('keydown', (e) => {
           if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
@@ -15986,7 +16224,7 @@
               x: pt.x,
               y: pt.y,
               position: pt.position,
-              source: pt.source
+              source: pt.source || pt.dataUrl || ''
             })),
             activeSelectedParticle2Index: activeSelectedParticle2Index,
             activeEffects: activeEffects.map(eff => ({
@@ -16344,7 +16582,12 @@
                 text: pt.text
               };
               activeParticle2s.push(obj);
-              if (obj.source) {
+              const wsKey = obj.type === 'Logo' ? 'logo' : (obj.type === 'Watermark' ? 'watermark' : null);
+              const wsAsset = wsKey && (typeof m7GetWorkspaceBrandingAsset === 'function') ? m7GetWorkspaceBrandingAsset(wsKey) : null;
+              if (wsAsset) {
+                obj.source = wsAsset;
+                m7SetParticle2ImageSource(obj, wsAsset);
+              } else if (obj.source) {
                 m7SetParticle2ImageSource(obj, obj.source);
               }
             }

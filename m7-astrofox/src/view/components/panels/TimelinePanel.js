@@ -393,12 +393,20 @@ export default function TimelinePanel() {
     // Instant workspace changes notification
     window.addEventListener('m7-workspace-change', updateStateFromWorkspace);
 
+    const handleSelectTrackEvent = (e) => {
+      if (e.detail && e.detail.trackKey) {
+        setSelectedTrack(e.detail.trackKey);
+      }
+    };
+    window.addEventListener('m7-timeline-select-track', handleSelectTrackEvent);
+
     // Fallback interval polling for external mutations
     const intervalId = setInterval(updateStateFromWorkspace, 300);
 
     return () => {
       clearInterval(intervalId);
       window.removeEventListener('m7-workspace-change', updateStateFromWorkspace);
+      window.removeEventListener('m7-timeline-select-track', handleSelectTrackEvent);
       if (player) {
         player.off('tick', onTick);
         player.off('play', updateStateFromWorkspace);

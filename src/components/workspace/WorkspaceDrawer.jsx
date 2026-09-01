@@ -303,23 +303,44 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
             const data = await res.json();
             if (data.success && data.filePath) {
                 const savedPath = data.filePath;
-                setSettings(prev => ({
-                    ...(prev || {}),
-                    branding: { ...(prev?.branding || {}), [type]: savedPath }
-                }));
+                setSettings(prev => {
+                    const newBranding = { ...(prev?.branding || {}), [type]: savedPath };
+                    try {
+                        localStorage.setItem(`mf_workspace_branding_${activeWorkspace}`, JSON.stringify(newBranding));
+                        if (base64Data) {
+                            localStorage.setItem(`mf_workspace_branding_data_${type}_${activeWorkspace}`, base64Data);
+                        }
+                    } catch (e) {}
+                    return {
+                        ...(prev || {}),
+                        branding: newBranding
+                    };
+                });
 
                 if (type === 'logo') {
                     setAvatarUrl(savedPath);
                     localStorage.setItem(`mf_workspace_avatar_${activeWorkspace}`, savedPath);
+                    if (base64Data) {
+                        localStorage.setItem(`mf_workspace_avatar_data_${activeWorkspace}`, base64Data);
+                    }
                     window.dispatchEvent(new CustomEvent('workspace_avatar_updated', {
-                        detail: { workspaceName: activeWorkspace, avatar: savedPath }
+                        detail: { workspaceName: activeWorkspace, avatar: savedPath, avatarData: base64Data }
                     }));
                 }
-            } else {
-                setSettings(prev => ({
-                    ...(prev || {}),
-                    branding: { ...(prev?.branding || {}), [type]: base64Data }
+                window.dispatchEvent(new CustomEvent('workspace_settings_updated', {
+                    detail: { activeWorkspace, type, savedPath, base64Data }
                 }));
+            } else {
+                setSettings(prev => {
+                    const newBranding = { ...(prev?.branding || {}), [type]: base64Data };
+                    try {
+                        localStorage.setItem(`mf_workspace_branding_${activeWorkspace}`, JSON.stringify(newBranding));
+                    } catch (e) {}
+                    return {
+                        ...(prev || {}),
+                        branding: newBranding
+                    };
+                });
             }
         } catch (err) {
             console.warn('[WorkspaceDrawer] Upload fallback:', err);

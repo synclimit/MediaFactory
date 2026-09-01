@@ -73,44 +73,56 @@ router.get('/api/m7/workspace-branding', (req, res) => {
       overlay: null
     };
 
+    const fileToBase64 = (filePath) => {
+      if (!filePath || !fs.existsSync(filePath)) return null;
+      try {
+        const buf = fs.readFileSync(filePath);
+        const ext = path.extname(filePath).toLowerCase();
+        const mime = ext === '.png' ? 'image/png' : (ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : (ext === '.svg' ? 'image/svg+xml' : (ext === '.webp' ? 'image/webp' : 'application/octet-stream')));
+        return `data:${mime};base64,${buf.toString('base64')}`;
+      } catch (e) {
+        return null;
+      }
+    };
+
     if (fs.existsSync(brandingDir)) {
       const files = fs.readdirSync(brandingDir);
       
-      // Preferred matches:
-      // Logo: logo_nobg.png or logo_dangdut_viral_id_nobg.png or newest logo_*
-      const logoFiles = files.filter(f => f.toLowerCase().startsWith('logo_')).sort((a, b) => {
-        const aNobg = a.toLowerCase().includes('nobg');
-        const bNobg = b.toLowerCase().includes('nobg');
-        if (aNobg && !bNobg) return -1;
-        if (!aNobg && bNobg) return 1;
-        const mtimeA = fs.statSync(path.join(brandingDir, a)).mtimeMs;
-        const mtimeB = fs.statSync(path.join(brandingDir, b)).mtimeMs;
-        return mtimeB - mtimeA;
-      });
+      // Sort helper: prioritize user-uploaded transparent files and newest files by mtime
+      const sortUserUploadsFirst = (prefix, fileList) => {
+        return fileList.filter(f => f.toLowerCase().startsWith(prefix)).sort((a, b) => {
+          const aNobg = a.toLowerCase().includes('nobg') || a.toLowerCase().includes('transparent');
+          const bNobg = b.toLowerCase().includes('nobg') || b.toLowerCase().includes('transparent');
+          if (aNobg && !bNobg) return -1;
+          if (!aNobg && bNobg) return 1;
+          const mtimeA = fs.statSync(path.join(brandingDir, a)).mtimeMs;
+          const mtimeB = fs.statSync(path.join(brandingDir, b)).mtimeMs;
+          return mtimeB - mtimeA;
+        });
+      };
+
+      const logoFiles = sortUserUploadsFirst('logo', files);
       if (logoFiles.length > 0) {
-        result.logo = path.join(brandingDir, logoFiles[0]);
+        const fullLogoPath = path.join(brandingDir, logoFiles[0]);
+        result.logo = fileToBase64(fullLogoPath) || fullLogoPath;
       }
 
-      const wmFiles = files.filter(f => f.toLowerCase().startsWith('watermark_')).sort((a, b) => {
-        const aNobg = a.toLowerCase().includes('nobg');
-        const bNobg = b.toLowerCase().includes('nobg');
-        if (aNobg && !bNobg) return -1;
-        if (!aNobg && bNobg) return 1;
-        const mtimeA = fs.statSync(path.join(brandingDir, a)).mtimeMs;
-        const mtimeB = fs.statSync(path.join(brandingDir, b)).mtimeMs;
-        return mtimeB - mtimeA;
-      });
+      const wmFiles = sortUserUploadsFirst('watermark', files);
       if (wmFiles.length > 0) {
-        result.watermark = path.join(brandingDir, wmFiles[0]);
+        const fullWmPath = path.join(brandingDir, wmFiles[0]);
+        result.watermark = fileToBase64(fullWmPath) || fullWmPath;
       }
 
-      const subFiles = files.filter(f => f.toLowerCase().startsWith('subscribe')).sort((a, b) => {
-        const mtimeA = fs.statSync(path.join(brandingDir, a)).mtimeMs;
-        const mtimeB = fs.statSync(path.join(brandingDir, b)).mtimeMs;
-        return mtimeB - mtimeA;
-      });
+      const subFiles = sortUserUploadsFirst('subscribe', files);
       if (subFiles.length > 0) {
-        result.subscribe = path.join(brandingDir, subFiles[0]);
+        const fullSubPath = path.join(brandingDir, subFiles[0]);
+        result.subscribe = fileToBase64(fullSubPath) || fullSubPath;
+      }
+
+      const overlayFiles = sortUserUploadsFirst('overlay', files);
+      if (overlayFiles.length > 0) {
+        const fullOverlayPath = path.join(brandingDir, overlayFiles[0]);
+        result.overlay = fileToBase64(fullOverlayPath) || fullOverlayPath;
       }
     }
 
