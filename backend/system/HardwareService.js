@@ -90,7 +90,9 @@ class HardwareService {
         } catch (e) { /* ignore wmic errors */ }
 
         try {
-            const { stdout } = await execAsync('ffmpeg -encoders');
+            const AppPaths = require('./AppPaths');
+            const ffmpegBin = AppPaths.getFFmpegPath();
+            const { stdout } = await execAsync(`"${ffmpegBin}" -encoders`);
             hardware.ffmpegAvailable = true;
             
             if (stdout.includes('h264_nvenc')) hardware.encoders.push('h264_nvenc');

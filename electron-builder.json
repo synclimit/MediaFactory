@@ -1,41 +1,71 @@
 {
   "appId": "com.mediafactory.app",
-  "productName": "MediaFactory Studio",
-  "version": "1.0.0-rc.1",
-  "copyright": "Copyright © 2026 MediaFactory",
+  "productName": "MediaFactory",
   "directories": {
-    "output": "dist-electron",
-    "buildResources": "build"
+    "output": "dist-release"
   },
+  "asar": true,
+  "asarUnpack": [
+    "m7-astrofox/app/**/*"
+  ],
   "files": [
     "dist/**/*",
+    "backend/**/*",
+    "!backend/bin/**/*",
+    "!backend/ffmpeg/**/*",
+    "electron/main.cjs",
     "electron/**/*",
-    "package.json"
+    "src/**/*",
+    "m7-astrofox/app/**/*",
+    "node_modules/**/*",
+    "package.json",
+    "!dummy.mp4",
+    "!test_bg.mp4",
+    "!test_audio.mp3"
   ],
   "win": {
-    "target": [
-      { "target": "nsis", "arch": ["x64"] },
-      { "target": "portable", "arch": ["x64"] }
-    ],
-    "icon": "build/icon.ico"
+    "target": "nsis"
   },
   "nsis": {
     "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
     "perMachine": false,
     "allowElevation": true,
-    "allowToChangeInstallationDirectory": true,
-    "license": "build/license.txt",
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true
+    "deleteAppDataOnUninstall": false,
+    "createDesktopShortcut": "always",
+    "createStartMenuShortcut": true,
+    "differentialPackage": true
   },
-  "portable": {
-    "artifactName": "${productName}-${version}-Portable.exe"
-  },
+  "extraFiles": [
+    {
+      "from": "backend/bin",
+      "to": "bin",
+      "filter": [
+        "**/*"
+      ]
+    }
+  ],
   "extraResources": [
     {
-      "from": ".mediafactory/cache",
-      "to": "cache",
-      "filter": ["**/*"]
+      "from": "backend/bin",
+      "to": "backend/bin",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "backend/bin",
+      "to": "bin",
+      "filter": [
+        "**/*"
+      ]
+    },
+    {
+      "from": "m7-astrofox/app",
+      "to": "m7-astrofox/app",
+      "filter": [
+        "**/*"
+      ]
     }
   ]
 }
