@@ -31,7 +31,7 @@ jobs:
       - name: Build M7 Astrofox
         run: |
           cd m7-astrofox
-          npm install
+          npm install --legacy-peer-deps
           npm run build-dev
           cd ..
 
