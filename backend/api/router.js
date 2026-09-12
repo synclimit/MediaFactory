@@ -383,7 +383,7 @@ router.post('/api/v1/system/workspace/import-folder', async (req, res) => {
 
 router.post('/api/v1/system/open-folder', async (req, res) => {
     try {
-        const { exec } = require('child_process');
+        const { exec, spawn } = require('child_process');
         const os = require('os');
         const fs = require('fs');
         const path = require('path');
@@ -396,25 +396,38 @@ router.post('/api/v1/system/open-folder', async (req, res) => {
             let winPath = path.normalize(folderPath).replace(/\//g, '\\');
             let cleanWinPath = winPath.replace(/[\/\\]+$/, '');
 
-            let command;
             try {
-                const stat = fs.statSync(cleanWinPath);
-                if (stat.isFile()) {
-                    command = `explorer /select,"${cleanWinPath}"`;
-                } else {
-                    command = `explorer "${cleanWinPath}"`;
+                if (fs.existsSync(cleanWinPath)) {
+                    const stat = fs.statSync(cleanWinPath);
+                    if (stat.isFile()) {
+                        // Highlight the specific file in Windows Explorer
+                        const child = spawn('explorer.exe', [`/select,${cleanWinPath}`], { detached: true, stdio: 'ignore' });
+                        child.unref();
+                        return res.json({ success: true, method: 'select', path: cleanWinPath });
+                    } else {
+                        // Open the directory
+                        const child = spawn('explorer.exe', [cleanWinPath], { detached: true, stdio: 'ignore' });
+                        child.unref();
+                        return res.json({ success: true, method: 'open', path: cleanWinPath });
+                    }
                 }
             } catch (e) {
-                let dirToCreate = cleanWinPath;
-                if (path.extname(cleanWinPath)) {
-                    dirToCreate = path.dirname(cleanWinPath);
-                }
-                try { fs.mkdirSync(dirToCreate, { recursive: true }); } catch (err) {}
-                let cleanDir = dirToCreate.replace(/[\/\\]+$/, '');
-                command = `explorer "${cleanDir}"`;
+                console.warn('[OpenFolder] Error checking path:', e);
             }
-            exec(command);
-            return res.json({ success: true, commandExecuted: command });
+
+            // If path does not exist on disk, create parent directory and open it
+            let dirToOpen = cleanWinPath;
+            if (path.extname(cleanWinPath)) {
+                dirToOpen = path.dirname(cleanWinPath);
+            }
+            try {
+                fs.mkdirSync(dirToOpen, { recursive: true });
+            } catch (err) {}
+
+            let cleanDir = dirToOpen.replace(/[\/\\]+$/, '');
+            const child = spawn('explorer.exe', [cleanDir], { detached: true, stdio: 'ignore' });
+            child.unref();
+            return res.json({ success: true, method: 'fallback-dir', path: cleanDir });
         } else if (os.platform() === 'darwin') {
             const command = `open "${folderPath}"`;
             exec(command);

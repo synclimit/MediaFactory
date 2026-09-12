@@ -3747,6 +3747,43 @@ export default function App() {
               return `${Math.max(1, Math.round(totalDur * 0.25))}s`;
             };
 
+            const openPathInExplorer = async (targetPath) => {
+              if (!targetPath) return;
+              // 1. Try native Electron IPC first
+              if (window.require) {
+                try {
+                  const { ipcRenderer } = window.require('electron');
+                  if (ipcRenderer && typeof ipcRenderer.invoke === 'function') {
+                    const res = await ipcRenderer.invoke('open-path', targetPath);
+                    if (res && res.success) {
+                      addNotification('Membuka File Explorer', targetPath);
+                      return;
+                    }
+                  }
+                } catch (err) {
+                  console.warn('[Explorer] IPC open-path error:', err);
+                }
+              }
+
+              // 2. Fallback to backend API
+              try {
+                const res = await fetch(getApiUrl('/api/v1/system/open-folder'), {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ path: targetPath })
+                });
+                const data = await res.json();
+                if (data.success) {
+                  addNotification('Membuka File Explorer', targetPath);
+                } else {
+                  addNotification('Gagal Membuka Folder', data.error || 'Folder tidak dapat diakses');
+                }
+              } catch (err) {
+                console.error('[Explorer] Backend open-folder error:', err);
+                addNotification('Error Membuka Folder', err.message);
+              }
+            };
+
             // Count total matching items across active groups and workspace filter
             const totalMatchingJobs = combinedQueue.filter(j => {
               const statusMatch = (queueStatusFilter === 'ALL') ||
@@ -3778,10 +3815,10 @@ export default function App() {
                     workspaceName: cj.workspaceName || cj.workspace || activeWorkspace || 'Default',
                     profileName: cj.profileName,
                     totalDurationSec: cj.totalDurationSec,
-                    renderDuration: cj.RENDER_DURATION,
-                    actualRenderTimeSec: cj.actualRenderTimeSec,
-                    fileSize: cj.FILE_SIZE,
+                    renderDuration: getAccurateRenderDuration(cj),
+                    actualRenderTimeStr: cj.actualRenderTimeStr,
                     completedAt: cj.completedAt || Date.now(),
+                    fileSize: cj.fileSize || cj.FILE_SIZE || '',
                     status: 'Completed'
                   });
                 }
@@ -3866,11 +3903,7 @@ export default function App() {
                         const handleOpen = (e) => {
                           if (e) e.stopPropagation();
                           if (folderPath) {
-                            fetch(getApiUrl('/api/v1/system/open-folder'), {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ path: folderPath })
-                            }).catch(err => console.error(err));
+                            openPathInExplorer(folderPath);
                           }
                         };
 
@@ -4169,11 +4202,7 @@ export default function App() {
                               const handleOpenFolder = (e) => {
                                 if (e) e.stopPropagation();
                                 if (folderPath) {
-                                  fetch(getApiUrl('/api/v1/system/open-folder'), {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ path: folderPath })
-                                  }).catch(err => console.error(err));
+                                  openPathInExplorer(folderPath);
                                 }
                               };
 

@@ -535,20 +535,57 @@ function installUpdateUnified() {
     }
 
     if (pendingUpdateExePath && require('fs').existsSync(pendingUpdateExePath)) {
-        // Run silent NSIS installer with /S flag to prevent file-locking and wizard issues
+        console.log('[AutoUpdater] Launching downloaded installer:', pendingUpdateExePath);
+        const { shell } = require('electron');
         const { spawn } = require('child_process');
         try {
-            spawn(pendingUpdateExePath, ['/S', '--force-run'], { detached: true, stdio: 'ignore' }).unref();
-            setTimeout(() => app.exit(0), 600);
-        } catch (e) {
-            const { shell } = require('electron');
+            // Using shell.openPath guarantees Windows UAC elevation dialog appears cleanly if needed
             shell.openPath(pendingUpdateExePath);
-            setTimeout(() => app.exit(0), 600);
+        } catch (e) {
+            try {
+                spawn(pendingUpdateExePath, [], { detached: true, stdio: 'ignore' }).unref();
+            } catch (err) {
+                console.error('[AutoUpdater] Failed to launch installer:', err);
+            }
         }
+        // Give 1200ms to allow Windows to initialize installer process before app exits
+        setTimeout(() => app.exit(0), 1200);
     } else {
         downloadUpdateUnified();
     }
 }
+
+try { ipcMain.removeHandler('open-path'); } catch(e) {}
+ipcMain.handle('open-path', async (event, targetPath) => {
+    if (!targetPath) return { success: false, error: 'No path provided' };
+    const { shell } = require('electron');
+    const fs = require('fs');
+    const path = require('path');
+    try {
+        let cleanPath = path.normalize(targetPath).replace(/[\/\\]+$/, '');
+        if (fs.existsSync(cleanPath)) {
+            const stat = fs.statSync(cleanPath);
+            if (stat.isFile()) {
+                shell.showItemInFolder(cleanPath);
+                return { success: true, method: 'select' };
+            } else {
+                const err = await shell.openPath(cleanPath);
+                return { success: !err, error: err };
+            }
+        } else {
+            let dir = cleanPath;
+            if (path.extname(cleanPath)) {
+                dir = path.dirname(cleanPath);
+            }
+            try { fs.mkdirSync(dir, { recursive: true }); } catch (err) {}
+            const err = await shell.openPath(dir);
+            return { success: !err, error: err };
+        }
+    } catch(e) {
+        console.error('[Electron IPC open-path error]', e);
+        return { success: false, error: e.message };
+    }
+});
 
 try { ipcMain.removeHandler('show-open-dialog'); } catch(e) {}
 ipcMain.handle('show-open-dialog', async (event, options) => {
