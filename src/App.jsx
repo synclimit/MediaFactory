@@ -29,6 +29,7 @@ import { m2WorkspaceContext } from './services/m2/WorkspaceContext.js';
 import { m2SchedulerService } from './services/m2/SchedulerService.js';
 
 import { pipelineHistoryEngine } from './services/PipelineHistoryEngine.js';
+import { queueStorageService } from './services/QueueStorageService.js';
 
 import M1StudioPanel from './components/m1/M1StudioPanel.jsx';
 import M2StudioPanel from './components/m2/M2StudioPanel.jsx';
@@ -96,6 +97,26 @@ export default function App() {
     return [];
   });
   const [m5Queue, setM5Queue] = useState([]);
+  
+  // Persistent Render History State (Rekapan Selesai)
+  const [history, setHistory] = useState(() => {
+    try {
+      const stored = localStorage.getItem('render_history');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  // Right Drawer Tab State: 'QUEUE' | 'HISTORY'
+  const [queueTab, setQueueTab] = useState('QUEUE');
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const [historyWorkspaceFilter, setHistoryWorkspaceFilter] = useState('ALL');
+
+  // Hydration ref to prevent wiping disk data on initial boot/reload
+  const isHydratedRef = useRef(false);
   
   // Queue Manager Interactive Filter States:
   // queueStatusFilter: 'ALL' | 'RENDERING' | 'WAITING' | 'COMPLETED' | 'FAILED'
@@ -271,13 +292,91 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Queue persistence (dual-layer: localStorage + debounced backend disk backup)
+  // Dual-Layer Boot Hydration: IndexedDB + Backend Disk Storage (Zero Data Loss Guarantee)
   useEffect(() => {
-    try {
-      localStorage.setItem('pipeline_queue', JSON.stringify(queue));
-    } catch (e) {
-      console.error('Failed to save pipeline_queue to localStorage', e);
+    let isMounted = true;
+    async function hydrateSystemData() {
+      try {
+        // 1. Instantly load from IndexedDB
+        const [idbQueue, idbHistory] = await Promise.all([
+          queueStorageService.loadQueue().catch(() => []),
+          queueStorageService.loadHistory().catch(() => [])
+        ]);
+
+        if (isMounted) {
+          if (Array.isArray(idbQueue) && idbQueue.length > 0) {
+            setQueue(prev => {
+              const existingIds = new Set(prev.map(j => j.id));
+              const additions = idbQueue.filter(j => !existingIds.has(j.id));
+              return [...prev, ...additions];
+            });
+          }
+          if (Array.isArray(idbHistory) && idbHistory.length > 0) {
+            setHistory(idbHistory);
+          }
+        }
+
+        // 2. Fetch authoritative backend disk backup
+        try {
+          const res = await fetch(getApiUrl('/api/v1/system/queue'));
+          const data = await res.json();
+          if (isMounted && data && data.success && data.data) {
+            const diskQueue = Array.isArray(data.data.queue) ? data.data.queue : [];
+            const diskHistory = Array.isArray(data.data.history) ? data.data.history : [];
+
+            if (diskQueue.length > 0) {
+              setQueue(prev => {
+                const merged = [...prev];
+                for (const dj of diskQueue) {
+                  const idx = merged.findIndex(j => j.id === dj.id);
+                  const sanitized = ['Rendering', 'Processing', 'Downloading', 'Converting', 'Splitting', 'Running'].includes(dj.status)
+                    ? { ...dj, status: 'Waiting', progress: 0, backendJobId: undefined, error: null }
+                    : dj;
+                  if (idx === -1) {
+                    merged.push(sanitized);
+                  } else if (merged[idx].status === 'Waiting' && sanitized.status !== 'Waiting') {
+                    merged[idx] = sanitized;
+                  }
+                }
+                queueStorageService.saveQueue(merged);
+                return merged;
+              });
+            }
+
+            if (diskHistory.length > 0) {
+              setHistory(prev => {
+                const merged = [...prev];
+                for (const dh of diskHistory) {
+                  if (!merged.some(h => h.id === dh.id || (dh.jobId && h.jobId === dh.jobId))) {
+                    merged.push(dh);
+                  }
+                }
+                queueStorageService.saveHistory(merged);
+                return merged;
+              });
+            }
+          }
+        } catch (netErr) {
+          console.warn('[Queue Hydration] Backend disk query unreachable, using IndexedDB storage:', netErr);
+        }
+      } catch (err) {
+        console.error('[Queue Hydration Error]', err);
+      } finally {
+        if (isMounted) {
+          isHydratedRef.current = true;
+        }
+      }
     }
+
+    hydrateSystemData();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Queue persistence (IndexedDB + debounced backend disk backup)
+  useEffect(() => {
+    if (!isHydratedRef.current) return;
+    queueStorageService.saveQueue(queue);
+
     const timer = setTimeout(() => {
       fetch(getApiUrl('/api/v1/system/queue'), {
         method: 'POST',
@@ -285,30 +384,69 @@ export default function App() {
         body: JSON.stringify({ queue })
       }).catch(() => {});
     }, 1000);
+
     return () => clearTimeout(timer);
   }, [queue]);
 
-  // Initial sync from backend disk backup if localStorage was empty
+  // History persistence (IndexedDB + debounced backend disk backup)
   useEffect(() => {
-    fetch(getApiUrl('/api/v1/system/queue'))
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.success && data.data && Array.isArray(data.data.queue) && data.data.queue.length > 0) {
-          setQueue(prev => {
-            if (prev.length === 0) {
-              return data.data.queue.map(job => {
-                if (['Rendering', 'Processing', 'Downloading', 'Converting', 'Splitting', 'Running'].includes(job.status)) {
-                  return { ...job, status: 'Waiting', progress: 0, backendJobId: undefined, error: null, failureReason: null };
-                }
-                return job;
-              });
-            }
-            return prev;
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
+    if (!isHydratedRef.current) return;
+    queueStorageService.saveHistory(history);
+
+    const timer = setTimeout(() => {
+      fetch(getApiUrl('/api/v1/system/history'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ history })
+      }).catch(() => {});
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [history]);
+
+  // Record completed job to History (Rekapan Render)
+  const recordCompletedJob = useCallback((job, extra = {}) => {
+    if (!job) return;
+    const outFiles = job.outputFiles && job.outputFiles.length > 0 ? job.outputFiles : [extra.outputFile || 'output.mp4'];
+    const outFileName = outFiles[0];
+    const outFolder = job.outputFolder || extra.outputFolder || 'Output';
+    const resolvedPath = extra.OUTPUT_PATH || job.OUTPUT_PATH || (outFolder ? `${outFolder.replace(/[/\\]+$/, '')}/${outFileName}` : outFileName);
+
+    const entry = {
+      id: `hist_${job.id || Date.now()}`,
+      jobId: job.id,
+      title: outFileName,
+      outputFiles: outFiles,
+      outputFolder: outFolder,
+      OUTPUT_PATH: resolvedPath,
+      mode: job.mode || extra.mode || 'Render',
+      workspaceName: job.workspaceName || job.workspace || activeWorkspace || 'Default',
+      profileName: job.profileName || extra.profileName || '',
+      totalDurationSec: job.totalDurationSec || extra.totalDurationSec || 0,
+      renderDuration: extra.RENDER_DURATION || job.RENDER_DURATION || null,
+      actualRenderTimeSec: extra.actualRenderTimeSec || job.actualRenderTimeSec || null,
+      fileSize: extra.FILE_SIZE || job.FILE_SIZE || null,
+      completedAt: Date.now(),
+      status: 'Completed'
+    };
+
+    setHistory(prev => {
+      const idx = prev.findIndex(h => h.id === entry.id || h.jobId === entry.jobId);
+      if (idx !== -1) {
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], ...entry };
+        return copy;
+      }
+      return [entry, ...prev];
+    });
+
+    // Send immediately to backend disk
+    fetch(getApiUrl('/api/v1/system/history'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry })
+    }).catch(() => {});
+  }, [activeWorkspace]);
 
   // Global M5 Queue persistence & SSE
   useEffect(() => {
@@ -2210,6 +2348,11 @@ export default function App() {
             const isFailed = status === 'Failed';
             if (isCompleted) {
               addLog(`[M7 SUCCESS] Render complete: ${job.outputFiles[0]}`);
+              const renderDurationSec = job.renderStartTime ? Math.round((Date.now() - job.renderStartTime) / 1000) : null;
+              recordCompletedJob(job, {
+                RENDER_DURATION: renderDurationSec ? `${renderDurationSec}s` : null,
+                actualRenderTimeSec: renderDurationSec
+              });
             }
             return {
               ...job,
@@ -2527,8 +2670,34 @@ export default function App() {
       }
       fetch('/api/v1/system/kill-ffmpeg', { method: 'POST' }).catch(() => {});
     }
-    setQueue(prev => prev.filter(item => item.id !== id));
+    setQueue(prev => {
+      const next = prev.filter(item => item.id !== id);
+      queueStorageService.saveQueue(next);
+      return next;
+    });
     addLog(`Deleted queue item: ${id}`);
+  };
+
+  const handleDeleteHistoryItem = (id) => {
+    setHistory(prev => {
+      const next = prev.filter(h => h.id !== id && h.jobId !== id);
+      queueStorageService.saveHistory(next);
+      return next;
+    });
+    fetch(getApiUrl(`/api/v1/system/history/${id}`), { method: 'DELETE' }).catch(() => {});
+    addLog(`Deleted history item: ${id}`);
+    addNotification('Riwayat Dihapus', 'Item berhasil dihapus dari rekapan riwayat.');
+  };
+
+  const handleClearHistory = () => {
+    if (window.confirm && !window.confirm('Yakin ingin menghapus seluruh rekapan riwayat render?')) {
+      return;
+    }
+    setHistory([]);
+    queueStorageService.clearHistory();
+    fetch(getApiUrl('/api/v1/system/history/clear'), { method: 'POST' }).catch(() => {});
+    addLog('Render history cleared.');
+    addNotification('Riwayat Dibersihkan', 'Seluruh rekapan riwayat render telah dihapus.');
   };
 
   const handleRetryQueueItem = (id) => {
@@ -2584,8 +2753,8 @@ export default function App() {
   const handleClearCompleted = () => {
     setQueue(prev => prev.filter(item => item.status !== 'Completed'));
     setM5Queue(prev => prev.filter(item => item.status !== 'Completed'));
-    addLog('Completed queue jobs cleared.');
-    addNotification('Queue Cleaned', 'Completed jobs removed from Queue Manager');
+    addLog('Completed queue jobs cleared from active view.');
+    addNotification('Antrean Dibersihkan', 'Tugas selesai dipindahkan dan tetap tersimpan aman di Rekapan Riwayat.');
   };
 
   const handleTogglePause = (id) => {
@@ -2846,6 +3015,11 @@ export default function App() {
                         nq[jidx].FILE_SIZE = data.FILE_SIZE;
                         nq[jidx].RENDER_DURATION = data.RENDER_DURATION;
                         newLog = `[SUCCESS] File rendered: ${nq[jidx].outputFiles[0]}`;
+                        recordCompletedJob(nq[jidx], {
+                          OUTPUT_PATH: data.OUTPUT_PATH,
+                          RENDER_DURATION: data.RENDER_DURATION,
+                          FILE_SIZE: data.FILE_SIZE
+                        });
                         pipelineHistoryEngine.addEntry({
                           queueId: nq[jidx].id,
                           profile: nq[jidx].profileName,
@@ -3334,130 +3508,171 @@ export default function App() {
               </button>
             </div>
 
-            {/* 1-Line Ultra-Compact Realtime Telemetry Bar */}
-            <div className="mx-2 mt-1 px-2.5 py-1 bg-[#0d0f14]/90 border border-gray-700/50 rounded-md flex items-center justify-between gap-1.5 shadow-sm font-jetbrains text-[9px] text-gray-300">
-              <div className="flex items-center gap-1">
-                <span className="text-gray-500 font-bold uppercase text-[7.5px] tracking-wider">EST TIME</span>
-                <span className="text-white font-extrabold font-mono text-[9px]">
-                  {realtimeEstTimeMin}m
-                </span>
-              </div>
-
-              <span className="text-gray-700 font-bold">•</span>
-
-              <div className="flex items-center gap-1">
-                <span className="text-gray-500 font-bold uppercase text-[7.5px] tracking-wider">STORAGE</span>
-                <span className="text-white font-extrabold font-mono text-[9px]">
-                  {realtimeEstStorageMb} MB
-                </span>
-              </div>
-
-              <span className="text-gray-700 font-bold">•</span>
-
-              <div className="flex items-center gap-1">
-                <span className="text-orange-500/80 font-bold uppercase text-[7.5px] tracking-wider">ETA</span>
-                <span className="text-orange-400 font-extrabold font-mono text-[9.5px] tracking-tight">
-                  {realtimeLiveETA}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 1-Line Ultra-Simple Scheduler Bar */}
-          <div className="mx-2 mt-1.5 mb-1 p-1.5 bg-[#12151e] border border-orange-500/30 rounded-lg flex items-center justify-between gap-1.5 shadow-sm text-gray-300">
-            {/* Left: Clock Icon + Hour & Minute Dropdowns + Live Countdown */}
-            <div className="flex items-center gap-1 font-mono text-[9px]">
-              <span className="text-orange-400 text-xs">⏰</span>
-              
-              <select
-                value={scheduleHour}
-                onChange={(e) => setScheduleHour(e.target.value)}
-                className="bg-[#080a0f] border border-orange-500/40 text-orange-200 text-[9.5px] font-bold rounded px-1.5 py-0.5 outline-none focus:border-orange-400 cursor-pointer"
+            {/* High-Tech Cyberpunk Tab Switcher: Antrean vs Rekapan Riwayat */}
+            <div className="flex border-t border-gray-700/60 bg-[#0d0f14]/90 p-1 gap-1">
+              <button
+                onClick={() => setQueueTab('QUEUE')}
+                className={`flex-1 py-1 px-2 rounded font-extrabold text-[8px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  queueTab === 'QUEUE'
+                    ? 'bg-gradient-to-r from-orange-600/30 to-amber-600/20 text-orange-400 border border-orange-500/50 shadow-[0_0_12px_rgba(249,115,22,0.3)]'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/5 border border-transparent'
+                }`}
               >
-                {Array.from({ length: 24 }).map((_, i) => {
-                  const hStr = String(i).padStart(2, '0');
-                  return (
-                    <option key={hStr} value={hStr} className="bg-[#12141a] text-gray-200">
-                      {hStr}:00
-                    </option>
-                  );
-                })}
-              </select>
-
-              <span className="text-orange-400 font-bold">:</span>
-
-              <select
-                value={scheduleMinute}
-                onChange={(e) => setScheduleMinute(e.target.value)}
-                className="bg-[#080a0f] border border-orange-500/40 text-orange-200 text-[9.5px] font-bold rounded px-1.5 py-0.5 outline-none focus:border-orange-400 cursor-pointer"
-              >
-                {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(mStr => (
-                  <option key={mStr} value={mStr} className="bg-[#12141a] text-gray-200">
-                    {mStr}
-                  </option>
-                ))}
-              </select>
-
-              {isScheduleEnabled && scheduleCountdown && (
-                <span className="text-[8px] font-mono text-amber-300 bg-amber-950/70 border border-amber-500/40 px-1.5 py-0.5 rounded font-bold ml-1">
-                  ⏳ {scheduleCountdown}
+                <span>🎬 Antrean Aktif</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[7.5px] font-mono font-bold ${
+                  queueTab === 'QUEUE' ? 'bg-orange-500 text-black' : 'bg-gray-800 text-gray-400'
+                }`}>
+                  {queue.filter(j => j.status !== 'Completed').length + m5Queue.filter(j => j.status !== 'Completed').length}
                 </span>
-              )}
+              </button>
+
+              <button
+                onClick={() => setQueueTab('HISTORY')}
+                className={`flex-1 py-1 px-2 rounded font-extrabold text-[8px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  queueTab === 'HISTORY'
+                    ? 'bg-gradient-to-r from-emerald-600/30 to-teal-600/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <span>📜 Rekapan Riwayat</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[7.5px] font-mono font-bold ${
+                  queueTab === 'HISTORY' ? 'bg-emerald-500 text-black' : 'bg-gray-800 text-gray-400'
+                }`}>
+                  {history.length}
+                </span>
+              </button>
             </div>
 
-            {/* Right: Toggle Switch */}
-            <button
-              onClick={() => {
-                const nextState = !isScheduleEnabled;
-                setIsScheduleEnabled(nextState);
-                addLog(`Scheduled Render ${nextState ? `ENABLED for ${scheduleHour}:${scheduleMinute}` : 'DISABLED'}`);
-              }}
-              className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-wider uppercase transition-all flex items-center gap-1 border shrink-0 cursor-pointer ${
-                isScheduleEnabled 
-                  ? 'bg-orange-500/20 text-orange-400 border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]' 
-                  : 'bg-gray-800/80 text-gray-400 border-gray-700 hover:text-gray-200'
-              }`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${isScheduleEnabled ? 'bg-orange-400 animate-ping' : 'bg-gray-500'}`}></span>
-              {isScheduleEnabled ? 'SCHEDULER ON' : 'SCHEDULER OFF'}
-            </button>
+            {queueTab === 'QUEUE' && (
+              /* 1-Line Ultra-Compact Realtime Telemetry Bar */
+              <div className="mx-2 mt-1 px-2.5 py-1 bg-[#0d0f14]/90 border border-gray-700/50 rounded-md flex items-center justify-between gap-1.5 shadow-sm font-jetbrains text-[9px] text-gray-300">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500 font-bold uppercase text-[7.5px] tracking-wider">EST TIME</span>
+                  <span className="text-white font-extrabold font-mono text-[9px]">
+                    {realtimeEstTimeMin}m
+                  </span>
+                </div>
+
+                <span className="text-gray-700 font-bold">•</span>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500 font-bold uppercase text-[7.5px] tracking-wider">STORAGE</span>
+                  <span className="text-white font-extrabold font-mono text-[9px]">
+                    {realtimeEstStorageMb} MB
+                  </span>
+                </div>
+
+                <span className="text-gray-700 font-bold">•</span>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-orange-500/80 font-bold uppercase text-[7.5px] tracking-wider">ETA</span>
+                  <span className="text-orange-400 font-extrabold font-mono text-[9.5px] tracking-tight">
+                    {realtimeLiveETA}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 1-Line Ultra-Minimalist Engine Summary Bar */}
-          <div className="mx-2 mt-1.5 mb-1 px-2.5 py-1 bg-[#0d0f14]/90 border border-gray-700/50 rounded-md flex items-center justify-between gap-1.5 shadow-sm font-jetbrains text-[9px] text-gray-300">
-            <div className="flex items-center gap-1 font-extrabold uppercase text-[8px] tracking-wider text-gray-400">
-              <span className="text-orange-400 text-[9px]">⚡</span>
-              <span>SUMMARY:</span>
-            </div>
+          {queueTab === 'QUEUE' && (
+            <>
+              {/* 1-Line Ultra-Simple Scheduler Bar */}
+              <div className="mx-2 mt-1.5 mb-1 p-1.5 bg-[#12151e] border border-orange-500/30 rounded-lg flex items-center justify-between gap-1.5 shadow-sm text-gray-300">
+                {/* Left: Clock Icon + Hour & Minute Dropdowns + Live Countdown */}
+                <div className="flex items-center gap-1 font-mono text-[9px]">
+                  <span className="text-orange-400 text-xs">⏰</span>
+                  
+                  <select
+                    value={scheduleHour}
+                    onChange={(e) => setScheduleHour(e.target.value)}
+                    className="bg-[#080a0f] border border-orange-500/40 text-orange-200 text-[9.5px] font-bold rounded px-1.5 py-0.5 outline-none focus:border-orange-400 cursor-pointer"
+                  >
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const hStr = String(i).padStart(2, '0');
+                      return (
+                        <option key={hStr} value={hStr} className="bg-[#12141a] text-gray-200">
+                          {hStr}:00
+                        </option>
+                      );
+                    })}
+                  </select>
 
-            <div className="flex items-center gap-2 text-[8px] font-mono">
-              <span className="flex items-center gap-1">
-                <span className="text-gray-500 uppercase">OK:</span>
-                <span className="text-emerald-400 font-extrabold">{renderSuccessCount}</span>
-              </span>
+                  <span className="text-orange-400 font-bold">:</span>
 
-              <span className="text-gray-700">•</span>
+                  <select
+                    value={scheduleMinute}
+                    onChange={(e) => setScheduleMinute(e.target.value)}
+                    className="bg-[#080a0f] border border-orange-500/40 text-orange-200 text-[9.5px] font-bold rounded px-1.5 py-0.5 outline-none focus:border-orange-400 cursor-pointer"
+                  >
+                    {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(mStr => (
+                      <option key={mStr} value={mStr} className="bg-[#12141a] text-gray-200">
+                        {mStr}
+                      </option>
+                    ))}
+                  </select>
 
-              <span className="flex items-center gap-1">
-                <span className="text-gray-500 uppercase">FAIL:</span>
-                <span className={`font-extrabold ${renderFailedCount > 0 ? 'text-red-400' : 'text-gray-400'}`}>{renderFailedCount}</span>
-              </span>
+                  {isScheduleEnabled && scheduleCountdown && (
+                    <span className="text-[8px] font-mono text-amber-300 bg-amber-950/70 border border-amber-500/40 px-1.5 py-0.5 rounded font-bold ml-1">
+                      ⏳ {scheduleCountdown}
+                    </span>
+                  )}
+                </div>
 
-              <span className="text-gray-700">•</span>
+                {/* Right: Toggle Switch */}
+                <button
+                  onClick={() => {
+                    const nextState = !isScheduleEnabled;
+                    setIsScheduleEnabled(nextState);
+                    addLog(`Scheduled Render ${nextState ? `ENABLED for ${scheduleHour}:${scheduleMinute}` : 'DISABLED'}`);
+                  }}
+                  className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-wider uppercase transition-all flex items-center gap-1 border shrink-0 cursor-pointer ${
+                    isScheduleEnabled 
+                      ? 'bg-orange-500/20 text-orange-400 border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]' 
+                      : 'bg-gray-800/80 text-gray-400 border-gray-700 hover:text-gray-200'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${isScheduleEnabled ? 'bg-orange-400 animate-ping' : 'bg-gray-500'}`}></span>
+                  {isScheduleEnabled ? 'SCHEDULER ON' : 'SCHEDULER OFF'}
+                </button>
+              </div>
 
-              <span className="flex items-center gap-1">
-                <span className="text-gray-500 uppercase">DISK:</span>
-                <span className="text-gray-200 font-extrabold">{totalStorageGb} GB</span>
-              </span>
+              {/* 1-Line Ultra-Minimalist Engine Summary Bar */}
+              <div className="mx-2 mt-1.5 mb-1 px-2.5 py-1 bg-[#0d0f14]/90 border border-gray-700/50 rounded-md flex items-center justify-between gap-1.5 shadow-sm font-jetbrains text-[9px] text-gray-300">
+                <div className="flex items-center gap-1 font-extrabold uppercase text-[8px] tracking-wider text-gray-400">
+                  <span className="text-orange-400 text-[9px]">⚡</span>
+                  <span>SUMMARY:</span>
+                </div>
 
-              <span className="text-gray-700">•</span>
+                <div className="flex items-center gap-2 text-[8px] font-mono">
+                  <span className="flex items-center gap-1">
+                    <span className="text-gray-500 uppercase">OK:</span>
+                    <span className="text-emerald-400 font-extrabold">{renderSuccessCount}</span>
+                  </span>
 
-              <span className="flex items-center gap-1">
-                <span className="text-gray-500 uppercase">OUT:</span>
-                <span className="text-cyan-300 font-extrabold">{totalOutputsCount}</span>
-              </span>
-            </div>
-          </div>
+                  <span className="text-gray-700">•</span>
+
+                  <span className="flex items-center gap-1">
+                    <span className="text-gray-500 uppercase">FAIL:</span>
+                    <span className={`font-extrabold ${renderFailedCount > 0 ? 'text-red-400' : 'text-gray-400'}`}>{renderFailedCount}</span>
+                  </span>
+
+                  <span className="text-gray-700">•</span>
+
+                  <span className="flex items-center gap-1">
+                    <span className="text-gray-500 uppercase">DISK:</span>
+                    <span className="text-gray-200 font-extrabold">{totalStorageGb} GB</span>
+                  </span>
+
+                  <span className="text-gray-700">•</span>
+
+                  <span className="flex items-center gap-1">
+                    <span className="text-gray-500 uppercase">OUT:</span>
+                    <span className="text-cyan-300 font-extrabold">{totalOutputsCount}</span>
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Filter & Controls Toolbar */}
           {(() => {
@@ -3547,6 +3762,234 @@ export default function App() {
               }
               return true;
             }).length;
+
+            if (queueTab === 'HISTORY') {
+              const combinedHistory = [...history];
+              for (const cj of combinedQueue.filter(j => j.status === 'Completed')) {
+                if (!combinedHistory.some(h => h.id === cj.id || h.jobId === cj.id || h.id === `hist_${cj.id}`)) {
+                  combinedHistory.unshift({
+                    id: `hist_${cj.id}`,
+                    jobId: cj.id,
+                    title: cj.outputFiles ? cj.outputFiles[0] : (cj.renderName || 'Untitled'),
+                    outputFiles: cj.outputFiles || [],
+                    outputFolder: cj.outputFolder || 'Output',
+                    OUTPUT_PATH: cj.OUTPUT_PATH || (cj.outputFolder ? `${cj.outputFolder}/${cj.outputFiles?.[0] || ''}` : ''),
+                    mode: cj.mode,
+                    workspaceName: cj.workspaceName || cj.workspace || activeWorkspace || 'Default',
+                    profileName: cj.profileName,
+                    totalDurationSec: cj.totalDurationSec,
+                    renderDuration: cj.RENDER_DURATION,
+                    actualRenderTimeSec: cj.actualRenderTimeSec,
+                    fileSize: cj.FILE_SIZE,
+                    completedAt: cj.completedAt || Date.now(),
+                    status: 'Completed'
+                  });
+                }
+              }
+
+              const filteredHistory = combinedHistory.filter(item => {
+                if (historyWorkspaceFilter !== 'ALL') {
+                  const targetWs = item.workspaceName || item.workspace || 'Default';
+                  if (targetWs !== historyWorkspaceFilter) return false;
+                }
+                if (historySearchQuery && historySearchQuery.trim()) {
+                  const q = historySearchQuery.toLowerCase();
+                  const matchTitle = (item.title || '').toLowerCase().includes(q);
+                  const matchMode = (item.mode || '').toLowerCase().includes(q);
+                  const matchWs = (item.workspaceName || '').toLowerCase().includes(q);
+                  if (!matchTitle && !matchMode && !matchWs) return false;
+                }
+                return true;
+              });
+
+              const availableHistWorkspaces = Array.from(new Set(combinedHistory.map(h => h.workspaceName || 'Default'))).filter(Boolean);
+
+              return (
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                  {/* History Toolbar */}
+                  <div className="mx-2 mt-1 p-1.5 bg-[#0f121a] border border-emerald-900/50 rounded-lg space-y-1.5 shrink-0 shadow-md">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1">
+                        <span className="text-emerald-400 text-xs">📜</span>
+                        <span className="text-[9px] font-extrabold text-white uppercase tracking-wider">Rekapan Selesai</span>
+                        <span className="text-[8px] font-mono px-1.5 py-0.2 bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 rounded font-bold">
+                          {combinedHistory.length}
+                        </span>
+                      </div>
+                      {combinedHistory.length > 0 && (
+                        <button
+                          onClick={handleClearHistory}
+                          className="text-[7.5px] px-1.5 py-0.5 rounded bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-800/50 font-bold transition-all cursor-pointer flex items-center gap-0.5"
+                          title="Hapus seluruh riwayat rekapan"
+                        >
+                          <span>🗑️ Bersihkan Semua</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Search & Workspace Filter */}
+                    <div className="flex items-center gap-1 text-[8px]">
+                      <input
+                        type="text"
+                        placeholder="Cari file rekapan..."
+                        value={historySearchQuery}
+                        onChange={(e) => setHistorySearchQuery(e.target.value)}
+                        className="flex-1 bg-[#090b10] border border-gray-700 text-gray-200 text-[8px] rounded px-1.5 py-0.5 outline-none focus:border-emerald-500/80 font-mono"
+                      />
+                      <select
+                        value={historyWorkspaceFilter}
+                        onChange={(e) => setHistoryWorkspaceFilter(e.target.value)}
+                        className="bg-[#090b10] border border-gray-700 text-gray-200 text-[8px] font-bold rounded px-1.5 py-0.5 outline-none focus:border-emerald-500/80 cursor-pointer max-w-[110px] truncate"
+                      >
+                        <option value="ALL">Semua WS ({combinedHistory.length})</option>
+                        {activeWorkspace && <option value={activeWorkspace}>WS Aktif: {activeWorkspace}</option>}
+                        {availableHistWorkspaces.filter(ws => ws !== activeWorkspace).map(ws => (
+                          <option key={ws} value={ws}>WS: {ws}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* History Items List */}
+                  <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+                    {filteredHistory.length === 0 ? (
+                      <div className="text-center text-gray-500 py-12 font-mono text-[9.5px] space-y-1.5">
+                        <div className="text-xl opacity-40">🎬</div>
+                        <div className="font-bold text-gray-400">BELUM ADA REKAPAN RENDER</div>
+                        <p className="text-[8px] text-gray-600 max-w-[220px] mx-auto">
+                          Video yang selesai di-render akan otomatis masuk ke sini dan tersimpan permanen di disk.
+                        </p>
+                      </div>
+                    ) : (
+                      filteredHistory.map((item, idx) => {
+                        const folderPath = item.OUTPUT_PATH || item.outputFolder || '';
+                        const handleOpen = (e) => {
+                          if (e) e.stopPropagation();
+                          if (folderPath) {
+                            fetch(getApiUrl('/api/v1/system/open-folder'), {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ path: folderPath })
+                            }).catch(err => console.error(err));
+                          }
+                        };
+
+                        const formatCompletedTime = (t) => {
+                          if (!t) return '';
+                          try {
+                            const d = new Date(t);
+                            if (isNaN(d.getTime())) return '';
+                            const pad = (n) => String(n).padStart(2, '0');
+                            return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                          } catch (e) {
+                            return '';
+                          }
+                        };
+
+                        return (
+                          <div
+                            key={item.id || idx}
+                            className="p-1.5 rounded-md bg-[#11161d]/95 border border-emerald-900/40 hover:border-emerald-500/50 flex flex-col gap-1.5 transition-all shadow-sm relative group font-sans"
+                          >
+                            {/* Header: Number, File Title, and Delete button */}
+                            <div className="flex justify-between items-start gap-1.5 relative z-10">
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 text-[8.5px] font-mono font-black shrink-0">
+                                  #{String(idx + 1).padStart(2, '0')}
+                                </span>
+                                <span className="font-black text-white font-jetbrains text-[10px] truncate" title={item.title}>
+                                  {item.title}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className="px-1.5 py-0.2 rounded text-[7.5px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                                  SELESAI
+                                </span>
+                                <button
+                                  onClick={() => handleDeleteHistoryItem(item.id)}
+                                  className="text-gray-500 hover:text-red-400 text-[9px] p-0.5 cursor-pointer transition-colors"
+                                  title="Hapus dari rekapan riwayat"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Badges: Mode, Workspace, Durations, Date */}
+                            <div className="flex items-center gap-1 flex-wrap text-[7.5px] relative z-10">
+                              <span className={`uppercase font-black tracking-wider px-1.5 py-0.2 rounded border ${getModeBadgeClass(item.mode)}`}>
+                                {item.mode}
+                              </span>
+
+                              <span className="text-amber-300 font-extrabold tracking-wider bg-amber-950/70 px-1.5 py-0.2 rounded border border-amber-800/50">
+                                📂 {item.workspaceName || 'Default'}
+                              </span>
+
+                              {item.renderDuration && (
+                                <span className="text-amber-300 font-jetbrains font-bold bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-500/40 flex items-center gap-0.5">
+                                  ⚡ {item.renderDuration}
+                                </span>
+                              )}
+
+                              {item.totalDurationSec ? (
+                                <span className="text-emerald-400 font-jetbrains font-bold bg-emerald-950/50 px-1.5 py-0.2 rounded border border-emerald-800/40">
+                                  🎬 {Math.floor(item.totalDurationSec / 60)}m {Math.round(item.totalDurationSec % 60)}s
+                                </span>
+                              ) : null}
+
+                              {item.fileSize && (
+                                <span className="text-cyan-300 font-jetbrains font-bold bg-cyan-950/50 px-1.5 py-0.2 rounded border border-cyan-800/40">
+                                  💾 {item.fileSize}
+                                </span>
+                              )}
+
+                              {item.completedAt && (
+                                <span className="text-gray-400 font-mono text-[7px] ml-auto">
+                                  🕒 {formatCompletedTime(item.completedAt)}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Clickable Output Folder Path */}
+                            {folderPath && (
+                              <div
+                                onClick={handleOpen}
+                                title="Klik untuk membuka lokasi di File Explorer"
+                                className="text-blue-400 font-jetbrains text-[8px] flex items-center gap-1 cursor-pointer hover:text-blue-300 transition-colors break-all bg-black/40 px-1.5 py-0.5 rounded border border-blue-900/40 relative z-10"
+                              >
+                                <span className="text-blue-400 shrink-0">📁</span>
+                                <span className="truncate">{folderPath}</span>
+                              </div>
+                            )}
+
+                            {/* Action Buttons: Open Folder, Copy Path */}
+                            <div className="flex gap-1 pt-0.5 relative z-10">
+                              <button
+                                onClick={handleOpen}
+                                className="flex-1 px-2 py-0.5 text-[8px] bg-blue-950/80 hover:bg-blue-900 text-blue-300 rounded border border-blue-600/50 transition-colors flex items-center justify-center gap-1 font-bold cursor-pointer"
+                              >
+                                📁 Buka Folder
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(folderPath);
+                                  addNotification('Path Disalin', folderPath);
+                                }}
+                                className="flex-1 px-2 py-0.5 text-[8px] bg-[#1a1c23] hover:bg-[#2d3247] text-gray-400 hover:text-white rounded border border-[#2d3247] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                📋 Salin Path
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <>

@@ -168,37 +168,154 @@ router.post('/api/v1/system/clean-cache/immediate', (req, res) => {
     res.standardResponse({ status: "ok" });
 });
 
-// --- Persistent Queue Endpoints ---
+// --- Persistent Queue & Render History Endpoints (Rock-Solid Disk Storage) ---
+const getDataDir = () => {
+    const fs = require('fs');
+    const path = require('path');
+    const installDir = AppPaths.getAppInstallDir ? AppPaths.getAppInstallDir() : process.cwd();
+    const dataDir = path.join(installDir, '.mediafactory_data');
+    if (!fs.existsSync(dataDir)) {
+        try { fs.mkdirSync(dataDir, { recursive: true }); } catch (e) {}
+    }
+    return dataDir;
+};
+
+const safeReadJson = (filePath, defaultVal = []) => {
+    const fs = require('fs');
+    try {
+        if (fs.existsSync(filePath)) {
+            const raw = fs.readFileSync(filePath, 'utf8');
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : defaultVal;
+        }
+    } catch (e) {
+        console.error(`[safeReadJson] Error reading ${filePath}:`, e.message);
+    }
+    return defaultVal;
+};
+
+const safeWriteJson = (filePath, data) => {
+    const fs = require('fs');
+    const path = require('path');
+    const tempPath = `${filePath}.tmp.${Date.now()}`;
+    const bakPath = `${filePath}.bak`;
+    try {
+        fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf8');
+        if (fs.existsSync(filePath)) {
+            try { fs.copyFileSync(filePath, bakPath); } catch (e) {}
+        }
+        fs.renameSync(tempPath, filePath);
+        return true;
+    } catch (e) {
+        console.error(`[safeWriteJson] Error writing ${filePath}:`, e.message);
+        try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (e2) {}
+        return false;
+    }
+};
+
 router.get('/api/v1/system/queue', (req, res) => {
     try {
-        const fs = require('fs');
         const path = require('path');
-        const installDir = AppPaths.getAppInstallDir ? AppPaths.getAppInstallDir() : process.cwd();
-        const queueFile = path.join(installDir, '.mediafactory_data', 'pipeline_queue.json');
-        if (fs.existsSync(queueFile)) {
-            const raw = fs.readFileSync(queueFile, 'utf8');
-            return res.standardResponse({ queue: JSON.parse(raw) });
-        }
-        return res.standardResponse({ queue: [] });
+        const dataDir = getDataDir();
+        const queueFile = path.join(dataDir, 'pipeline_queue.json');
+        const historyFile = path.join(dataDir, 'render_history.json');
+        const queue = safeReadJson(queueFile, []);
+        const history = safeReadJson(historyFile, []);
+        return res.standardResponse({ queue, history });
     } catch (e) {
         console.error('[Backend Queue Get Error]', e);
-        return res.standardResponse({ queue: [] });
+        return res.standardResponse({ queue: [], history: [] });
     }
 });
 
 router.post('/api/v1/system/queue', (req, res) => {
     try {
-        const fs = require('fs');
         const path = require('path');
-        const installDir = AppPaths.getAppInstallDir ? AppPaths.getAppInstallDir() : process.cwd();
-        const dataDir = path.join(installDir, '.mediafactory_data');
-        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        const dataDir = getDataDir();
         const queueFile = path.join(dataDir, 'pipeline_queue.json');
         const queueData = req.body.queue || [];
-        fs.writeFileSync(queueFile, JSON.stringify(queueData, null, 2), 'utf8');
+        
+        // Anti-wipe safeguard: If existing file has items and incoming is empty without forceEmpty flag, preserve existing
+        const existing = safeReadJson(queueFile, []);
+        if (existing.length > 0 && queueData.length === 0 && !req.body.forceEmpty) {
+            console.log('[Backend Queue] Anti-wipe triggered: Preserving existing queue items on disk.');
+            return res.standardResponse({ saved: false, count: existing.length, preserved: true });
+        }
+        
+        safeWriteJson(queueFile, queueData);
         return res.standardResponse({ saved: true, count: queueData.length });
     } catch (e) {
         console.error('[Backend Queue Post Error]', e);
+        return res.standardResponse(null, { status: "error", message: e.message }, false);
+    }
+});
+
+router.get('/api/v1/system/history', (req, res) => {
+    try {
+        const path = require('path');
+        const dataDir = getDataDir();
+        const historyFile = path.join(dataDir, 'render_history.json');
+        const history = safeReadJson(historyFile, []);
+        return res.standardResponse({ history });
+    } catch (e) {
+        console.error('[Backend History Get Error]', e);
+        return res.standardResponse({ history: [] });
+    }
+});
+
+router.post('/api/v1/system/history', (req, res) => {
+    try {
+        const path = require('path');
+        const dataDir = getDataDir();
+        const historyFile = path.join(dataDir, 'render_history.json');
+        let history = safeReadJson(historyFile, []);
+
+        if (req.body.entry) {
+            const entry = req.body.entry;
+            const existingIdx = history.findIndex(h => h.id === entry.id || (entry.jobId && h.jobId === entry.jobId));
+            if (existingIdx !== -1) {
+                history[existingIdx] = { ...history[existingIdx], ...entry };
+            } else {
+                history.unshift(entry);
+            }
+        } else if (Array.isArray(req.body.history)) {
+            history = req.body.history;
+        }
+
+        // Keep maximum 2000 recent history entries
+        if (history.length > 2000) history = history.slice(0, 2000);
+
+        safeWriteJson(historyFile, history);
+        return res.standardResponse({ saved: true, count: history.length });
+    } catch (e) {
+        console.error('[Backend History Post Error]', e);
+        return res.standardResponse(null, { status: "error", message: e.message }, false);
+    }
+});
+
+router.delete('/api/v1/system/history/:id', (req, res) => {
+    try {
+        const path = require('path');
+        const dataDir = getDataDir();
+        const historyFile = path.join(dataDir, 'render_history.json');
+        const { id } = req.params;
+        let history = safeReadJson(historyFile, []);
+        const filtered = history.filter(h => h.id !== id && h.jobId !== id);
+        safeWriteJson(historyFile, filtered);
+        return res.standardResponse({ deleted: true, count: filtered.length });
+    } catch (e) {
+        return res.standardResponse(null, { status: "error", message: e.message }, false);
+    }
+});
+
+router.post('/api/v1/system/history/clear', (req, res) => {
+    try {
+        const path = require('path');
+        const dataDir = getDataDir();
+        const historyFile = path.join(dataDir, 'render_history.json');
+        safeWriteJson(historyFile, []);
+        return res.standardResponse({ cleared: true, count: 0 });
+    } catch (e) {
         return res.standardResponse(null, { status: "error", message: e.message }, false);
     }
 });
