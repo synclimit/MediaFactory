@@ -152,7 +152,19 @@ export default function App() {
     return localStorage.getItem('pipelineDrawerCollapsed') === 'true';
   });
 
-  const [appState, setAppState] = useState('PICKER'); // 'PICKER' | 'WIZARD' | 'EDITOR' | 'WORKSPACE_LOADING'
+  const [appState, setAppState] = useState(() => {
+    const savedState = localStorage.getItem('mf_app_state');
+    const savedWs = localStorage.getItem('mf_active_workspace');
+    if (savedState === 'PICKER') return 'PICKER';
+    return savedWs ? 'EDITOR' : 'PICKER';
+  });
+
+  useEffect(() => {
+    if (appState) {
+      localStorage.setItem('mf_app_state', appState);
+    }
+  }, [appState]);
+
   const [activeWorkspace, setActiveWorkspace] = useState(() => localStorage.getItem('mf_active_workspace') || 'Test 1');
   const [activeWorkspaceAvatar, setActiveWorkspaceAvatar] = useState(() => {
     const cur = localStorage.getItem('mf_active_workspace') || 'Test 1';
@@ -269,8 +281,16 @@ export default function App() {
     return () => window.removeEventListener('workspace_settings_updated', handleUpdate);
   }, [activeWorkspace, loadWorkspaceConfig]);
 
-  // Removed isProfileDrawerOpen
-  const [activeMode, setActiveMode] = useState('Mode 3'); // Set default Mode 3 to test enhancements
+  // Active Mode with persistence
+  const [activeMode, setActiveMode] = useState(() => {
+    return localStorage.getItem('mf_active_mode') || 'Mode 1';
+  });
+
+  useEffect(() => {
+    if (activeMode) {
+      localStorage.setItem('mf_active_mode', activeMode);
+    }
+  }, [activeMode]);
   const [autoSaveStatus, setAutoSaveStatus] = useState('Draft Saved');
   const [logs, setLogs] = useState([
     '[SYSTEM] MediaFactory Validation Engine Initialized.',
@@ -557,8 +577,9 @@ export default function App() {
   // Calculate Mode 1 slots dynamically using precise seconds (at least 1 slot if video loaded)
   const m1SlotCount = selectedVideo?.metadata ? Math.max(1, Math.floor(selectedVideo.metadata.durationSec / (m1TargetSegment * 60))) : 0;
 
-  // Sync slots when slot count changes
+  // Sync slots when slot count changes (safe: do not wipe when no video loaded)
   useEffect(() => {
+    if (!selectedVideo?.metadata || m1SlotCount <= 0) return;
     setM1Slots(prev => {
       const next = [...prev];
       if (next.length < m1SlotCount) {
@@ -589,7 +610,54 @@ export default function App() {
       // Update segmentIndex for remaining slots just in case
       return next.map((slot, idx) => ({ ...slot, segmentIndex: idx + 1 }));
     });
-  }, [m1SlotCount, m1ResetTrigger]);
+  }, [m1SlotCount, m1ResetTrigger, selectedVideo?.metadata]);
+
+  // Hydrate M1 Draft from localStorage
+  useEffect(() => {
+    if (!activeWorkspace) return;
+    try {
+      const savedM1 = localStorage.getItem(`mf_m1_draft_${activeWorkspace}`);
+      if (savedM1) {
+        const parsed = JSON.parse(savedM1);
+        if (parsed.videoMetadata && !selectedVideo) {
+          setSelectedVideo({
+            file: null,
+            previewUrl: null,
+            metadata: parsed.videoMetadata
+          });
+        }
+        if (parsed.slots && Array.isArray(parsed.slots) && parsed.slots.length > 0) {
+          setM1Slots(parsed.slots);
+        }
+        if (parsed.targetSegment) setM1TargetSegment(parsed.targetSegment);
+        if (parsed.watermark !== undefined) setM1Watermark(parsed.watermark);
+        if (parsed.subscribe !== undefined) setM1Subscribe(parsed.subscribe);
+        if (parsed.transform) setM1VideoTransform(parsed.transform);
+      }
+    } catch(e) {
+      console.warn('[M1] Failed to hydrate draft:', e);
+    }
+  }, [activeWorkspace]);
+
+  // Persist M1 Draft to localStorage on changes
+  useEffect(() => {
+    if (!activeWorkspace) return;
+    try {
+      if (m1Slots.length > 0 || selectedVideo?.metadata) {
+        const draft = {
+          slots: m1Slots,
+          targetSegment: m1TargetSegment,
+          watermark: m1Watermark,
+          subscribe: m1Subscribe,
+          transform: m1VideoTransform,
+          videoMetadata: selectedVideo?.metadata || null
+        };
+        localStorage.setItem(`mf_m1_draft_${activeWorkspace}`, JSON.stringify(draft));
+      }
+    } catch(e) {
+      console.warn('[M1] Failed to persist draft:', e);
+    }
+  }, [activeWorkspace, m1Slots, m1TargetSegment, m1Watermark, m1Subscribe, m1VideoTransform, selectedVideo]);
 
   // Slot updates
   const updateM1Slot = (index, field, value) => {
@@ -1226,6 +1294,7 @@ export default function App() {
   const handleWorkspaceSelected = async (name) => {
     try {
         localStorage.setItem('mf_active_workspace', name);
+        localStorage.setItem('mf_app_state', 'EDITOR');
         const res = await fetch(getApiUrl(`/api/v1/system/workspace/${name}/settings`));
         const data = await res.json();
         if (data.success && data.data) {
@@ -2510,11 +2579,19 @@ export default function App() {
       
       const rawW = probeData.rawWidth || (probeData.resolution ? parseInt(probeData.resolution.split(/[x×]/)[0]) : 1920);
       const rawH = probeData.rawHeight || (probeData.resolution ? parseInt(probeData.resolution.split(/[x×]/)[1]) : 1080);
+      const srcRatio = rawW / rawH;
+      const targetRatio = 16 / 9;
+      let autoScale = 100;
+      if (srcRatio < targetRatio) {
+        autoScale = Math.max(100, Math.round((targetRatio / srcRatio) * 100));
+      } else if (srcRatio > targetRatio) {
+        autoScale = Math.max(100, Math.round((srcRatio / targetRatio) * 100));
+      }
 
       setM1VideoTransform({
         x: 0,
         y: 0,
-        scale: 100,
+        scale: autoScale,
         rotation: 0,
         flipH: false,
         flipV: false,
@@ -2637,6 +2714,7 @@ export default function App() {
       setM1Slots([]);
       setM1ResetTrigger(prev => prev + 1);
       setM1SuccessMsg(false);
+      try { localStorage.removeItem(`mf_m1_draft_${activeWorkspace}`); } catch(e) {}
       addLog('Mode 1 Reset. Profile kept.');
     } else if (mode === 'Mode 2') {
       setM2AudioPool([]);
@@ -4385,7 +4463,7 @@ export default function App() {
             activeWorkspace={activeWorkspace}
             isOpen={isWorkspaceDrawerOpen}
             onClose={() => setIsWorkspaceDrawerOpen(false)}
-            onSwitch={() => { setIsWorkspaceDrawerOpen(false); setAppState('PICKER'); }}
+            onSwitch={() => { setIsWorkspaceDrawerOpen(false); localStorage.setItem('mf_app_state', 'PICKER'); setAppState('PICKER'); }}
             onSettings={() => { setIsWorkspaceDrawerOpen(false); setIsWorkspaceSettingsOpen(true); }}
             onRename={(newName) => setActiveWorkspace(newName)}
         />

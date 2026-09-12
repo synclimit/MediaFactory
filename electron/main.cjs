@@ -46,7 +46,6 @@ if (app.isPackaged) {
             if (mainWindow) {
                 if (mainWindow.isMinimized()) mainWindow.restore();
                 mainWindow.focus();
-                try { mainWindow.webContents.reloadIgnoringCache(); } catch(e) {}
             }
         });
     }

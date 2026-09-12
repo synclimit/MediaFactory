@@ -40,7 +40,16 @@ export default defineConfig({
       }
     },
     watch: {
-      ignored: ['**/Output/**', '**/.mediafactory/**', '**/Workspace/**']
+      ignored: [
+        '**/Output/**',
+        '**/.mediafactory/**',
+        '**/.mediafactory_data/**',
+        '**/Workspaces/**',
+        '**/Workspace/**',
+        '**/*.log',
+        '**/*.tmp*',
+        '**/Cache/**'
+      ]
     }
   },
   build: {

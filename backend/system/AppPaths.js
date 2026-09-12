@@ -17,22 +17,34 @@ class AppPaths {
         this.outputDir = path.join(installDir, 'Output');
         this.settingsFile = path.join(appDataRoot, 'system_settings.json');
 
-        if (fs.existsSync(this.settingsFile)) {
-            try {
-                const settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8'));
-                if (settings.workspaceDir) {
-                    this.workspaceDir = settings.workspaceDir;
-                }
-                if (settings.outputDir) {
-                    this.outputDir = settings.outputDir;
-                }
-                if (settings.cacheDir) {
-                    this.cacheDir = settings.cacheDir;
-                }
-                if (settings.cacheCleanupMode) {
-                    this.cacheCleanupMode = settings.cacheCleanupMode;
-                }
-            } catch (e) { console.error('Failed to load system settings:', e); }
+        const candidateSettingsFiles = [
+            this.settingsFile,
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'system_settings.json'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'system_settings.json'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactoryData', 'system_settings.json'),
+            'd:/MediaFactory/.mediafactory_data/system_settings.json',
+            'c:/.mediafactory_data/system_settings.json'
+        ];
+
+        for (const sf of candidateSettingsFiles) {
+            if (fs.existsSync(sf)) {
+                try {
+                    const settings = JSON.parse(fs.readFileSync(sf, 'utf8'));
+                    if (settings.workspaceDir && fs.existsSync(settings.workspaceDir)) {
+                        this.workspaceDir = settings.workspaceDir;
+                    }
+                    if (settings.outputDir) {
+                        this.outputDir = settings.outputDir;
+                    }
+                    if (settings.cacheDir) {
+                        this.cacheDir = settings.cacheDir;
+                    }
+                    if (settings.cacheCleanupMode) {
+                        this.cacheCleanupMode = settings.cacheCleanupMode;
+                    }
+                    break;
+                } catch (e) { console.error('Failed to load system settings:', e); }
+            }
         }
 
         this._ensureDirs();

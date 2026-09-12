@@ -46,7 +46,46 @@ class WorkspaceService {
     _getWorkspacePath(name) {
         if (!name) return path.join(this.basePath, 'default');
         const safeName = String(name).replace(/[/\\?%*:|"<>]/g, '_').trim();
-        return path.join(this.basePath, safeName || 'default');
+        const primaryPath = path.join(this.basePath, safeName || 'default');
+
+        const fsSync = require('fs');
+        if (fsSync.existsSync(primaryPath)) return primaryPath;
+
+        const os = require('os');
+        const candidateBases = [
+            this.basePath,
+            path.resolve(process.cwd(), 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'Electron', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Local', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactory'),
+            path.join(os.homedir(), 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'MediaFactory'),
+            'c:/MediaFactory/Workspaces',
+            'c:/MediaFactoryData/Workspaces',
+            'c:/.mediafactory_data/Workspaces',
+            'd:/MediaFactory/Workspaces',
+            'd:/MediaFactory/.mediafactory/Workspaces',
+            'd:/MediaFactory/.mediafactory_data/Workspaces',
+            'e:/MediaFactory/Workspaces',
+            'f:/MediaFactory/Workspaces'
+        ];
+
+        for (const cb of candidateBases) {
+            try {
+                const p = path.join(cb, safeName);
+                if (fsSync.existsSync(p)) return p;
+            } catch(e) {}
+        }
+
+        return primaryPath;
     }
 
     async _initializeFolderTree(workspacePath) {
@@ -374,12 +413,37 @@ class WorkspaceService {
         const candidateBases = [
             this.basePath,
             path.resolve(process.cwd(), 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'Electron', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Local', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactory'),
+            path.join(os.homedir(), 'MediaFactory', 'Workspaces'),
+            path.join(os.homedir(), 'MediaFactory'),
+            'c:/MediaFactory/Workspaces',
+            'c:/MediaFactoryData/Workspaces',
+            'c:/.mediafactory_data/Workspaces',
             'd:/MediaFactory/Workspaces',
             'd:/MediaFactory/.mediafactory/Workspaces',
             'd:/MediaFactory/.mediafactory_data/Workspaces',
             'e:/MediaFactory/Workspaces',
             'f:/MediaFactory/Workspaces'
         ];
+
+        // Also check any existing local drive letters
+        const driveLetters = ['C', 'D', 'E', 'F', 'G'];
+        for (const dl of driveLetters) {
+            const p1 = `${dl}:/MediaFactory/Workspaces`;
+            const p2 = `${dl}:/MediaFactoryData/Workspaces`;
+            if (!candidateBases.includes(p1)) candidateBases.push(p1);
+            if (!candidateBases.includes(p2)) candidateBases.push(p2);
+        }
 
         const workspaces = [];
         const seenNames = new Set();
@@ -395,17 +459,6 @@ class WorkspaceService {
                         if (seenNames.has(wsName) || wsName.startsWith('.')) continue;
 
                         const wsFolder = path.join(basePath, wsName);
-
-                        // If discovered in another candidate path, ensure it is mirrored to this.basePath
-                        if (path.resolve(basePath).toLowerCase() !== path.resolve(this.basePath).toLowerCase()) {
-                            const targetFolder = path.join(this.basePath, wsName);
-                            if (!fsSync.existsSync(targetFolder)) {
-                                try {
-                                    const storage = this._getStorage();
-                                    await storage.copy(wsFolder, targetFolder);
-                                } catch(err) {}
-                            }
-                        }
 
                         const manifestPath = path.join(wsFolder, 'workspace.manifest.json');
                         const configPath = path.join(wsFolder, 'Config', 'workspace.json');
