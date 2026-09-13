@@ -163,9 +163,22 @@ class WorkspaceService {
         const storage = this._getStorage();
         const config = this._getConfig();
         const safeName = String(name).replace(/[/\\?%*:|"<>]/g, '_').trim();
-        const workspacePath = customBasePath 
-            ? path.join(customBasePath, safeName) 
-            : this._getWorkspacePath(name);
+        let workspacePath;
+        if (customBasePath) {
+            const fsSync = require('fs');
+            const normBase = path.normalize(customBasePath).replace(/[\/\\]+$/, '');
+            const baseFolder = path.basename(normBase);
+            const hasMarkers = fsSync.existsSync(path.join(normBase, 'workspace.manifest.json')) || 
+                               fsSync.existsSync(path.join(normBase, 'Config', 'workspace.json'));
+            if (hasMarkers || baseFolder.toLowerCase() === safeName.toLowerCase()) {
+                workspacePath = normBase;
+            } else {
+                workspacePath = path.join(normBase, safeName);
+            }
+        } else {
+            workspacePath = this._getWorkspacePath(name);
+        }
+
         const runtime = ServiceRegistry.resolve('RuntimeService');
 
         const logMsg = (msg, data = {}) => {

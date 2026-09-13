@@ -272,7 +272,7 @@ export default function App() {
     const ws = wsName || activeWorkspace;
     if (!ws) return;
     try {
-      const res = await fetch(getApiUrl(`/api/v1/system/workspace/${ws}/settings`));
+      const res = await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(ws)}/settings`));
       const data = await res.json();
       if (data.success && data.data) {
         setWorkspaceConfig(data.data.data || {});
@@ -1310,7 +1310,7 @@ export default function App() {
     try {
         localStorage.setItem('mf_active_workspace', name);
         localStorage.setItem('mf_app_state', 'EDITOR');
-        const res = await fetch(getApiUrl(`/api/v1/system/workspace/${name}/settings`));
+        const res = await fetch(getApiUrl(`/api/v1/system/workspace/${encodeURIComponent(name)}/settings`));
         const data = await res.json();
         if (data.success && data.data) {
             setWorkspaceConfig(data.data.data || {});

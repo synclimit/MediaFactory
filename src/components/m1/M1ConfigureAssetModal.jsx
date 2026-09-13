@@ -69,6 +69,14 @@ const normalizeYoutubeUrl = (raw) => {
 };
 
 export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeModal }) {
+  // AI Rephrase State
+  const [isRephrasing, setIsRephrasing] = React.useState(false);
+  const [rephraseStyle, setRephraseStyle] = React.useState('clean_rephrase');
+  const [aiNotice, setAiNotice] = React.useState('');
+  const [originalDescBackup, setOriginalDescBackup] = React.useState(null);
+  const [isDownloadingThumb, setIsDownloadingThumb] = React.useState(false);
+  const [thumbNotice, setThumbNotice] = React.useState('');
+
   if (!slot) return null;
 
   // Determine Active Thumbnail Source
@@ -82,18 +90,13 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
     activeThumbnail = `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg`;
   }
 
-  // AI Rephrase State
-  const [isRephrasing, setIsRephrasing] = React.useState(false);
-  const [aiNotice, setAiNotice] = React.useState('');
-  const [originalDescBackup, setOriginalDescBackup] = React.useState(null);
-  const [downloadingThumb, setDownloadingThumb] = React.useState(false);
-
-  const handleDownloadThumb = async () => {
+  const handleDownloadThumbnail = async () => {
     if (!activeThumbnail) {
       alert('Belum ada thumbnail untuk diunduh. Silakan fetch link YouTube terlebih dahulu.');
       return;
     }
-    setDownloadingThumb(true);
+    setIsDownloadingThumb(true);
+    setThumbNotice('');
     try {
       await downloadYoutubeThumbnail({
         videoId: slot?.videoId,
@@ -101,14 +104,16 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
         title: slot?.videoTitle || slot?.outputName,
         outputName: slot?.outputName
       });
+      setThumbNotice('✅ Thumbnail berhasil diunduh!');
+      setTimeout(() => setThumbNotice(''), 4000);
     } catch (e) {
       alert('Gagal mengunduh thumbnail: ' + e.message);
     } finally {
-      setDownloadingThumb(false);
+      setIsDownloadingThumb(false);
     }
   };
 
-  const handleRephrase = async () => {
+  const handleAiRephrase = async () => {
     const currentDesc = slot?.originalDesc || slot?.cleanedDesc;
     if (!currentDesc || currentDesc.trim() === '') {
       alert('Deskripsi masih kosong. Silakan fetch video atau ketik deskripsi terlebih dahulu.');
@@ -125,7 +130,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: currentDesc,
-          promptStyle: 'youtube_seo_description',
+          promptStyle: rephraseStyle || 'clean_rephrase',
           tone: 'engaging, informative, professional',
           maxLength: 800
         })
@@ -340,7 +345,9 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                             });
                             const probeData = await probeRes.json();
                             if (probeData.durationDisplay) updateM1Slot(idx, 'duration', probeData.durationDisplay);
-                          } catch (err) {}
+                          } catch {
+                            // ignore probe failure
+                          }
                         }
                       }}
                     />

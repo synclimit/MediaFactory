@@ -89,7 +89,12 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
         let estimatedPath = '';
         if (workspaceRoot) {
             const cleanBase = workspaceRoot.replace(/[\/\\]+$/, '');
-            estimatedPath = `${cleanBase}/${cleanName}`;
+            const baseFolder = cleanBase.split(/[\/\\]/).pop();
+            if (baseFolder && baseFolder.toLowerCase() === cleanName.toLowerCase()) {
+                estimatedPath = cleanBase;
+            } else {
+                estimatedPath = `${cleanBase}/${cleanName}`;
+            }
         }
 
         try {
@@ -131,14 +136,33 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 },
                 outputFolder
             };
-            const res = await fetch(getApiUrl('/api/v1/system/workspace/create'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json().catch(() => null);
-            if (!res.ok || (data && data.success === false)) {
-                const msg = data?.validation?.message || data?.error || 'Gagal membuat workspace di lokasi yang dipilih.';
+            let data = null;
+            try {
+                const targetUrl = getApiUrl('/api/v1/system/workspace/create');
+                let res = await fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const text = await res.text();
+                try {
+                    data = JSON.parse(text);
+                } catch (pe) {
+                    const directRes = await fetch('http://127.0.0.1:18888/api/v1/system/workspace/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    data = await directRes.json();
+                }
+            } catch (netErr) {
+                setErrorMsg('Gagal terhubung ke backend: ' + netErr.message);
+                setIsCreating(false);
+                return;
+            }
+
+            if (!data || data.success === false) {
+                const msg = data?.validation?.message || data?.error || 'Gagal membuat workspace di lokasi yang dipilih. Pastikan drive/folder dapat diakses.';
                 setErrorMsg(msg);
                 setIsCreating(false);
                 return;
