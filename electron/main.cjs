@@ -358,10 +358,16 @@ function downloadReleaseAsset(targetUrl, destPath, onProgress) {
                 });
                 res.pipe(fileStream);
                 fileStream.on('finish', () => {
-                    fileStream.close();
-                    resolve(destPath);
+                    fileStream.close((err) => {
+                        if (err) return reject(err);
+                        // Ensure Windows OS kernel completely releases file locks before returning
+                        setTimeout(() => resolve(destPath), 200);
+                    });
                 });
-                fileStream.on('error', reject);
+                fileStream.on('error', (err) => {
+                    try { fileStream.close(); } catch(e) {}
+                    reject(err);
+                });
             });
             req.on('error', reject);
             req.end();
@@ -538,20 +544,21 @@ function installUpdateUnified() {
 
     if (pendingUpdateExePath && require('fs').existsSync(pendingUpdateExePath)) {
         console.log('[AutoUpdater] Launching downloaded installer:', pendingUpdateExePath);
-        const { shell } = require('electron');
         const { spawn } = require('child_process');
         try {
-            // Using shell.openPath guarantees Windows UAC elevation dialog appears cleanly if needed
-            shell.openPath(pendingUpdateExePath);
+            const child = spawn(pendingUpdateExePath, [], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            child.unref();
+            setTimeout(() => app.exit(0), 400);
         } catch (e) {
-            try {
-                spawn(pendingUpdateExePath, [], { detached: true, stdio: 'ignore' }).unref();
-            } catch (err) {
-                console.error('[AutoUpdater] Failed to launch installer:', err);
-            }
+            console.warn('[AutoUpdater] Spawn failed, fallback to shell.openPath:', e);
+            const { shell } = require('electron');
+            shell.openPath(pendingUpdateExePath).finally(() => {
+                setTimeout(() => app.exit(0), 400);
+            });
         }
-        // Give 1200ms to allow Windows to initialize installer process before app exits
-        setTimeout(() => app.exit(0), 1200);
     } else {
         downloadUpdateUnified();
     }
