@@ -46,6 +46,17 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 if (paths && paths.length > 0) selectedFolder = paths[0];
             } catch (e) {}
         }
+        if (!selectedFolder) {
+            const res = await fetch(getApiUrl('/api/v1/system/select-directory'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: 'Select Root Workspace Directory' })
+            }).catch(() => null);
+            if (res) {
+                const data = await res.json().catch(() => null);
+                if (data?.path) selectedFolder = data.path;
+            }
+        }
         if (selectedFolder) {
             setWorkspaceRoot(selectedFolder);
             try {
@@ -95,10 +106,11 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
             }));
         }
 
-        // 2. Fire and forget backend sync call
+        // 2. Synchronize with backend with custom partition location
         try {
             const payload = {
                 name: cleanName,
+                workspaceBase: workspaceRoot,
                 assets: {
                     logo: logoPath,
                     watermark: watermarkPath,
@@ -107,12 +119,20 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 },
                 outputFolder
             };
-            fetch(getApiUrl('/api/v1/system/workspace/create'), {
+            const res = await fetch(getApiUrl('/api/v1/system/workspace/create'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
-            }).catch(() => {});
-        } catch(e) {}
+            });
+            const data = await res.json().catch(() => null);
+            if (data && data.success === false && data.validation?.message) {
+                setErrorMsg(data.validation.message);
+                setIsCreating(false);
+                return;
+            }
+        } catch(e) {
+            console.warn('[WorkspaceWizard] Backend create warning:', e);
+        }
 
         // 3. Immediately transition to Editor
         setLoadingMsg('Loading Workspace...');

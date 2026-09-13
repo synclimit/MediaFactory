@@ -106,12 +106,35 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
     return str.replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, ' ').trim();
   };
 
+  const normalizeYoutubeUrl = (raw) => {
+    if (!raw || typeof raw !== 'string') return '';
+    const trimmed = raw.trim();
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.hostname.includes('youtube.com') && parsed.searchParams.has('v')) {
+        const videoId = parsed.searchParams.get('v');
+        return `https://www.youtube.com/watch?v=${videoId}`;
+      }
+      if (parsed.hostname === 'youtu.be') {
+        const videoId = parsed.pathname.replace(/^\//, '');
+        return `https://www.youtube.com/watch?v=${videoId}`;
+      }
+      return trimmed;
+    } catch {
+      return trimmed;
+    }
+  };
+
   // ─── SINGLE YOUTUBE FETCH ENGINE ───
-  const fetchSingleYoutube = async (idx, url) => {
+  const fetchSingleYoutube = async (idx, rawUrl) => {
+    const url = normalizeYoutubeUrl(rawUrl);
     if (!url) return;
+
+    // Save cleaned URL to slot
+    updateM1Slot(idx, 'youtubeUrl', url);
     setFetchStates(prev => ({
       ...prev,
-      [idx]: { progress: 0, statusText: 'CONNECTING...', isFetching: true, error: null }
+      [idx]: { progress: 5, statusText: 'CONNECTING...', isFetching: true, error: null }
     }));
 
     try {
@@ -149,7 +172,7 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
                   ...prev,
                   [idx]: { progress: 0, statusText: 'ERROR', isFetching: false, error: data.error }
                 }));
-                break;
+                return;
               }
 
               if (data.statusText) {
@@ -165,7 +188,7 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
                 }));
               }
 
-              if (data.metadata || data.done || data.videoId || data.title) {
+              if (data.metadata || data.videoId || data.title) {
                 const meta = data.metadata || data;
                 const vId = meta.videoId || data.videoId || m1Slots[idx]?.videoId;
                 const rawTitle = meta.title || data.title || vId || `Slot_${idx + 1}_Audio`;
@@ -197,6 +220,24 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
                 }
 
                 updateM1Slot(idx, allUpdates);
+
+                if (!data.done && !data.audioPath) {
+                  setFetchStates(prev => ({
+                    ...prev,
+                    [idx]: {
+                      ...(prev[idx] || {}),
+                      isFetching: true,
+                      statusText: data.statusText || 'DOWNLOADING AUDIO...',
+                      error: null
+                    }
+                  }));
+                }
+              }
+
+              if (data.done || data.audioPath) {
+                if (data.audioPath) {
+                  updateM1Slot(idx, 'audio', data.audioPath);
+                }
                 setFetchStates(prev => ({
                   ...prev,
                   [idx]: { progress: 100, statusText: 'COMPLETE ✓', isFetching: false, error: null }
@@ -215,6 +256,27 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
         ...prev,
         [idx]: { progress: 0, statusText: 'FAILED', isFetching: false, error: e.message }
       }));
+    }
+  };
+
+  // ─── BATCH FETCH ALL YOUTUBE SLOTS ───
+  const handleFetchAllYoutube = async () => {
+    const slotsToFetch = m1Slots
+      .map((slot, idx) => ({ slot, idx }))
+      .filter(({ slot, idx }) => {
+        const isFetching = fetchStates[idx]?.isFetching;
+        const isAudio = slot?.sourceType === 'Audio File';
+        return !isAudio && slot?.youtubeUrl && !isFetching;
+      });
+
+    if (slotsToFetch.length === 0) {
+      alert('Tidak ada slot YouTube yang dapat di-fetch. Pastikan URL YouTube sudah diisi.');
+      return;
+    }
+
+    for (const { idx, slot } of slotsToFetch) {
+      fetchSingleYoutube(idx, slot.youtubeUrl);
+      await new Promise(r => setTimeout(r, 350));
     }
   };
 
@@ -286,32 +348,44 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
               </span>
             </div>
 
-            {/* Right: Master 4 Overlays Toggle Switches */}
-            <div className="flex items-center gap-4 bg-[#12131b] px-4 py-1.5 rounded-lg border border-[#2d3142]">
-              <CyberToggle
-                label="Subscribe"
-                checked={allSubscribe}
-                onChange={handleToggleMasterSubscribe}
-                title="Aktifkan/Nonaktifkan animasi subscribe workspace ke SEMUA segment"
-              />
-              <CyberToggle
-                label="Overlay"
-                checked={allOverlay}
-                onChange={handleToggleMasterOverlay}
-                title="Aktifkan/Nonaktifkan frame overlay workspace ke SEMUA segment"
-              />
-              <CyberToggle
-                label="Logo"
-                checked={allLogo}
-                onChange={handleToggleMasterLogo}
-                title="Aktifkan/Nonaktifkan logo channel workspace ke SEMUA segment"
-              />
-              <CyberToggle
-                label="Watermark"
-                checked={allWatermark}
-                onChange={handleToggleMasterWatermark}
-                title="Aktifkan/Nonaktifkan watermark workspace ke SEMUA segment"
-              />
+            {/* Right: Master 4 Overlays Toggle Switches & Fetch All */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={handleFetchAllYoutube}
+                className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-['Rajdhani'] font-bold text-[11px] uppercase tracking-wider px-3.5 py-1.5 rounded-lg border border-orange-400/50 shadow-[0_0_12px_rgba(249,115,22,0.4)] flex items-center gap-1.5 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                title="Fetch semua slot YouTube yang memiliki URL secara otomatis"
+              >
+                <svg className="w-3.5 h-3.5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>FETCH ALL SLOTS</span>
+              </button>
+
+              <div className="flex items-center gap-4 bg-[#12131b] px-4 py-1.5 rounded-lg border border-[#2d3142]">
+                <CyberToggle
+                  label="Subscribe"
+                  checked={allSubscribe}
+                  onChange={handleToggleMasterSubscribe}
+                  title="Aktifkan/Nonaktifkan animasi subscribe workspace ke SEMUA segment"
+                />
+                <CyberToggle
+                  label="Overlay"
+                  checked={allOverlay}
+                  onChange={handleToggleMasterOverlay}
+                  title="Aktifkan/Nonaktifkan frame overlay workspace ke SEMUA segment"
+                />
+                <CyberToggle
+                  label="Logo"
+                  checked={allLogo}
+                  onChange={handleToggleMasterLogo}
+                  title="Aktifkan/Nonaktifkan logo channel workspace ke SEMUA segment"
+                />
+                <CyberToggle
+                  label="Watermark"
+                  checked={allWatermark}
+                  onChange={handleToggleMasterWatermark}
+                  title="Aktifkan/Nonaktifkan watermark workspace ke SEMUA segment"
+                />
+              </div>
             </div>
           </div>
 
@@ -437,7 +511,16 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
                           <input
                             type="text"
                             value={slot?.youtubeUrl || ''}
-                            onChange={(e) => updateM1Slot(idx, 'youtubeUrl', e.target.value)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateM1Slot(idx, 'youtubeUrl', val);
+                              if (fetchStates[idx]?.error) {
+                                setFetchStates(prev => ({
+                                  ...prev,
+                                  [idx]: { ...(prev[idx] || {}), error: null, statusText: '' }
+                                }));
+                              }
+                            }}
                             placeholder="https://www.youtube.com/watch?v=..."
                             className="flex-1 bg-[#101117] border border-[#2a2d3a] focus:border-orange-500/60 rounded px-2.5 py-1 text-[11px] text-white font-mono outline-none shadow-inner"
                           />
@@ -575,12 +658,45 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
 
                     {/* Live Progress Bar if fetching */}
                     {isSlotFetching && (
-                      <div className="w-full bg-black/60 rounded-full h-1.5 overflow-hidden relative mt-0.5">
-                        <div
-                          className="bg-orange-500 h-full transition-all duration-200"
-                          style={{ width: `${slotProgressPct}%` }}
-                        />
-                        <span className="text-[8px] font-mono text-orange-400 block mt-0.5 truncate">{slotStatusText}</span>
+                      <div className="w-full bg-black/70 rounded-md p-1.5 border border-orange-500/40 mt-1 flex flex-col gap-1 shadow-inner">
+                        <div className="flex items-center justify-between text-[9px] font-mono font-bold">
+                          <span className="text-orange-400 flex items-center gap-1 truncate max-w-[80%]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping inline-block shrink-0"></span>
+                            <span className="truncate">{slotStatusText || 'DOWNLOADING AUDIO...'}</span>
+                          </span>
+                          <span className="text-white shrink-0">{slotProgressPct}%</span>
+                        </div>
+                        <div className="w-full bg-black/60 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="bg-gradient-to-r from-orange-600 to-amber-500 h-full transition-all duration-200 shadow-[0_0_8px_rgba(249,115,22,0.8)]"
+                            style={{ width: `${slotProgressPct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error Alert Banner if fetch failed */}
+                    {!isSlotFetching && fetchStates[idx]?.error && (
+                      <div className="w-full bg-red-950/70 border border-red-500/60 rounded-lg p-2 mt-1 flex items-start justify-between gap-2 shadow-[0_0_12px_rgba(239,68,68,0.25)]">
+                        <div className="flex items-start gap-1.5 min-w-0">
+                          <svg className="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold text-red-300 font-mono block leading-tight">
+                              FETCH GAGAL:
+                            </span>
+                            <span className="text-[9px] text-red-200 font-mono block break-words mt-0.5 leading-tight">
+                              {fetchStates[idx].error}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => fetchSingleYoutube(idx, slot.youtubeUrl)}
+                          className="shrink-0 bg-red-900/80 hover:bg-red-800 text-white text-[9px] font-bold font-['Rajdhani'] px-2 py-1 rounded border border-red-400/40 cursor-pointer transition-colors"
+                          title="Coba fetch ulang link YouTube ini"
+                        >
+                          COBA LAGI
+                        </button>
                       </div>
                     )}
                   </div>

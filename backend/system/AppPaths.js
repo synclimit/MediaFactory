@@ -16,9 +16,12 @@ class AppPaths {
         this.cacheCleanupMode = 'never'; // Default
         this.outputDir = path.join(installDir, 'Output');
         this.settingsFile = path.join(appDataRoot, 'system_settings.json');
+        this.knownWorkspaces = {}; // Map of { [name]: folderPath }
+        this.activeWorkspace = null;
 
         const candidateSettingsFiles = [
             this.settingsFile,
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'system_settings.json'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'system_settings.json'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'system_settings.json'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactoryData', 'system_settings.json'),
@@ -42,7 +45,12 @@ class AppPaths {
                     if (settings.cacheCleanupMode) {
                         this.cacheCleanupMode = settings.cacheCleanupMode;
                     }
-                    break;
+                    if (settings.knownWorkspaces && typeof settings.knownWorkspaces === 'object') {
+                        this.knownWorkspaces = { ...this.knownWorkspaces, ...settings.knownWorkspaces };
+                    }
+                    if (settings.activeWorkspace) {
+                        this.activeWorkspace = settings.activeWorkspace;
+                    }
                 } catch (e) { console.error('Failed to load system settings:', e); }
             }
         }
@@ -56,6 +64,43 @@ class AppPaths {
                 try { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}
             }
         });
+    }
+
+    _saveSettings(updater) {
+        try {
+            let settings = {};
+            if (fs.existsSync(this.settingsFile)) {
+                try { settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8')); } catch(e) {}
+            }
+            if (typeof updater === 'function') {
+                updater(settings);
+            }
+            // Ensure values are always populated
+            settings.workspaceDir = this.workspaceDir;
+            settings.outputDir = this.outputDir;
+            settings.cacheDir = this.cacheDir;
+            settings.cacheCleanupMode = this.cacheCleanupMode;
+            settings.knownWorkspaces = this.knownWorkspaces;
+            if (this.activeWorkspace) settings.activeWorkspace = this.activeWorkspace;
+
+            const targets = [
+                this.settingsFile,
+                path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'system_settings.json'),
+                'd:/MediaFactory/.mediafactory_data/system_settings.json'
+            ];
+
+            for (const target of targets) {
+                try {
+                    const targetDir = path.dirname(target);
+                    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+                    fs.writeFileSync(target, JSON.stringify(settings, null, 2));
+                } catch(e) {}
+            }
+            return true;
+        } catch (e) {
+            console.error('Failed to save system settings:', e);
+            return false;
+        }
     }
 
     getAppInstallDir() {
@@ -72,24 +117,48 @@ class AppPaths {
     getOutputBase() { return this.outputDir; }
     getMediaFactoryDataDir() { return path.dirname(this.cacheDir); }
 
+    getKnownWorkspaces() {
+        return { ...(this.knownWorkspaces || {}) };
+    }
+
+    registerWorkspacePath(name, folderPath) {
+        if (!name || !folderPath) return false;
+        if (!this.knownWorkspaces) this.knownWorkspaces = {};
+        this.knownWorkspaces[name] = folderPath;
+        return this._saveSettings(s => {
+            if (!s.knownWorkspaces) s.knownWorkspaces = {};
+            s.knownWorkspaces[name] = folderPath;
+        });
+    }
+
+    unregisterWorkspacePath(name) {
+        if (!name || !this.knownWorkspaces) return false;
+        delete this.knownWorkspaces[name];
+        return this._saveSettings(s => {
+            if (s.knownWorkspaces) delete s.knownWorkspaces[name];
+        });
+    }
+
+    setActiveWorkspace(name) {
+        this.activeWorkspace = name;
+        return this._saveSettings(s => {
+            s.activeWorkspace = name;
+        });
+    }
+
+    getActiveWorkspace() {
+        return this.activeWorkspace;
+    }
+
     setWorkspaceBase(newPath) {
         if (!newPath) return false;
         this.workspaceDir = newPath;
         if (!fs.existsSync(this.workspaceDir)) {
             try { fs.mkdirSync(this.workspaceDir, { recursive: true }); } catch (e) {}
         }
-        try {
-            let settings = {};
-            if (fs.existsSync(this.settingsFile)) {
-                settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8'));
-            }
-            settings.workspaceDir = newPath;
-            fs.writeFileSync(this.settingsFile, JSON.stringify(settings, null, 2));
-            return true;
-        } catch (e) {
-            console.error('Failed to save system settings:', e);
-            return false;
-        }
+        return this._saveSettings(s => {
+            s.workspaceDir = newPath;
+        });
     }
 
     setCacheBase(newPath, cleanupMode = 'never') {
@@ -99,19 +168,10 @@ class AppPaths {
         if (!fs.existsSync(this.cacheDir)) {
             fs.mkdirSync(this.cacheDir, { recursive: true });
         }
-        try {
-            let settings = {};
-            if (fs.existsSync(this.settingsFile)) {
-                settings = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8'));
-            }
-            settings.cacheDir = newPath;
-            settings.cacheCleanupMode = cleanupMode;
-            fs.writeFileSync(this.settingsFile, JSON.stringify(settings, null, 2));
-            return true;
-        } catch (e) {
-            console.error('Failed to save system settings:', e);
-            return false;
-        }
+        return this._saveSettings(s => {
+            s.cacheDir = newPath;
+            s.cacheCleanupMode = cleanupMode;
+        });
     }
     
     // For specific modules

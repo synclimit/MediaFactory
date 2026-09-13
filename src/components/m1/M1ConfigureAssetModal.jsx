@@ -44,121 +44,102 @@ function CyberToggle({ label, checked, onChange, title }) {
   );
 }
 
+// ─── UTILITIES ───
+const cleanBaseFilename = (str) => {
+  return (str || '').replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, ' ').trim();
+};
+
+const normalizeYoutubeUrl = (raw) => {
+  if (!raw || typeof raw !== 'string') return '';
+  const trimmed = raw.trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.hostname.includes('youtube.com') && parsed.searchParams.has('v')) {
+      const videoId = parsed.searchParams.get('v');
+      return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+    if (parsed.hostname === 'youtu.be') {
+      const videoId = parsed.pathname.replace(/^\//, '');
+      return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+    return trimmed;
+  } catch {
+    return trimmed;
+  }
+};
+
 export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeModal }) {
   if (!slot) return null;
 
   // Determine Active Thumbnail Source
-  let activeThumbnail = null;
   const isReady = slot?.isFetched || (slot?.sourceType === 'Audio File' && slot?.audio);
-
+  let activeThumbnail = null;
   if (slot?.manualThumbnail) {
     activeThumbnail = slot.manualThumbnail;
   } else if (slot?.thumbnailUrl) {
     activeThumbnail = slot.thumbnailUrl;
   } else if (slot?.sourceType === 'YouTube URL' && (slot?.videoId || slot?.isFetched)) {
-    activeThumbnail = slot?.videoId ? `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg` : '/assets/dummy/youtube-thumbnail.svg';
-  } else if (slot?.sourceType === 'Audio File' && slot?.audio) {
-    activeThumbnail = '/assets/dummy/master-frame.svg';
+    activeThumbnail = `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg`;
   }
 
-  const cleanBaseFilename = (str) => {
-    return str.replace(/[^a-zA-Z0-9\s_-]/g, '_').replace(/\s+/g, ' ').trim();
-  };
-
+  // AI Rephrase State
   const [isRephrasing, setIsRephrasing] = React.useState(false);
-  const [rephraseStyle, setRephraseStyle] = React.useState('clean_rephrase');
-  const [originalDescBackup, setOriginalDescBackup] = React.useState(null);
   const [aiNotice, setAiNotice] = React.useState('');
-  const [isDownloadingThumb, setIsDownloadingThumb] = React.useState(false);
-  const [thumbNotice, setThumbNotice] = React.useState('');
+  const [originalDescBackup, setOriginalDescBackup] = React.useState(null);
+  const [downloadingThumb, setDownloadingThumb] = React.useState(false);
 
-  const handleDownloadThumbnail = async () => {
-    if (!activeThumbnail && !slot?.videoId && !slot?.thumbnailUrl) {
+  const handleDownloadThumb = async () => {
+    if (!activeThumbnail) {
       alert('Belum ada thumbnail untuk diunduh. Silakan fetch link YouTube terlebih dahulu.');
       return;
     }
-    setIsDownloadingThumb(true);
-    setThumbNotice('Mengunduh thumbnail...');
+    setDownloadingThumb(true);
     try {
-      const result = await downloadYoutubeThumbnail({
+      await downloadYoutubeThumbnail({
         videoId: slot?.videoId,
-        thumbnailUrl: slot?.manualThumbnail || slot?.thumbnailUrl,
+        thumbnailUrl: activeThumbnail,
         title: slot?.videoTitle || slot?.outputName,
         outputName: slot?.outputName
       });
-      setThumbNotice(`✓ Disimpan: ${result.filename}`);
-      setTimeout(() => setThumbNotice(''), 3500);
-    } catch (err) {
-      alert('Gagal mengunduh thumbnail: ' + err.message);
-      setThumbNotice('');
+    } catch (e) {
+      alert('Gagal mengunduh thumbnail: ' + e.message);
     } finally {
-      setIsDownloadingThumb(false);
+      setDownloadingThumb(false);
     }
   };
 
-  const handleAiRephrase = async () => {
-    const currentText = slot?.originalDesc || slot?.cleanedDesc || '';
-    if (!currentText.trim()) {
+  const handleRephrase = async () => {
+    const currentDesc = slot?.originalDesc || slot?.cleanedDesc;
+    if (!currentDesc || currentDesc.trim() === '') {
       alert('Deskripsi masih kosong. Silakan fetch video atau ketik deskripsi terlebih dahulu.');
       return;
     }
-
     setIsRephrasing(true);
-    setAiNotice('AI sedang memproses deskripsi...');
-    
-    if (!originalDescBackup) {
-      setOriginalDescBackup(currentText);
-    }
-
-    // Retrieve active API keys
-    let geminiKey = localStorage.getItem('mf_gemini_api_key') || '';
-    let groqKey = localStorage.getItem('mf_groq_api_key') || '';
-    let openaiKey = '';
-    
+    setAiNotice('');
     try {
-      const keysRaw = localStorage.getItem('mf_api_keys');
-      if (keysRaw) {
-        const parsed = JSON.parse(keysRaw);
-        if (Array.isArray(parsed)) {
-          const gObj = parsed.find(k => (k.platform === 'google' || k.platform === 'gemini') && k.key);
-          if (gObj && !geminiKey) geminiKey = gObj.key;
-          const grObj = parsed.find(k => k.platform === 'groq' && k.key);
-          if (grObj && !groqKey) groqKey = grObj.key;
-          const oObj = parsed.find(k => k.platform === 'openai' && k.key);
-          if (oObj) openaiKey = oObj.key;
-        }
+      if (!originalDescBackup) {
+        setOriginalDescBackup(currentDesc);
       }
-    } catch (e) {}
-
-    const provider = geminiKey ? 'gemini' : (groqKey ? 'groq' : (openaiKey ? 'openai' : 'gemini'));
-    const apiKey = geminiKey || groqKey || openaiKey || '';
-
-    try {
       const res = await fetch(getApiUrl('/api/v1/ai/rephrase'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: currentText,
-          title: slot?.videoTitle || slot?.outputName || '',
-          style: rephraseStyle,
-          apiKey,
-          provider
+          text: currentDesc,
+          promptStyle: 'youtube_seo_description',
+          tone: 'engaging, informative, professional',
+          maxLength: 800
         })
       });
-
       const data = await res.json();
-      if (data && data.success && data.rephrased) {
-        updateM1Slot(idx, 'originalDesc', data.rephrased);
-        updateM1Slot(idx, 'cleanedDesc', data.rephrased);
-        setAiNotice(`✨ Selesai via ${data.provider || 'AI'}`);
+      if (res.ok && data.success && data.result) {
+        updateM1Slot(idx, 'cleanedDesc', data.result);
+        setAiNotice('✨ Deskripsi berhasil di-rephrase dengan AI!');
         setTimeout(() => setAiNotice(''), 4000);
       } else {
         throw new Error(data.error || 'Gagal merephrase deskripsi.');
       }
     } catch (err) {
-      console.error(err);
-      setAiNotice(`❌ ${err.message}`);
-      setTimeout(() => setAiNotice(''), 4000);
+      alert('Gagal AI rephrase: ' + err.message);
     } finally {
       setIsRephrasing(false);
     }
@@ -179,6 +160,8 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
       alert('Silakan masukkan link YouTube terlebih dahulu.');
       return;
     }
+    const cleanUrl = normalizeYoutubeUrl(slot.youtubeUrl);
+    updateM1Slot(idx, 'youtubeUrl', cleanUrl);
     updateM1Slot(idx, 'isFetching', true);
     updateM1Slot(idx, 'fetchStatusText', 'CONNECTING...');
     try {
@@ -186,7 +169,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
       const res = await fetch(targetApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: slot.youtubeUrl })
+        body: JSON.stringify({ url: cleanUrl })
       });
 
       if (!res.ok) {

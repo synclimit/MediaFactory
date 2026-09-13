@@ -321,15 +321,48 @@ router.post('/api/v1/system/history/clear', (req, res) => {
 });
 
 // --- Workspace Endpoints ---
+router.post('/api/v1/system/select-directory', async (req, res) => {
+    try {
+        const { dialog, BrowserWindow } = require('electron');
+        if (dialog) {
+            const win = BrowserWindow.getFocusedWindow() || (BrowserWindow.getAllWindows && BrowserWindow.getAllWindows()[0]);
+            const result = await dialog.showOpenDialog(win, {
+                title: req.body?.title || 'Select Folder',
+                properties: ['openDirectory', 'createDirectory']
+            });
+            if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+                return res.json({ success: true, path: result.filePaths[0] });
+            } else {
+                return res.json({ success: false, path: null });
+            }
+        }
+    } catch(e) {}
+
+    // Standalone / headless / web fallback via modern PowerShell FolderBrowserDialog
+    const { exec } = require('child_process');
+    const psCommand = `[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $f = New-Object System.Windows.Forms.FolderBrowserDialog; $f.ShowNewFolderButton = $true; $f.Description = 'Select Directory'; if ($f.ShowDialog() -eq 'OK') { $f.SelectedPath }`;
+    exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "${psCommand}"`, (err, stdout) => {
+        const pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
+        if (pathStr) {
+            res.json({ success: true, path: pathStr });
+        } else {
+            res.json({ success: false, path: null });
+        }
+    });
+});
+
 router.post('/api/v1/system/workspace/active', (req, res) => {
     const wsService = ServiceRegistry.resolve('WorkspaceService');
     wsService.setCurrentWorkspace(req.body.workspaceName);
-    res.standardResponse({ activeWorkspace: req.body.workspaceName });
+    const resolvedPath = wsService._getWorkspacePath(req.body.workspaceName);
+    res.standardResponse({ activeWorkspace: req.body.workspaceName, workspacePath: resolvedPath });
 });
 
 router.get('/api/v1/system/workspace/active', (req, res) => {
     const wsService = ServiceRegistry.resolve('WorkspaceService');
-    res.standardResponse({ activeWorkspace: wsService.getCurrentWorkspace() });
+    const cur = wsService.getCurrentWorkspace();
+    const resolvedPath = cur ? wsService._getWorkspacePath(cur) : null;
+    res.standardResponse({ activeWorkspace: cur, workspacePath: resolvedPath });
 });
 
 router.get('/api/v1/system/workspace/list', async (req, res) => {
@@ -342,7 +375,8 @@ router.get('/api/v1/system/workspace/list', async (req, res) => {
 router.post('/api/v1/system/workspace/create', async (req, res) => {
     try {
         const wsService = ServiceRegistry.resolve('WorkspaceService');
-        const workspace = await wsService.createWorkspace(req.body.name);
+        const customBase = req.body.workspaceBase || req.body.workspaceRoot || null;
+        const workspace = await wsService.createWorkspace(req.body.name, customBase);
         
         // Save the configured output folder & branding assets
         const initialSettings = {};

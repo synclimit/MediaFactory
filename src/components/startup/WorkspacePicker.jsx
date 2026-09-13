@@ -84,14 +84,18 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                 try {
                     const { ipcRenderer } = window.require('electron');
                     const paths = await ipcRenderer.invoke('show-open-dialog', {
-                        title: 'Select Existing Workspace Folder',
+                        title: 'Pilih Folder Workspace di Disk / Partisi',
                         properties: ['openDirectory']
                     });
                     if (paths && paths.length > 0) selectedFolder = paths[0];
                 } catch(e) {}
             }
             if (!selectedFolder) {
-                const res = await fetch(getApiUrl('/api/v1/system/select-directory'), { method: 'POST' }).catch(() => null);
+                const res = await fetch(getApiUrl('/api/v1/system/select-directory'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: 'Pilih Folder Workspace di Disk / Partisi' })
+                }).catch(() => null);
                 if (res) {
                     const data = await res.json().catch(() => null);
                     if (data?.path) selectedFolder = data.path;
@@ -113,14 +117,16 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                         cached.push(data.workspaceName);
                         localStorage.setItem('mf_created_workspaces', JSON.stringify(cached));
                     }
+                    localStorage.setItem('mf_active_workspace', data.workspaceName);
                 } catch(e) {}
                 await loadWorkspaces();
-                handleOpen(data.workspaceName);
+                await handleOpen(data.workspaceName);
             } else {
-                alert('Failed to import workspace: ' + (data.error || 'Unknown error'));
+                alert('Gagal memuat folder workspace: ' + (data.error || 'Folder tidak dapat dikenali sebagai workspace'));
             }
         } catch(e) {
             console.error('Import error:', e);
+            alert('Terjadi kesalahan saat memuat workspace: ' + e.message);
         } finally {
             setIsLoading(false);
         }

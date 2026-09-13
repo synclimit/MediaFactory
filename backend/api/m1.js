@@ -189,6 +189,13 @@ function cleanYoutubeUrl(url) {
         if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
             trimmed = `https://${trimmed.replace(/^https?:\/\//, '')}`;
         }
+        // Remove tracking/playlist params that can confuse yt-dlp
+        trimmed = trimmed.replace(/([?&])list=[^&]*/gi, '')
+                         .replace(/([?&])start_radio=[^&]*/gi, '')
+                         .replace(/([?&])pp=[^&]*/gi, '')
+                         .replace(/\?&/, '?')
+                         .replace(/&&+/g, '&')
+                         .replace(/[?&]$/, '');
     }
     return trimmed;
 }
@@ -214,11 +221,26 @@ async function fetchMetadataWithFallback(targetUrl) {
                 dumpProc.stderr.on('data', d => stderrData += d.toString());
                 dumpProc.on('close', code => {
                     if (code === 0) {
-                        try { resolve(JSON.parse(stdoutData.trim())); }
-                        catch (e) { reject(new Error('Failed to parse metadata JSON')); }
+                        try {
+                            const trimmed = stdoutData.trim();
+                            if (!trimmed) {
+                                reject(new Error('Video tidak ditemukan di YouTube atau tidak dapat diakses.'));
+                            } else {
+                                resolve(JSON.parse(trimmed));
+                            }
+                        } catch (e) {
+                            reject(new Error('Video tidak tersedia atau format respon YouTube tidak valid.'));
+                        }
                     } else {
-                        const cleanErr = stderrData.replace(/[\r\n]+/g, ' ').trim();
-                        reject(new Error(cleanErr ? `[Attempt ${i + 1}] ${cleanErr}` : `Attempt ${i + 1} failed with code ${code}`));
+                        let cleanErr = stderrData.replace(/[\r\n]+/g, ' ').trim();
+                        if (/unavailable|removed|private/i.test(cleanErr)) {
+                            cleanErr = 'Video tidak tersedia di YouTube (Unavailable / Private / Dihapus).';
+                        } else if (/403|forbidden/i.test(cleanErr)) {
+                            cleanErr = 'Akses video dibatasi oleh YouTube (HTTP 403 / Bot Protection).';
+                        } else if (/not found|does not exist/i.test(cleanErr)) {
+                            cleanErr = 'Video tidak ditemukan di YouTube.';
+                        }
+                        reject(new Error(cleanErr || `Gagal mengambil metadata (Kode error ${code})`));
                     }
                 });
                 dumpProc.on('error', err => {
@@ -234,7 +256,7 @@ async function fetchMetadataWithFallback(targetUrl) {
             lastError = err;
         }
     }
-    throw lastError || new Error('Failed to fetch video metadata after multiple attempts.');
+    throw lastError || new Error('Gagal mengambil metadata video YouTube setelah beberapa percobaan.');
 }
 
 router.post('/api/m1/youtube/fetch', async (req, res) => {
@@ -460,5 +482,5 @@ const handleThumbnailDownload = async (req, res) => {
 router.get('/api/m1/thumbnail/download', handleThumbnailDownload);
 router.post('/api/m1/thumbnail/download', handleThumbnailDownload);
 
-module.exports = { router, jobs };
+module.exports = { router, jobs, fetchMetadataWithFallback, cleanYoutubeUrl };
 

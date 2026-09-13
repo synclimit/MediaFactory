@@ -34,6 +34,9 @@ class WorkspaceService {
     setCurrentWorkspace(name) {
         this.currentWorkspace = name;
         try {
+            AppPaths.setActiveWorkspace(name);
+        } catch(e) {}
+        try {
             const runtime = ServiceRegistry.resolve('RuntimeService');
             if (runtime) {
                 runtime.emit('System.WorkspaceChanged', { workspaceName: name });
@@ -46,8 +49,20 @@ class WorkspaceService {
     _getWorkspacePath(name) {
         if (!name) return path.join(this.basePath, 'default');
         const safeName = String(name).replace(/[/\\?%*:|"<>]/g, '_').trim();
-        const primaryPath = path.join(this.basePath, safeName || 'default');
 
+        // 1. Check knownWorkspaces registry (supports any custom partition/folder: E:\, D:\Anywhere, etc.)
+        try {
+            const known = AppPaths.getKnownWorkspaces();
+            if (known && known[name] && require('fs').existsSync(known[name])) {
+                return known[name];
+            }
+            if (known && known[safeName] && require('fs').existsSync(known[safeName])) {
+                return known[safeName];
+            }
+        } catch(e) {}
+
+        // 2. Primary path inside current this.basePath
+        const primaryPath = path.join(this.basePath, safeName || 'default');
         const fsSync = require('fs');
         if (fsSync.existsSync(primaryPath)) return primaryPath;
 
@@ -77,6 +92,15 @@ class WorkspaceService {
             'e:/MediaFactory/Workspaces',
             'f:/MediaFactory/Workspaces'
         ];
+
+        // Also check any known workspaces parent directories
+        try {
+            const known = AppPaths.getKnownWorkspaces();
+            for (const kwPath of Object.values(known)) {
+                const parent = path.dirname(kwPath);
+                if (!candidateBases.includes(parent)) candidateBases.unshift(parent);
+            }
+        } catch(e) {}
 
         for (const cb of candidateBases) {
             try {
@@ -128,10 +152,13 @@ class WorkspaceService {
         }
     }
 
-    async createWorkspace(name) {
+    async createWorkspace(name, customBasePath = null) {
         const storage = this._getStorage();
         const config = this._getConfig();
-        const workspacePath = this._getWorkspacePath(name);
+        const safeName = String(name).replace(/[/\\?%*:|"<>]/g, '_').trim();
+        const workspacePath = customBasePath 
+            ? path.join(customBasePath, safeName) 
+            : this._getWorkspacePath(name);
         const runtime = ServiceRegistry.resolve('RuntimeService');
 
         const logMsg = (msg, data = {}) => {
@@ -158,9 +185,10 @@ class WorkspaceService {
                     existingId = manifestData.data.workspaceId;
                 }
             } catch(e) {}
+            try { AppPaths.registerWorkspacePath(name, workspacePath); } catch(e) {}
             this.setCurrentWorkspace(name);
             logMsg('Workspace.Create.AlreadyExists', { ...logData, workspaceId: existingId });
-            return { success: true, workspaceId: existingId, workspaceName: name, activeWorkspace: name, existing: true };
+            return { success: true, workspaceId: existingId, workspaceName: name, activeWorkspace: name, existing: true, workspacePath };
         }
 
         try {
@@ -191,10 +219,11 @@ class WorkspaceService {
             await config.save(manifestPath, { data: manifest });
 
             logMsg('Workspace.Active.Set', logData);
+            try { AppPaths.registerWorkspacePath(name, workspacePath); } catch(e) {}
             this.setCurrentWorkspace(name);
 
             logMsg('Workspace.Create.Success', logData);
-            return { success: true, workspaceId, workspaceName: name, activeWorkspace: name };
+            return { success: true, workspaceId, workspaceName: name, activeWorkspace: name, workspacePath };
             
         } catch (error) {
             logMsg('Workspace.Create.Error', { ...logData, error: error.message });
@@ -227,6 +256,7 @@ class WorkspaceService {
     async deleteWorkspace(name) {
         const storage = this._getStorage();
         const workspacePath = this._getWorkspacePath(name);
+        try { AppPaths.unregisterWorkspacePath(name); } catch(e) {}
         if (await storage.exists(workspacePath)) {
             await storage.delete(workspacePath);
             if (this.currentWorkspace === name) {
@@ -367,27 +397,45 @@ class WorkspaceService {
             throw new Error('Folder path does not exist');
         }
 
-        const folderName = path.basename(folderPath);
-        const targetPath = path.join(this.basePath, folderName);
+        const resolvedPath = path.resolve(folderPath);
+        let targetWorkspacePath = resolvedPath;
+        let workspaceName = path.basename(resolvedPath);
 
-        // If not already in this.basePath, copy it
-        if (path.resolve(folderPath).toLowerCase() !== path.resolve(targetPath).toLowerCase()) {
-            const storage = this._getStorage();
-            if (!fsSync.existsSync(targetPath)) {
-                await storage.copy(folderPath, targetPath);
+        // Check if the selected folder is directly a workspace or a parent containing workspaces
+        const entries = await fs.readdir(resolvedPath, { withFileTypes: true });
+        const manifestPath = path.join(resolvedPath, 'workspace.manifest.json');
+        const hasManifest = fsSync.existsSync(manifestPath);
+        const hasDirectWorkspaceMarkers = hasManifest || entries.some(e => 
+            e.isDirectory() && ['Config', 'Projects', 'Assets', 'Output'].includes(e.name)
+        );
+
+        if (!hasDirectWorkspaceMarkers) {
+            // Check if subdirectories are workspaces (e.g. user chose an entire Workspaces partition root)
+            const subdirs = entries.filter(e => e.isDirectory() && !e.name.startsWith('.'));
+            if (subdirs.length > 0) {
+                for (const sub of subdirs) {
+                    const subPath = path.join(resolvedPath, sub.name);
+                    try {
+                        await this._initializeFolderTree(subPath);
+                        await this._initializeDatabases(subPath);
+                        AppPaths.registerWorkspacePath(sub.name, subPath);
+                    } catch(e) {}
+                }
+                targetWorkspacePath = path.join(resolvedPath, subdirs[0].name);
+                workspaceName = subdirs[0].name;
             }
         }
 
-        // Initialize structure and manifest if needed
-        await this._initializeFolderTree(targetPath);
-        await this._initializeDatabases(targetPath);
+        // Initialize structure and manifest in-place (ZERO-COPY IN-PLACE MOUNTING)
+        await this._initializeFolderTree(targetWorkspacePath);
+        await this._initializeDatabases(targetWorkspacePath);
 
-        const manifestPath = path.join(targetPath, 'workspace.manifest.json');
-        if (!fsSync.existsSync(manifestPath)) {
+        const targetManifest = path.join(targetWorkspacePath, 'workspace.manifest.json');
+        if (!fsSync.existsSync(targetManifest)) {
             const config = this._getConfig();
             const manifest = {
                 workspaceId: require('crypto').randomUUID(),
-                name: folderName,
+                name: workspaceName,
                 schemaVersion: 1,
                 databaseVersion: 1,
                 pluginVersion: 1,
@@ -397,11 +445,19 @@ class WorkspaceService {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
-            await config.save(manifestPath, { data: manifest });
+            await config.save(targetManifest, { data: manifest });
+        } else {
+            try {
+                const config = this._getConfig();
+                const mData = await config.load(targetManifest);
+                if (mData?.data?.name) workspaceName = mData.data.name;
+            } catch(e) {}
         }
 
-        this.setCurrentWorkspace(folderName);
-        return { success: true, workspaceName: folderName };
+        // Save into persistent registry and set as active workspace
+        AppPaths.registerWorkspacePath(workspaceName, targetWorkspacePath);
+        this.setCurrentWorkspace(workspaceName);
+        return { success: true, workspaceName, workspacePath: targetWorkspacePath };
     }
 
     async listWorkspaces() {
@@ -436,13 +492,30 @@ class WorkspaceService {
             'f:/MediaFactory/Workspaces'
         ];
 
-        // Also check any existing local drive letters
-        const driveLetters = ['C', 'D', 'E', 'F', 'G'];
+        // Include any known workspace parent paths from persistent system_settings.json
+        try {
+            const known = AppPaths.getKnownWorkspaces();
+            if (known && typeof known === 'object') {
+                for (const [kName, kPath] of Object.entries(known)) {
+                    if (kPath && fsSync.existsSync(kPath)) {
+                        const parent = path.dirname(kPath);
+                        if (!candidateBases.includes(parent)) candidateBases.unshift(parent);
+                    }
+                }
+            }
+        } catch(e) {}
+
+        // Also scan common drive partitions (C through Z) for Workspaces folders
+        const driveLetters = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
         for (const dl of driveLetters) {
-            const p1 = `${dl}:/MediaFactory/Workspaces`;
-            const p2 = `${dl}:/MediaFactoryData/Workspaces`;
-            if (!candidateBases.includes(p1)) candidateBases.push(p1);
-            if (!candidateBases.includes(p2)) candidateBases.push(p2);
+            const paths = [
+                `${dl}:/Workspaces`,
+                `${dl}:/MediaFactory/Workspaces`,
+                `${dl}:/MediaFactoryData/Workspaces`
+            ];
+            for (const p of paths) {
+                if (!candidateBases.includes(p)) candidateBases.push(p);
+            }
         }
 
         const workspaces = [];
@@ -569,6 +642,7 @@ class WorkspaceService {
                         workspaces.push({
                             name: displayName,
                             folderName: wsName,
+                            path: wsFolder,
                             thumbnail: manifestData?.data?.thumbnail || configData?.data?.general?.channelThumbnail || configData?.data?.branding?.logo || null,
                             lastOpened: lastOpened,
                             totalProjects: totalProjects,
@@ -583,6 +657,30 @@ class WorkspaceService {
                 console.error('[WorkspaceService] Error scanning path:', basePath, e);
             }
         }
+
+        // Guarantee all registered custom partition/folder workspaces are included
+        try {
+            const known = AppPaths.getKnownWorkspaces();
+            if (known && typeof known === 'object') {
+                for (const [kName, kPath] of Object.entries(known)) {
+                    if (kPath && fsSync.existsSync(kPath) && !seenNames.has(kName) && !seenNames.has(path.basename(kPath))) {
+                        seenNames.add(kName);
+                        workspaces.push({
+                            name: kName,
+                            folderName: path.basename(kPath),
+                            path: kPath,
+                            thumbnail: null,
+                            lastOpened: Date.now(),
+                            totalProjects: 0,
+                            lastRender: null,
+                            renderCount: 0,
+                            storageSizeGB: '0.00 GB',
+                            isActive: Boolean(this.currentWorkspace && this.currentWorkspace.toLowerCase() === kName.toLowerCase())
+                        });
+                    }
+                }
+            }
+        } catch (e) {}
 
         if (workspaces.length === 0) {
             try {

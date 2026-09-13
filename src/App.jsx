@@ -203,6 +203,23 @@ export default function App() {
     };
   }, [activeWorkspace]);
 
+  // Synchronize active workspace with backend system_settings on boot
+  useEffect(() => {
+    fetch(getApiUrl('/api/v1/system/workspace/active'))
+      .then(r => r.json())
+      .then(d => {
+        const backendActive = d?.data?.activeWorkspace;
+        if (backendActive && backendActive !== 'default') {
+          const localActive = localStorage.getItem('mf_active_workspace');
+          if (!localActive || localActive === 'Test 1') {
+            setActiveWorkspace(backendActive);
+            localStorage.setItem('mf_active_workspace', backendActive);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     let frameCount = 0;
     let lastTime = performance.now();
