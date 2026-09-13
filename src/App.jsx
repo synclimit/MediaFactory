@@ -153,10 +153,8 @@ export default function App() {
   });
 
   const [appState, setAppState] = useState(() => {
-    const savedState = localStorage.getItem('mf_app_state');
-    const savedWs = localStorage.getItem('mf_active_workspace');
-    if (savedState === 'PICKER') return 'PICKER';
-    return savedWs ? 'EDITOR' : 'PICKER';
+    // Always show Workspace Picker on app launch so user can choose their channel workspace
+    return 'PICKER';
   });
 
   useEffect(() => {
