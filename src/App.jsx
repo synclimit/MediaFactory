@@ -2053,7 +2053,9 @@ export default function App() {
             }
           },
           outputName: slot.outputName,
-          thumbnail: slot.manualThumbnail || (slot.sourceType === 'YouTube URL' && slot.videoId ? `https://img.youtube.com/vi/${slot.videoId}/maxresdefault.jpg` : null),
+          thumbnail: slot.thumbnailPath || slot.manualThumbnail || slot.thumbnailUrl || (slot.sourceType === 'YouTube URL' && slot.videoId ? `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg` : null),
+          thumbnailPath: slot.thumbnailPath || null,
+          videoId: slot.videoId || null,
         });
       });
 

@@ -320,6 +320,12 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
         const outTemplate = path.join(cacheDir, `${videoId}.%(ext)s`);
         const audioPath = path.join(cacheDir, `${videoId}.mp3`).replace(/\\/g, '/');
 
+        // Pre-fetch official YouTube thumbnail in parallel with audio download
+        const thumbPromise = downloadOfficialYoutubeThumbnail(videoId, thumbnailUrl, cacheDir).catch(err => {
+            console.warn('[M1 Youtube Fetch] Thumbnail pre-fetch error:', err.message);
+            return null;
+        });
+
         const ytArgs = AppPaths.getYtDlpStandardArgs([
             '--no-warnings',
             '--no-playlist',
@@ -345,12 +351,20 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
         let stderrOutput = '';
         ytProc.stderr.on('data', (data) => { stderrOutput += data.toString(); });
 
-        ytProc.on('close', (code) => {
+        ytProc.on('close', async (code) => {
             if (code !== 0) {
                 const cleanErr = stderrOutput.replace(/[\r\n]+/g, ' ').trim();
                 sendSSE({ error: `yt-dlp audio download failed (code ${code}): ${cleanErr || 'Unknown error'}` });
                 return res.end();
             }
+
+            // Ensure official thumbnail has finished downloading to disk
+            let finalThumbPath = await thumbPromise;
+            if (!finalThumbPath) {
+                finalThumbPath = await downloadOfficialYoutubeThumbnail(videoId, thumbnailUrl, cacheDir).catch(() => null);
+            }
+
+            const clientThumbUrl = finalThumbPath ? `/api/m1/thumbnail/view/${videoId}` : thumbnailUrl;
             
             sendSSE({
                 done: true,
@@ -360,7 +374,9 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
                 title,
                 description,
                 durationDisplay,
-                audioPath
+                audioPath,
+                thumbnailPath: finalThumbPath,
+                thumbnailUrl: clientThumbUrl
             });
             res.end();
         });
@@ -377,6 +393,107 @@ router.post('/api/m1/youtube/fetch', async (req, res) => {
     }
 });
 
+// ─── OFFICIAL YOUTUBE THUMBNAIL DOWNLOAD HELPER ───
+async function downloadOfficialYoutubeThumbnail(videoId, preferredUrl, targetDir) {
+    if (!videoId && !preferredUrl) return null;
+
+    const vId = videoId || (preferredUrl ? extractVideoId(preferredUrl) : null);
+    if (!vId) return null;
+
+    await fs.mkdir(targetDir, { recursive: true }).catch(() => {});
+
+    const destJpg = path.join(targetDir, `${vId}_thumbnail.jpg`);
+    const aliasJpg = path.join(targetDir, `${vId}.jpg`);
+
+    // 1. If destJpg already exists and is valid (> 1200 bytes), return it
+    try {
+        const stat = await fs.stat(destJpg).catch(() => null);
+        if (stat && stat.size > 1200) {
+            await fs.copyFile(destJpg, aliasJpg).catch(() => {});
+            return destJpg.replace(/\\/g, '/');
+        }
+    } catch (e) {}
+
+    // 2. Check if yt-dlp or another tool saved a thumbnail file
+    const possibleYtFiles = [
+        path.join(targetDir, `${vId}.webp`),
+        path.join(targetDir, `${vId}.png`),
+        path.join(targetDir, `${vId}.jpg`)
+    ];
+
+    for (const f of possibleYtFiles) {
+        try {
+            const stat = await fs.stat(f).catch(() => null);
+            if (stat && stat.size > 1200) {
+                if (f.endsWith('.jpg')) {
+                    await fs.copyFile(f, destJpg).catch(() => {});
+                    return destJpg.replace(/\\/g, '/');
+                } else {
+                    const ffmpegBin = AppPaths.getFFmpegPath();
+                    await new Promise((resolve) => {
+                        exec(`"${ffmpegBin}" -y -i "${f}" -q:v 2 "${destJpg}"`, () => resolve());
+                    });
+                    const statDest = await fs.stat(destJpg).catch(() => null);
+                    if (statDest && statDest.size > 1200) {
+                        await fs.copyFile(destJpg, aliasJpg).catch(() => {});
+                        return destJpg.replace(/\\/g, '/');
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+
+    // 3. Quality waterfall download directly via HTTP
+    const candidateUrls = [];
+    if (vId) {
+        candidateUrls.push(`https://i.ytimg.com/vi/${vId}/maxresdefault.jpg`);
+        candidateUrls.push(`https://i.ytimg.com/vi/${vId}/sddefault.jpg`);
+        candidateUrls.push(`https://i.ytimg.com/vi/${vId}/hqdefault.jpg`);
+        candidateUrls.push(`https://i.ytimg.com/vi/${vId}/default.jpg`);
+    }
+    if (preferredUrl && String(preferredUrl).startsWith('http') && !candidateUrls.includes(preferredUrl)) {
+        candidateUrls.unshift(preferredUrl);
+    }
+
+    for (const imgUrl of candidateUrls) {
+        try {
+            const response = await fetch(imgUrl, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0'
+                }
+            });
+            if (response.ok) {
+                const arrayBuf = await response.arrayBuffer();
+                const buffer = Buffer.from(arrayBuf);
+                // YouTube placeholder 404 image for missing maxresdefault is 1097 bytes
+                if (buffer.length > 1200) {
+                    await fs.writeFile(destJpg, buffer);
+                    await fs.writeFile(aliasJpg, buffer).catch(() => {});
+                    return destJpg.replace(/\\/g, '/');
+                }
+            }
+        } catch (err) {}
+    }
+
+    // Fallback: accept any buffer > 200 bytes
+    for (const imgUrl of candidateUrls) {
+        try {
+            const response = await fetch(imgUrl);
+            if (response.ok) {
+                const arrayBuf = await response.arrayBuffer();
+                const buffer = Buffer.from(arrayBuf);
+                if (buffer.length > 200) {
+                    await fs.writeFile(destJpg, buffer);
+                    await fs.writeFile(aliasJpg, buffer).catch(() => {});
+                    return destJpg.replace(/\\/g, '/');
+                }
+            }
+        } catch (e) {}
+    }
+
+    return null;
+}
+
 // ─── THUMBNAIL DOWNLOAD ROUTE ───
 const handleThumbnailDownload = async (req, res) => {
     try {
@@ -387,17 +504,6 @@ const handleThumbnailDownload = async (req, res) => {
 
         let vId = videoId || extractVideoId(url);
 
-        let candidateUrls = [];
-        if (vId) {
-            candidateUrls.push(`https://i.ytimg.com/vi/${vId}/maxresdefault.jpg`);
-            candidateUrls.push(`https://i.ytimg.com/vi/${vId}/sddefault.jpg`);
-            candidateUrls.push(`https://i.ytimg.com/vi/${vId}/hqdefault.jpg`);
-            candidateUrls.push(`https://i.ytimg.com/vi/${vId}/default.jpg`);
-        }
-        if (url && String(url).startsWith('http')) {
-            candidateUrls.unshift(url);
-        }
-
         // Clean filename for download
         const rawName = filename || (title ? `${title.replace(/[/\\?%*:|"<>]/g, '_').trim()}_thumbnail` : (vId ? `${vId}_thumbnail` : 'youtube_thumbnail'));
         let outName = rawName;
@@ -405,71 +511,14 @@ const handleThumbnailDownload = async (req, res) => {
             outName += '.jpg';
         }
 
-        // Check if there's a cached thumbnail on local disk in cache/m1/
-        if (vId) {
-            try {
-                const cacheDir = path.join(AppPaths.getCacheBase(), 'm1');
-                const cachedJpg = path.join(cacheDir, `${vId}.jpg`);
-                const cachedWebp = path.join(cacheDir, `${vId}.webp`);
+        const cacheDir = path.join(AppPaths.getCacheBase(), 'm1');
+        const thumbPath = await downloadOfficialYoutubeThumbnail(vId, url, cacheDir);
 
-                const statJpg = await fs.stat(cachedJpg).catch(() => null);
-                if (statJpg && statJpg.size > 1000) {
-                    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(outName)}"`);
-                    res.setHeader('Content-Type', 'image/jpeg');
-                    const fileData = await fs.readFile(cachedJpg);
-                    return res.send(fileData);
-                }
-
-                const statWebp = await fs.stat(cachedWebp).catch(() => null);
-                if (statWebp && statWebp.size > 1000) {
-                    const extName = outName.replace(/\.jpg$/i, '.webp');
-                    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(extName)}"`);
-                    res.setHeader('Content-Type', 'image/webp');
-                    const fileData = await fs.readFile(cachedWebp);
-                    return res.send(fileData);
-                }
-            } catch (e) {}
-        }
-
-        // Fetch from candidate URLs with quality waterfall
-        for (const targetUrl of candidateUrls) {
-            try {
-                const response = await fetch(targetUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0'
-                    }
-                });
-                if (response.ok) {
-                    const contentType = response.headers.get('content-type') || 'image/jpeg';
-                    const arrayBuffer = await response.arrayBuffer();
-                    const buffer = Buffer.from(arrayBuffer);
-                    // YouTube returns a 1097-byte 404 placeholder image for nonexistent maxresdefault
-                    if (buffer.length > 2000) {
-                        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(outName)}"`);
-                        res.setHeader('Content-Type', contentType);
-                        return res.send(buffer);
-                    }
-                }
-            } catch (err) {
-                // Try next candidate
-            }
-        }
-
-        // Last fallback: if we have any thumbnail even if small
-        if (candidateUrls.length > 0) {
-            try {
-                const lastUrl = candidateUrls[candidateUrls.length - 1];
-                const response = await fetch(lastUrl);
-                if (response.ok) {
-                    const arrayBuffer = await response.arrayBuffer();
-                    const buffer = Buffer.from(arrayBuffer);
-                    if (buffer.length > 200) {
-                        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(outName)}"`);
-                        res.setHeader('Content-Type', 'image/jpeg');
-                        return res.send(buffer);
-                    }
-                }
-            } catch (e) {}
+        if (thumbPath) {
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(outName)}"`);
+            res.setHeader('Content-Type', 'image/jpeg');
+            const fileData = await fs.readFile(thumbPath);
+            return res.send(fileData);
         }
 
         return res.status(404).json({ error: 'Thumbnail image not found.' });
@@ -482,5 +531,29 @@ const handleThumbnailDownload = async (req, res) => {
 router.get('/api/m1/thumbnail/download', handleThumbnailDownload);
 router.post('/api/m1/thumbnail/download', handleThumbnailDownload);
 
-module.exports = { router, jobs, fetchMetadataWithFallback, cleanYoutubeUrl };
+// ─── THUMBNAIL VIEW / SERVE ROUTE (FOR FRONTEND PREVIEWS & CARDS) ───
+router.get('/api/m1/thumbnail/view/:videoId', async (req, res) => {
+    try {
+        const { videoId } = req.params;
+        if (!videoId) return res.status(400).send('Missing video ID');
+
+        const cacheDir = path.join(AppPaths.getCacheBase(), 'm1');
+        const thumbPath = await downloadOfficialYoutubeThumbnail(videoId, null, cacheDir);
+
+        if (thumbPath) {
+            res.setHeader('Content-Type', 'image/jpeg');
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            const fileData = await fs.readFile(thumbPath);
+            return res.send(fileData);
+        }
+
+        // Fallback: Redirect directly to YouTube hqdefault
+        return res.redirect(`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`);
+    } catch (err) {
+        console.error('[M1 Thumbnail View] Error:', err);
+        return res.redirect(`https://i.ytimg.com/vi/${req.params.videoId}/hqdefault.jpg`);
+    }
+});
+
+module.exports = { router, jobs, fetchMetadataWithFallback, cleanYoutubeUrl, downloadOfficialYoutubeThumbnail };
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { getApiUrl } from '../../utils/apiUrl';
 import { downloadYoutubeThumbnail } from '../../utils/thumbnailDownloader';
 
 export default function M1SlotItem({ slot, idx, updateM1Slot, isDuplicateOutput, isDuplicateSource, isQueuedOutput, isQueuedSource, openConfigureModal }) {
@@ -20,9 +21,15 @@ export default function M1SlotItem({ slot, idx, updateM1Slot, isDuplicateOutput,
   const slotStatus = isReady ? (slot?.status && slot?.status !== 'EMPTY' ? slot.status : 'APPROVED') : 'EMPTY';
 
   let slotThumb = null;
-  if (slot?.manualThumbnail) slotThumb = slot.manualThumbnail;
-  else if (slot?.thumbnailUrl) slotThumb = slot.thumbnailUrl;
-  else if (slot?.sourceType === 'YouTube URL' && slot?.videoId) slotThumb = `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg`;
+  if (slot?.manualThumbnail) {
+    slotThumb = slot.manualThumbnail;
+  } else if (slot?.thumbnailPath && slot?.videoId) {
+    slotThumb = getApiUrl(`/api/m1/thumbnail/view/${slot.videoId}`);
+  } else if (slot?.thumbnailUrl) {
+    slotThumb = slot.thumbnailUrl.startsWith('/') ? getApiUrl(slot.thumbnailUrl) : slot.thumbnailUrl;
+  } else if (slot?.sourceType === 'YouTube URL' && slot?.videoId) {
+    slotThumb = getApiUrl(`/api/m1/thumbnail/view/${slot.videoId}`);
+  }
 
   return (
     <div className={`relative p-[1px] rounded-xl overflow-hidden transition-all duration-200 group/card h-full flex flex-col ${isQueued ? 'opacity-80' : ''}`}>
@@ -106,7 +113,7 @@ export default function M1SlotItem({ slot, idx, updateM1Slot, isDuplicateOutput,
                       e.stopPropagation();
                       downloadYoutubeThumbnail({
                         videoId: slot?.videoId,
-                        thumbnailUrl: slot?.manualThumbnail || slot?.thumbnailUrl,
+                        thumbnailUrl: slotThumb || slot?.manualThumbnail || slot?.thumbnailUrl,
                         title: slot?.videoTitle || slot?.outputName,
                         outputName: slot?.outputName
                       });

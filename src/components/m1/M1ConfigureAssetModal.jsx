@@ -84,10 +84,12 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
   let activeThumbnail = null;
   if (slot?.manualThumbnail) {
     activeThumbnail = slot.manualThumbnail;
+  } else if (slot?.thumbnailPath && slot?.videoId) {
+    activeThumbnail = getApiUrl(`/api/m1/thumbnail/view/${slot.videoId}`);
   } else if (slot?.thumbnailUrl) {
-    activeThumbnail = slot.thumbnailUrl;
+    activeThumbnail = slot.thumbnailUrl.startsWith('/') ? getApiUrl(slot.thumbnailUrl) : slot.thumbnailUrl;
   } else if (slot?.sourceType === 'YouTube URL' && (slot?.videoId || slot?.isFetched)) {
-    activeThumbnail = `https://i.ytimg.com/vi/${slot.videoId}/hqdefault.jpg`;
+    activeThumbnail = getApiUrl(`/api/m1/thumbnail/view/${slot.videoId}`);
   }
 
   const handleDownloadThumbnail = async () => {
@@ -215,7 +217,7 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                   videoTitle: rawTitle,
                   channelName: meta.channelName || meta.uploader || meta.channel || 'YouTube Source',
                   videoId: vId,
-                  thumbnailUrl: meta.thumbnailUrl || (vId ? `https://i.ytimg.com/vi/${vId}/hqdefault.jpg` : null),
+                  thumbnailUrl: (meta.thumbnailUrl && !meta.thumbnailUrl.startsWith('http') ? getApiUrl(meta.thumbnailUrl) : meta.thumbnailUrl) || (vId ? getApiUrl(`/api/m1/thumbnail/view/${vId}`) : null),
                   originalDesc: meta.description || data.description || "Metadata Fetched automatically via backend integration.",
                   cleanedDesc: meta.description || data.description || "Metadata Fetched automatically via backend integration.",
                   duration: meta.durationDisplay || data.durationDisplay || "0m 00s",
@@ -226,6 +228,9 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
 
                 if (data.audioPath || meta.audioPath) {
                   allUpdates.audio = data.audioPath || meta.audioPath;
+                }
+                if (data.thumbnailPath || meta.thumbnailPath) {
+                  allUpdates.thumbnailPath = data.thumbnailPath || meta.thumbnailPath;
                 }
 
                 updateM1Slot(idx, allUpdates);

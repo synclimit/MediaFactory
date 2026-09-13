@@ -28,7 +28,7 @@ export async function downloadYoutubeThumbnail({ videoId, thumbnailUrl, title, o
   try {
     const params = new URLSearchParams();
     if (videoId) params.append('videoId', videoId);
-    if (thumbnailUrl) params.append('url', thumbnailUrl);
+    if (thumbnailUrl && !thumbnailUrl.includes('/api/m1/thumbnail/view/')) params.append('url', thumbnailUrl);
     if (title || outputName) params.append('title', baseTitle);
     params.append('filename', filename);
 
@@ -60,7 +60,7 @@ export async function downloadYoutubeThumbnail({ videoId, thumbnailUrl, title, o
     candidateUrls.push(`https://i.ytimg.com/vi/${videoId}/sddefault.jpg`);
     candidateUrls.push(`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`);
   }
-  if (thumbnailUrl && !candidateUrls.includes(thumbnailUrl)) {
+  if (thumbnailUrl && !candidateUrls.includes(thumbnailUrl) && !thumbnailUrl.includes('/api/m1/thumbnail/view/')) {
     candidateUrls.unshift(thumbnailUrl);
   }
 

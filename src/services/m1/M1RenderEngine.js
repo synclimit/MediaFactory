@@ -407,38 +407,133 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     updateProgress(95, 'Cleanup & Finalization');
     log('Finalization', 'Extracting Thumbnail & Cleanup');
 
-    // Generate Thumbnail
-    if (job.thumbnail && typeof job.thumbnail === 'string') {
-      if (job.thumbnail.startsWith('data:image/')) {
-        // Base64 Manual Replace
+    // Generate Thumbnail (GUARANTEED YOUTUBE THUMBNAIL PRIORITY)
+    log('Finalization', 'Writing High-Resolution Thumbnail');
+    let thumbSaved = false;
+    const ffmpegBin = resolveFFmpegPath();
+
+    // 1. If job has a local file path on disk (e.g. pre-downloaded YouTube thumbnail or manual thumbnail)
+    const localCandidate = job.thumbnailPath || job.thumbnail;
+    if (localCandidate && typeof localCandidate === 'string' && !localCandidate.startsWith('http') && !localCandidate.startsWith('data:')) {
+      try {
+        if (existsSync(localCandidate)) {
+          if (localCandidate.toLowerCase().endsWith('.webp') || localCandidate.toLowerCase().endsWith('.png')) {
+            await new Promise((resolve, reject) => {
+              exec(`"${ffmpegBin}" -y -i "${localCandidate}" -q:v 2 "${outThumbPath}"`, (err) => {
+                if (err) reject(err);
+                else resolve();
+              });
+            });
+          } else {
+            await fs.copyFile(localCandidate, outThumbPath);
+          }
+          thumbSaved = true;
+          log('Thumbnail', `Copied local thumbnail from ${localCandidate}`);
+        }
+      } catch (e) {
+        log('Warning', `Failed to copy local thumbnail: ${e.message}`);
+      }
+    }
+
+    // 2. If job has Base64 Data URL
+    if (!thumbSaved && job.thumbnail && typeof job.thumbnail === 'string' && job.thumbnail.startsWith('data:image/')) {
+      try {
         const base64Data = job.thumbnail.split(';base64,').pop();
         await fs.writeFile(outThumbPath, base64Data, { encoding: 'base64' });
-      } else if (job.thumbnail.startsWith('http')) {
-        // YouTube Auto Fetch
-        try {
-          const res = await fetch(job.thumbnail);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const buffer = Buffer.from(await res.arrayBuffer());
-          await fs.writeFile(outThumbPath, buffer);
-        } catch (err) {
-          log('Warning', `Failed to download URL thumbnail: ${err.message}. Falling back to extraction.`);
-          const thumbTime = Math.floor(finalTargetDuration / 2);
-          const ffmpegBin = resolveFFmpegPath();
-          await new Promise((resolve) => {
-            exec(`"${ffmpegBin}" -y -ss ${thumbTime} -i "${outVideoPath}" -vframes 1 -q:v 2 "${outThumbPath}"`, resolve);
-          });
-        }
-      } else {
-        const thumbTime = Math.floor(finalTargetDuration / 2);
-        const ffmpegBin = resolveFFmpegPath();
-        await new Promise((resolve) => {
-          exec(`"${ffmpegBin}" -y -ss ${thumbTime} -i "${outVideoPath}" -vframes 1 -q:v 2 "${outThumbPath}"`, resolve);
-        });
+        thumbSaved = true;
+        log('Thumbnail', 'Saved base64 manual thumbnail');
+      } catch (e) {
+        log('Warning', `Failed to write base64 thumbnail: ${e.message}`);
       }
-    } else {
-      // Master Video Extract Fallback
+    }
+
+    // 3. Check cache directory for pre-downloaded thumbnail if videoId is known
+    const vId = job.videoId || (job.thumbnail && typeof job.thumbnail === 'string' ? job.thumbnail.match(/(?:v=|\/vi\/|youtu\.be\/|\/embed\/|\/shorts\/|^)([a-zA-Z0-9_-]{11})/)?.[1] : null);
+    if (!thumbSaved && vId) {
+      try {
+        const cacheBase = process.env.APPDATA ? path.join(process.env.APPDATA, 'MediaFactory', 'Cache', 'm1') : '';
+        const candidateFiles = [
+          path.join(cacheBase, `${vId}_thumbnail.jpg`),
+          path.join(cacheBase, `${vId}.jpg`),
+          path.join(cacheBase, `${vId}.webp`),
+          path.join(cacheBase, `${vId}.png`),
+          `D:/MediaFactory/.mediafactory_data/Cache/m1/${vId}_thumbnail.jpg`,
+          `D:/MediaFactory/.mediafactory_data/Cache/m1/${vId}.jpg`,
+          `D:/MediaFactory/.mediafactory_data/Cache/m1/${vId}.webp`
+        ];
+        for (const cf of candidateFiles) {
+          if (cf && existsSync(cf)) {
+            const stat = await fs.stat(cf);
+            if (stat.size > 1000) {
+              if (cf.toLowerCase().endsWith('.webp') || cf.toLowerCase().endsWith('.png')) {
+                await new Promise((resolve) => {
+                  exec(`"${ffmpegBin}" -y -i "${cf}" -q:v 2 "${outThumbPath}"`, () => resolve());
+                });
+              } else {
+                await fs.copyFile(cf, outThumbPath);
+              }
+              thumbSaved = true;
+              log('Thumbnail', `Used cached YouTube thumbnail: ${cf}`);
+              break;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 4. If HTTP URL or YouTube videoId, download with complete quality waterfall
+    if (!thumbSaved && (vId || (job.thumbnail && typeof job.thumbnail === 'string' && job.thumbnail.startsWith('http')))) {
+      const candidateUrls = [];
+      if (vId) {
+        candidateUrls.push(`https://i.ytimg.com/vi/${vId}/maxresdefault.jpg`);
+        candidateUrls.push(`https://i.ytimg.com/vi/${vId}/sddefault.jpg`);
+        candidateUrls.push(`https://i.ytimg.com/vi/${vId}/hqdefault.jpg`);
+        candidateUrls.push(`https://i.ytimg.com/vi/${vId}/default.jpg`);
+      }
+      if (job.thumbnail && typeof job.thumbnail === 'string' && job.thumbnail.startsWith('http') && !candidateUrls.includes(job.thumbnail)) {
+        candidateUrls.unshift(job.thumbnail);
+      }
+
+      for (const tUrl of candidateUrls) {
+        try {
+          const res = await fetch(tUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0' }
+          });
+          if (res.ok) {
+            const buf = Buffer.from(await res.arrayBuffer());
+            if (buf.length > 1200) {
+              await fs.writeFile(outThumbPath, buf);
+              thumbSaved = true;
+              log('Thumbnail', `Downloaded official YouTube thumbnail from ${tUrl}`);
+              break;
+            }
+          }
+        } catch (err) {}
+      }
+
+      // Fallback: accept smaller buffer (> 200 bytes) if none exceeded 1200
+      if (!thumbSaved && candidateUrls.length > 0) {
+        for (const tUrl of candidateUrls) {
+          try {
+            const res = await fetch(tUrl);
+            if (res.ok) {
+              const buf = Buffer.from(await res.arrayBuffer());
+              if (buf.length > 200) {
+                await fs.writeFile(outThumbPath, buf);
+                thumbSaved = true;
+                log('Thumbnail', `Downloaded fallback YouTube thumbnail (${buf.length} bytes) from ${tUrl}`);
+                break;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    // 5. Absolute Last Resort ONLY: Video frame extraction if ALL YouTube thumbnail attempts failed
+    if (!thumbSaved) {
+      log('Warning', 'Could not obtain official YouTube thumbnail. Falling back to video frame extraction.');
       const thumbTime = Math.floor(finalTargetDuration / 2);
-      const ffmpegBin = resolveFFmpegPath();
       await new Promise((resolve) => {
         exec(`"${ffmpegBin}" -y -ss ${thumbTime} -i "${outVideoPath}" -vframes 1 -q:v 2 "${outThumbPath}"`, resolve);
       });
