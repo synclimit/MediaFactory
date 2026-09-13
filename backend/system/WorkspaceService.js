@@ -342,13 +342,14 @@ class WorkspaceService {
             return { totalSize: 0, fileCount: 0 };
         }
 
-        const walk = async (currentPath) => {
+        const walk = async (currentPath, depth = 0) => {
+            if (depth > 2) return; // Prevent event-loop freeze on large folders
             try {
                 const entries = await fs.readdir(currentPath, { withFileTypes: true });
                 for (const entry of entries) {
                     const fullPath = path.join(currentPath, entry.name);
                     if (entry.isDirectory()) {
-                        await walk(fullPath);
+                        await walk(fullPath, depth + 1);
                     } else if (entry.isFile()) {
                         try {
                             const stat = await fs.stat(fullPath);
@@ -361,7 +362,7 @@ class WorkspaceService {
                 // Ignore missing folders/permissions
             }
         };
-        await walk(dirPath);
+        await walk(dirPath, 0);
         return { totalSize, fileCount };
     }
 
@@ -474,138 +475,142 @@ class WorkspaceService {
 
         if (!wsFolder || !fsSync.existsSync(wsFolder)) return;
 
-        const normFolder = path.normalize(wsFolder);
-        const folderBasename = path.basename(normFolder);
-        const wsName = defaultName || folderBasename;
-
-        const lowerKey = wsName.toLowerCase();
-        const lowerBase = folderBasename.toLowerCase();
-        const lowerNorm = normFolder.toLowerCase();
-
-        if (seenNames.has(lowerKey) || seenNames.has(lowerBase) || seenNames.has(lowerNorm)) {
-            return;
-        }
-
-        let manifestData = null;
-        const manifestPath = path.join(normFolder, 'workspace.manifest.json');
         try {
-            if (fsSync.existsSync(manifestPath)) {
-                manifestData = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+            const normFolder = path.normalize(wsFolder);
+            const folderBasename = path.basename(normFolder);
+            const wsName = defaultName || folderBasename;
+
+            const lowerKey = wsName.toLowerCase();
+            const lowerBase = folderBasename.toLowerCase();
+            const lowerNorm = normFolder.toLowerCase();
+
+            if (seenNames.has(lowerKey) || seenNames.has(lowerBase) || seenNames.has(lowerNorm)) {
+                return;
             }
-        } catch (e) {}
 
-        const configPath = path.join(normFolder, 'Config', 'workspace.json');
-        let configData = null;
-        let customOutput = null;
-        try {
-            if (fsSync.existsSync(configPath)) {
-                configData = JSON.parse(await fs.readFile(configPath, 'utf8'));
-                if (configData?.data?.output?.main && configData.data.output.main !== path.join(normFolder, 'Output')) {
-                    customOutput = configData.data.output.main;
+            let manifestData = null;
+            const manifestPath = path.join(normFolder, 'workspace.manifest.json');
+            try {
+                if (fsSync.existsSync(manifestPath)) {
+                    manifestData = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+                }
+            } catch (e) {}
+
+            const configPath = path.join(normFolder, 'Config', 'workspace.json');
+            let configData = null;
+            let customOutput = null;
+            try {
+                if (fsSync.existsSync(configPath)) {
+                    configData = JSON.parse(await fs.readFile(configPath, 'utf8'));
+                    if (configData?.data?.output?.main && configData.data.output.main !== path.join(normFolder, 'Output')) {
+                        customOutput = configData.data.output.main;
+                    }
+                }
+            } catch (e) {}
+
+            // Project count
+            let totalProjects = 0;
+            const projectsPath = path.join(normFolder, 'Projects');
+            try {
+                if (fsSync.existsSync(projectsPath)) {
+                    const pEntries = await fs.readdir(projectsPath);
+                    totalProjects += pEntries.filter(f => !f.startsWith('.')).length;
+                }
+            } catch (e) {}
+
+            if (customOutput && fsSync.existsSync(customOutput)) {
+                const scanSubdirs = async (dir) => {
+                    try {
+                        if (!fsSync.existsSync(dir)) return 0;
+                        const entries = await fs.readdir(dir, { withFileTypes: true });
+                        return entries.filter(e => e.isDirectory() && !e.name.startsWith('.')).length;
+                    } catch(e) { return 0; }
+                };
+                totalProjects += await scanSubdirs(path.join(customOutput, 'M1'));
+                totalProjects += await scanSubdirs(path.join(customOutput, 'M2'));
+                totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Fast Render'));
+                totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Normal Render'));
+                totalProjects += await scanSubdirs(path.join(customOutput, 'M4'));
+                totalProjects += await scanSubdirs(path.join(customOutput, 'M5'));
+                totalProjects += await scanSubdirs(path.join(customOutput, 'M6'));
+                totalProjects += await scanSubdirs(path.join(customOutput, 'M7'));
+                totalProjects += await scanSubdirs(path.join(customOutput, 'M7_Astrofox'));
+            }
+
+            // Render count
+            let renderCount = 0;
+            try {
+                renderCount += await this._countMediaFiles(path.join(normFolder, 'Output'));
+                renderCount += await this._countMediaFiles(path.join(normFolder, 'Renders'));
+                if (customOutput && fsSync.existsSync(customOutput)) {
+                    renderCount += await this._countMediaFiles(customOutput);
+                }
+            } catch(e) {}
+
+            // Storage size
+            let formattedStorage = '0.00 GB';
+            try {
+                const dirStats = await this._calculateDirStats(normFolder);
+                let totalSizeBytes = dirStats.totalSize;
+                if (customOutput && fsSync.existsSync(customOutput)) {
+                    const customStats = await this._calculateDirStats(customOutput);
+                    totalSizeBytes += customStats.totalSize;
+                }
+                if (totalSizeBytes >= 1024 * 1024 * 1024) {
+                    formattedStorage = `${(totalSizeBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+                } else if (totalSizeBytes >= 1024 * 1024) {
+                    formattedStorage = `${(totalSizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+                } else if (totalSizeBytes > 0) {
+                    formattedStorage = `${(totalSizeBytes / 1024).toFixed(0)} KB`;
+                }
+            } catch(e) {}
+
+            // Last opened
+            let lastOpened = null;
+            if (manifestData?.data?.lastOpened) {
+                lastOpened = manifestData.data.lastOpened;
+            } else if (configData?.updatedAt) {
+                lastOpened = configData.updatedAt;
+            } else if (manifestData?.data?.updatedAt && manifestData.data.updatedAt !== manifestData?.data?.createdAt) {
+                lastOpened = manifestData.data.updatedAt;
+            } else if (configData?.createdAt) {
+                lastOpened = configData.createdAt;
+            } else {
+                try {
+                    const folderStat = await fs.stat(normFolder);
+                    lastOpened = folderStat.mtimeMs;
+                } catch(e) {
+                    lastOpened = Date.now();
                 }
             }
-        } catch (e) {}
 
-        // Project count
-        let totalProjects = 0;
-        const projectsPath = path.join(normFolder, 'Projects');
-        try {
-            if (fsSync.existsSync(projectsPath)) {
-                const pEntries = await fs.readdir(projectsPath);
-                totalProjects += pEntries.filter(f => !f.startsWith('.')).length;
-            }
-        } catch (e) {}
+            const displayName = manifestData?.data?.name || manifestData?.name || wsName;
+            const isCurrentActive = Boolean(this.currentWorkspace && (
+                this.currentWorkspace.toLowerCase() === lowerKey || 
+                this.currentWorkspace.toLowerCase() === displayName.toLowerCase() ||
+                this.currentWorkspace.toLowerCase() === lowerBase
+            ));
 
-        if (customOutput && fsSync.existsSync(customOutput)) {
-            const scanSubdirs = async (dir) => {
-                try {
-                    if (!fsSync.existsSync(dir)) return 0;
-                    const entries = await fs.readdir(dir, { withFileTypes: true });
-                    return entries.filter(e => e.isDirectory() && !e.name.startsWith('.')).length;
-                } catch(e) { return 0; }
-            };
-            totalProjects += await scanSubdirs(path.join(customOutput, 'M1'));
-            totalProjects += await scanSubdirs(path.join(customOutput, 'M2'));
-            totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Fast Render'));
-            totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Normal Render'));
-            totalProjects += await scanSubdirs(path.join(customOutput, 'M4'));
-            totalProjects += await scanSubdirs(path.join(customOutput, 'M5'));
-            totalProjects += await scanSubdirs(path.join(customOutput, 'M6'));
-            totalProjects += await scanSubdirs(path.join(customOutput, 'M7'));
-            totalProjects += await scanSubdirs(path.join(customOutput, 'M7_Astrofox'));
+            seenNames.add(lowerKey);
+            seenNames.add(displayName.toLowerCase());
+            seenNames.add(lowerBase);
+            seenNames.add(lowerNorm);
+
+            workspaces.push({
+                name: displayName,
+                folderName: folderBasename,
+                path: normFolder,
+                thumbnail: manifestData?.data?.thumbnail || configData?.data?.general?.channelThumbnail || configData?.data?.branding?.logo || null,
+                lastOpened: lastOpened,
+                totalProjects: totalProjects,
+                lastRender: null,
+                renderCount: renderCount,
+                storageSizeGB: formattedStorage,
+                isActive: isCurrentActive
+            });
+        } catch (e) {
+            console.warn(`[WorkspaceService] Warning inspecting folder ${wsFolder}:`, e.message);
         }
-
-        // Render count
-        let renderCount = 0;
-        try {
-            renderCount += await this._countMediaFiles(path.join(normFolder, 'Output'));
-            renderCount += await this._countMediaFiles(path.join(normFolder, 'Renders'));
-            if (customOutput && fsSync.existsSync(customOutput)) {
-                renderCount += await this._countMediaFiles(customOutput);
-            }
-        } catch(e) {}
-
-        // Storage size
-        let formattedStorage = '0.00 GB';
-        try {
-            const dirStats = await this._calculateDirStats(normFolder);
-            let totalSizeBytes = dirStats.totalSize;
-            if (customOutput && fsSync.existsSync(customOutput)) {
-                const customStats = await this._calculateDirStats(customOutput);
-                totalSizeBytes += customStats.totalSize;
-            }
-            if (totalSizeBytes >= 1024 * 1024 * 1024) {
-                formattedStorage = `${(totalSizeBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-            } else if (totalSizeBytes >= 1024 * 1024) {
-                formattedStorage = `${(totalSizeBytes / (1024 * 1024)).toFixed(1)} MB`;
-            } else if (totalSizeBytes > 0) {
-                formattedStorage = `${(totalSizeBytes / 1024).toFixed(0)} KB`;
-            }
-        } catch(e) {}
-
-        // Last opened
-        let lastOpened = null;
-        if (manifestData?.data?.lastOpened) {
-            lastOpened = manifestData.data.lastOpened;
-        } else if (configData?.updatedAt) {
-            lastOpened = configData.updatedAt;
-        } else if (manifestData?.data?.updatedAt && manifestData.data.updatedAt !== manifestData?.data?.createdAt) {
-            lastOpened = manifestData.data.updatedAt;
-        } else if (configData?.createdAt) {
-            lastOpened = configData.createdAt;
-        } else {
-            try {
-                const folderStat = await fs.stat(normFolder);
-                lastOpened = folderStat.mtimeMs;
-            } catch(e) {
-                lastOpened = Date.now();
-            }
-        }
-
-        const displayName = manifestData?.data?.name || manifestData?.name || wsName;
-        const isCurrentActive = Boolean(this.currentWorkspace && (
-            this.currentWorkspace.toLowerCase() === lowerKey || 
-            this.currentWorkspace.toLowerCase() === displayName.toLowerCase() ||
-            this.currentWorkspace.toLowerCase() === lowerBase
-        ));
-
-        seenNames.add(lowerKey);
-        seenNames.add(displayName.toLowerCase());
-        seenNames.add(lowerBase);
-        seenNames.add(lowerNorm);
-
-        workspaces.push({
-            name: displayName,
-            folderName: folderBasename,
-            path: normFolder,
-            thumbnail: manifestData?.data?.thumbnail || configData?.data?.general?.channelThumbnail || configData?.data?.branding?.logo || null,
-            lastOpened: lastOpened,
-            totalProjects: totalProjects,
-            lastRender: null,
-            renderCount: renderCount,
-            storageSizeGB: formattedStorage,
-            isActive: isCurrentActive
-        });
     }
 
     async listWorkspaces() {
@@ -631,50 +636,20 @@ class WorkspaceService {
             console.error('[WorkspaceService] Error loading known workspaces:', e);
         }
 
-        // 2. PRIORITY 2: Scan candidate base directories
+        // 2. PRIORITY 2: Scan candidate base directories (safe, standard paths only)
         const candidateBases = [
             this.basePath,
             path.resolve(process.cwd(), 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'Documents', 'MediaFactory', 'Workspaces'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'Workspaces'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactoryData', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Roaming', 'Electron', 'MediaFactoryData', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Local', 'MediaFactory', 'Workspaces'),
-            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'MediaFactory', 'Workspaces'),
-            path.join(os.homedir(), 'Documents', 'MediaFactory', 'Workspaces'),
-            path.join(os.homedir(), 'Documents', 'MediaFactoryData', 'Workspaces'),
-            path.join(os.homedir(), 'Documents', 'MediaFactory'),
-            path.join(os.homedir(), 'MediaFactory', 'Workspaces'),
-            path.join(os.homedir(), 'MediaFactory'),
-            'c:/MediaFactory/Workspaces',
-            'c:/MediaFactoryData/Workspaces',
-            'c:/.mediafactory_data/Workspaces',
-            'd:/MediaFactory/Workspaces',
-            'd:/MediaFactory/.mediafactory/Workspaces',
-            'd:/MediaFactory/.mediafactory_data/Workspaces',
-            'e:/MediaFactory/Workspaces',
-            'f:/MediaFactory/Workspaces'
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'Workspaces'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'Workspaces')
         ];
-
-        // Also scan common drive partitions (C through Z) for Workspaces folders
-        const driveLetters = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
-        for (const dl of driveLetters) {
-            const paths = [
-                `${dl}:/Workspaces`,
-                `${dl}:/MediaFactory/Workspaces`,
-                `${dl}:/MediaFactoryData/Workspaces`,
-                `${dl}:/MediaFactory`
-            ];
-            for (const p of paths) {
-                if (!candidateBases.includes(p)) candidateBases.push(p);
-            }
-        }
 
         for (const basePath of candidateBases) {
             try {
-                if (!fsSync.existsSync(basePath)) continue;
+                if (!basePath || !fsSync.existsSync(basePath)) continue;
                 const stat = fsSync.statSync(basePath);
                 if (!stat.isDirectory()) continue;
 
@@ -700,7 +675,7 @@ class WorkspaceService {
                     }
                 }
             } catch (e) {
-                // Ignore inaccessible drives or directories
+                // Ignore inaccessible directories
             }
         }
 

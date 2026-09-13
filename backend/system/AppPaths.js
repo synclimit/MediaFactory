@@ -97,9 +97,8 @@ class AppPaths {
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'system_settings.json'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'system_settings.json'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'MediaFactoryData', 'system_settings.json'),
-            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactoryData', 'system_settings.json'),
-            'd:/MediaFactory/.mediafactory_data/system_settings.json',
-            'c:/.mediafactory_data/system_settings.json'
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'system_settings.json'),
+            path.join(os.homedir(), '.mediafactory', 'system_settings.json')
         ];
 
         for (const sf of candidateSettingsFiles) {
@@ -134,7 +133,11 @@ class AppPaths {
                 try {
                     const reg = JSON.parse(fs.readFileSync(rf, 'utf8'));
                     if (reg && typeof reg === 'object') {
-                        this.knownWorkspaces = { ...this.knownWorkspaces, ...reg };
+                        for (const [k, v] of Object.entries(reg)) {
+                            if (v && typeof v === 'string') {
+                                this.knownWorkspaces[k] = path.normalize(v).trim();
+                            }
+                        }
                     }
                 } catch(e) {}
             }
@@ -147,12 +150,10 @@ class AppPaths {
         const targets = [
             path.join(this.appDataRoot, 'workspaces_registry.json'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'workspaces_registry.json'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'workspaces_registry.json'),
             path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'workspaces_registry.json'),
             path.join(os.homedir(), '.mediafactory', 'workspaces_registry.json')
         ];
-        if (!this.getAppInstallDir().toLowerCase().includes('program files')) {
-            targets.push('d:/MediaFactory/.mediafactory_data/workspaces_registry.json');
-        }
         return targets;
     }
 
@@ -194,11 +195,10 @@ class AppPaths {
 
             const targets = [
                 this.settingsFile,
-                path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'system_settings.json')
+                path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'system_settings.json'),
+                path.join(os.homedir(), 'AppData', 'Roaming', 'mediafactory', 'system_settings.json'),
+                path.join(os.homedir(), '.mediafactory', 'system_settings.json')
             ];
-            if (!this.getAppInstallDir().toLowerCase().includes('program files')) {
-                targets.push('d:/MediaFactory/.mediafactory_data/system_settings.json');
-            }
 
             for (const target of targets) {
                 try {
@@ -237,9 +237,12 @@ class AppPaths {
                     const reg = JSON.parse(fs.readFileSync(rf, 'utf8'));
                     if (reg && typeof reg === 'object') {
                         for (const [k, v] of Object.entries(reg)) {
-                            if (v && fs.existsSync(v)) {
-                                merged[k] = v;
-                                this.knownWorkspaces[k] = v;
+                            if (v && typeof v === 'string') {
+                                const norm = path.normalize(v).trim();
+                                if (fs.existsSync(norm)) {
+                                    merged[k] = norm;
+                                    this.knownWorkspaces[k] = norm;
+                                }
                             }
                         }
                     }

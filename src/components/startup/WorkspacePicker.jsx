@@ -37,91 +37,102 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
             cachedList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
         } catch(e) {}
 
-        try {
-            let res;
-            if (Object.keys(cachedRegistry).length > 0) {
-                res = await fetch(getApiUrl('/api/v1/system/workspace/sync-known'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ knownWorkspaces: cachedRegistry })
-                });
-            } else {
-                res = await fetch(getApiUrl('/api/v1/system/workspace/list'));
-            }
-            const data = await res.json();
-            const loaded = (data.success && Array.isArray(data.data)) ? data.data : [];
+        let loaded = [];
+        let fetchSuccess = false;
 
-            // Update local registry with newly discovered paths from backend
-            const updatedRegistry = { ...cachedRegistry };
-            for (const w of loaded) {
-                if (w.name && w.path) {
-                    updatedRegistry[w.name] = w.path;
-                }
-            }
+        // Try to fetch from backend with up to 3 attempts
+        for (let attempt = 1; attempt <= 3; attempt++) {
             try {
-                localStorage.setItem('mf_workspace_registry', JSON.stringify(updatedRegistry));
-            } catch(e) {}
+                let res;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-            // Combine backend list with any client-side cached entries
-            const combined = [...loaded];
-            for (const [name, wsPath] of Object.entries(updatedRegistry)) {
-                if (!combined.some(w => (w.name && w.name.toLowerCase() === name.toLowerCase()) || (w.folderName && w.folderName.toLowerCase() === name.toLowerCase()))) {
-                    combined.push({ 
-                        name, 
-                        folderName: name, 
-                        path: wsPath,
-                        totalProjects: 0, 
-                        renderCount: 0, 
-                        storageSizeGB: '0.00 GB',
-                        lastOpened: Date.now()
+                if (Object.keys(cachedRegistry).length > 0) {
+                    res = await fetch(getApiUrl('/api/v1/system/workspace/sync-known'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ knownWorkspaces: cachedRegistry }),
+                        signal: controller.signal
+                    });
+                } else {
+                    res = await fetch(getApiUrl('/api/v1/system/workspace/list'), {
+                        signal: controller.signal
                     });
                 }
-            }
-            for (const name of cachedList) {
-                if (!combined.some(w => (w.name && w.name.toLowerCase() === name.toLowerCase()) || (w.folderName && w.folderName.toLowerCase() === name.toLowerCase()))) {
-                    combined.push({ 
-                        name, 
-                        folderName: name, 
-                        path: updatedRegistry[name] || '',
-                        totalProjects: 0, 
-                        renderCount: 0, 
-                        storageSizeGB: '0.00 GB',
-                        lastOpened: Date.now()
-                    });
+                clearTimeout(timeoutId);
+
+                if (res && res.ok) {
+                    const data = await res.json();
+                    if (data && data.success && Array.isArray(data.data)) {
+                        loaded = data.data;
+                        fetchSuccess = true;
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.warn(`[WorkspacePicker] Load attempt ${attempt} warning:`, err.message);
+                if (attempt < 3) {
+                    await new Promise(r => setTimeout(r, 250 * attempt));
                 }
             }
-            setWorkspaces(combined);
-        } catch (e) {
-            console.error('[WorkspacePicker] Load error:', e);
-            const fallbackList = [];
-            for (const [name, wsPath] of Object.entries(cachedRegistry)) {
-                fallbackList.push({
-                    name,
-                    folderName: name,
+        }
+
+        // Update local registry with newly discovered paths from backend
+        const updatedRegistry = { ...cachedRegistry };
+        for (const w of loaded) {
+            if (w.name && w.path) {
+                updatedRegistry[w.name] = w.path;
+            }
+        }
+        try {
+            localStorage.setItem('mf_workspace_registry', JSON.stringify(updatedRegistry));
+        } catch(e) {}
+
+        // Combine backend list with any client-side cached entries
+        const combined = [...loaded];
+        for (const [name, wsPath] of Object.entries(updatedRegistry)) {
+            if (!combined.some(w => (w.name && w.name.toLowerCase() === name.toLowerCase()) || (w.folderName && w.folderName.toLowerCase() === name.toLowerCase()))) {
+                combined.push({ 
+                    name, 
+                    folderName: name, 
                     path: wsPath,
-                    totalProjects: 0,
-                    renderCount: 0,
+                    totalProjects: 0, 
+                    renderCount: 0, 
                     storageSizeGB: '0.00 GB',
                     lastOpened: Date.now()
                 });
             }
-            for (const name of cachedList) {
-                if (!fallbackList.some(w => w.name.toLowerCase() === name.toLowerCase())) {
-                    fallbackList.push({
-                        name,
-                        folderName: name,
-                        path: '',
-                        totalProjects: 0,
-                        renderCount: 0,
-                        storageSizeGB: '0.00 GB',
-                        lastOpened: Date.now()
-                    });
-                }
-            }
-            setWorkspaces(fallbackList);
-        } finally {
-            setIsLoading(false);
         }
+        for (const name of cachedList) {
+            if (!combined.some(w => (w.name && w.name.toLowerCase() === name.toLowerCase()) || (w.folderName && w.folderName.toLowerCase() === name.toLowerCase()))) {
+                combined.push({ 
+                    name, 
+                    folderName: name, 
+                    path: updatedRegistry[name] || '',
+                    totalProjects: 0, 
+                    renderCount: 0, 
+                    storageSizeGB: '0.00 GB',
+                    lastOpened: Date.now()
+                });
+            }
+        }
+
+        // Guaranteed fallback: If combined is empty, provide active workspace or 'Test 1'
+        if (combined.length === 0) {
+            const fallbackName = currentActiveName || 'Test 1';
+            combined.push({
+                name: fallbackName,
+                folderName: fallbackName,
+                path: '',
+                totalProjects: 0,
+                renderCount: 0,
+                storageSizeGB: '0.00 GB',
+                lastOpened: Date.now()
+            });
+        }
+
+        setWorkspaces(combined);
+        setIsLoading(false);
     };
 
     useEffect(() => {

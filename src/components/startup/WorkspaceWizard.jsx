@@ -137,8 +137,9 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 body: JSON.stringify(payload)
             });
             const data = await res.json().catch(() => null);
-            if (data && data.success === false && data.validation?.message) {
-                setErrorMsg(data.validation.message);
+            if (!res.ok || (data && data.success === false)) {
+                const msg = data?.validation?.message || data?.error || 'Gagal membuat workspace di lokasi yang dipilih.';
+                setErrorMsg(msg);
                 setIsCreating(false);
                 return;
             }
@@ -149,8 +150,22 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                     localStorage.setItem('mf_workspace_registry', JSON.stringify(reg));
                 } catch(e) {}
             }
+
+            // Also register as active on backend
+            await fetch(getApiUrl('/api/v1/system/workspace/active'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    workspaceName: cleanName, 
+                    workspacePath: data?.workspacePath || estimatedPath 
+                })
+            }).catch(() => {});
+
         } catch(e) {
-            console.warn('[WorkspaceWizard] Backend create warning:', e);
+            console.error('[WorkspaceWizard] Backend create error:', e);
+            setErrorMsg(`Koneksi ke backend gagal: ${e.message}`);
+            setIsCreating(false);
+            return;
         }
 
         // 3. Immediately transition to Editor

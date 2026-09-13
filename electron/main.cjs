@@ -2,16 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Only redirect Electron User Data if installation directory is writable and not in Program Files
-const appInstallDir = process.resourcesPath ? path.resolve(process.resourcesPath, '..') : process.cwd();
-const isProgramFiles = appInstallDir.toLowerCase().includes('program files');
-if (!isProgramFiles) {
-    const localUserDataDir = path.join(appInstallDir, '.mediafactory_data', 'electron_user_data');
-    try {
-        if (!fs.existsSync(localUserDataDir)) fs.mkdirSync(localUserDataDir, { recursive: true });
-        app.setPath('userData', localUserDataDir);
-    } catch (e) {}
-}
+// Ensure standard Windows user data directory (%APPDATA%\MediaFactory) is used for permanent persistence
 
 // Global Exception Handler to write crash logs and show error dialog
 function writeCrashLog(err) {
