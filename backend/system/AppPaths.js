@@ -448,15 +448,17 @@ class AppPaths {
     getYtDlpStandardArgs(extra = []) {
         const nodePath = this.getNodeJsPath();
         const ffmpegDir = this.getFFmpegDir();
-        return [
+        const args = [
             '--no-check-certificates',
             '--force-ipv4',
-            '--js-runtimes', 'node:' + nodePath,
-            '--extractor-args', 'youtube:player_client=ios,mweb,web',
-            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/144.0.0.0',
-            '--ffmpeg-location', ffmpegDir,
-            ...extra
+            '--ffmpeg-location', ffmpegDir
         ];
+        if (nodePath) {
+            args.push('--js-runtimes', 'node:' + nodePath);
+        }
+        // android,web prevents YouTube PO Token requirement and bypasses bot detection / HTTP 403
+        args.push('--extractor-args', 'youtube:player_client=android,web');
+        return [...args, ...extra];
     }
 }
 
