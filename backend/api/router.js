@@ -170,14 +170,7 @@ router.post('/api/v1/system/clean-cache/immediate', (req, res) => {
 
 // --- Persistent Queue & Render History Endpoints (Rock-Solid Disk Storage) ---
 const getDataDir = () => {
-    const fs = require('fs');
-    const path = require('path');
-    const installDir = AppPaths.getAppInstallDir ? AppPaths.getAppInstallDir() : process.cwd();
-    const dataDir = path.join(installDir, '.mediafactory_data');
-    if (!fs.existsSync(dataDir)) {
-        try { fs.mkdirSync(dataDir, { recursive: true }); } catch (e) {}
-    }
-    return dataDir;
+    return AppPaths.getMediaFactoryDataDir();
 };
 
 const safeReadJson = (filePath, defaultVal = []) => {

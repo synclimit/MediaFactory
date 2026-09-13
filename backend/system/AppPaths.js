@@ -2,19 +2,92 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 
+function isDirWritable(dirPath) {
+    if (!dirPath || typeof dirPath !== 'string') return false;
+    try {
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+        const testFile = path.join(dirPath, `.mf_write_test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
+        fs.writeFileSync(testFile, 'ok');
+        fs.unlinkSync(testFile);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 class AppPaths {
     constructor() {
         // Deteksi apakah sedang berjalan di Electron
         this.isElectron = !!(process.versions && process.versions.electron);
         
         const installDir = this.getAppInstallDir();
-        const appDataRoot = path.join(installDir, '.mediafactory_data');
+        const isProgramFiles = installDir.toLowerCase().includes('program files');
 
-        this.workspaceDir = path.join(installDir, 'Workspaces');
+        // Resolve writable AppData root
+        let appDataRoot = null;
+        if (!isProgramFiles) {
+            const localRoot = path.join(installDir, '.mediafactory_data');
+            if (isDirWritable(localRoot)) {
+                appDataRoot = localRoot;
+            }
+        }
+        if (!appDataRoot) {
+            const roaming = process.env.APPDATA || (os.homedir() ? path.join(os.homedir(), 'AppData', 'Roaming') : null);
+            if (roaming && isDirWritable(path.join(roaming, 'MediaFactory', 'MediaFactoryData'))) {
+                appDataRoot = path.join(roaming, 'MediaFactory', 'MediaFactoryData');
+            } else if (roaming && isDirWritable(path.join(roaming, 'MediaFactory'))) {
+                appDataRoot = path.join(roaming, 'MediaFactory');
+            } else {
+                const localApp = process.env.LOCALAPPDATA || (os.homedir() ? path.join(os.homedir(), 'AppData', 'Local') : null);
+                if (localApp && isDirWritable(path.join(localApp, 'MediaFactory'))) {
+                    appDataRoot = path.join(localApp, 'MediaFactory');
+                } else {
+                    appDataRoot = path.join(os.homedir(), '.mediafactory_data');
+                    isDirWritable(appDataRoot);
+                }
+            }
+        }
+        this.appDataRoot = appDataRoot;
+
+        // Resolve writable Workspace directory
+        let defaultWorkspace = path.join(installDir, 'Workspaces');
+        if (isProgramFiles || !isDirWritable(defaultWorkspace)) {
+            if (fs.existsSync('D:\\') && isDirWritable('D:\\MediaFactory\\Workspaces')) {
+                defaultWorkspace = 'D:\\MediaFactory\\Workspaces';
+            } else {
+                const docDir = path.join(os.homedir(), 'Documents', 'MediaFactory', 'Workspaces');
+                if (isDirWritable(docDir)) {
+                    defaultWorkspace = docDir;
+                } else {
+                    defaultWorkspace = path.join(appDataRoot, 'Workspaces');
+                    isDirWritable(defaultWorkspace);
+                }
+            }
+        }
+        this.workspaceDir = defaultWorkspace;
+
+        // Resolve writable Output directory
+        let defaultOutput = path.join(installDir, 'Output');
+        if (isProgramFiles || !isDirWritable(defaultOutput)) {
+            if (fs.existsSync('D:\\') && isDirWritable('D:\\MediaFactory\\Output')) {
+                defaultOutput = 'D:\\MediaFactory\\Output';
+            } else {
+                const vidDir = path.join(os.homedir(), 'Videos', 'MediaFactory');
+                if (isDirWritable(vidDir)) {
+                    defaultOutput = vidDir;
+                } else {
+                    defaultOutput = path.join(appDataRoot, 'Output');
+                    isDirWritable(defaultOutput);
+                }
+            }
+        }
+        this.outputDir = defaultOutput;
+
         this.diagnosticsDir = path.join(appDataRoot, 'Diagnostics');
         this.cacheDir = path.join(appDataRoot, 'Cache');
         this.cacheCleanupMode = 'never'; // Default
-        this.outputDir = path.join(installDir, 'Output');
         this.settingsFile = path.join(appDataRoot, 'system_settings.json');
         this.knownWorkspaces = {}; // Map of { [name]: folderPath }
         this.activeWorkspace = null;
@@ -59,8 +132,8 @@ class AppPaths {
     }
 
     _ensureDirs() {
-        [this.workspaceDir, this.diagnosticsDir, this.cacheDir, this.outputDir].forEach(dir => {
-            if (!fs.existsSync(dir)) {
+        [this.workspaceDir, this.diagnosticsDir, this.cacheDir, this.outputDir, this.appDataRoot].forEach(dir => {
+            if (dir && !fs.existsSync(dir)) {
                 try { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}
             }
         });
@@ -85,9 +158,11 @@ class AppPaths {
 
             const targets = [
                 this.settingsFile,
-                path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'system_settings.json'),
-                'd:/MediaFactory/.mediafactory_data/system_settings.json'
+                path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'system_settings.json')
             ];
+            if (!this.getAppInstallDir().toLowerCase().includes('program files')) {
+                targets.push('d:/MediaFactory/.mediafactory_data/system_settings.json');
+            }
 
             for (const target of targets) {
                 try {
@@ -115,7 +190,7 @@ class AppPaths {
     getCacheBase() { return this.cacheDir; }
     getCacheCleanupMode() { return this.cacheCleanupMode; }
     getOutputBase() { return this.outputDir; }
-    getMediaFactoryDataDir() { return path.dirname(this.cacheDir); }
+    getMediaFactoryDataDir() { return this.appDataRoot || path.dirname(this.cacheDir); }
 
     getKnownWorkspaces() {
         return { ...(this.knownWorkspaces || {}) };
