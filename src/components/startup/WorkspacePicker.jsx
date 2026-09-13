@@ -28,23 +28,61 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
     };
 
     const loadWorkspaces = async () => {
+        let cachedRegistry = {};
         let cachedList = [];
+        try {
+            cachedRegistry = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+        } catch(e) {}
         try {
             cachedList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
         } catch(e) {}
 
         try {
-            const res = await fetch(getApiUrl('/api/v1/system/workspace/list'));
+            let res;
+            if (Object.keys(cachedRegistry).length > 0) {
+                res = await fetch(getApiUrl('/api/v1/system/workspace/sync-known'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ knownWorkspaces: cachedRegistry })
+                });
+            } else {
+                res = await fetch(getApiUrl('/api/v1/system/workspace/list'));
+            }
             const data = await res.json();
             const loaded = (data.success && Array.isArray(data.data)) ? data.data : [];
 
-            // Combine backend list with client-side cache (case-insensitive)
+            // Update local registry with newly discovered paths from backend
+            const updatedRegistry = { ...cachedRegistry };
+            for (const w of loaded) {
+                if (w.name && w.path) {
+                    updatedRegistry[w.name] = w.path;
+                }
+            }
+            try {
+                localStorage.setItem('mf_workspace_registry', JSON.stringify(updatedRegistry));
+            } catch(e) {}
+
+            // Combine backend list with any client-side cached entries
             const combined = [...loaded];
+            for (const [name, wsPath] of Object.entries(updatedRegistry)) {
+                if (!combined.some(w => (w.name && w.name.toLowerCase() === name.toLowerCase()) || (w.folderName && w.folderName.toLowerCase() === name.toLowerCase()))) {
+                    combined.push({ 
+                        name, 
+                        folderName: name, 
+                        path: wsPath,
+                        totalProjects: 0, 
+                        renderCount: 0, 
+                        storageSizeGB: '0.00 GB',
+                        lastOpened: Date.now()
+                    });
+                }
+            }
             for (const name of cachedList) {
                 if (!combined.some(w => (w.name && w.name.toLowerCase() === name.toLowerCase()) || (w.folderName && w.folderName.toLowerCase() === name.toLowerCase()))) {
                     combined.push({ 
                         name, 
                         folderName: name, 
+                        path: updatedRegistry[name] || '',
                         totalProjects: 0, 
                         renderCount: 0, 
                         storageSizeGB: '0.00 GB',
@@ -54,15 +92,32 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
             }
             setWorkspaces(combined);
         } catch (e) {
-            console.error(e);
-            const fallbackList = cachedList.map(name => ({ 
-                name, 
-                folderName: name, 
-                totalProjects: 0, 
-                renderCount: 0, 
-                storageSizeGB: '0.00 GB',
-                lastOpened: Date.now()
-            }));
+            console.error('[WorkspacePicker] Load error:', e);
+            const fallbackList = [];
+            for (const [name, wsPath] of Object.entries(cachedRegistry)) {
+                fallbackList.push({
+                    name,
+                    folderName: name,
+                    path: wsPath,
+                    totalProjects: 0,
+                    renderCount: 0,
+                    storageSizeGB: '0.00 GB',
+                    lastOpened: Date.now()
+                });
+            }
+            for (const name of cachedList) {
+                if (!fallbackList.some(w => w.name.toLowerCase() === name.toLowerCase())) {
+                    fallbackList.push({
+                        name,
+                        folderName: name,
+                        path: '',
+                        totalProjects: 0,
+                        renderCount: 0,
+                        storageSizeGB: '0.00 GB',
+                        lastOpened: Date.now()
+                    });
+                }
+            }
             setWorkspaces(fallbackList);
         } finally {
             setIsLoading(false);
@@ -111,16 +166,20 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
             });
             const data = await res.json();
             if (data.success && data.workspaceName) {
+                const wsPath = data.workspacePath || selectedFolder;
                 try {
                     const cached = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
                     if (!cached.includes(data.workspaceName)) {
                         cached.push(data.workspaceName);
                         localStorage.setItem('mf_created_workspaces', JSON.stringify(cached));
                     }
+                    const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+                    reg[data.workspaceName] = wsPath;
+                    localStorage.setItem('mf_workspace_registry', JSON.stringify(reg));
                     localStorage.setItem('mf_active_workspace', data.workspaceName);
                 } catch(e) {}
                 await loadWorkspaces();
-                await handleOpen(data.workspaceName);
+                await handleOpen(data.workspaceName, wsPath);
             } else {
                 alert('Gagal memuat folder workspace: ' + (data.error || 'Folder tidak dapat dikenali sebagai workspace'));
             }
@@ -132,18 +191,22 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
         }
     };
 
-    const handleOpen = async (name) => {
+    const handleOpen = async (nameOrWs, explicitPath = null) => {
+        const wsName = typeof nameOrWs === 'string' ? nameOrWs : nameOrWs?.name;
+        const wsPath = explicitPath || (typeof nameOrWs === 'object' ? nameOrWs?.path : null);
+        if (!wsName) return;
+
         try {
-            localStorage.setItem('mf_active_workspace', name);
+            localStorage.setItem('mf_active_workspace', wsName);
             await fetch(getApiUrl('/api/v1/system/workspace/active'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ workspaceName: name })
+                body: JSON.stringify({ workspaceName: wsName, workspacePath: wsPath })
             });
-            onWorkspaceSelected(name);
+            onWorkspaceSelected(wsName);
         } catch (e) {
             console.error(e);
-            onWorkspaceSelected(name);
+            onWorkspaceSelected(wsName);
         }
     };
 
@@ -187,7 +250,7 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                             <div 
                                 key={ws.name}
                                 onClick={() => handleSelect(ws.name)}
-                                onDoubleClick={() => handleOpen(ws.name)}
+                                onDoubleClick={() => handleOpen(ws)}
                                 className={`relative w-[340px] rounded-xl border p-5 flex flex-col cursor-pointer transition-all duration-300 group overflow-hidden ${
                                     selected === ws.name 
                                         ? 'bg-gradient-to-br from-[#2a1306]/90 via-[#1b1d22] to-[#0d0e12] border-orange-500 shadow-[0_15px_40px_rgba(249,115,22,0.3),inset_0_1px_1px_rgba(255,255,255,0.1),inset_0_-1px_2px_rgba(0,0,0,0.5)]' 
@@ -201,7 +264,7 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                                         : 'bg-gradient-to-r from-orange-600/30 via-orange-500/50 to-orange-600/30 shadow-[0_0_10px_rgba(249,115,22,0.3)] group-hover:via-orange-500/80 z-0 pointer-events-none'
                                 }`}></div>
 
-                                <div className="flex items-start gap-4 mb-4 relative z-10">
+                                <div className="flex items-start gap-4 mb-3 relative z-10">
                                     <Avatar 
                                         name={ws.name} 
                                         src={ws.thumbnail || localStorage.getItem(`mf_workspace_avatar_${ws.name}`) || localStorage.getItem(`mf_workspace_avatar_${ws.folderName}`) || null} 
@@ -225,6 +288,31 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Physical Folder Path Display Badge */}
+                                {ws.path ? (
+                                    <div 
+                                        className="flex items-center gap-1.5 text-[11px] font-mono text-gray-300 bg-black/50 px-2.5 py-1.5 rounded-lg border border-[#2a2c33] mb-3 group/path hover:border-orange-500/50 hover:bg-black/80 transition-all cursor-pointer shadow-inner relative z-10"
+                                        title={`Buka di Windows Explorer:\n${ws.path}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            fetch(getApiUrl('/api/v1/system/open-folder'), {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ path: ws.path })
+                                            }).catch(() => {});
+                                        }}
+                                    >
+                                        <FolderOpen size={13} className="text-orange-400 shrink-0 group-hover/path:text-orange-300 transition-colors" />
+                                        <span className="truncate flex-1 font-mono text-[10px] text-gray-400 group-hover/path:text-orange-200 transition-colors">{ws.path}</span>
+                                        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 group-hover/path:text-orange-400 shrink-0 font-sans border border-[#333] px-1 py-0.2 rounded group-hover/path:border-orange-500/40">EXPLORER</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-500 bg-black/20 px-2.5 py-1 rounded border border-[#2a2c33]/40 mb-3 truncate relative z-10">
+                                        <FolderOpen size={12} className="text-gray-600 shrink-0" />
+                                        <span className="truncate text-[10px]">Folder: {ws.folderName || ws.name}</span>
+                                    </div>
+                                )}
                                 
                                 <div className="grid grid-cols-3 gap-2 text-[11px] font-mono text-gray-400 mt-auto bg-black/40 rounded-xl p-3 border border-[#2a2c33] relative z-10">
                                     <div className="flex flex-col items-center">
@@ -253,6 +341,10 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                                                             const cached = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
                                                             const updated = cached.filter(n => n !== ws.name);
                                                             localStorage.setItem('mf_created_workspaces', JSON.stringify(updated));
+                                                            const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+                                                            delete reg[ws.name];
+                                                            delete reg[ws.folderName];
+                                                            localStorage.setItem('mf_workspace_registry', JSON.stringify(reg));
                                                         } catch(e) {}
                                                         if (localStorage.getItem('mf_active_workspace') === ws.name) {
                                                             localStorage.removeItem('mf_active_workspace');
@@ -278,7 +370,7 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                                             <FolderSync size={16} />
                                         </button>
                                         <button 
-                                            onClick={(e) => { e.stopPropagation(); handleOpen(ws.name); }} 
+                                            onClick={(e) => { e.stopPropagation(); handleOpen(ws); }} 
                                             className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 border border-orange-400 text-white font-black uppercase tracking-widest text-[12px] rounded-lg transition-all shadow-[0_0_15px_rgba(249,115,22,0.5),inset_0_1px_2px_rgba(255,255,255,0.3)] cursor-pointer"
                                         >
                                             <Play size={14} fill="currentColor" /> Open

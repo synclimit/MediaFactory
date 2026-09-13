@@ -346,9 +346,15 @@ router.post('/api/v1/system/select-directory', async (req, res) => {
 
 router.post('/api/v1/system/workspace/active', (req, res) => {
     const wsService = ServiceRegistry.resolve('WorkspaceService');
-    wsService.setCurrentWorkspace(req.body.workspaceName);
-    const resolvedPath = wsService._getWorkspacePath(req.body.workspaceName);
-    res.standardResponse({ activeWorkspace: req.body.workspaceName, workspacePath: resolvedPath });
+    const { workspaceName, workspacePath } = req.body;
+    if (workspacePath) {
+        try {
+            AppPaths.registerWorkspacePath(workspaceName, workspacePath);
+        } catch(e) {}
+    }
+    wsService.setCurrentWorkspace(workspaceName, workspacePath);
+    const resolvedPath = wsService._getWorkspacePath(workspaceName);
+    res.standardResponse({ activeWorkspace: workspaceName, workspacePath: resolvedPath });
 });
 
 router.get('/api/v1/system/workspace/active', (req, res) => {
@@ -360,9 +366,30 @@ router.get('/api/v1/system/workspace/active', (req, res) => {
 
 router.get('/api/v1/system/workspace/list', async (req, res) => {
     try {
+        if (req.query?.known) {
+            try {
+                const parsed = JSON.parse(decodeURIComponent(req.query.known));
+                if (parsed && typeof parsed === 'object') {
+                    AppPaths.bulkRegisterWorkspaces(parsed);
+                }
+            } catch(e) {}
+        }
         const wsService = ServiceRegistry.resolve('WorkspaceService');
         res.standardResponse(await wsService.listWorkspaces());
     } catch (e) { res.standardResponse(null, { status: "error", message: e.message }, false); }
+});
+
+router.post('/api/v1/system/workspace/sync-known', async (req, res) => {
+    try {
+        const { knownWorkspaces } = req.body;
+        if (knownWorkspaces && typeof knownWorkspaces === 'object') {
+            AppPaths.bulkRegisterWorkspaces(knownWorkspaces);
+        }
+        const wsService = ServiceRegistry.resolve('WorkspaceService');
+        res.standardResponse(await wsService.listWorkspaces());
+    } catch (e) {
+        res.standardResponse(null, { status: "error", message: e.message }, false);
+    }
 });
 
 router.post('/api/v1/system/workspace/create', async (req, res) => {
@@ -371,6 +398,12 @@ router.post('/api/v1/system/workspace/create', async (req, res) => {
         const customBase = req.body.workspaceBase || req.body.workspaceRoot || null;
         const workspace = await wsService.createWorkspace(req.body.name, customBase);
         
+        if (workspace?.workspacePath) {
+            try {
+                AppPaths.registerWorkspacePath(req.body.name, workspace.workspacePath);
+            } catch(e) {}
+        }
+
         // Save the configured output folder & branding assets
         const initialSettings = {};
         if (req.body.outputFolder) {
@@ -402,6 +435,11 @@ router.post('/api/v1/system/workspace/import-folder', async (req, res) => {
         }
         const wsService = ServiceRegistry.resolve('WorkspaceService');
         const result = await wsService.importWorkspaceFromFolder(folderPath);
+        if (result?.workspacePath && result?.workspaceName) {
+            try {
+                AppPaths.registerWorkspacePath(result.workspaceName, result.workspacePath);
+            } catch(e) {}
+        }
         res.json({ success: true, ...result });
     } catch (e) {
         res.json({ success: false, error: e.message });

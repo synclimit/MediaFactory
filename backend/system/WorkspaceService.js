@@ -31,8 +31,15 @@ class WorkspaceService {
         return this.currentWorkspace;
     }
 
-    setCurrentWorkspace(name) {
+    setCurrentWorkspace(name, customPath = null) {
         this.currentWorkspace = name;
+        if (customPath) {
+            try {
+                if (require('fs').existsSync(customPath)) {
+                    AppPaths.registerWorkspacePath(name, customPath);
+                }
+            } catch(e) {}
+        }
         try {
             AppPaths.setActiveWorkspace(name);
         } catch(e) {}
@@ -460,12 +467,171 @@ class WorkspaceService {
         return { success: true, workspaceName, workspacePath: targetWorkspacePath };
     }
 
+    async _inspectWorkspaceFolder(wsFolder, defaultName, seenNames, workspaces) {
+        const fs = require('fs').promises;
+        const fsSync = require('fs');
+        const path = require('path');
+
+        if (!wsFolder || !fsSync.existsSync(wsFolder)) return;
+
+        const normFolder = path.normalize(wsFolder);
+        const folderBasename = path.basename(normFolder);
+        const wsName = defaultName || folderBasename;
+
+        const lowerKey = wsName.toLowerCase();
+        const lowerBase = folderBasename.toLowerCase();
+        const lowerNorm = normFolder.toLowerCase();
+
+        if (seenNames.has(lowerKey) || seenNames.has(lowerBase) || seenNames.has(lowerNorm)) {
+            return;
+        }
+
+        let manifestData = null;
+        const manifestPath = path.join(normFolder, 'workspace.manifest.json');
+        try {
+            if (fsSync.existsSync(manifestPath)) {
+                manifestData = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+            }
+        } catch (e) {}
+
+        const configPath = path.join(normFolder, 'Config', 'workspace.json');
+        let configData = null;
+        let customOutput = null;
+        try {
+            if (fsSync.existsSync(configPath)) {
+                configData = JSON.parse(await fs.readFile(configPath, 'utf8'));
+                if (configData?.data?.output?.main && configData.data.output.main !== path.join(normFolder, 'Output')) {
+                    customOutput = configData.data.output.main;
+                }
+            }
+        } catch (e) {}
+
+        // Project count
+        let totalProjects = 0;
+        const projectsPath = path.join(normFolder, 'Projects');
+        try {
+            if (fsSync.existsSync(projectsPath)) {
+                const pEntries = await fs.readdir(projectsPath);
+                totalProjects += pEntries.filter(f => !f.startsWith('.')).length;
+            }
+        } catch (e) {}
+
+        if (customOutput && fsSync.existsSync(customOutput)) {
+            const scanSubdirs = async (dir) => {
+                try {
+                    if (!fsSync.existsSync(dir)) return 0;
+                    const entries = await fs.readdir(dir, { withFileTypes: true });
+                    return entries.filter(e => e.isDirectory() && !e.name.startsWith('.')).length;
+                } catch(e) { return 0; }
+            };
+            totalProjects += await scanSubdirs(path.join(customOutput, 'M1'));
+            totalProjects += await scanSubdirs(path.join(customOutput, 'M2'));
+            totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Fast Render'));
+            totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Normal Render'));
+            totalProjects += await scanSubdirs(path.join(customOutput, 'M4'));
+            totalProjects += await scanSubdirs(path.join(customOutput, 'M5'));
+            totalProjects += await scanSubdirs(path.join(customOutput, 'M6'));
+            totalProjects += await scanSubdirs(path.join(customOutput, 'M7'));
+            totalProjects += await scanSubdirs(path.join(customOutput, 'M7_Astrofox'));
+        }
+
+        // Render count
+        let renderCount = 0;
+        try {
+            renderCount += await this._countMediaFiles(path.join(normFolder, 'Output'));
+            renderCount += await this._countMediaFiles(path.join(normFolder, 'Renders'));
+            if (customOutput && fsSync.existsSync(customOutput)) {
+                renderCount += await this._countMediaFiles(customOutput);
+            }
+        } catch(e) {}
+
+        // Storage size
+        let formattedStorage = '0.00 GB';
+        try {
+            const dirStats = await this._calculateDirStats(normFolder);
+            let totalSizeBytes = dirStats.totalSize;
+            if (customOutput && fsSync.existsSync(customOutput)) {
+                const customStats = await this._calculateDirStats(customOutput);
+                totalSizeBytes += customStats.totalSize;
+            }
+            if (totalSizeBytes >= 1024 * 1024 * 1024) {
+                formattedStorage = `${(totalSizeBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+            } else if (totalSizeBytes >= 1024 * 1024) {
+                formattedStorage = `${(totalSizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+            } else if (totalSizeBytes > 0) {
+                formattedStorage = `${(totalSizeBytes / 1024).toFixed(0)} KB`;
+            }
+        } catch(e) {}
+
+        // Last opened
+        let lastOpened = null;
+        if (manifestData?.data?.lastOpened) {
+            lastOpened = manifestData.data.lastOpened;
+        } else if (configData?.updatedAt) {
+            lastOpened = configData.updatedAt;
+        } else if (manifestData?.data?.updatedAt && manifestData.data.updatedAt !== manifestData?.data?.createdAt) {
+            lastOpened = manifestData.data.updatedAt;
+        } else if (configData?.createdAt) {
+            lastOpened = configData.createdAt;
+        } else {
+            try {
+                const folderStat = await fs.stat(normFolder);
+                lastOpened = folderStat.mtimeMs;
+            } catch(e) {
+                lastOpened = Date.now();
+            }
+        }
+
+        const displayName = manifestData?.data?.name || manifestData?.name || wsName;
+        const isCurrentActive = Boolean(this.currentWorkspace && (
+            this.currentWorkspace.toLowerCase() === lowerKey || 
+            this.currentWorkspace.toLowerCase() === displayName.toLowerCase() ||
+            this.currentWorkspace.toLowerCase() === lowerBase
+        ));
+
+        seenNames.add(lowerKey);
+        seenNames.add(displayName.toLowerCase());
+        seenNames.add(lowerBase);
+        seenNames.add(lowerNorm);
+
+        workspaces.push({
+            name: displayName,
+            folderName: folderBasename,
+            path: normFolder,
+            thumbnail: manifestData?.data?.thumbnail || configData?.data?.general?.channelThumbnail || configData?.data?.branding?.logo || null,
+            lastOpened: lastOpened,
+            totalProjects: totalProjects,
+            lastRender: null,
+            renderCount: renderCount,
+            storageSizeGB: formattedStorage,
+            isActive: isCurrentActive
+        });
+    }
+
     async listWorkspaces() {
         const fs = require('fs').promises;
         const fsSync = require('fs');
         const os = require('os');
         const path = require('path');
 
+        const workspaces = [];
+        const seenNames = new Set();
+
+        // 1. PRIORITY 1: Direct inspection of all knownWorkspaces from persistent registry
+        try {
+            const known = AppPaths.getKnownWorkspaces();
+            if (known && typeof known === 'object') {
+                for (const [kName, kPath] of Object.entries(known)) {
+                    if (kPath && fsSync.existsSync(kPath)) {
+                        await this._inspectWorkspaceFolder(kPath, kName, seenNames, workspaces);
+                    }
+                }
+            }
+        } catch(e) {
+            console.error('[WorkspaceService] Error loading known workspaces:', e);
+        }
+
+        // 2. PRIORITY 2: Scan candidate base directories
         const candidateBases = [
             this.basePath,
             path.resolve(process.cwd(), 'Workspaces'),
@@ -492,191 +658,59 @@ class WorkspaceService {
             'f:/MediaFactory/Workspaces'
         ];
 
-        // Include any known workspace parent paths from persistent system_settings.json
-        try {
-            const known = AppPaths.getKnownWorkspaces();
-            if (known && typeof known === 'object') {
-                for (const [kName, kPath] of Object.entries(known)) {
-                    if (kPath && fsSync.existsSync(kPath)) {
-                        const parent = path.dirname(kPath);
-                        if (!candidateBases.includes(parent)) candidateBases.unshift(parent);
-                    }
-                }
-            }
-        } catch(e) {}
-
         // Also scan common drive partitions (C through Z) for Workspaces folders
         const driveLetters = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
         for (const dl of driveLetters) {
             const paths = [
                 `${dl}:/Workspaces`,
                 `${dl}:/MediaFactory/Workspaces`,
-                `${dl}:/MediaFactoryData/Workspaces`
+                `${dl}:/MediaFactoryData/Workspaces`,
+                `${dl}:/MediaFactory`
             ];
             for (const p of paths) {
                 if (!candidateBases.includes(p)) candidateBases.push(p);
             }
         }
 
-        const workspaces = [];
-        const seenNames = new Set();
-
         for (const basePath of candidateBases) {
             try {
                 if (!fsSync.existsSync(basePath)) continue;
+                const stat = fsSync.statSync(basePath);
+                if (!stat.isDirectory()) continue;
+
                 const entries = await fs.readdir(basePath, { withFileTypes: true });
 
                 for (const entry of entries) {
                     if (entry.isDirectory()) {
                         const wsName = entry.name;
-                        if (seenNames.has(wsName) || wsName.startsWith('.')) continue;
+                        if (wsName.startsWith('.') || wsName.startsWith('$')) continue;
+                        if (seenNames.has(wsName.toLowerCase())) continue;
 
                         const wsFolder = path.join(basePath, wsName);
-
+                        // Check if it has workspace markers before spending time inspecting
                         const manifestPath = path.join(wsFolder, 'workspace.manifest.json');
                         const configPath = path.join(wsFolder, 'Config', 'workspace.json');
+                        const hasProjects = fsSync.existsSync(path.join(wsFolder, 'Projects'));
+                        const hasOutput = fsSync.existsSync(path.join(wsFolder, 'Output'));
 
-                        seenNames.add(wsName);
-
-                        let manifestData = null;
-                        try {
-                            if (fsSync.existsSync(manifestPath)) {
-                                manifestData = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
-                            }
-                        } catch (e) {}
-
-                        // 1. Calculate Real Project Count (Projects folder + output project directories)
-                        let totalProjects = 0;
-                        const projectsPath = path.join(wsFolder, 'Projects');
-                        try {
-                            if (fsSync.existsSync(projectsPath)) {
-                                const pEntries = await fs.readdir(projectsPath);
-                                totalProjects += pEntries.filter(f => !f.startsWith('.')).length;
-                            }
-                        } catch (e) {}
-
-                        // Read config data
-                        let configData = null;
-                        let customOutput = null;
-                        try {
-                            if (fsSync.existsSync(configPath)) {
-                                configData = JSON.parse(await fs.readFile(configPath, 'utf8'));
-                                if (configData?.data?.output?.main && configData.data.output.main !== path.join(wsFolder, 'Output')) {
-                                    customOutput = configData.data.output.main;
-                                }
-                            }
-                        } catch (e) {}
-
-                        // Scan sub-project folders in custom output (M1, M2, M3 Fast/Normal, M4, M5, M7)
-                        if (customOutput && fsSync.existsSync(customOutput)) {
-                            const scanSubdirs = async (dir) => {
-                                try {
-                                    if (!fsSync.existsSync(dir)) return 0;
-                                    const entries = await fs.readdir(dir, { withFileTypes: true });
-                                    return entries.filter(e => e.isDirectory() && !e.name.startsWith('.')).length;
-                                } catch(e) { return 0; }
-                            };
-                            totalProjects += await scanSubdirs(path.join(customOutput, 'M1'));
-                            totalProjects += await scanSubdirs(path.join(customOutput, 'M2'));
-                            totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Fast Render'));
-                            totalProjects += await scanSubdirs(path.join(customOutput, 'M3', 'Normal Render'));
-                            totalProjects += await scanSubdirs(path.join(customOutput, 'M4'));
-                            totalProjects += await scanSubdirs(path.join(customOutput, 'M5'));
-                            totalProjects += await scanSubdirs(path.join(customOutput, 'M6'));
-                            totalProjects += await scanSubdirs(path.join(customOutput, 'M7'));
-                            totalProjects += await scanSubdirs(path.join(customOutput, 'M7_Astrofox'));
+                        if (fsSync.existsSync(manifestPath) || fsSync.existsSync(configPath) || hasProjects || hasOutput) {
+                            await this._inspectWorkspaceFolder(wsFolder, wsName, seenNames, workspaces);
+                            try { AppPaths.registerWorkspacePath(wsName, wsFolder); } catch(e) {}
                         }
-
-                        // 2. Calculate Real Render Count from Output / Renders folders
-                        let renderCount = 0;
-                        const defaultOutputDir = path.join(wsFolder, 'Output');
-                        const rendersDir = path.join(wsFolder, 'Renders');
-                        renderCount += await this._countMediaFiles(defaultOutputDir);
-                        renderCount += await this._countMediaFiles(rendersDir);
-
-                        if (customOutput && fsSync.existsSync(customOutput)) {
-                            renderCount += await this._countMediaFiles(customOutput);
-                        }
-
-                        // 3. Calculate Real Storage Size in Bytes
-                        const dirStats = await this._calculateDirStats(wsFolder);
-                        let totalSizeBytes = dirStats.totalSize;
-                        if (customOutput && fsSync.existsSync(customOutput)) {
-                            const customStats = await this._calculateDirStats(customOutput);
-                            totalSizeBytes += customStats.totalSize;
-                        }
-
-                        let formattedStorage = '0.00 GB';
-                        if (totalSizeBytes >= 1024 * 1024 * 1024) {
-                            formattedStorage = `${(totalSizeBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-                        } else if (totalSizeBytes >= 1024 * 1024) {
-                            formattedStorage = `${(totalSizeBytes / (1024 * 1024)).toFixed(1)} MB`;
-                        } else if (totalSizeBytes > 0) {
-                            formattedStorage = `${(totalSizeBytes / 1024).toFixed(0)} KB`;
-                        } else {
-                            formattedStorage = '0.00 GB';
-                        }
-
-                        // 4. Calculate Real Last Opened Timestamp (Prefer config/settings updatedAt or manifest lastOpened)
-                        let lastOpened = null;
-                        if (manifestData?.data?.lastOpened) {
-                            lastOpened = manifestData.data.lastOpened;
-                        } else if (configData?.updatedAt) {
-                            lastOpened = configData.updatedAt;
-                        } else if (manifestData?.data?.updatedAt && manifestData.data.updatedAt !== manifestData?.data?.createdAt) {
-                            lastOpened = manifestData.data.updatedAt;
-                        } else if (configData?.createdAt) {
-                            lastOpened = configData.createdAt;
-                        } else {
-                            try {
-                                const folderStat = await fs.stat(wsFolder);
-                                lastOpened = folderStat.mtimeMs;
-                            } catch(e) {
-                                lastOpened = Date.now();
-                            }
-                        }
-
-                        const displayName = manifestData?.data?.name || manifestData?.name || wsName;
-                        const isCurrentActive = Boolean(this.currentWorkspace && (this.currentWorkspace.toLowerCase() === wsName.toLowerCase() || this.currentWorkspace.toLowerCase() === displayName.toLowerCase()));
-
-                        workspaces.push({
-                            name: displayName,
-                            folderName: wsName,
-                            path: wsFolder,
-                            thumbnail: manifestData?.data?.thumbnail || configData?.data?.general?.channelThumbnail || configData?.data?.branding?.logo || null,
-                            lastOpened: lastOpened,
-                            totalProjects: totalProjects,
-                            lastRender: null,
-                            renderCount: renderCount,
-                            storageSizeGB: formattedStorage,
-                            isActive: isCurrentActive
-                        });
                     }
                 }
             } catch (e) {
-                console.error('[WorkspaceService] Error scanning path:', basePath, e);
+                // Ignore inaccessible drives or directories
             }
         }
 
-        // Guarantee all registered custom partition/folder workspaces are included
+        // 3. Guarantee any known workspaces that weren't caught yet are included
         try {
             const known = AppPaths.getKnownWorkspaces();
             if (known && typeof known === 'object') {
                 for (const [kName, kPath] of Object.entries(known)) {
-                    if (kPath && fsSync.existsSync(kPath) && !seenNames.has(kName) && !seenNames.has(path.basename(kPath))) {
-                        seenNames.add(kName);
-                        workspaces.push({
-                            name: kName,
-                            folderName: path.basename(kPath),
-                            path: kPath,
-                            thumbnail: null,
-                            lastOpened: Date.now(),
-                            totalProjects: 0,
-                            lastRender: null,
-                            renderCount: 0,
-                            storageSizeGB: '0.00 GB',
-                            isActive: Boolean(this.currentWorkspace && this.currentWorkspace.toLowerCase() === kName.toLowerCase())
-                        });
+                    if (kPath && fsSync.existsSync(kPath) && !seenNames.has(kName.toLowerCase()) && !seenNames.has(path.basename(kPath).toLowerCase())) {
+                        await this._inspectWorkspaceFolder(kPath, kName, seenNames, workspaces);
                     }
                 }
             }
@@ -704,6 +738,7 @@ class WorkspaceService {
                 workspaces.push({
                     name: 'Test 1',
                     folderName: 'Test 1',
+                    path: defaultFolder,
                     thumbnail: null,
                     lastOpened: Date.now(),
                     totalProjects: 0,
@@ -712,6 +747,7 @@ class WorkspaceService {
                     storageSizeGB: '0.00 GB',
                     isActive: true
                 });
+                try { AppPaths.registerWorkspacePath('Test 1', defaultFolder); } catch(e) {}
             } catch (e) {
                 console.error('[WorkspaceService] Failed to auto-create default workspace:', e);
             }

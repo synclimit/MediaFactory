@@ -86,11 +86,22 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
         
         // 1. Instantly save workspace to client storage
         localStorage.setItem('mf_active_workspace', cleanName);
+        let estimatedPath = '';
+        if (workspaceRoot) {
+            const cleanBase = workspaceRoot.replace(/[\/\\]+$/, '');
+            estimatedPath = `${cleanBase}/${cleanName}`;
+        }
+
         try {
             const existingList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
             if (!existingList.includes(cleanName)) {
                 existingList.push(cleanName);
                 localStorage.setItem('mf_created_workspaces', JSON.stringify(existingList));
+            }
+            const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+            if (estimatedPath) {
+                reg[cleanName] = estimatedPath;
+                localStorage.setItem('mf_workspace_registry', JSON.stringify(reg));
             }
         } catch(e) {}
         
@@ -111,6 +122,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
             const payload = {
                 name: cleanName,
                 workspaceBase: workspaceRoot,
+                workspacePath: estimatedPath,
                 assets: {
                     logo: logoPath,
                     watermark: watermarkPath,
@@ -129,6 +141,13 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 setErrorMsg(data.validation.message);
                 setIsCreating(false);
                 return;
+            }
+            if (data?.workspacePath) {
+                try {
+                    const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+                    reg[cleanName] = data.workspacePath;
+                    localStorage.setItem('mf_workspace_registry', JSON.stringify(reg));
+                } catch(e) {}
             }
         } catch(e) {
             console.warn('[WorkspaceWizard] Backend create warning:', e);

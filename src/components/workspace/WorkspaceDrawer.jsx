@@ -199,6 +199,14 @@ export default function WorkspaceDrawer({ activeWorkspace, isOpen, onClose, onSw
                 const cachedList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
                 const updatedList = cachedList.map(n => n === activeWorkspace ? trimmed : n);
                 localStorage.setItem('mf_created_workspaces', JSON.stringify(updatedList));
+
+                const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+                if (reg[activeWorkspace]) {
+                    reg[trimmed] = reg[activeWorkspace];
+                    delete reg[activeWorkspace];
+                    localStorage.setItem('mf_workspace_registry', JSON.stringify(reg));
+                }
+
                 localStorage.setItem('mf_active_workspace', trimmed);
             } catch(e) {}
 

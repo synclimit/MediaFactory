@@ -128,7 +128,43 @@ class AppPaths {
             }
         }
 
+        // Also load dedicated workspaces_registry.json
+        for (const rf of this._getRegistryTargets()) {
+            if (fs.existsSync(rf)) {
+                try {
+                    const reg = JSON.parse(fs.readFileSync(rf, 'utf8'));
+                    if (reg && typeof reg === 'object') {
+                        this.knownWorkspaces = { ...this.knownWorkspaces, ...reg };
+                    }
+                } catch(e) {}
+            }
+        }
+
         this._ensureDirs();
+    }
+
+    _getRegistryTargets() {
+        const targets = [
+            path.join(this.appDataRoot, 'workspaces_registry.json'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'workspaces_registry.json'),
+            path.join(os.homedir(), 'AppData', 'Roaming', 'MediaFactory', 'MediaFactoryData', 'workspaces_registry.json'),
+            path.join(os.homedir(), '.mediafactory', 'workspaces_registry.json')
+        ];
+        if (!this.getAppInstallDir().toLowerCase().includes('program files')) {
+            targets.push('d:/MediaFactory/.mediafactory_data/workspaces_registry.json');
+        }
+        return targets;
+    }
+
+    _saveWorkspacesRegistry() {
+        const targets = this._getRegistryTargets();
+        for (const target of targets) {
+            try {
+                const targetDir = path.dirname(target);
+                if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+                fs.writeFileSync(target, JSON.stringify(this.knownWorkspaces, null, 2));
+            } catch(e) {}
+        }
     }
 
     _ensureDirs() {
@@ -171,6 +207,7 @@ class AppPaths {
                     fs.writeFileSync(target, JSON.stringify(settings, null, 2));
                 } catch(e) {}
             }
+            this._saveWorkspacesRegistry();
             return true;
         } catch (e) {
             console.error('Failed to save system settings:', e);
@@ -193,17 +230,58 @@ class AppPaths {
     getMediaFactoryDataDir() { return this.appDataRoot || path.dirname(this.cacheDir); }
 
     getKnownWorkspaces() {
-        return { ...(this.knownWorkspaces || {}) };
+        const merged = { ...(this.knownWorkspaces || {}) };
+        for (const rf of this._getRegistryTargets()) {
+            if (fs.existsSync(rf)) {
+                try {
+                    const reg = JSON.parse(fs.readFileSync(rf, 'utf8'));
+                    if (reg && typeof reg === 'object') {
+                        for (const [k, v] of Object.entries(reg)) {
+                            if (v && fs.existsSync(v)) {
+                                merged[k] = v;
+                                this.knownWorkspaces[k] = v;
+                            }
+                        }
+                    }
+                } catch(e) {}
+            }
+        }
+        return merged;
     }
 
     registerWorkspacePath(name, folderPath) {
         if (!name || !folderPath) return false;
+        const norm = path.normalize(folderPath).trim();
         if (!this.knownWorkspaces) this.knownWorkspaces = {};
-        this.knownWorkspaces[name] = folderPath;
+        this.knownWorkspaces[name] = norm;
+        this._saveWorkspacesRegistry();
         return this._saveSettings(s => {
             if (!s.knownWorkspaces) s.knownWorkspaces = {};
-            s.knownWorkspaces[name] = folderPath;
+            s.knownWorkspaces[name] = norm;
         });
+    }
+
+    bulkRegisterWorkspaces(mapping) {
+        if (!mapping || typeof mapping !== 'object') return false;
+        if (!this.knownWorkspaces) this.knownWorkspaces = {};
+        let changed = false;
+        for (const [name, p] of Object.entries(mapping)) {
+            if (name && p && typeof p === 'string') {
+                const norm = path.normalize(p).trim();
+                if (fs.existsSync(norm) && this.knownWorkspaces[name] !== norm) {
+                    this.knownWorkspaces[name] = norm;
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            this._saveWorkspacesRegistry();
+            this._saveSettings(s => {
+                if (!s.knownWorkspaces) s.knownWorkspaces = {};
+                s.knownWorkspaces = { ...s.knownWorkspaces, ...this.knownWorkspaces };
+            });
+        }
+        return true;
     }
 
     unregisterWorkspacePath(name) {
