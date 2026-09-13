@@ -56,18 +56,18 @@ export function getApiUrl(endpoint) {
   if (typeof window === 'undefined') return endpoint;
   const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
 
-  // When running inside Vite dev server (port 5173 / 5174), use relative paths for Vite proxying
-  if (typeof window.location !== 'undefined' && (window.location.port === '5173' || window.location.port === '5174')) {
-    return path;
-  }
-
-  // Check dynamically allocated server port
+  // 1. Check dynamically allocated server port first (bypasses Vite proxy errors & connects directly to backend)
   const activePort = getApiPort();
   if (activePort) {
     return `http://127.0.0.1:${activePort}${path}`;
   }
 
-  // If served directly via HTTP/HTTPS (e.g. Express production static server)
+  // 2. When running inside standalone Vite dev server without Electron, use relative paths for Vite proxying
+  if (typeof window.location !== 'undefined' && (window.location.port === '5173' || window.location.port === '5174')) {
+    return path;
+  }
+
+  // 3. If served directly via HTTP/HTTPS (e.g. Express production static server)
   if (typeof window.location !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')) {
     return `${window.location.origin}${path}`;
   }

@@ -170,13 +170,41 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
             if (!selectedFolder) return;
 
             setIsLoading(true);
-            const res = await fetch(getApiUrl('/api/v1/system/workspace/import-folder'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ folderPath: selectedFolder })
-            });
-            const data = await res.json();
-            if (data.success && data.workspaceName) {
+            let data = null;
+            let responseText = '';
+            try {
+                const targetUrl = getApiUrl('/api/v1/system/workspace/import-folder');
+                let res = await fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ folderPath: selectedFolder })
+                });
+
+                responseText = await res.text();
+                try {
+                    data = JSON.parse(responseText);
+                } catch(parseErr) {
+                    // Fallback to direct backend port if Vite proxy or static server returned HTML
+                    const directUrl = 'http://127.0.0.1:18888/api/v1/system/workspace/import-folder';
+                    if (targetUrl !== directUrl) {
+                        res = await fetch(directUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({ folderPath: selectedFolder })
+                        });
+                        responseText = await res.text();
+                        data = JSON.parse(responseText);
+                    } else {
+                        throw new Error(`Server tidak mengembalikan respon JSON (Status: ${res.status})`);
+                    }
+                }
+            } catch(fetchErr) {
+                console.error('[WorkspacePicker] Import fetch error:', fetchErr);
+                alert('Gagal menghubungi backend MediaFactory: ' + fetchErr.message);
+                return;
+            }
+
+            if (data && data.success && data.workspaceName) {
                 const wsPath = data.workspacePath || selectedFolder;
                 try {
                     const cached = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
@@ -192,7 +220,7 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                 await loadWorkspaces();
                 await handleOpen(data.workspaceName, wsPath);
             } else {
-                alert('Gagal memuat folder workspace: ' + (data.error || 'Folder tidak dapat dikenali sebagai workspace'));
+                alert('Gagal memuat folder workspace: ' + (data?.error || 'Folder tidak dapat dikenali sebagai workspace'));
             }
         } catch(e) {
             console.error('Import error:', e);

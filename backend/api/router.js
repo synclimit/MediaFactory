@@ -429,7 +429,7 @@ router.post('/api/v1/system/workspace/create', async (req, res) => {
 
 router.post('/api/v1/system/workspace/import-folder', async (req, res) => {
     try {
-        const { folderPath } = req.body;
+        const { folderPath } = req.body || {};
         if (!folderPath) {
             return res.json({ success: false, error: 'Folder path is required' });
         }
