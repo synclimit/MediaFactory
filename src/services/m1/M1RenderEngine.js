@@ -37,6 +37,23 @@ function resolveFFmpegPath() {
   return 'ffmpeg';
 }
 
+function resolveFFprobePath() {
+  const candidatePaths = [
+    process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffprobe.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin', 'ffprobe.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'ffprobe.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'ffprobe.exe') : '',
+    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin', 'ffprobe.exe') : '',
+    path.join(process.cwd(), 'backend', 'bin', 'ffprobe.exe'),
+    path.join(process.cwd(), 'backend', 'ffmpeg', 'ffprobe.exe'),
+    path.join(process.cwd(), 'bin', 'ffprobe.exe')
+  ];
+  for (const p of candidatePaths) {
+    if (p && existsSync(p)) return p;
+  }
+  return 'ffprobe';
+}
+
 function resolveFFmpegDir() {
   const ffmpegPath = resolveFFmpegPath();
   if (ffmpegPath && ffmpegPath !== 'ffmpeg' && existsSync(ffmpegPath)) {
@@ -203,8 +220,9 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     let videoDurationSec = typeof job.inputVideo === 'object' ? job.inputVideo?.metadata?.durationSec : job.videoDurationSec;
     if (!videoDurationSec) {
       try {
+        const ffprobeBin = resolveFFprobePath();
         const probeRes = await new Promise((res) => {
-          exec(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoIn}"`, (err, stdout) => {
+          exec(`"${ffprobeBin}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoIn}"`, (err, stdout) => {
             res(parseFloat(stdout.trim()) || 0);
           });
         });
@@ -234,8 +252,26 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     const targetDuration = segmentDuration / playbackSpeed;
     job.tempSegmentDuration = targetDuration;
     
-    // Final render duration strictly follows audio duration
-    const finalTargetDuration = job.audioDurationSec || job.audioDuration || job.targetDuration || 10;
+    // Probe exact audio duration if available on disk
+    let exactAudioDuration = job.audioDurationSec || job.audioDuration;
+    if ((!exactAudioDuration || exactAudioDuration <= 0) && audioIn && existsSync(audioIn)) {
+      try {
+        const ffprobeBin = resolveFFprobePath();
+        const probeAudio = await new Promise((res) => {
+          exec(`"${ffprobeBin}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioIn}"`, (err, stdout) => {
+            res(parseFloat(stdout.trim()) || 0);
+          });
+        });
+        if (probeAudio > 0) exactAudioDuration = probeAudio;
+      } catch (e) {}
+    }
+
+    const baseAudioDuration = exactAudioDuration || job.targetDuration || 10;
+    // User requirement: Extend render output by 5 minutes (300 seconds) beyond the audio duration.
+    // Video loops/continues with silent audio during the extra 5 minutes.
+    const bufferSec = typeof job.bufferSec === 'number' ? job.bufferSec : 300;
+    const finalTargetDuration = Math.round((baseAudioDuration + bufferSec) * 100) / 100;
+    job.audioDurationSec = exactAudioDuration || baseAudioDuration;
     job.computedTargetDuration = finalTargetDuration;
 
     // Helper to run FFmpeg with Deadlock & Memory Overflow Protection
@@ -364,6 +400,7 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
         '-pix_fmt', 'yuv420p',
         '-c:a', 'aac',
         '-b:a', '192k',
+        '-af', 'apad', // Pad audio stream with silence to match the extended video duration
         '-t', `${finalTargetDuration}`,
         '-max_muxing_queue_size', '2048'
       );

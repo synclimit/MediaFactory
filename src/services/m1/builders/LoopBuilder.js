@@ -1,9 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
-
 export class LoopBuilder {
   static async build(job) {
-    const finalTargetDuration = job.audioDurationSec || job.computedTargetDuration || 300;
+    const finalTargetDuration = job.computedTargetDuration || (job.audioDurationSec ? job.audioDurationSec + (typeof job.bufferSec === 'number' ? job.bufferSec : 300) : 300);
     job.computedTargetDuration = finalTargetDuration; // Expose for Render Engine tracking
 
     const tempSegmentDuration = job.tempSegmentDuration || 1; 

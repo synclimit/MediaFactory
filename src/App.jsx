@@ -2015,7 +2015,7 @@ export default function App() {
           outputFiles: [slot.outputName, 'thumbnail.jpg', 'metadata.json', 'render.log', 'render.json'],
           outputFolder: outFolder,
           metadataPayload: metadataPayload,
-          totalDurationSec: m1TargetSegment * 60,
+          totalDurationSec: parsedAudioSec > 0 ? (parsedAudioSec + 300) : (m1TargetSegment * 60),
           progress: 0,
           
           // Phase 1, 2 & 4: New Contract Payload
