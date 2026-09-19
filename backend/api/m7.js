@@ -7,11 +7,16 @@ const { spawn } = require('child_process');
 const standaloneDir = path.resolve(__dirname, '../../astrofox-standalone');
 const m7Dir = path.resolve(__dirname, '../../m7-astrofox');
 const ffmpegBinary = path.resolve(m7Dir, 'bin', 'ffmpeg.exe');
-const outputDir = path.resolve(__dirname, '../../Output');
+const AppPaths = require('../system/AppPaths');
+const outputDir = AppPaths.getOutputBase ? AppPaths.getOutputBase() : path.resolve(process.cwd(), 'Output');
 const tempDir = path.resolve(outputDir, 'Temp');
 
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
+try {
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+} catch (e) {
+  console.warn('[M7 API] Warning creating tempDir:', e.message);
 }
 
 let activeProcesses = {

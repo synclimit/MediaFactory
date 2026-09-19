@@ -37,9 +37,11 @@ if (app.isPackaged) {
         process.exit(0);
     } else {
         app.on('second-instance', () => {
-            if (mainWindow) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
                 if (mainWindow.isMinimized()) mainWindow.restore();
                 mainWindow.focus();
+            } else {
+                createWindow();
             }
         });
     }
@@ -495,6 +497,7 @@ function forceKillLingeringProcesses() {
         try { execSync('taskkill /F /IM ffmpeg.exe /T', { stdio: 'ignore' }); } catch(e) {}
         try { execSync('taskkill /F /IM ffprobe.exe /T', { stdio: 'ignore' }); } catch(e) {}
         try { execSync('taskkill /F /IM yt-dlp.exe /T', { stdio: 'ignore' }); } catch(e) {}
+        try { execSync(`taskkill /F /IM MediaFactory.exe /FI "PID ne ${process.pid}"`, { stdio: 'ignore' }); } catch(e) {}
     }
 }
 
@@ -520,13 +523,9 @@ function installUpdateUnified() {
     } catch(e) {}
 
     if (app.isPackaged && nativeUpdateAvailable) {
-        // Native silent 1-click update: closes app safely, applies update quietly, restarts app
         try {
-            autoUpdater.quitAndInstall(true, true);
-            // Ensure unconditional hard exit so MediaFactory.exe is not locked in Task Manager
-            setTimeout(() => {
-                app.exit(0);
-            }, 600);
+            console.log('[AutoUpdater] Triggering native quitAndInstall...');
+            autoUpdater.quitAndInstall(false, true);
             return;
         } catch (e) {
             console.error('[AutoUpdater] quitAndInstall failed, using fallback:', e);
@@ -534,22 +533,22 @@ function installUpdateUnified() {
     }
 
     if (pendingUpdateExePath && require('fs').existsSync(pendingUpdateExePath)) {
-        console.log('[AutoUpdater] Launching downloaded installer:', pendingUpdateExePath);
-        const { spawn } = require('child_process');
-        try {
-            const child = spawn(pendingUpdateExePath, [], {
-                detached: true,
-                stdio: 'ignore'
-            });
-            child.unref();
-            setTimeout(() => app.exit(0), 400);
-        } catch (e) {
-            console.warn('[AutoUpdater] Spawn failed, fallback to shell.openPath:', e);
-            const { shell } = require('electron');
-            shell.openPath(pendingUpdateExePath).finally(() => {
-                setTimeout(() => app.exit(0), 400);
-            });
-        }
+        console.log('[AutoUpdater] Launching downloaded installer via shell:', pendingUpdateExePath);
+        const { shell } = require('electron');
+        shell.openPath(pendingUpdateExePath).then((err) => {
+            if (!err) {
+                setTimeout(() => app.quit(), 1200);
+            } else {
+                console.warn('[AutoUpdater] shell.openPath failed, using spawn fallback:', err);
+                const { spawn } = require('child_process');
+                try {
+                    spawn(pendingUpdateExePath, [], { detached: true, stdio: 'ignore' }).unref();
+                    setTimeout(() => app.quit(), 1200);
+                } catch (e2) {
+                    console.error('[AutoUpdater] Spawn fallback failed:', e2);
+                }
+            }
+        });
     } else {
         downloadUpdateUnified();
     }
