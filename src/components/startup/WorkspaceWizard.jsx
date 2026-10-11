@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../ui/Button';
 import Surface from '../ui/Surface';
 import { BackgroundVariants } from '../ui/BackgroundVariants';
-import { Image, ImagePlay, MonitorPlay, AlertTriangle, FolderOutput } from 'lucide-react';
+import { Image, ImagePlay, MonitorPlay, AlertTriangle, FolderOutput, FolderOpen } from 'lucide-react';
 import { getApiUrl } from '../../utils/apiUrl';
 
 export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
@@ -10,7 +10,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
     
     // Step 1 Data
     const [name, setName] = useState('');
-    const [workspaceRoot, setWorkspaceRoot] = useState('');
+    const [workspaceRoot, setWorkspaceRoot] = useState('D:\\MediaFactory\\Workspaces');
     
     // Step 2 Data
     const [logoPath, setLogoPath] = useState('');
@@ -34,6 +34,17 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
             .catch(() => {});
     }, []);
 
+    const getCalculatedWorkspacePath = () => {
+        const cleanName = (name || '').trim();
+        const baseRoot = (workspaceRoot || 'D:\\MediaFactory\\Workspaces').replace(/[/\\]+$/, '');
+        if (!cleanName) return baseRoot;
+        const baseFolder = baseRoot.split(/[/\\]/).pop();
+        if (baseFolder && baseFolder.toLowerCase() === cleanName.toLowerCase()) {
+            return baseRoot;
+        }
+        return `${baseRoot}\\${cleanName}`;
+    };
+
     const handleChangeWorkspaceLocation = async () => {
         let selectedFolder = null;
         if (window.require) {
@@ -41,7 +52,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 const { ipcRenderer } = window.require('electron');
                 const paths = await ipcRenderer.invoke('show-open-dialog', {
                     properties: ['openDirectory', 'createDirectory'],
-                    title: 'Select Root Workspace Directory'
+                    title: 'Pilih Root Folder Penyimpanan Workspace'
                 });
                 if (paths && paths.length > 0) selectedFolder = paths[0];
             } catch (e) {}
@@ -50,7 +61,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
             const res = await fetch(getApiUrl('/api/v1/system/select-directory'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: 'Select Root Workspace Directory' })
+                body: JSON.stringify({ title: 'Pilih Root Folder Penyimpanan Workspace' })
             }).catch(() => null);
             if (res) {
                 const data = await res.json().catch(() => null);
@@ -58,12 +69,13 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
             }
         }
         if (selectedFolder) {
-            setWorkspaceRoot(selectedFolder);
+            const clean = selectedFolder.replace(/[/\\]+$/, '');
+            setWorkspaceRoot(clean);
             try {
                 await fetch(getApiUrl('/api/v1/system/workspace-base'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ workspaceBase: selectedFolder })
+                    body: JSON.stringify({ workspaceBase: clean })
                 });
             } catch(e) {}
         }
@@ -73,6 +85,9 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
         if (name.trim()) {
             setStep(2);
             setErrorMsg('');
+            if (!outputFolder) {
+                setOutputFolder(`${getCalculatedWorkspacePath()}\\Output`);
+            }
         } else {
             setErrorMsg('Channel Name is required.');
         }
@@ -84,34 +99,26 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
         setIsCreating(true);
         setErrorMsg('');
         
-        // 1. Instantly save workspace to client storage
-        localStorage.setItem('mf_active_workspace', cleanName);
-        let estimatedPath = '';
-        if (workspaceRoot) {
-            const cleanBase = workspaceRoot.replace(/[\/\\]+$/, '');
-            const baseFolder = cleanBase.split(/[\/\\]/).pop();
-            if (baseFolder && baseFolder.toLowerCase() === cleanName.toLowerCase()) {
-                estimatedPath = cleanBase;
-            } else {
-                estimatedPath = `${cleanBase}/${cleanName}`;
-            }
-        }
+        const targetWorkspacePath = getCalculatedWorkspacePath();
+        const baseRoot = (workspaceRoot || 'D:\\MediaFactory\\Workspaces').replace(/[/\\]+$/, '');
+        const finalOutputFolder = outputFolder || `${targetWorkspacePath}\\Output`;
 
+        // 1. Instantly save workspace & path to client storage so it is never lost
+        localStorage.setItem('mf_active_workspace', cleanName);
         try {
+            const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+            reg[cleanName] = targetWorkspacePath;
+            localStorage.setItem('mf_workspace_registry', JSON.stringify(reg));
+
             const existingList = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
             if (!existingList.includes(cleanName)) {
                 existingList.push(cleanName);
                 localStorage.setItem('mf_created_workspaces', JSON.stringify(existingList));
             }
-            const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
-            if (estimatedPath) {
-                reg[cleanName] = estimatedPath;
-                localStorage.setItem('mf_workspace_registry', JSON.stringify(reg));
-            }
         } catch(e) {}
         
-        if (outputFolder) {
-            localStorage.setItem(`mf_workspace_output_${cleanName}`, outputFolder);
+        if (finalOutputFolder) {
+            localStorage.setItem(`mf_workspace_output_${cleanName}`, finalOutputFolder);
         }
         if (logoPath || watermarkPath || overlayPath || subscribePath) {
             localStorage.setItem(`mf_workspace_branding_${cleanName}`, JSON.stringify({
@@ -126,15 +133,15 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
         try {
             const payload = {
                 name: cleanName,
-                workspaceBase: workspaceRoot,
-                workspacePath: estimatedPath,
+                workspaceBase: baseRoot,
+                workspacePath: targetWorkspacePath,
                 assets: {
                     logo: logoPath,
                     watermark: watermarkPath,
                     overlay: overlayPath,
                     subscribe_anim: subscribePath
                 },
-                outputFolder
+                outputFolder: finalOutputFolder
             };
             let data = null;
             try {
@@ -156,17 +163,9 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                     data = await directRes.json();
                 }
             } catch (netErr) {
-                setErrorMsg('Gagal terhubung ke backend: ' + netErr.message);
-                setIsCreating(false);
-                return;
+                console.warn('[WorkspaceWizard] Backend connect warning:', netErr.message);
             }
 
-            if (!data || data.success === false) {
-                const msg = data?.validation?.message || data?.error || 'Gagal membuat workspace di lokasi yang dipilih. Pastikan drive/folder dapat diakses.';
-                setErrorMsg(msg);
-                setIsCreating(false);
-                return;
-            }
             if (data?.workspacePath) {
                 try {
                     const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
@@ -181,15 +180,12 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     workspaceName: cleanName, 
-                    workspacePath: data?.workspacePath || estimatedPath 
+                    workspacePath: data?.workspacePath || targetWorkspacePath 
                 })
             }).catch(() => {});
 
         } catch(e) {
             console.error('[WorkspaceWizard] Backend create error:', e);
-            setErrorMsg(`Koneksi ke backend gagal: ${e.message}`);
-            setIsCreating(false);
-            return;
         }
 
         // 3. Immediately transition to Editor
@@ -261,20 +257,32 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                             </div>
 
                             <div className="mb-6">
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-[11px] font-semibold text-[#738091] uppercase tracking-wider">Workspace Location</label>
+                                <label className="block text-[11px] font-semibold text-[#738091] uppercase tracking-wider mb-2">Workspace Base Folder (Lokasi Penyimpanan)</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={workspaceRoot} 
+                                        onChange={e => setWorkspaceRoot(e.target.value)}
+                                        placeholder="D:\MediaFactory\Workspaces" 
+                                        disabled={isCreating}
+                                        className="flex-1 bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 text-[12px] text-gray-300 font-mono outline-none focus:border-[#32D8FF] transition-colors"
+                                    />
                                     <button 
                                         type="button" 
                                         onClick={handleChangeWorkspaceLocation} 
-                                        className="text-[11px] text-[#32D8FF] hover:underline cursor-pointer flex items-center gap-1 font-mono"
+                                        disabled={isCreating}
+                                        className="px-3 rounded-[8px] bg-[#1a202d] hover:bg-[#252c3d] border border-white/10 text-[#32D8FF] text-[11px] font-bold tracking-wider uppercase transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
                                     >
-                                        Change Folder 📁
+                                        <FolderOpen size={14} /> Browse
                                     </button>
                                 </div>
-                                <div className="w-full bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.08)] rounded-[8px] p-2.5 text-[12px] text-gray-300 font-mono truncate" title={workspaceRoot}>
-                                    {workspaceRoot || 'Loading...'}
-                                </div>
-                                <p className="text-[10px] text-gray-500 mt-1">Database and assets will be stored inside this directory.</p>
+                                {name.trim() && (
+                                    <div className="mt-2.5 p-2.5 rounded-[8px] bg-black/40 border border-orange-500/30 flex items-center gap-2">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 shrink-0">Folder Target:</span>
+                                        <span className="text-[11px] text-orange-400 font-mono truncate flex-1 font-semibold">{getCalculatedWorkspacePath()}</span>
+                                    </div>
+                                )}
+                                <p className="text-[10px] text-gray-500 mt-1.5">Database, aset, dan preset channel akan disimpan di folder ini.</p>
                             </div>
 
                             <div className="flex justify-between items-center mt-4">

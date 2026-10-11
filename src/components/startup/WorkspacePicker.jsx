@@ -105,10 +105,11 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
         }
         for (const name of cachedList) {
             if (!combined.some(w => (w.name && w.name.toLowerCase() === name.toLowerCase()) || (w.folderName && w.folderName.toLowerCase() === name.toLowerCase()))) {
+                const existingPath = updatedRegistry[name] || localStorage.getItem(`mf_workspace_output_${name}`) || '';
                 combined.push({ 
                     name, 
                     folderName: name, 
-                    path: updatedRegistry[name] || '',
+                    path: existingPath,
                     totalProjects: 0, 
                     renderCount: 0, 
                     storageSizeGB: '0.00 GB',
@@ -141,6 +142,72 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
 
     const handleSelect = (name) => {
         setSelected(name);
+    };
+
+    const handleLocatePathForWorkspace = async (wsName) => {
+        try {
+            let selectedFolder = null;
+            if (window.require) {
+                try {
+                    const { ipcRenderer } = window.require('electron');
+                    const paths = await ipcRenderer.invoke('show-open-dialog', {
+                        title: `Pilih Folder Penyimpanan di Disk untuk Workspace "${wsName}"`,
+                        properties: ['openDirectory', 'createDirectory']
+                    });
+                    if (paths && paths.length > 0) selectedFolder = paths[0];
+                } catch(e) {}
+            }
+            if (!selectedFolder) {
+                const res = await fetch(getApiUrl('/api/v1/system/select-directory'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: `Pilih Folder Penyimpanan di Disk untuk Workspace "${wsName}"` })
+                }).catch(() => null);
+                if (res) {
+                    const data = await res.json().catch(() => null);
+                    if (data?.path) selectedFolder = data.path;
+                }
+            }
+            if (!selectedFolder) return;
+
+            // Normalize folder path
+            selectedFolder = selectedFolder.replace(/[\/\\]+$/, '');
+
+            // 1. Immediately store in client-side registry
+            try {
+                const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+                reg[wsName] = selectedFolder;
+                localStorage.setItem('mf_workspace_registry', JSON.stringify(reg));
+
+                const cached = JSON.parse(localStorage.getItem('mf_created_workspaces') || '[]');
+                if (!cached.includes(wsName)) {
+                    cached.push(wsName);
+                    localStorage.setItem('mf_created_workspaces', JSON.stringify(cached));
+                }
+            } catch(e) {}
+
+            // 2. Notify backend to mount/initialize folder structure
+            try {
+                await fetch(getApiUrl('/api/v1/system/workspace/import-folder'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ folderPath: selectedFolder })
+                });
+            } catch(e) {}
+
+            // 3. Register as active workspace path on backend
+            try {
+                await fetch(getApiUrl('/api/v1/system/workspace/active'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workspaceName: wsName, workspacePath: selectedFolder })
+                });
+            } catch(e) {}
+
+            await loadWorkspaces();
+        } catch(err) {
+            console.error('Error setting path for workspace:', err);
+        }
     };
 
     const handleImportWorkspace = async () => {
@@ -261,9 +328,9 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
     }
 
     return (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center font-sans overflow-hidden bg-[#0a0a0c]">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-start font-sans overflow-y-auto bg-[#0a0a0c] py-8 px-4 custom-scrollbar">
             {/* EXACT M1 MECHA BACKGROUND */}
-            <div className="absolute inset-0 z-0 overflow-hidden">
+            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 <div 
                     className="absolute inset-0 bg-cover bg-center opacity-[0.35]" 
                     style={{ backgroundImage: 'url(/mecha_bg.png)' }}
@@ -275,8 +342,8 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                 <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, #fff 2px, #fff 4px)'}}></div>
             </div>
 
-            <div className="max-w-6xl w-full p-12 relative z-10">
-                <div className="text-center mb-12">
+            <div className="max-w-6xl w-full p-6 md:p-8 relative z-10 mb-8">
+                <div className="text-center mb-8">
                     <h1 className="text-[32px] font-black text-white mb-2 tracking-widest uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">Select Channel Workspace</h1>
                     <p className="text-gray-400 text-[14px] font-mono tracking-wide">Choose a workspace to load its specific branding, output folders, and render profiles.</p>
                 </div>
@@ -347,9 +414,23 @@ export default function WorkspacePicker({ activeWorkspace, onWorkspaceSelected, 
                                         <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 group-hover/path:text-orange-400 shrink-0 font-sans border border-[#333] px-1 py-0.2 rounded group-hover/path:border-orange-500/40">EXPLORER</span>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-500 bg-black/20 px-2.5 py-1 rounded border border-[#2a2c33]/40 mb-3 truncate relative z-10">
-                                        <FolderOpen size={12} className="text-gray-600 shrink-0" />
-                                        <span className="truncate text-[10px]">Folder: {ws.folderName || ws.name}</span>
+                                    <div 
+                                        className="flex items-center justify-between gap-1.5 text-[11px] font-mono text-gray-400 bg-amber-950/20 px-2.5 py-1.5 rounded-lg border border-dashed border-amber-500/40 hover:border-orange-500 hover:bg-black/80 mb-3 transition-all cursor-pointer relative z-10 group/unlinked"
+                                        title="Path folder fisik belum terhubung. Klik di sini untuk memilih lokasi folder penyimpanan di disk/partisi."
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleLocatePathForWorkspace(ws.name);
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
+                                            <FolderOpen size={13} className="text-amber-400 shrink-0 group-hover/unlinked:text-orange-400 transition-colors" />
+                                            <span className="truncate text-[10px] text-amber-200/90 group-hover/unlinked:text-white transition-colors">
+                                                Folder: {ws.folderName || ws.name}
+                                            </span>
+                                        </div>
+                                        <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 group-hover/unlinked:text-orange-300 shrink-0 font-sans border border-amber-500/50 bg-amber-500/10 px-1.5 py-0.5 rounded transition-all">
+                                            LOCATE PATH 📁
+                                        </span>
                                     </div>
                                 )}
                                 
