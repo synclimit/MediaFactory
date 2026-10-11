@@ -1,7 +1,7 @@
 {
   "name": "mediafactory",
   "private": true,
-  "version": "1.0.54",
+  "version": "1.0.55",
   "description": "MediaFactory Desktop App",
   "author": "MediaFactory",
   "repository": {
@@ -67,7 +67,7 @@
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "differentialPackage": true,
+      "differentialPackage": false,
       "include": "build/installer.nsh"
     },
     "extraFiles": [
