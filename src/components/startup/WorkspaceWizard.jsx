@@ -24,11 +24,26 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
     const [errorMsg, setErrorMsg] = useState('');
 
     useEffect(() => {
+        // Detect preferred drive from existing registered workspaces if available
+        try {
+            const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+            const registeredPaths = Object.values(reg).filter(p => typeof p === 'string' && p.trim());
+            if (registeredPaths.length > 0) {
+                const driveMatch = registeredPaths[0].match(/^([a-zA-Z]:[/\\][^/\\]+)/);
+                if (driveMatch) {
+                    setWorkspaceRoot(driveMatch[1]);
+                }
+            }
+        } catch(e) {}
+
         fetch(getApiUrl('/api/v1/system/workspace-base'))
             .then(r => r.json())
             .then(d => {
                 if (d.data?.workspaceBase) {
-                    setWorkspaceRoot(d.data.workspaceBase);
+                    const reg = JSON.parse(localStorage.getItem('mf_workspace_registry') || '{}');
+                    if (Object.keys(reg).length === 0) {
+                        setWorkspaceRoot(d.data.workspaceBase);
+                    }
                 }
             })
             .catch(() => {});
@@ -199,6 +214,7 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
     };
 
     const handleBrowseFolder = async () => {
+        let chosenPath = null;
         if (window.require) {
             try {
                 const { ipcRenderer } = window.require('electron');
@@ -206,20 +222,36 @@ export default function WorkspaceWizard({ onWorkspaceCreated, onClose }) {
                     properties: ['openDirectory', 'createDirectory']
                 });
                 if (paths && paths.length > 0) {
-                    setOutputFolder(paths[0]);
+                    chosenPath = paths[0];
                 }
-                return; // STOP HERE! Prevent dialog spam on cancel
             } catch (e) {
                 console.warn('[WorkspaceWizard] IPC open-dialog fallback:', e);
             }
         }
 
-        try {
-            const res = await fetch(getApiUrl('/api/v1/m5/dialog/folder'), { method: 'POST' });
-            const data = await res.json();
-            if (data.path) setOutputFolder(data.path);
-        } catch (e) {
-            console.error("Failed to browse folder", e);
+        if (!chosenPath) {
+            try {
+                const res = await fetch(getApiUrl('/api/v1/m5/dialog/folder'), { method: 'POST' });
+                const data = await res.json();
+                if (data.path) chosenPath = data.path;
+            } catch (e) {
+                console.error("Failed to browse folder", e);
+            }
+        }
+
+        if (chosenPath) {
+            setOutputFolder(chosenPath);
+            const driveMatch = chosenPath.match(/^([a-zA-Z]:)/);
+            if (driveMatch) {
+                const driveLetter = driveMatch[1];
+                setWorkspaceRoot(prev => {
+                    const prevMatch = (prev || '').match(/^([a-zA-Z]:)/);
+                    if (prevMatch && prevMatch[1].toLowerCase() !== driveLetter.toLowerCase()) {
+                        return `${driveLetter}\\MediaFactory\\Workspaces`;
+                    }
+                    return prev;
+                });
+            }
         }
     };
 

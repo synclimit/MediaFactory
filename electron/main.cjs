@@ -525,7 +525,8 @@ function installUpdateUnified() {
     if (app.isPackaged && nativeUpdateAvailable) {
         try {
             console.log('[AutoUpdater] Triggering native quitAndInstall...');
-            autoUpdater.quitAndInstall(false, true);
+            autoUpdater.quitAndInstall(true, true);
+            setTimeout(() => app.exit(0), 400);
             return;
         } catch (e) {
             console.error('[AutoUpdater] quitAndInstall failed, using fallback:', e);
@@ -533,22 +534,18 @@ function installUpdateUnified() {
     }
 
     if (pendingUpdateExePath && require('fs').existsSync(pendingUpdateExePath)) {
-        console.log('[AutoUpdater] Launching downloaded installer via shell:', pendingUpdateExePath);
-        const { shell } = require('electron');
-        shell.openPath(pendingUpdateExePath).then((err) => {
-            if (!err) {
-                setTimeout(() => app.quit(), 1200);
-            } else {
-                console.warn('[AutoUpdater] shell.openPath failed, using spawn fallback:', err);
-                const { spawn } = require('child_process');
-                try {
-                    spawn(pendingUpdateExePath, [], { detached: true, stdio: 'ignore' }).unref();
-                    setTimeout(() => app.quit(), 1200);
-                } catch (e2) {
-                    console.error('[AutoUpdater] Spawn fallback failed:', e2);
-                }
-            }
-        });
+        console.log('[AutoUpdater] Launching downloaded installer via detached spawn:', pendingUpdateExePath);
+        const { spawn } = require('child_process');
+        try {
+            spawn(pendingUpdateExePath, [], { detached: true, stdio: 'ignore' }).unref();
+            setTimeout(() => app.exit(0), 400);
+        } catch (e2) {
+            console.error('[AutoUpdater] Spawn fallback failed, trying shell.openPath:', e2);
+            const { shell } = require('electron');
+            shell.openPath(pendingUpdateExePath).finally(() => {
+                setTimeout(() => app.exit(0), 400);
+            });
+        }
     } else {
         downloadUpdateUnified();
     }

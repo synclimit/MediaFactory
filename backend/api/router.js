@@ -395,8 +395,38 @@ router.post('/api/v1/system/workspace/sync-known', async (req, res) => {
 router.post('/api/v1/system/workspace/create', async (req, res) => {
     try {
         const wsService = ServiceRegistry.resolve('WorkspaceService');
-        const customBase = req.body.workspaceBase || req.body.workspaceRoot || null;
-        const workspace = await wsService.createWorkspace(req.body.name, customBase);
+        const fs = require('fs');
+        const path = require('path');
+        let customBase = req.body.workspaceBase || req.body.workspaceRoot || null;
+
+        // Auto-fix: if customBase points to a non-existent drive (e.g. D:\ on a system with only F:\ or C:\)
+        if (customBase) {
+            try {
+                const rootDrive = path.parse(customBase).root;
+                if (rootDrive && !fs.existsSync(rootDrive)) {
+                    // Drive doesn't exist on this machine! Fallback to outputFolder's drive or default
+                    if (req.body.outputFolder) {
+                        const outRoot = path.parse(req.body.outputFolder).root;
+                        if (outRoot && fs.existsSync(outRoot)) {
+                            customBase = path.join(outRoot, 'MediaFactory', 'Workspaces');
+                        } else {
+                            customBase = AppPaths.getWorkspaceBase();
+                        }
+                    } else {
+                        customBase = AppPaths.getWorkspaceBase();
+                    }
+                }
+            } catch(e) {}
+        }
+
+        let workspace;
+        try {
+            workspace = await wsService.createWorkspace(req.body.name, customBase);
+        } catch (firstErr) {
+            console.warn('[Workspace] First attempt create failed, falling back to safe AppPaths base:', firstErr.message);
+            const safeBase = AppPaths.getWorkspaceBase();
+            workspace = await wsService.createWorkspace(req.body.name, safeBase);
+        }
         
         if (workspace?.workspacePath) {
             try {
