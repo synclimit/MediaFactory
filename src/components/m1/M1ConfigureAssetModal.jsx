@@ -162,6 +162,60 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
     }
   };
 
+  const applyAudioSelection = async (targetIdx, filePath, fileName) => {
+    if (!filePath) return;
+    updateM1Slot(targetIdx, 'audio', filePath);
+    const baseName = (fileName || filePath.split(/[/\\]/).pop()).replace(/\.[^/.]+$/, '');
+    const cleanBase = cleanBaseFilename(baseName);
+    updateM1Slot(targetIdx, 'outputName', `${cleanBase}.mp4`);
+    updateM1Slot(targetIdx, 'videoTitle', baseName);
+    updateM1Slot(targetIdx, 'isApproved', true);
+
+    try {
+      const probeRes = await fetch(getApiUrl('/api/m1/audio/probe'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: filePath })
+      });
+      const probeData = await probeRes.json();
+      if (probeData.durationDisplay) updateM1Slot(targetIdx, 'duration', probeData.durationDisplay);
+    } catch {
+      // ignore probe failure
+    }
+  };
+
+  const handleBrowseAudio = async (targetIdx) => {
+    // 1. Electron IPC if available
+    if (window.require) {
+      try {
+        const { ipcRenderer } = window.require('electron');
+        const pathResult = await ipcRenderer.invoke('show-open-dialog', {
+          properties: ['openFile'],
+          filters: [{ name: 'Audio Files', extensions: ['mp3', 'wav', 'flac', 'm4a', 'aac', 'ogg'] }]
+        });
+        if (pathResult && pathResult.length > 0) {
+          await applyAudioSelection(targetIdx, pathResult[0]);
+          return;
+        }
+      } catch (err) {
+        console.warn('[M1] IPC audio dialog fallback:', err);
+      }
+    }
+
+    // 2. Backend dialog fallback
+    try {
+      const res = await fetch(getApiUrl('/api/m1/dialog/audio'), { method: 'POST' });
+      const data = await res.json();
+      if (data && data.path) {
+        await applyAudioSelection(targetIdx, data.path);
+        return;
+      }
+    } catch (err) {}
+
+    // 3. Fallback to HTML input
+    document.getElementById(`single-audio-browse-${targetIdx}`)?.click();
+  };
+
   const handleFetchYoutube = async () => {
     if (!slot?.youtubeUrl) {
       alert('Silakan masukkan link YouTube terlebih dahulu.');
@@ -334,31 +388,13 @@ export default function M1ConfigureAssetModal({ slot, idx, updateM1Slot, closeMo
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const filePath = file.path || file.name;
-                          updateM1Slot(idx, 'audio', filePath);
-                          const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                          const cleanBase = cleanBaseFilename(baseName);
-                          updateM1Slot(idx, 'outputName', `${cleanBase}.mp4`);
-                          updateM1Slot(idx, 'videoTitle', baseName);
-                          updateM1Slot(idx, 'isApproved', true);
-
-                          try {
-                            const probeRes = await fetch(getApiUrl('/api/m1/audio/probe'), {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ path: filePath })
-                            });
-                            const probeData = await probeRes.json();
-                            if (probeData.durationDisplay) updateM1Slot(idx, 'duration', probeData.durationDisplay);
-                          } catch {
-                            // ignore probe failure
-                          }
+                          await applyAudioSelection(idx, file.path || file.name, file.name);
                         }
                       }}
                     />
                     <M1Button
                       variant="secondary"
-                      onClick={() => document.getElementById(`single-audio-browse-${idx}`)?.click()}
+                      onClick={() => handleBrowseAudio(idx)}
                       className="!px-5 shrink-0"
                     >
                       BROWSE

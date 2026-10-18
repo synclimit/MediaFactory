@@ -41,7 +41,10 @@ export default function M1VideoUpload({
 
     // 2. Backend dialog fallback
     try {
-      const res = await fetch(getApiUrl('/api/v1/m5/dialog/file'), { method: 'POST' });
+      let res = await fetch(getApiUrl('/api/m1/dialog/video'), { method: 'POST' });
+      if (!res.ok) {
+        res = await fetch(getApiUrl('/api/v1/m5/dialog/file'), { method: 'POST' });
+      }
       const data = await res.json();
       if (data && data.path && handleManualVideoPathChange) {
         handleManualVideoPathChange({ target: { value: data.path } });

@@ -1,6 +1,8 @@
 import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import AppPaths from '../../../../backend/system/AppPaths.js';
 
 /**
  * AssetResolver
@@ -28,7 +30,8 @@ export class AssetResolver {
         else if (mime.includes('svg')) ext = 'svg';
 
         const hash = crypto.createHash('md5').update(base64Data.slice(0, 100)).digest('hex').slice(0, 8);
-        const cacheDir = path.resolve(process.cwd(), '.mediafactory', 'assets');
+        const cacheBase = AppPaths ? AppPaths.getCacheBase() : path.resolve('.mediafactory_data/Cache');
+        const cacheDir = path.join(cacheBase, 'assets');
         await fs.mkdir(cacheDir, { recursive: true });
         const filePath = path.join(cacheDir, `upload_${hash}.${ext}`);
         await fs.writeFile(filePath, Buffer.from(base64Data, 'base64'));
@@ -37,23 +40,32 @@ export class AssetResolver {
     }
 
     if (path.isAbsolute(assetName)) {
-      try {
-        await fs.access(assetName);
+      if (existsSync(assetName)) {
         return assetName;
-      } catch (e) {
-        throw new Error(`AssetResolver: Missing required absolute asset. Path not found: ${assetName}`);
+      }
+      throw new Error(`AssetResolver: Missing required absolute asset. Path not found: ${assetName}`);
+    }
+    
+    // Check multiple asset candidate locations
+    const candidateDirs = [
+      AppPaths ? path.join(AppPaths.getMediaFactoryDataDir(), 'assets') : '',
+      AppPaths ? path.join(AppPaths.getCacheBase(), 'assets') : '',
+      path.resolve(process.cwd(), '.mediafactory', 'assets'),
+      path.resolve(process.cwd(), 'assets'),
+      path.resolve(process.cwd(), 'assets', 'SocialWidgets', 'Subscribe'),
+      path.resolve(process.cwd(), 'assets', 'branding'),
+      process.resourcesPath ? path.resolve(process.resourcesPath, '..', 'assets') : '',
+      process.resourcesPath ? path.resolve(process.resourcesPath, '..', 'assets', 'SocialWidgets', 'Subscribe') : '',
+      process.resourcesPath ? path.resolve(process.resourcesPath, 'app', 'assets') : ''
+    ].filter(Boolean);
+
+    for (const dir of candidateDirs) {
+      const p = path.join(dir, assetName);
+      if (existsSync(p)) {
+        return p;
       }
     }
-    
-    // For Sprint 4, we use a central assets folder in the repository.
-    // In production, this would bridge to WorkspaceService for specific user uploads.
-    const assetPath = path.resolve(process.cwd(), '.mediafactory', 'assets', assetName);
-    
-    try {
-      await fs.access(assetPath);
-      return assetPath;
-    } catch (e) {
-      throw new Error(`AssetResolver: Missing required asset '${assetName}'. Path not found: ${assetPath}`);
-    }
+
+    throw new Error(`AssetResolver: Missing required asset '${assetName}'. Looked in candidate directories: ${candidateDirs.join(', ')}`);
   }
 }

@@ -1,5 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
+import AppPaths from '../../../../backend/system/AppPaths.js';
+
 export class LoopBuilder {
   static async build(job) {
     const finalTargetDuration = job.computedTargetDuration || (job.audioDurationSec ? job.audioDurationSec + (typeof job.bufferSec === 'number' ? job.bufferSec : 300) : 300);
@@ -9,15 +11,17 @@ export class LoopBuilder {
     const repeats = Math.ceil(finalTargetDuration / tempSegmentDuration);
 
     const jobIdClean = (job.id || 'temp').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
-    const cacheDir = path.resolve('Workspace/Cache/M1');
+    const cacheBase = AppPaths ? AppPaths.getCacheBase() : path.resolve('.mediafactory_data/Cache');
+    const cacheDir = path.join(cacheBase, 'm1');
     await fs.mkdir(cacheDir, { recursive: true });
     const concatTxtPath = path.join(cacheDir, `concat_${jobIdClean}.txt`).replace(/\\/g, '/');
 
-    // Generate concat.txt content
+    // Generate concat.txt content with safe escaping for FFmpeg concat demuxer
     let concatContent = '';
+    const tempPath = path.join(cacheDir, `temp_segment_${jobIdClean}.mp4`).replace(/\\/g, '/');
+    const escapedTempPath = tempPath.replace(/'/g, "'\\''");
     for (let i = 0; i < repeats; i++) {
-      const tempPath = path.join(cacheDir, `temp_segment_${jobIdClean}.mp4`).replace(/\\/g, '/');
-      concatContent += `file '${tempPath}'\n`;
+      concatContent += `file '${escapedTempPath}'\n`;
     }
 
     await fs.writeFile(concatTxtPath, concatContent, 'utf-8');

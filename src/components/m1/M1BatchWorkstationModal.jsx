@@ -126,6 +126,60 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
     }
   };
 
+  const applyBatchAudioSelection = async (targetIdx, filePath, fileName) => {
+    if (!filePath) return;
+    updateM1Slot(targetIdx, 'audio', filePath);
+    const baseName = (fileName || filePath.split(/[/\\]/).pop()).replace(/\.[^/.]+$/, '');
+    const cleanBase = cleanBaseFilename(baseName);
+    updateM1Slot(targetIdx, 'outputName', `${cleanBase}.mp4`);
+    updateM1Slot(targetIdx, 'videoTitle', baseName);
+    updateM1Slot(targetIdx, 'isApproved', true);
+
+    try {
+      const probeRes = await fetch(getApiUrl('/api/m1/audio/probe'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: filePath })
+      });
+      const probeData = await probeRes.json();
+      if (probeData.durationDisplay) updateM1Slot(targetIdx, 'duration', probeData.durationDisplay);
+    } catch {
+      // ignore probe failure
+    }
+  };
+
+  const handleBrowseBatchAudio = async (targetIdx) => {
+    // 1. Electron IPC if available
+    if (window.require) {
+      try {
+        const { ipcRenderer } = window.require('electron');
+        const pathResult = await ipcRenderer.invoke('show-open-dialog', {
+          properties: ['openFile'],
+          filters: [{ name: 'Audio Files', extensions: ['mp3', 'wav', 'flac', 'm4a', 'aac', 'ogg'] }]
+        });
+        if (pathResult && pathResult.length > 0) {
+          await applyBatchAudioSelection(targetIdx, pathResult[0]);
+          return;
+        }
+      } catch (err) {
+        console.warn('[M1] IPC audio dialog fallback:', err);
+      }
+    }
+
+    // 2. Backend dialog fallback
+    try {
+      const res = await fetch(getApiUrl('/api/m1/dialog/audio'), { method: 'POST' });
+      const data = await res.json();
+      if (data && data.path) {
+        await applyBatchAudioSelection(targetIdx, data.path);
+        return;
+      }
+    } catch (err) {}
+
+    // 3. Fallback to HTML input
+    document.getElementById(`col2-audio-${targetIdx}`)?.click();
+  };
+
   // ─── SINGLE YOUTUBE FETCH ENGINE ───
   const fetchSingleYoutube = async (idx, rawUrl) => {
     const url = normalizeYoutubeUrl(rawUrl);
@@ -492,21 +546,16 @@ export default function M1BatchWorkstationModal({ m1Slots, updateM1Slot, closeMo
                             accept="audio/*"
                             id={`col2-audio-${idx}`}
                             className="hidden"
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const filePath = file.path || file.name;
-                                updateM1Slot(idx, 'audio', filePath);
-                                const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                                const cleanBase = cleanBaseFilename(baseName);
-                                updateM1Slot(idx, 'outputName', `${cleanBase}.mp4`);
-                                updateM1Slot(idx, 'isApproved', true);
+                                await applyBatchAudioSelection(idx, file.path || file.name, file.name);
                               }
                             }}
                           />
                           <button
                             type="button"
-                            onClick={() => document.getElementById(`col2-audio-${idx}`)?.click()}
+                            onClick={() => handleBrowseBatchAudio(idx)}
                             className="bg-[#242735] hover:bg-[#303446] border border-[#3b3f54] text-gray-200 text-[10px] font-bold font-['Rajdhani'] px-2.5 py-1 rounded transition-colors cursor-pointer shrink-0"
                           >
                             BROWSE

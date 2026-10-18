@@ -7,26 +7,30 @@ const AppPaths = require('../system/AppPaths');
 const router = express.Router();
 const jobs = {};
 
-router.post('/api/m1/dialog/video', (req, res) => {
+router.post('/api/m1/dialog/video', async (req, res) => {
     try {
-        // Attempt to use Electron's native dialog since Express runs in the main process
-        const { dialog } = require('electron');
-        const result = dialog.showOpenDialogSync({
-            properties: ['openFile'],
-            filters: [{ name: 'Video Files', extensions: ['mp4', 'mov', 'mkv', 'avi', 'webm'] }]
-        });
-        if (result && result.length > 0) {
-            return res.json({ path: result[0] });
-        } else {
-            return res.json({ path: null });
+        const { dialog, BrowserWindow } = require('electron');
+        if (dialog) {
+            const win = (BrowserWindow.getFocusedWindow && BrowserWindow.getFocusedWindow()) || 
+                        (BrowserWindow.getAllWindows && BrowserWindow.getAllWindows()[0]);
+            const result = await dialog.showOpenDialog(win, {
+                properties: ['openFile'],
+                filters: [{ name: 'Video Files', extensions: ['mp4', 'mov', 'mkv', 'avi', 'webm'] }]
+            });
+            if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+                return res.json({ success: true, path: result.filePaths[0] });
+            } else {
+                return res.json({ success: false, path: null });
+            }
         }
-    } catch (e) {
-        // Fallback for non-Electron environments
-        const psCommand = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = 'Video Files|*.mp4;*.mov;*.mkv;*.avi;*.webm'; $f.ShowHelp = $true; if($f.ShowDialog() -eq 'OK'){ $f.FileName }`;
-        exec(`powershell -sta -command "${psCommand}"`, (err, stdout) => {
-            res.json({ path: stdout ? stdout.trim() : null });
-        });
-    }
+    } catch (e) {}
+
+    // Fallback for non-Electron / Web environments
+    const psCommand = `[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "Video Files|*.mp4;*.mov;*.mkv;*.avi;*.webm|All Files|*.*"; if($f.ShowDialog() -eq 'OK'){ $f.FileName }`;
+    exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "${psCommand}"`, (err, stdout) => {
+        const pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
+        res.json({ success: !!pathStr, path: pathStr || null });
+    });
 });
 
 router.post('/api/m1/video-metadata', (req, res) => {
@@ -103,7 +107,7 @@ router.post('/api/m1/render', async (req, res) => {
         jobs[jobId] = { status: 'RENDERING', progress: 0, failureReason: null, outputFiles: job.outputFiles };
         console.log('[M1 Render] Job created', jobId);
         
-        const M1RenderEngine = await import(`../../src/services/m1/M1RenderEngine.js?v=${Date.now()}`);
+        const M1RenderEngine = await import('../../src/services/m1/M1RenderEngine.js');
         M1RenderEngine.processM1Job(
             job,
             (progress, msg) => {
@@ -126,7 +130,7 @@ router.post('/api/m1/render', async (req, res) => {
         res.status(202).json({ success: true, jobId: jobId });
     } catch (err) {
         console.log(`[M1 Render] ERROR: ${err.message}`);
-        res.status(400).json({ error: 'Invalid JSON' });
+        res.status(400).json({ error: 'Invalid JSON: ' + err.message });
     }
 });
 
@@ -139,21 +143,29 @@ router.get('/api/m1/render/:id', (req, res) => {
     }
 });
 
-router.post('/api/m1/dialog/audio', (req, res) => {
+router.post('/api/m1/dialog/audio', async (req, res) => {
     try {
-        const { dialog } = require('electron');
-        const result = dialog.showOpenDialogSync({
-            properties: ['openFile'],
-            filters: [{ name: 'Audio Files', extensions: ['mp3', 'wav', 'flac', 'm4a', 'aac', 'ogg'] }]
-        });
-        if (result && result.length > 0) return res.json({ path: result[0] });
-        res.json({ path: null });
-    } catch (e) {
-        const psCommand = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = 'Audio Files|*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg'; $f.ShowHelp = $true; if($f.ShowDialog() -eq 'OK'){ $f.FileName }`;
-        exec(`powershell -sta -command "${psCommand}"`, (err, stdout) => {
-            res.json({ path: stdout ? stdout.trim() : null });
-        });
-    }
+        const { dialog, BrowserWindow } = require('electron');
+        if (dialog) {
+            const win = (BrowserWindow.getFocusedWindow && BrowserWindow.getFocusedWindow()) || 
+                        (BrowserWindow.getAllWindows && BrowserWindow.getAllWindows()[0]);
+            const result = await dialog.showOpenDialog(win, {
+                properties: ['openFile'],
+                filters: [{ name: 'Audio Files', extensions: ['mp3', 'wav', 'flac', 'm4a', 'aac', 'ogg'] }]
+            });
+            if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+                return res.json({ success: true, path: result.filePaths[0] });
+            } else {
+                return res.json({ success: false, path: null });
+            }
+        }
+    } catch (e) {}
+
+    const psCommand = `[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "Audio Files|*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg|All Files|*.*"; if($f.ShowDialog() -eq 'OK'){ $f.FileName }`;
+    exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "${psCommand}"`, (err, stdout) => {
+        const pathStr = stdout ? stdout.replace(/^\uFEFF/, '').trim() : null;
+        res.json({ success: !!pathStr, path: pathStr || null });
+    });
 });
 
 router.post('/api/m1/audio/probe', (req, res) => {

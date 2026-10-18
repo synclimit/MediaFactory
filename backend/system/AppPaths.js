@@ -437,15 +437,23 @@ class AppPaths {
         const candidateNodes = [
             'C:\\Program Files\\nodejs\\node.exe',
             'C:\\Program Files (x86)\\nodejs\\node.exe',
-            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'node', 'node.exe')
+            path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'node', 'node.exe'),
+            process.resourcesPath ? path.resolve(process.resourcesPath, '..', 'bin', 'node.exe') : '',
+            process.resourcesPath ? path.resolve(process.resourcesPath, '..', 'node.exe') : '',
+            path.join(process.cwd(), 'bin', 'node.exe')
         ];
         for (const n of candidateNodes) {
-            if (fs.existsSync(n)) return n;
+            if (n && fs.existsSync(n)) return n;
         }
         if (process.execPath && !process.execPath.toLowerCase().includes('electron') && fs.existsSync(process.execPath)) {
             return process.execPath;
         }
-        return 'node';
+        try {
+            const { execSync } = require('child_process');
+            execSync('node --version', { stdio: 'ignore' });
+            return 'node';
+        } catch(e) {}
+        return null;
     }
 
     getYtDlpStandardArgs(extra = []) {
@@ -456,7 +464,7 @@ class AppPaths {
             '--force-ipv4',
             '--ffmpeg-location', ffmpegDir
         ];
-        if (nodePath) {
+        if (nodePath && (fs.existsSync(nodePath) || nodePath === 'node')) {
             args.push('--js-runtimes', 'node:' + nodePath);
         }
         // android,web prevents YouTube PO Token requirement and bypasses bot detection / HTTP 403

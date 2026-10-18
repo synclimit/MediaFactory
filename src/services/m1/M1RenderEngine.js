@@ -2,94 +2,51 @@ import { exec, spawn } from 'child_process';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
-
+import AppPaths from '../../../backend/system/AppPaths.js';
 
 function resolveYtDlpPath() {
-  const candidatePaths = [
-    process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'yt-dlp.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin', 'yt-dlp.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'yt-dlp.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'yt-dlp.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin', 'yt-dlp.exe') : '',
-    path.join(process.cwd(), 'backend', 'bin', 'yt-dlp.exe'),
-    path.join(process.cwd(), 'bin', 'yt-dlp.exe')
-  ];
-  for (const p of candidatePaths) {
-    if (p && existsSync(p)) return p;
+  if (AppPaths && typeof AppPaths.getYtDlpPath === 'function') {
+    return AppPaths.getYtDlpPath();
   }
   return 'yt-dlp';
 }
 
 function resolveFFmpegPath() {
-  const candidatePaths = [
-    process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffmpeg.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin', 'ffmpeg.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'ffmpeg.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'ffmpeg.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin', 'ffmpeg.exe') : '',
-    path.join(process.cwd(), 'backend', 'bin', 'ffmpeg.exe'),
-    path.join(process.cwd(), 'backend', 'ffmpeg', 'ffmpeg.exe'),
-    path.join(process.cwd(), 'bin', 'ffmpeg.exe')
-  ];
-  for (const p of candidatePaths) {
-    if (p && existsSync(p)) return p;
+  if (AppPaths && typeof AppPaths.getFFmpegPath === 'function') {
+    return AppPaths.getFFmpegPath();
   }
   return 'ffmpeg';
 }
 
 function resolveFFprobePath() {
-  const candidatePaths = [
-    process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin', 'ffprobe.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'backend', 'bin', 'ffprobe.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin', 'ffprobe.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'bin', 'ffprobe.exe') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app', 'bin', 'ffprobe.exe') : '',
-    path.join(process.cwd(), 'backend', 'bin', 'ffprobe.exe'),
-    path.join(process.cwd(), 'backend', 'ffmpeg', 'ffprobe.exe'),
-    path.join(process.cwd(), 'bin', 'ffprobe.exe')
-  ];
-  for (const p of candidatePaths) {
-    if (p && existsSync(p)) return p;
+  if (AppPaths && typeof AppPaths.getFFprobePath === 'function') {
+    return AppPaths.getFFprobePath();
   }
   return 'ffprobe';
 }
 
 function resolveFFmpegDir() {
+  if (AppPaths && typeof AppPaths.getFFmpegDir === 'function') {
+    return AppPaths.getFFmpegDir();
+  }
   const ffmpegPath = resolveFFmpegPath();
   if (ffmpegPath && ffmpegPath !== 'ffmpeg' && existsSync(ffmpegPath)) {
     return path.dirname(ffmpegPath);
-  }
-  const candidatePaths = [
-    process.resourcesPath ? path.join(process.resourcesPath, 'backend', 'bin') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'backend', 'bin') : '',
-    process.resourcesPath ? path.join(process.resourcesPath, 'bin') : '',
-    path.join(process.cwd(), 'backend', 'bin'),
-    path.join(process.cwd(), 'backend', 'ffmpeg'),
-    path.join(process.cwd(), 'bin')
-  ];
-  for (const p of candidatePaths) {
-    if (p && existsSync(p)) return p;
   }
   return process.cwd();
 }
 
 function resolveNodeJsPath() {
-  const candidateNodes = [
-    'C:\\Program Files\\nodejs\\node.exe',
-    'C:\\Program Files (x86)\\nodejs\\node.exe',
-    path.join(process.env.USERPROFILE || '', 'AppData', 'Local', 'Programs', 'node', 'node.exe')
-  ];
-  for (const n of candidateNodes) {
-    if (n && existsSync(n)) return n;
+  if (AppPaths && typeof AppPaths.getNodeJsPath === 'function') {
+    return AppPaths.getNodeJsPath();
   }
-  if (process.execPath && !process.execPath.toLowerCase().includes('electron') && existsSync(process.execPath)) {
-    return process.execPath;
-  }
-  return 'node';
+  return null;
 }
 
 export async function processM1Job(job, updateProgress, onComplete, onError) {
-  const cacheDir = path.resolve('Workspace/Cache/M1');
+  job.effects = job.effects || {};
+  const cacheBase = AppPaths ? AppPaths.getCacheBase() : path.resolve('.mediafactory_data/Cache');
+  const cacheDir = path.join(cacheBase, 'm1');
   const jobIdClean = (job.id || 'temp').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
   const tempSegmentPath = path.join(cacheDir, `temp_segment_${jobIdClean}.mp4`).replace(/\\/g, '/');
   const concatTxtPath = path.join(cacheDir, `concat_${jobIdClean}.txt`).replace(/\\/g, '/');
@@ -122,12 +79,11 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
       if (typeof j.segmentStartSec !== 'number' || j.segmentStartSec < 0) return 'Invalid segmentStartSec (must be >= 0)';
       if (typeof j.segmentEndSec !== 'number' || j.segmentEndSec <= j.segmentStartSec) return 'Invalid segmentEndSec (must be > segmentStartSec)';
       if (typeof j.playbackSpeed !== 'number' || j.playbackSpeed <= 0) return 'Invalid playbackSpeed (must be > 0)';
-      if (!['240p', '360p', '480p', '720p', '1080p'].includes(j.quality)) return 'Invalid quality';
-      if (typeof j.bufferSec !== 'number' || j.bufferSec < 0) return 'Invalid bufferSec (must be >= 0)';
+      if (j.quality && !['240p', '360p', '480p', '720p', '1080p', '1440p', '4k'].includes(String(j.quality).toLowerCase())) return 'Invalid quality';
+      if (j.bufferSec !== undefined && (typeof j.bufferSec !== 'number' || j.bufferSec < 0)) return 'Invalid bufferSec (must be >= 0)';
       if (!j.outputName || typeof j.outputName !== 'string' || j.outputName.trim() === '') return 'outputName cannot be empty';
-      if (!j.effects || typeof j.effects !== 'object') return 'effects payload missing';
       
-      const vIn = typeof j.inputVideo === 'object' ? j.inputVideo?.fullPath : j.inputVideo;
+      const vIn = typeof j.inputVideo === 'object' ? (j.inputVideo?.fullPath || j.inputVideo?.path) : j.inputVideo;
       if (!vIn || typeof vIn !== 'string' || vIn.trim() === '') return 'inputVideo must exist';
       
       const aIn = j.audioPath || (j.tracks && j.tracks[0]);
@@ -135,15 +91,24 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
       return null;
     };
 
+    if (job.bufferSec === undefined) job.bufferSec = 300;
+    if (!job.quality) job.quality = '480p';
+
     const validationError = validateJob(job);
     if (validationError) {
       throw new Error(`Render Job Validation Failed: ${validationError}`);
     }
     
     // Paths
-    const videoIn = typeof job.inputVideo === 'object' ? job.inputVideo.fullPath : job.inputVideo;
-    let audioIn = job.audioPath || job.tracks[0];
-    
+    const videoIn = typeof job.inputVideo === 'object' ? (job.inputVideo?.fullPath || job.inputVideo?.path) : job.inputVideo;
+    if (!videoIn || !existsSync(videoIn)) {
+      throw new Error(`Input video not found on disk: "${videoIn}". Please verify the file path exists on this computer.`);
+    }
+
+    let audioIn = job.audioPath || (j.tracks && j.tracks[0]);
+    if (!audioIn) {
+      throw new Error('audioPath must exist in job payload.');
+    }
 
     // YouTube Audio Check
     if (audioIn && (audioIn.includes('youtube.com') || audioIn.includes('youtu.be') || /^[a-zA-Z0-9_-]{11}$/.test(audioIn))) {
@@ -180,18 +145,18 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
           const ytArgs = [
             '--no-check-certificates',
             '--force-ipv4',
-            '--js-runtimes', 'node:' + nodePath,
             '--extractor-args', 'youtube:player_client=android,web',
             '--no-warnings',
             '--no-playlist',
             '-f', 'bestaudio/best',
             '-x',
             '--audio-format', 'mp3',
-            '--ffmpeg-location', ffmpegDir,
-            '-o', ytOut,
-            '--',
-            targetUrl
+            '--ffmpeg-location', ffmpegDir
           ];
+          if (nodePath && (existsSync(nodePath) || nodePath === 'node')) {
+            ytArgs.push('--js-runtimes', 'node:' + nodePath);
+          }
+          ytArgs.push('-o', ytOut, '--', targetUrl);
 
           const ytProc = spawn(ytBin, ytArgs);
           let stderrLog = '';
@@ -206,9 +171,24 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
         });
         audioIn = ytOut;
       }
+    } else {
+      if (!existsSync(audioIn)) {
+        throw new Error(`Audio file not found on disk: "${audioIn}". Please verify the file path exists on this computer.`);
+      }
     }
 
-    const outDir = path.resolve(job.outputFolder);
+    let outDir;
+    if (job.outputFolder && typeof job.outputFolder === 'string') {
+      if (path.isAbsolute(job.outputFolder)) {
+        outDir = job.outputFolder;
+      } else {
+        const baseOut = AppPaths ? AppPaths.getOutputBase() : path.resolve('Output');
+        outDir = path.join(baseOut, job.outputFolder);
+      }
+    } else {
+      const baseOut = AppPaths ? AppPaths.getOutputBase() : path.resolve('Output');
+      outDir = path.join(baseOut, 'M1');
+    }
     await fs.mkdir(outDir, { recursive: true });
     
     const outName = job.outputFiles ? job.outputFiles[0] : job.outputName;
@@ -306,21 +286,40 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     let stage2EncoderArgs = ['-c:v', 'libx264', '-preset', 'superfast', '-crf', '22', '-threads', '0'];
     let isHwAccelerated = false;
 
+    const ffmpegBin = resolveFFmpegPath();
+
     try {
       const { execSync } = await import('child_process');
-      const encStdout = execSync('ffmpeg -encoders', { encoding: 'utf8' });
+      const encStdout = execSync(`"${ffmpegBin}" -encoders`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      
+      // Probe if NVENC can ACTUALLY initialize on this machine's GPU
       if (encStdout.includes('h264_nvenc')) {
-        stage2EncoderArgs = ['-c:v', 'h264_nvenc', '-preset', 'p4', '-cq', '20'];
-        isHwAccelerated = true;
-        log('Hardware Acceleration', 'NVIDIA NVENC HW Encoder Enabled');
-      } else if (encStdout.includes('h264_qsv')) {
-        stage2EncoderArgs = ['-c:v', 'h264_qsv', '-preset', 'veryfast', '-global_quality', '20'];
-        isHwAccelerated = true;
-        log('Hardware Acceleration', 'Intel QSV HW Encoder Enabled');
-      } else if (encStdout.includes('h264_amf')) {
-        stage2EncoderArgs = ['-c:v', 'h264_amf', '-usage', 'transcoding', '-quality', 'speed'];
-        isHwAccelerated = true;
-        log('Hardware Acceleration', 'AMD AMF HW Encoder Enabled');
+        try {
+          execSync(`"${ffmpegBin}" -v error -f lavfi -i color=c=black:s=64x64:r=1 -frames:v 1 -c:v h264_nvenc -f null -`, { stdio: 'ignore', timeout: 3000 });
+          stage2EncoderArgs = ['-c:v', 'h264_nvenc', '-preset', 'p4', '-cq', '20'];
+          isHwAccelerated = true;
+          log('Hardware Acceleration', 'NVIDIA NVENC HW Encoder Verified & Enabled');
+        } catch(nvErr) {
+          log('Hardware Acceleration', 'h264_nvenc in binary but GPU driver unavailable. Falling back to CPU libx264.');
+        }
+      }
+      
+      if (!isHwAccelerated && encStdout.includes('h264_qsv')) {
+        try {
+          execSync(`"${ffmpegBin}" -v error -f lavfi -i color=c=black:s=64x64:r=1 -frames:v 1 -c:v h264_qsv -f null -`, { stdio: 'ignore', timeout: 3000 });
+          stage2EncoderArgs = ['-c:v', 'h264_qsv', '-preset', 'veryfast', '-global_quality', '20'];
+          isHwAccelerated = true;
+          log('Hardware Acceleration', 'Intel QSV HW Encoder Verified & Enabled');
+        } catch(qsvErr) {}
+      }
+      
+      if (!isHwAccelerated && encStdout.includes('h264_amf')) {
+        try {
+          execSync(`"${ffmpegBin}" -v error -f lavfi -i color=c=black:s=64x64:r=1 -frames:v 1 -c:v h264_amf -f null -`, { stdio: 'ignore', timeout: 3000 });
+          stage2EncoderArgs = ['-c:v', 'h264_amf', '-usage', 'transcoding', '-quality', 'speed'];
+          isHwAccelerated = true;
+          log('Hardware Acceleration', 'AMD AMF HW Encoder Verified & Enabled');
+        } catch(amfErr) {}
       }
     } catch(e) {
       log('Hardware Acceleration Check', 'Fallback to Multi-threaded CPU libx264 (-threads 0)');
@@ -332,7 +331,7 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     updateProgress(5, 'Preparing Stage 1');
     log('Stage 1', 'Start Temp Encode');
     
-    const { FilterGraphBuilder } = await import(`./builders/FilterGraphBuilder.js?v=${Date.now()}`);
+    const { FilterGraphBuilder } = await import('./builders/FilterGraphBuilder.js');
     const stage1Graph = await FilterGraphBuilder.buildStage1(job);
     const stage1Args = ['-y', ...stage1Graph.globalInputArgs, '-i', videoIn];
     
@@ -447,7 +446,6 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     // Generate Thumbnail (GUARANTEED YOUTUBE THUMBNAIL PRIORITY)
     log('Finalization', 'Writing High-Resolution Thumbnail');
     let thumbSaved = false;
-    const ffmpegBin = resolveFFmpegPath();
 
     // 1. If job has a local file path on disk (e.g. pre-downloaded YouTube thumbnail or manual thumbnail)
     const localCandidate = job.thumbnailPath || job.thumbnail;
@@ -488,15 +486,14 @@ export async function processM1Job(job, updateProgress, onComplete, onError) {
     const vId = job.videoId || (job.thumbnail && typeof job.thumbnail === 'string' ? job.thumbnail.match(/(?:v=|\/vi\/|youtu\.be\/|\/embed\/|\/shorts\/|^)([a-zA-Z0-9_-]{11})/)?.[1] : null);
     if (!thumbSaved && vId) {
       try {
-        const cacheBase = process.env.APPDATA ? path.join(process.env.APPDATA, 'MediaFactory', 'Cache', 'm1') : '';
         const candidateFiles = [
-          path.join(cacheBase, `${vId}_thumbnail.jpg`),
-          path.join(cacheBase, `${vId}.jpg`),
-          path.join(cacheBase, `${vId}.webp`),
-          path.join(cacheBase, `${vId}.png`),
-          `D:/MediaFactory/.mediafactory_data/Cache/m1/${vId}_thumbnail.jpg`,
-          `D:/MediaFactory/.mediafactory_data/Cache/m1/${vId}.jpg`,
-          `D:/MediaFactory/.mediafactory_data/Cache/m1/${vId}.webp`
+          path.join(cacheDir, `${vId}_thumbnail.jpg`),
+          path.join(cacheDir, `${vId}.jpg`),
+          path.join(cacheDir, `${vId}.webp`),
+          path.join(cacheDir, `${vId}.png`),
+          path.join(AppPaths.getMediaFactoryDataDir(), 'Cache', 'm1', `${vId}_thumbnail.jpg`),
+          path.join(AppPaths.getMediaFactoryDataDir(), 'Cache', 'm1', `${vId}.jpg`),
+          path.join(AppPaths.getMediaFactoryDataDir(), 'Cache', 'm1', `${vId}.webp`)
         ];
         for (const cf of candidateFiles) {
           if (cf && existsSync(cf)) {
